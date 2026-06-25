@@ -1,0 +1,176 @@
+:root {
+  /* ==========================================================================
+     SINGLE-SOURCE BRAND COLOR CONFIGURATION
+     By changing these two variables, the entire system's branding, accents,
+     sidebar backgrounds, active states, focus rings, shadows, and text colors 
+     will dynamically recalculate.
+     ========================================================================== */
+  --brand-h: 220;
+  /* HUE: 220 = Corporate Blue. Try 120 (Green), 270 (Purple), 0 (Red), etc. */
+  --brand-s: 90%;
+  /* SATURATION: Base brand color saturation level. */
+
+  /* NEUTRAL SCALE CHROMA CONFIGURATION
+     Set --neutral-s to 0% for pure greys (chromaless).
+     Set to 5%-10% to tint all neutral backgrounds/texts with a hint of the brand color. */
+  --neutral-s: 8%;
+
+  /* Font Family */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Brand / Logo Accent Color dynamically generated using intensity scales */
+  --color-primary-50: hsl(var(--brand-h), var(--brand-s), 97%);
+  --color-primary-100: hsl(var(--brand-h), var(--brand-s), 93%);
+  --color-primary-200: hsl(var(--brand-h), var(--brand-s), 85%);
+  --color-primary-300: hsl(var(--brand-h), var(--brand-s), 75%);
+  --color-primary-400: hsl(var(--brand-h), var(--brand-s), 60%);
+  --color-primary-500: hsl(var(--brand-h), var(--brand-s), 50%);
+  /* Base Brand Color */
+  --color-primary-600: hsl(var(--brand-h), var(--brand-s), 42%);
+  --color-primary-700: hsl(var(--brand-h), var(--brand-s), 35%);
+  --color-primary-800: hsl(var(--brand-h), var(--brand-s), 28%);
+  --color-primary-900: hsl(var(--brand-h), var(--brand-s), 20%);
+
+  /* Neutral scale (between white and black) generated dynamically using saturation */
+  --color-white: #ffffff;
+  --color-neutral-50: hsl(var(--brand-h), var(--neutral-s), 98%);
+  /* Overall screen background */
+  --color-neutral-100: hsl(var(--brand-h), var(--neutral-s), 96%);
+  /* Sidebar background */
+  --color-neutral-200: hsl(var(--brand-h), var(--neutral-s), 90%);
+  /* Border / divider color */
+  --color-neutral-300: hsl(var(--brand-h), var(--neutral-s), 80%);
+  /* Input border color */
+  --color-neutral-400: hsl(var(--brand-h), var(--neutral-s), 65%);
+  /* Placeholder text color */
+  --color-neutral-500: hsl(var(--brand-h), var(--neutral-s), 50%);
+  /* Muted label / helper text color */
+  --color-neutral-600: hsl(var(--brand-h), var(--neutral-s), 38%);
+  /* Main body text color */
+  --color-neutral-700: hsl(var(--brand-h), var(--neutral-s), 28%);
+  /* Card headers / label text color */
+  --color-neutral-800: hsl(var(--brand-h), var(--neutral-s), 18%);
+  /* Bold headers / main titles color */
+  --color-neutral-900: hsl(var(--brand-h), var(--neutral-s), 10%);
+  /* High-contrast near black color */
+  --color-black: #000000;
+
+  /* Functional alert colors (Green, Red, Yellow for alert statuses) */
+  --color-success: hsl(142, 76%, 36%);
+  --color-success-light: hsl(142, 76%, 96%);
+  --color-success-border: hsl(142, 76%, 86%);
+  --color-success-text: hsl(142, 76%, 20%);
+
+  --color-error: hsl(346, 84%, 50%);
+  --color-error-light: hsl(346, 84%, 97%);
+  --color-error-border: hsl(346, 84%, 87%);
+  --color-error-text: hsl(346, 84%, 22%);
+
+  --color-warning: hsl(38, 92%, 50%);
+  --color-warning-light: hsl(38, 92%, 97%);
+  --color-warning-border: hsl(38, 92%, 87%);
+  --color-warning-text: hsl(38, 92%, 22%);
+
+  /* Glassmorphism Configuration */
+  --color-glass-bg: rgba(255, 255, 255, 0.65);
+  --color-glass-bg-hover: rgba(255, 255, 255, 0.78);
+  --color-glass-border: rgba(255, 255, 255, 0.6);
+  --color-glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.03);
+
+  /* Multi-layered premium shadows (extremely soft, elegant) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.01), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 16px -6px rgba(0, 0, 0, 0.02);
+  --shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.04), 0 15px 30px -15px rgba(0, 0, 0, 0.03);
+  --shadow-primary-glow: 0 0 35px hsla(var(--brand-h), var(--brand-s), 50%, 0.08);
+
+  /* Border radiuses */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-round: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* Global Reset & Base Styling */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  color: var(--color-neutral-800);
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+/* Input Fields & Textareas standard styles */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  font-family: var(--font-sans);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  color: var(--color-neutral-800);
+  padding: 10px 14px;
+  font-size: 14px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--color-neutral-100) !important;
+  color: var(--color-neutral-400) !important;
+  border-color: var(--color-neutral-200) !important;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}

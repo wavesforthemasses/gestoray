@@ -1,0 +1,18 @@
+{
+  "users": {
+    "uid_8cqbdrqo4": {
+      "email": "wavesforthemasses@gmail.com",
+      "nome": "Super",
+      "cognome": "Admin",
+      "roles": [
+        "superadmin",
+        "amministrazione",
+        "commerciale"
+      ],
+      "createdAt": "2026-06-25T17:54:04.237Z",
+      "updatedAt": "2026-06-25T18:48:15.480Z"
+    }
+  },
+  "login_pins": {},
+  "sessions": {}
+}
