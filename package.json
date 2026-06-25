@@ -10,7 +10,8 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"emulators": "firebase emulators:start"
+		"emulators": "firebase emulators:start",
+		"push": "git pull && git add . && git commit -m 'update' && git push -u origin main"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",
