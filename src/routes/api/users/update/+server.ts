@@ -4,7 +4,7 @@ import { adminAuth, adminDb } from '$lib/firebase-admin';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { uid, email, roles, nome, cognome } = await request.json();
+    const { uid, email, roles, nome, cognome, qualification } = await request.json();
     
     if (!uid || !email || !roles || !nome || !cognome) {
       return json({ message: 'UID, email, ruoli, nome e cognome sono obbligatori.' }, { status: 400 });
@@ -36,6 +36,7 @@ export const POST: RequestHandler = async ({ request }) => {
       cognome: cognome.trim(),
       email: cleanEmail,
       roles: roles,
+      qualification: qualification || userData.qualification || 'junior',
       updatedAt: new Date().toISOString()
     });
 

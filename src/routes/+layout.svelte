@@ -21,7 +21,8 @@
               email: firebaseUser.email || data.email || '',
               roles: roles,
               nome: data.nome || '',
-              cognome: data.cognome || ''
+              cognome: data.cognome || '',
+              qualification: data.qualification || 'junior'
             });
             const currentActive = get(activeRole);
             if (!currentActive || !roles.includes(currentActive)) {

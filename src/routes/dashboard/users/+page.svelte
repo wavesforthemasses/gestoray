@@ -12,6 +12,7 @@
   let nome = $state('');
   let cognome = $state('');
   let selectedRoles = $state<string[]>([]);
+  let qualification = $state('junior');
 
   let statusMessage = $state('');
   let isError = $state(false);
@@ -96,6 +97,7 @@
         cognome: cleanCognome,
         email: cleanEmail,
         roles: selectedRoles,
+        qualification: qualification,
         createdAt: new Date().toISOString()
       });
 
@@ -104,6 +106,7 @@
       nome = '';
       cognome = '';
       selectedRoles = [];
+      qualification = 'junior';
       
       await fetchUsers();
       showAddForm = false; // Redirect back to list
@@ -234,6 +237,13 @@
             required
             disabled={creatingUser}
           />
+        </FormField>
+
+        <FormField id="new-qualification" label="Qualifica Consulente">
+          <select id="new-qualification" bind:value={qualification} disabled={creatingUser}>
+            <option value="junior">Junior (consulente junior)</option>
+            <option value="senior">Senior (consulente senior)</option>
+          </select>
         </FormField>
 
         <RoleSelector bind:selectedRoles={selectedRoles} showDescriptions={false} disabled={creatingUser} />

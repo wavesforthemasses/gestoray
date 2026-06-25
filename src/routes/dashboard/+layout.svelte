@@ -5,7 +5,7 @@
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { LayoutDashboard, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList } from '@lucide/svelte';
 
   let { children } = $props();
 
@@ -91,6 +91,35 @@
         <span class="nav-label">Dashboard</span>
       </a>
 
+      {#if $activeRole === 'commerciale' || $activeRole === 'superadmin'}
+        <a href="/dashboard/clients" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/clients')} title="Gestione Clienti">
+          <span class="nav-icon"><Briefcase size={18} /></span>
+          <span class="nav-label">Gestione Clienti</span>
+        </a>
+      {/if}
+
+      {#if $activeRole === 'commerciale' || $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
+        <a href="/dashboard/activities" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/activities')} title="Gestione Attività">
+          <span class="nav-icon"><ClipboardList size={18} /></span>
+          <span class="nav-label">Gestione Attività</span>
+        </a>
+        <a href="/dashboard/contracts" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/contracts')} title="Gestione Contratti">
+          <span class="nav-icon"><FileText size={18} /></span>
+          <span class="nav-label">Gestione Contratti</span>
+        </a>
+      {/if}
+
+      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
+        <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
+          <span class="nav-icon"><Wallet size={18} /></span>
+          <span class="nav-label">Gestione Incassi</span>
+        </a>
+        <a href="/dashboard/products" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/products')} title="Catalogo Prodotti">
+          <span class="nav-icon"><Tag size={18} /></span>
+          <span class="nav-label">Catalogo Prodotti</span>
+        </a>
+      {/if}
+
       {#if $activeRole === 'superadmin'}
         <a href="/dashboard/users" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/users')} title="Gestione Utenti">
           <span class="nav-icon"><Users size={18} /></span>
@@ -125,6 +154,20 @@
             <h3>Elenco Utenti</h3>
           {:else if $page.url.pathname.startsWith('/dashboard/profile')}
             <h3>Mio Profilo</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/clients/')}
+            <h3>Dettaglio Cliente</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/clients')}
+            <h3>Gestione Clienti</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/activities')}
+            <h3>Gestione Attività</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/contracts/')}
+            <h3>Dettaglio Contratto</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/contracts')}
+            <h3>Gestione Contratti</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/payments')}
+            <h3>Gestione Incassi</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/products')}
+            <h3>Catalogo Prodotti</h3>
           {/if}
         </div>
       </div>

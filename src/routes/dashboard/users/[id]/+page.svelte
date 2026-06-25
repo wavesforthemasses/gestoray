@@ -14,6 +14,7 @@
   let userCognome = $state('');
   let createdAt = $state('');
   let selectedRoles = $state<string[]>([]);
+  let qualification = $state('junior');
 
   let statusMessage = $state('');
   let isError = $state(false);
@@ -30,6 +31,7 @@
         userCognome = data.cognome || '';
         createdAt = data.createdAt || '';
         selectedRoles = data.roles || [];
+        qualification = data.qualification || 'junior';
       } else {
         isError = true;
         statusMessage = 'Impossibile trovare l\'utente specificato nel database.';
@@ -80,7 +82,8 @@
           email: cleanEmail,
           nome: cleanNome,
           cognome: cleanCognome,
-          roles: selectedRoles
+          roles: selectedRoles,
+          qualification: qualification
         })
       });
 
@@ -171,6 +174,13 @@
             disabled
             class="disabled-input"
           />
+        </FormField>
+
+        <FormField id="user-qualification" label="Qualifica Consulente">
+          <select id="user-qualification" bind:value={qualification} disabled={saving}>
+            <option value="junior">Junior (2.5% - 7.5% provvigione)</option>
+            <option value="senior">Senior (5.0% - 10.0% provvigione)</option>
+          </select>
         </FormField>
 
         <RoleSelector bind:selectedRoles={selectedRoles} disabled={saving} />

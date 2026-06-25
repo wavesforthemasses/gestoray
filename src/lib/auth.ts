@@ -6,6 +6,7 @@ export interface UserProfile {
   roles: string[];
   nome?: string;
   cognome?: string;
+  qualification?: 'junior' | 'senior';
 }
 
 export const auth = writable<UserProfile | null>(null);

@@ -9,10 +9,34 @@
         "amministrazione",
         "commerciale"
       ],
+      "qualification": "senior",
       "createdAt": "2026-06-25T17:54:04.237Z",
       "updatedAt": "2026-06-25T18:48:15.480Z"
     }
   },
+  "products": {
+    "prod_1": {
+      "name": "Servizio Cloud Alpha",
+      "listPrice": 1200,
+      "minPrice": 900
+    },
+    "prod_2": {
+      "name": "Consulenza Direzionale",
+      "listPrice": 2500,
+      "minPrice": 2000
+    },
+    "prod_3": {
+      "name": "Pacchetto Marketing Avanzato",
+      "listPrice": 800,
+      "minPrice": 600
+    }
+  },
+  "clients": {},
+  "client_history": {},
+  "activities": {},
+  "quotes": {},
+  "contracts": {},
+  "payments": {},
   "login_pins": {},
   "sessions": {}
 }
