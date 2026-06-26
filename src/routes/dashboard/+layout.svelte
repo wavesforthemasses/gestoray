@@ -91,14 +91,14 @@
         <span class="nav-label">Dashboard</span>
       </a>
 
-      {#if $activeRole === 'commerciale' || $activeRole === 'superadmin'}
+      {#if $activeRole === 'commerciale' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
         <a href="/dashboard/clients" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/clients')} title="Gestione Clienti">
           <span class="nav-icon"><Briefcase size={18} /></span>
           <span class="nav-label">Gestione Clienti</span>
         </a>
       {/if}
 
-      {#if $activeRole === 'commerciale' || $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
+      {#if $activeRole === 'commerciale' || $activeRole === 'amministrazione' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
         <a href="/dashboard/activities" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/activities')} title="Gestione Attività">
           <span class="nav-icon"><ClipboardList size={18} /></span>
           <span class="nav-label">Gestione Attività</span>
@@ -109,11 +109,14 @@
         </a>
       {/if}
 
-      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
+      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
         <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
           <span class="nav-icon"><Wallet size={18} /></span>
           <span class="nav-label">Gestione Incassi</span>
         </a>
+      {/if}
+
+      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
         <a href="/dashboard/products" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/products')} title="Catalogo Prodotti">
           <span class="nav-icon"><Tag size={18} /></span>
           <span class="nav-label">Catalogo Prodotti</span>

@@ -4,14 +4,18 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card, Table, FormField } from '$lib';
-  import { Wallet, Plus, ArrowLeft, Percent, Check } from '@lucide/svelte';
+  import { Wallet, Plus, ArrowLeft, Percent, Check, ChevronDown, ChevronUp, TrendingUp } from '@lucide/svelte';
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'amministrazione') {
+      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'amministrazione' && $activeRole !== 'direzione') {
         goto('/dashboard');
       }
     });
+
+    if (typeof window !== 'undefined') {
+      isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
+    }
 
     fetchData();
     return () => unsubscribe();
@@ -182,6 +186,94 @@
       submitting = false;
     }
   }
+
+  // Collapse/Expand state for chart
+  let isGraphExpanded = $state(false);
+  let selectedPointIdx = $state<number | null>(null);
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+
+  function toggleGraph() {
+    isGraphExpanded = !isGraphExpanded;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('subpage_graph_expanded', String(isGraphExpanded));
+    }
+  }
+
+  // Generate date ranges backwards from endDateString
+  let chartPeriods = $derived.by(() => {
+    const end = new Date(endDateString);
+    const periods: Array<{ start: Date, end: Date, label: string }> = [];
+
+    if (granularity === 'settimanale') {
+      for (let i = 51; i >= 0; i--) {
+        const pEnd = new Date(end.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        const pStart = new Date(pEnd.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
+        periods.push({ start: pStart, end: pEnd, label: `${pEnd.getDate()}/${pEnd.getMonth() + 1}` });
+      }
+    } else if (granularity === 'mensile') {
+      for (let i = 23; i >= 0; i--) {
+        const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+        const pStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const pEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+        periods.push({ start: pStart, end: pEnd, label: `${monthNames[pStart.getMonth()]} ${String(pStart.getFullYear()).slice(2)}` });
+      }
+    } else {
+      for (let i = 9; i >= 0; i--) {
+        const year = end.getFullYear() - i;
+        const pStart = new Date(year, 0, 1);
+        const pEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+        periods.push({ start: pStart, end: pEnd, label: String(year) });
+      }
+    }
+    return periods;
+  });
+
+  let computedChartPoints = $derived.by(() => {
+    return chartPeriods.map((p) => {
+      const dbValue = paymentsList
+        .filter(pay => {
+          const d = new Date(pay.date);
+          return d >= p.start && d <= p.end;
+        })
+        .reduce((sum, pay) => sum + pay.amount, 0);
+
+      return dbValue;
+    });
+  });
+
+  let svgPointsData = $derived.by(() => {
+    const data = computedChartPoints;
+    const maxVal = Math.max(...data, 1000);
+    const count = data.length;
+
+    const points = data.map((val, idx) => {
+      const x = 40 + (idx / (count - 1)) * 400;
+      const y = 120 - (val / maxVal) * 100;
+      return { x, y, val };
+    });
+
+    const pathD = points.reduce((acc, pt, idx) => {
+      return acc + (idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`);
+    }, '');
+
+    const areaD = pathD + ` L ${points[points.length - 1].x} 120 L ${points[0].x} 120 Z`;
+
+    return { points, pathD, areaD, maxVal };
+  });
+
+  // Filtered payments list based on selected point
+  let filteredPayments = $derived.by(() => {
+    if (selectedPointIdx !== null && selectedPointIdx >= 0 && selectedPointIdx < chartPeriods.length) {
+      const period = chartPeriods[selectedPointIdx];
+      return paymentsList.filter(pay => {
+        const d = new Date(pay.date);
+        return d >= period.start && d <= period.end;
+      });
+    }
+    return paymentsList;
+  });
 </script>
 
 <svelte:head>
@@ -197,6 +289,99 @@
   {/if}
 
   {#if !showAddForm}
+    <!-- EXPANDABLE TREND CHART -->
+    <div class="subpage-chart-control">
+      <button onclick={toggleGraph} class="toggle-chart-btn">
+        <TrendingUp size={16} /> 
+        {isGraphExpanded ? 'Nascondi Grafico Andamento' : 'Mostra Grafico Andamento'}
+        {#if isGraphExpanded}
+          <ChevronUp size={14} />
+        {:else}
+          <ChevronDown size={14} />
+        {/if}
+      </button>
+    </div>
+
+    {#if isGraphExpanded}
+      <div class="subpage-chart-card animate-fade-in">
+        <Card title="Andamento Incassi Cassa (GI)" description="Clicca su un punto del grafico per filtrare il registro incassi in base al periodo selezionato.">
+          {#snippet icon()}
+            <TrendingUp size={20} class="icon-accent" />
+          {/snippet}
+
+          {#snippet headerSnippet()}
+            <div class="chart-controls-sub">
+              <!-- Period Granularity -->
+              <select bind:value={granularity} class="sub-chart-select">
+                <option value="settimanale">Settimanale (52w)</option>
+                <option value="mensile">Mensile (24m)</option>
+                <option value="annuale">Annuale (10y)</option>
+              </select>
+
+              <!-- End Date Picker -->
+              <input type="date" bind:value={endDateString} class="sub-chart-date-picker" />
+            </div>
+          {/snippet}
+
+          <div class="svg-chart-container-sub">
+            <svg class="sub-svg" viewBox="0 0 480 150">
+              <!-- Grid Lines -->
+              <line x1="40" y1="20" x2="440" y2="20" class="grid-line" />
+              <line x1="40" y1="70" x2="440" y2="70" class="grid-line" />
+              <line x1="40" y1="120" x2="440" y2="120" class="grid-line" />
+
+              <!-- Area -->
+              <path d={svgPointsData.areaD} class="chart-area-fill" fill="rgba(79, 70, 229, 0.12)" />
+
+              <!-- Path Line -->
+              <path d={svgPointsData.pathD} class="chart-line-stroke" />
+
+              <!-- Dots -->
+              {#each svgPointsData.points as pt, idx}
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={selectedPointIdx === idx ? "7" : "4"}
+                  class="chart-point-dot"
+                  class:selected={selectedPointIdx === idx}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Seleziona punto grafico"
+                  onclick={() => {
+                    if (selectedPointIdx === idx) {
+                      selectedPointIdx = null;
+                    } else {
+                      selectedPointIdx = idx;
+                    }
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (selectedPointIdx === idx) {
+                        selectedPointIdx = null;
+                      } else {
+                        selectedPointIdx = idx;
+                      }
+                    }
+                  }}
+                />
+              {/each}
+            </svg>
+          </div>
+
+          <div class="chart-y-axis-lbls">
+            <span>Massimo: €{svgPointsData.maxVal.toLocaleString('it-IT')}</span>
+            {#if selectedPointIdx !== null}
+              <span class="selected-period-banner">
+                Filtro attivo: <strong>{chartPeriods[selectedPointIdx].label}</strong> (Valore: €{computedChartPoints[selectedPointIdx].toLocaleString('it-IT')})
+                <button onclick={() => selectedPointIdx = null} class="clear-filter-btn">Azzera filtro</button>
+              </span>
+            {/if}
+            <span>Minimo: 0</span>
+          </div>
+        </Card>
+      </div>
+    {/if}
+
     <Card
       title="Registro Incassi Cassa"
       description="Visualizza lo storico dei pagamenti riscossi. I pagamenti approvano automaticamente i contratti pendenti."
@@ -207,9 +392,11 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        <button onclick={() => { showAddForm = true; successMsg = ''; errorMsg = ''; }} class="add-payment-btn">
-          <Plus size={16} /> Registra Nuovo Incasso
-        </button>
+        {#if $activeRole !== 'direzione'}
+          <button onclick={() => { showAddForm = true; successMsg = ''; errorMsg = ''; }} class="add-payment-btn">
+            <Plus size={16} /> Registra Nuovo Incasso
+          </button>
+        {/if}
       {/snippet}
 
       {#if loading}
@@ -235,7 +422,7 @@
         <div class="table-wrapper">
           <Table
             {columns}
-            data={paymentsList}
+            data={filteredPayments}
             cellSnippet={cell}
             emptyText="Nessun incasso presente nel registro contabile."
           />
@@ -536,5 +723,123 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Expandable trend chart styles */
+  .subpage-chart-control {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .toggle-chart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    color: var(--color-neutral-600);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-chart-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+
+  .subpage-chart-card {
+    margin-bottom: 24px;
+  }
+
+  .chart-controls-sub {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sub-chart-select, .sub-chart-date-picker {
+    height: 36px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-neutral-300);
+    font-family: inherit;
+    font-size: 12px;
+    background: var(--color-white);
+  }
+
+  .svg-chart-container-sub {
+    background: var(--color-white);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-neutral-200);
+    margin-top: 12px;
+  }
+
+  .sub-svg {
+    width: 100%;
+    height: 120px;
+    overflow: visible;
+  }
+
+  .grid-line {
+    stroke: var(--color-neutral-200);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+  }
+
+  .chart-line-stroke {
+    stroke: var(--color-primary-500);
+    stroke-width: 2.5;
+    fill: none;
+  }
+
+  .chart-point-dot {
+    fill: var(--color-white);
+    stroke: var(--color-primary-500);
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chart-point-dot:hover, .chart-point-dot.selected {
+    fill: var(--color-primary-500);
+    r: 7px;
+  }
+
+  .chart-y-axis-lbls {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--color-neutral-500);
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  .selected-period-banner {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .clear-filter-btn {
+    background: var(--color-white);
+    border: 1px solid var(--color-primary-200);
+    color: var(--color-primary-600);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
   }
 </style>

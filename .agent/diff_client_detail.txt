@@ -1,0 +1,552 @@
+diff --git a/src/routes/dashboard/clients/[id]/+page.svelte b/src/routes/dashboard/clients/[id]/+page.svelte
+index bdcb48a..64e2173 100644
+--- a/src/routes/dashboard/clients/[id]/+page.svelte
++++ b/src/routes/dashboard/clients/[id]/+page.svelte
+@@ -2,7 +2,7 @@
+   import { page } from '$app/stores';
+   import { auth, activeRole } from '$lib/auth';
+   import { db, doc, getDoc, setDoc, collection, getDocs } from '$lib/firebase';
+-  import { onMount } from 'svelte';
++  import { onMount, tick } from 'svelte';
+   import { goto } from '$app/navigation';
+   import { Card, Table, FormField } from '$lib';
+   import { 
+@@ -22,6 +22,7 @@
+   let submittingQuote = $state(false);
+   let statusMessage = $state('');
+   let isError = $state(false);
++  let newlyCreatedId = $state('');
+ 
+   // Client profile
+   let clientName = $state('');
+@@ -32,6 +33,9 @@
+   let clientCreatedAt = $state('');
+   let clientNotes = $state<string[]>([]);
+   let clientCommunications = $state<any[]>([]);
++  let usersList = $state<any[]>([]);
++  let secondVendorUid = $state('');
++  let secondVendorShare = $state(30);
+ 
+   // Original profile state for history tracking
+   let originalProfile = $state<any>({});
+@@ -90,7 +94,8 @@
+         nome: clientName,
+         cognome: clientCognome,
+         email: clientEmail,
+-        phone: clientPhone
++        phone: clientPhone,
++        createdBy: clientCreatedBy
+       };
+ 
+       // 2. Fetch Products
+@@ -151,6 +156,15 @@
+       });
+       contractsList = contracts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+ 
++      // 7. Fetch Users
++      const usersSnap = await getDocs(collection(db, 'users'));
++      const uList: any[] = [];
++      usersSnap.forEach((doc: any) => {
++        const u = doc.data();
++        uList.push({ uid: doc.id, ...u });
++      });
++      usersList = uList;
++
+     } catch (e: any) {
+       console.error(e);
+       isError = true;
+@@ -162,7 +176,7 @@
+ 
+   onMount(() => {
+     const unsubscribe = activeRole.subscribe(($activeRole) => {
+-      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'commerciale') {
++      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'commerciale' && $activeRole !== 'amministrazione' && $activeRole !== 'direzione') {
+         goto('/dashboard');
+       }
+     });
+@@ -181,11 +195,12 @@
+     isError = false;
+ 
+     try {
++      const isDirezione = $activeRole === 'direzione';
+       const updatedClient = {
+-        nome: clientName.trim(),
+-        cognome: clientCognome.trim(),
+-        email: clientEmail.trim(),
+-        phone: clientPhone.trim(),
++        nome: isDirezione ? originalProfile.nome : clientName.trim(),
++        cognome: isDirezione ? originalProfile.cognome : clientCognome.trim(),
++        email: isDirezione ? originalProfile.email : clientEmail.trim(),
++        phone: isDirezione ? originalProfile.phone : clientPhone.trim(),
+         notes: clientNotes,
+         communications: clientCommunications,
+         createdBy: clientCreatedBy,
+@@ -199,7 +214,7 @@
+       // Log history audit log if there are changes
+       const changes: Record<string, { oldVal: any, newVal: any }> = {};
+       let hasChanges = false;
+-      const fields = ['nome', 'cognome', 'email', 'phone'];
++      const fields = ['nome', 'cognome', 'email', 'phone', 'createdBy'];
+       
+       fields.forEach(f => {
+         const oldVal = originalProfile[f] || '';
+@@ -257,6 +272,7 @@
+         createdByEmail: $auth.email
+       };
+ 
++      const noteIdx = clientNotes.length;
+       const updatedNotes = [...clientNotes, JSON.stringify(noteObject)];
+       await setDoc(doc(db, 'clients', clientId), {
+         nome: clientName,
+@@ -271,7 +287,13 @@
+ 
+       (e.target as any).noteText.value = '';
+       statusMessage = 'Nota aggiunta con successo!';
++      newlyCreatedId = `note-${noteIdx}`;
+       await loadAllData();
++      await tick();
++      const el = document.getElementById(`timeline-item-note-${noteIdx}`);
++      if (el) {
++        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
++      }
+     } catch (e: any) {
+       statusMessage = 'Errore durante l\'inserimento della nota: ' + e.message;
+       isError = true;
+@@ -324,7 +346,13 @@
+       activityNotesText = '';
+       appointmentDateTime = getNowDateTimeString();
+       statusMessage = `Attività "${type}" registrata correttamente!`;
++      newlyCreatedId = activityId;
+       await loadAllData();
++      await tick();
++      const el = document.getElementById(`timeline-item-${activityId}`);
++      if (el) {
++        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
++      }
+     } catch (err: any) {
+       isError = true;
+       statusMessage = err.message || 'Errore nel salvataggio dell\'attività.';
+@@ -421,6 +449,12 @@
+       const contractId = 'contract_' + Math.random().toString(36).substring(2, 11);
+       const totalContractPrice = items.reduce((sum, item) => sum + item.priceSold * item.quantity, 0);
+ 
++      let secondVendorEmail = '';
++      if (secondVendorUid) {
++        const found = usersList.find(u => u.uid === secondVendorUid);
++        secondVendorEmail = found ? found.email : '';
++      }
++
+       const newContract = {
+         clientId,
+         clientName: `${clientName} ${clientCognome}`.trim(),
+@@ -431,13 +465,20 @@
+         products: items,
+         status: 'pending',
+         hasWarning,
+-        createdAt: new Date().toISOString()
++        createdAt: new Date().toISOString(),
++        ...(secondVendorUid ? {
++          secondVendorUid,
++          secondVendorEmail,
++          secondVendorShare: Number(secondVendorShare)
++        } : {})
+       };
+ 
+       await setDoc(doc(db, 'contracts', contractId), newContract);
+ 
+       quoteSuccessMsg = 'Preventivo convertito in contratto! In attesa di approvazione amministrativa.';
+-      quoteItems = []; // clear builder
++      quoteItems = []; 
++      secondVendorUid = '';
++      secondVendorShare = 30;
+       await loadAllData();
+     } catch (e: any) {
+       quoteErrorMsg = 'Errore durante la conversione in contratto: ' + e.message;
+@@ -537,25 +578,37 @@
+ 
+               <form onsubmit={handleUpdateProfile} class="widescreen-form">
+                 <div class="form-grid-columns">
+-                  <FormField id="c-nome" label="Nome / Nome Azienda">
+-                    <input type="text" id="c-nome" bind:value={clientName} required disabled={submittingProfile} />
++                  <FormField id="c-nome" label="Nome Azienda">
++                    <input type="text" id="c-nome" bind:value={clientName} required disabled={submittingProfile || $activeRole === 'direzione'} />
+                   </FormField>
+ 
+-                  <FormField id="c-cognome" label="Cognome Referente" helpText="Opzionale">
+-                    <input type="text" id="c-cognome" bind:value={clientCognome} disabled={submittingProfile} />
++                  <FormField id="c-cognome" label="Referente" helpText="Opzionale">
++                    <input type="text" id="c-cognome" bind:value={clientCognome} disabled={submittingProfile || $activeRole === 'direzione'} />
+                   </FormField>
+                 </div>
+ 
+                 <div class="form-grid-columns">
+                   <FormField id="c-email" label="Indirizzo Email" helpText="Opzionale">
+-                    <input type="email" id="c-email" bind:value={clientEmail} placeholder="es. client@azienda.com" disabled={submittingProfile} />
++                    <input type="email" id="c-email" bind:value={clientEmail} placeholder="es. client@azienda.com" disabled={submittingProfile || $activeRole === 'direzione'} />
+                   </FormField>
+ 
+                   <FormField id="c-phone" label="Numero di Telefono" helpText="Opzionale">
+-                    <input type="text" id="c-phone" bind:value={clientPhone} placeholder="es. +39 02 123456" disabled={submittingProfile} />
++                    <input type="text" id="c-phone" bind:value={clientPhone} placeholder="es. +39 02 123456" disabled={submittingProfile || $activeRole === 'direzione'} />
+                   </FormField>
+                 </div>
+ 
++                {#if $activeRole === 'superadmin' || $activeRole === 'amministrazione' || $activeRole === 'direzione'}
++                  <div class="form-grid-columns" style="margin-top: 10px;">
++                    <FormField id="c-owner" label="Consulente Proprietario (Assegnazione)" helpText="Modifica l'assegnazione di questo cliente ad un altro commerciale.">
++                      <select id="c-owner" bind:value={clientCreatedBy} disabled={submittingProfile}>
++                        {#each usersList as u}
++                          <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
++                        {/each}
++                      </select>
++                    </FormField>
++                  </div>
++                {/if}
++
+                 <button type="submit" class="submit-profile-btn" disabled={submittingProfile}>
+                   {submittingProfile ? 'Aggiornamento...' : 'Salva Modifiche Anagrafica'}
+                 </button>
+@@ -608,73 +661,99 @@
+       {#if activeTab === 'activities'}
+         <div class="tab-view animate-fade-in">
+           <div class="vertical-layout-stack">
+-            <!-- Activities Logger Form -->
+-            <Card title="Registrazione Attività Semplificata" description="Aggiungi una nota testuale e clicca sul pulsante dell'attività corrispondente. Le attività di Telefonata e Incontro verranno registrate all'istante, gli Appuntamenti consentono di pianificare data/ora.">
+-              {#snippet icon()}
+-                <MessageSquare size={20} class="icon-accent" />
+-              {/snippet}
+-
+-              <div class="activity-logger-shell">
+-                <FormField id="act-notes" label="Note Attività" helpText="Riassumi brevemente l'esito della telefonata o dell'incontro.">
+-                  <textarea 
+-                    id="act-notes" 
+-                    bind:value={activityNotesText} 
+-                    placeholder="es. Il cliente ha richiesto una quotazione per 3 licenze..."
+-                    rows="3"
+-                    disabled={submittingActivity}
+-                  ></textarea>
+-                </FormField>
+-
+-                <div class="appointment-time-picker">
+-                  <FormField id="appt-date" label="Data e Ora Appuntamento" helpText="Richiesto solo in caso di registrazione Appuntamento.">
+-                    <input 
+-                      type="datetime-local" 
+-                      id="appt-date" 
+-                      bind:value={appointmentDateTime} 
+-                      disabled={submittingActivity} 
+-                    />
++            {#if $activeRole !== 'direzione'}
++              <!-- Activities Logger Form -->
++              <Card title="Registrazione Attività Semplificata" description="Aggiungi una nota testuale e clicca sul pulsante dell'attività corrispondente. Le attività di Telefonata e Incontro verranno registrate all'istante, gli Appuntamenti consentono di pianificare data/ora.">
++                {#snippet icon()}
++                  <MessageSquare size={20} class="icon-accent" />
++                {/snippet}
++
++                <div class="activity-logger-shell">
++                  <FormField id="act-notes" label="Note Attività" helpText="Riassumi brevemente l'esito della telefonata o dell'incontro.">
++                    <textarea 
++                      id="act-notes" 
++                      bind:value={activityNotesText} 
++                      placeholder="es. Il cliente ha richiesto una quotazione per 3 licenze..."
++                      rows="3"
++                      disabled={submittingActivity}
++                    ></textarea>
+                   </FormField>
+-                </div>
+ 
+-                <div class="quick-log-actions">
+-                  <button 
+-                    onclick={() => logActivity('Telefonata')} 
+-                    class="log-btn phone-btn"
+-                    disabled={submittingActivity}
+-                  >
+-                    <Phone size={14} /> Registra Telefonata
+-                  </button>
+-                  <button 
+-                    onclick={() => logActivity('Incontro')} 
+-                    class="log-btn meeting-btn"
+-                    disabled={submittingActivity}
+-                  >
+-                    <Users size={14} /> Registra Incontro
+-                  </button>
+-                  <button 
+-                    onclick={() => logActivity('Appuntamento', new Date(appointmentDateTime).toISOString())} 
+-                    class="log-btn appt-btn"
+-                    disabled={submittingActivity || !appointmentDateTime}
+-                  >
+-                    <Calendar size={14} /> Registra Appuntamento
+-                  </button>
+-                </div>
+-              </div>
+-            </Card>
+-
+-            <!-- Quick notes text form -->
+-            <Card title="Note Libere Cronologiche" description="Se vuoi registrare una nota informativa slegata da una specifica telefonata o incontro.">
+-              {#snippet icon()}
+-                <FileText size={20} class="icon-accent" />
+-              {/snippet}
++                  <div class="appointment-time-picker">
++                    <FormField id="appt-date" label="Data e Ora Appuntamento" helpText="Richiesto solo in caso di registrazione Appuntamento.">
++                      <input 
++                        type="datetime-local" 
++                        id="appt-date" 
++                        bind:value={appointmentDateTime} 
++                        disabled={submittingActivity} 
++                      />
++                    </FormField>
++                  </div>
+ 
+-              <form onsubmit={handleAddNote} class="simple-note-form">
+-                <div class="note-input-row">
+-                  <input type="text" name="noteText" placeholder="Scrivi una nota per questa anagrafica..." required />
+-                  <button type="submit" class="add-note-btn">Posa Nota</button>
++                  <div class="quick-log-actions">
++                    {#if $activeRole === 'amministrazione'}
++                      <button 
++                        onclick={() => logActivity('Sollecito Telefonico')} 
++                        class="log-btn phone-btn"
++                        disabled={submittingActivity}
++                      >
++                        <Phone size={14} /> Sollecito Telefonico
++                      </button>
++                      <button 
++                        onclick={() => logActivity('Sollecito Email')} 
++                        class="log-btn meeting-btn"
++                        disabled={submittingActivity}
++                      >
++                        <MessageSquare size={14} /> Sollecito Email
++                      </button>
++                      <button 
++                        onclick={() => logActivity('Sollecito PEC')} 
++                        class="log-btn appt-btn"
++                        disabled={submittingActivity}
++                      >
++                        <Calendar size={14} /> Sollecito PEC
++                      </button>
++                    {:else}
++                      <button 
++                        onclick={() => logActivity('Telefonata')} 
++                        class="log-btn phone-btn"
++                        disabled={submittingActivity}
++                      >
++                        <Phone size={14} /> Registra Telefonata
++                      </button>
++                      <button 
++                        onclick={() => logActivity('Incontro')} 
++                        class="log-btn meeting-btn"
++                        disabled={submittingActivity}
++                      >
++                        <Users size={14} /> Registra Incontro
++                      </button>
++                      <button 
++                        onclick={() => logActivity('Appuntamento', new Date(appointmentDateTime).toISOString())} 
++                        class="log-btn appt-btn"
++                        disabled={submittingActivity || !appointmentDateTime}
++                      >
++                        <Calendar size={14} /> Registra Appuntamento
++                      </button>
++                    {/if}
++                  </div>
+                 </div>
+-              </form>
+-            </Card>
++              </Card>
++
++              <!-- Quick notes text form -->
++              <Card title="Note Libere Cronologiche" description="Se vuoi registrare una nota informativa slegata da una specifica telefonata o incontro.">
++                {#snippet icon()}
++                  <FileText size={20} class="icon-accent" />
++                {/snippet}
++
++                <form onsubmit={handleAddNote} class="simple-note-form">
++                  <div class="note-input-row">
++                    <input type="text" name="noteText" placeholder="Scrivi una nota per questa anagrafica..." required />
++                    <button type="submit" class="add-note-btn">Posa Nota</button>
++                  </div>
++                </form>
++              </Card>
++            {/if}
+ 
+             <!-- Combined Activities & Notes Timeline -->
+             <Card title="Cronologia Attività e Note" description="Storico cronologico inverso di tutte le interazioni registrate su questa scheda cliente.">
+@@ -711,7 +790,12 @@
+ 
+                   <div class="timeline-flow">
+                     {#each timelineItems as item}
+-                      <div class="timeline-card" class:note-item={item.source === 'note'}>
++                      <div 
++                        id="timeline-item-{item.id}"
++                        class="timeline-card" 
++                        class:note-item={item.source === 'note'}
++                        class:glow={item.id === newlyCreatedId}
++                      >
+                         <div class="card-top">
+                           <span class="item-badge" class:badge-nota={item.badge === 'NOTA'} class:badge-tel={item.badge === 'Telefonata'} class:badge-inc={item.badge === 'Incontro'} class:badge-app={item.badge === 'Appuntamento'}>
+                             {item.badge}
+@@ -734,8 +818,9 @@
+       {#if activeTab === 'quotes'}
+         <div class="tab-view animate-fade-in">
+           <div class="vertical-layout-stack">
+-            <!-- Current Quote Draft Builder -->
+-            <Card title="Preventivatore Rapido" description="Seleziona i prodotti, modifica la quotazione venduta, ed inserisci la quantità per preparare un preventivo. Puoi salvarlo in bozza o convertirlo subito in un Contratto in attesa.">
++            {#if $activeRole !== 'direzione'}
++              <!-- Current Quote Draft Builder -->
++              <Card title="Preventivatore Rapido" description="Seleziona i prodotti, modifica la quotazione venduta, ed inserisci la quantità per preparare un preventivo. Puoi salvarlo in bozza o convertirlo subito in un Contratto in attesa.">
+               {#snippet icon()}
+                 <Plus size={20} class="icon-accent" />
+               {/snippet}
+@@ -789,9 +874,12 @@
+                         />
+                       </FormField>
+ 
+-                      <button type="button" onclick={handleAddQuoteItem} class="add-to-items-btn">
+-                        Inserisci Prodotto
+-                      </button>
++                      <div class="btn-align-group">
++                        <span class="invisible-label">&nbsp;</span>
++                        <button type="button" onclick={handleAddQuoteItem} class="add-to-items-btn">
++                          Inserisci Prodotto
++                        </button>
++                      </div>
+                     {/if}
+                   {/if}
+                 </div>
+@@ -844,8 +932,29 @@
+                       </table>
+                     </div>
+ 
++                    <!-- Co-Selling splits panel -->
++                    <div class="co-selling-config-panel" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-neutral-200);">
++                      <h4 style="font-size: 13.5px; font-weight: 600; color: var(--color-neutral-800); margin-bottom: 4px;">Ripartizione Co-Selling (Opzionale)</h4>
++                      <p style="font-size: 12px; color: var(--color-neutral-500); margin-bottom: 12px;">Se questa vendita è stata conclusa in collaborazione con un altro commerciale, selezionalo qui sotto per ripartire le provvigioni.</p>
++                      <div class="form-grid-columns">
++                        <FormField id="q-second-vendor" label="Secondo Consulente">
++                          <select id="q-second-vendor" bind:value={secondVendorUid}>
++                            <option value="">Nessuno (100% provvigione a te)</option>
++                            {#each usersList.filter(u => u.uid !== $auth?.uid) as u}
++                              <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
++                            {/each}
++                          </select>
++                        </FormField>
++                        {#if secondVendorUid}
++                          <FormField id="q-second-share" label="Quota Provvigionale Co-Seller (%)" helpText="Il resto della provvigione andrà al principale.">
++                            <input type="number" id="q-second-share" bind:value={secondVendorShare} min="1" max="99" step="1" required />
++                          </FormField>
++                        {/if}
++                      </div>
++                    </div>
++
+                     <!-- Builder Footer Stats -->
+-                    <div class="builder-summary-row">
++                    <div class="builder-summary-row" style="margin-top: 20px;">
+                       <div class="total-summary-box">
+                         <span class="tot-label">Importo Complessivo Preventivo:</span>
+                         <span class="tot-val">€ {quoteTotal.toFixed(2)}</span>
+@@ -864,6 +973,7 @@
+                 </div>
+               </div>
+             </Card>
++            {/if}
+ 
+             <!-- Quotes History List -->
+             <Card title="Storico Preventivi Generati" description="Consulta i preventivi calcolati in precedenza per questo cliente. Puoi convertirli direttamente in contratti se il cliente li ha accettati.">
+@@ -897,11 +1007,13 @@
+                         </ul>
+                       </div>
+ 
+-                      <div class="q-actions">
+-                        <button onclick={() => convertToContract(q.products)} class="action-btn-convert" disabled={submittingQuote}>
+-                          <CheckCircle size={12} /> Converti in Contratto Attivo
+-                        </button>
+-                      </div>
++                      {#if $activeRole !== 'direzione'}
++                        <div class="q-actions">
++                          <button onclick={() => convertToContract(q.products)} class="action-btn-convert" disabled={submittingQuote}>
++                            <CheckCircle size={12} /> Converti in Contratto Attivo
++                          </button>
++                        </div>
++                      {/if}
+                     </div>
+                   {/each}
+                 </div>
+@@ -1316,6 +1428,29 @@
+     border-left: 4px solid var(--color-primary-500);
+     padding: 14px;
+     border-radius: var(--radius-md);
++    transition: all 0.3s ease;
++  }
++
++  .timeline-card.glow {
++    animation: glow-animation 2.5s ease-out;
++  }
++
++  @keyframes glow-animation {
++    0% { 
++      box-shadow: 0 0 0 0 hsla(var(--brand-h), var(--brand-s), 50%, 0.7); 
++      background-color: hsla(var(--brand-h), var(--brand-s), 50%, 0.15); 
++      border-color: var(--color-primary-500);
++    }
++    50% { 
++      box-shadow: 0 0 15px 5px hsla(var(--brand-h), var(--brand-s), 50%, 0.4); 
++      background-color: hsla(var(--brand-h), var(--brand-s), 50%, 0.1); 
++      border-color: var(--color-primary-500);
++    }
++    100% { 
++      box-shadow: 0 0 0 0 hsla(var(--brand-h), var(--brand-s), 50%, 0); 
++      background-color: var(--color-neutral-50); 
++      border-color: var(--color-neutral-200);
++    }
+   }
+ 
+   .timeline-card.note-item {
+@@ -1368,7 +1503,7 @@
+     display: grid;
+     grid-template-columns: 2fr 1fr 120px auto;
+     gap: 16px;
+-    align-items: flex-end;
++    align-items: flex-start;
+   }
+ 
+   @media (max-width: 992px) {
+@@ -1378,17 +1513,39 @@
+     }
+   }
+ 
++  .btn-align-group {
++    display: flex;
++    flex-direction: column;
++    gap: 8px;
++  }
++
++  .invisible-label {
++    font-size: 12px;
++    font-weight: 600;
++    text-transform: uppercase;
++    letter-spacing: 0.05em;
++    height: 18px;
++    visibility: hidden;
++    display: inline-block;
++  }
++
+   .add-to-items-btn {
+     background: var(--color-primary-500);
+     color: var(--color-white);
+     border: none;
+-    padding: 12px 18px;
++    height: 46px;
++    padding: 0 24px;
+     border-radius: var(--radius-md);
+     font-family: inherit;
+-    font-size: 13px;
++    font-size: 13.5px;
+     font-weight: 600;
+     cursor: pointer;
+     transition: opacity 0.2s;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
++    box-sizing: border-box;
+   }
+ 
+   .add-to-items-btn:hover {

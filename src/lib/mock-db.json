@@ -7,7 +7,8 @@
       "roles": [
         "superadmin",
         "amministrazione",
-        "commerciale"
+        "commerciale",
+        "direzione"
       ],
       "qualification": "senior",
       "createdAt": "2026-06-25T17:54:04.237Z",
@@ -31,9 +32,85 @@
       "minPrice": 600
     }
   },
-  "clients": {},
-  "client_history": {},
-  "activities": {},
+  "clients": {
+    "client_k8n5qei4k": {
+      "nome": "Rossi SRL",
+      "cognome": "",
+      "email": "",
+      "phone": "",
+      "notes": [],
+      "communications": [
+        {
+          "id": "act_celnmlpc5",
+          "type": "Telefonata",
+          "date": "2026-06-26T06:43:10.472Z",
+          "notes": ""
+        },
+        {
+          "id": "act_0tpzyurs3",
+          "type": "Telefonata",
+          "date": "2026-06-26T06:43:21.704Z",
+          "notes": ""
+        },
+        {
+          "id": "act_61se9f8g1",
+          "type": "Telefonata",
+          "date": "2026-06-26T06:50:57.891Z",
+          "notes": ""
+        }
+      ],
+      "createdBy": "uid_8cqbdrqo4",
+      "createdAt": "2026-06-26T06:42:12.371Z"
+    }
+  },
+  "client_history": {
+    "audit_r6h6jl06k": {
+      "clientId": "client_k8n5qei4k",
+      "updatedBy": "uid_8cqbdrqo4",
+      "updatedEmail": "wavesforthemasses@gmail.com",
+      "updatedAt": "2026-06-26T06:42:12.454Z",
+      "previousState": {},
+      "currentState": {
+        "nome": "Rossi SRL",
+        "notes": [],
+        "communications": [],
+        "createdBy": "uid_8cqbdrqo4",
+        "createdAt": "2026-06-26T06:42:12.371Z"
+      }
+    }
+  },
+  "activities": {
+    "act_celnmlpc5": {
+      "clientId": "client_k8n5qei4k",
+      "clientName": "Rossi SRL",
+      "type": "Telefonata",
+      "notes": "",
+      "date": "2026-06-26T06:43:10.472Z",
+      "loggedBy": "uid_8cqbdrqo4",
+      "loggedEmail": "wavesforthemasses@gmail.com",
+      "status": "completata"
+    },
+    "act_0tpzyurs3": {
+      "clientId": "client_k8n5qei4k",
+      "clientName": "Rossi SRL",
+      "type": "Telefonata",
+      "notes": "",
+      "date": "2026-06-26T06:43:21.704Z",
+      "loggedBy": "uid_8cqbdrqo4",
+      "loggedEmail": "wavesforthemasses@gmail.com",
+      "status": "completata"
+    },
+    "act_61se9f8g1": {
+      "clientId": "client_k8n5qei4k",
+      "clientName": "Rossi SRL",
+      "type": "Telefonata",
+      "notes": "",
+      "date": "2026-06-26T06:50:57.891Z",
+      "loggedBy": "uid_8cqbdrqo4",
+      "loggedEmail": "wavesforthemasses@gmail.com",
+      "status": "completata"
+    }
+  },
   "quotes": {},
   "contracts": {},
   "payments": {},

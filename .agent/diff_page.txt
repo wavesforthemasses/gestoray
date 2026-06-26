@@ -1,0 +1,765 @@
+diff --git a/src/routes/dashboard/+page.svelte b/src/routes/dashboard/+page.svelte
+index 4f90963..1a8c154 100644
+--- a/src/routes/dashboard/+page.svelte
++++ b/src/routes/dashboard/+page.svelte
+@@ -1,14 +1,23 @@
+ <script lang="ts">
+-  import { auth, activeRole } from '$lib/auth';
+-  import { auth as clientAuth } from '$lib/firebase';
+-  import { db, collection, getDocs } from '$lib/firebase';
+-  import { goto } from '$app/navigation';
+-  import { onMount } from 'svelte';
+-  import { Card } from '$lib';
+-  import { 
+-    Zap, Shield, Briefcase, TrendingUp, Users, DollarSign, 
+-    Wallet, FileText, Phone, Calendar, CheckCircle 
+-  } from '@lucide/svelte';
++  import { auth, activeRole } from "$lib/auth";
++  import { auth as clientAuth } from "$lib/firebase";
++  import { db, collection, getDocs } from "$lib/firebase";
++  import { goto } from "$app/navigation";
++  import { onMount } from "svelte";
++  import { Card } from "$lib";
++  import {
++    Zap,
++    Shield,
++    Briefcase,
++    TrendingUp,
++    Users,
++    DollarSign,
++    Wallet,
++    FileText,
++    Phone,
++    Calendar,
++    CheckCircle,
++  } from "@lucide/svelte";
+ 
+   let clientsList = $state<any[]>([]);
+   let contractsList = $state<any[]>([]);
+@@ -18,40 +27,40 @@
+   let loadingData = $state(true);
+ 
+   // Unified chart active tab
+-  let activeChartTab = $state<'vss' | 'gi' | 'ncf'>('vss');
++  let activeChartTab = $state<"vss" | "gi" | "nncf">("vss");
+ 
+   async function fetchDashboardData() {
+     loadingData = true;
+     try {
+-      const clientsSnap = await getDocs(collection(db, 'clients'));
++      const clientsSnap = await getDocs(collection(db, "clients"));
+       const cList: any[] = [];
+       clientsSnap.forEach((doc: any) => {
+         cList.push({ id: doc.id, ...doc.data() });
+       });
+       clientsList = cList;
+ 
+-      const contractsSnap = await getDocs(collection(db, 'contracts'));
++      const contractsSnap = await getDocs(collection(db, "contracts"));
+       const coList: any[] = [];
+       contractsSnap.forEach((doc: any) => {
+         coList.push({ id: doc.id, ...doc.data() });
+       });
+       contractsList = coList;
+ 
+-      const paymentsSnap = await getDocs(collection(db, 'payments'));
++      const paymentsSnap = await getDocs(collection(db, "payments"));
+       const pList: any[] = [];
+       paymentsSnap.forEach((doc: any) => {
+         pList.push({ id: doc.id, ...doc.data() });
+       });
+       paymentsList = pList;
+ 
+-      const usersSnap = await getDocs(collection(db, 'users'));
++      const usersSnap = await getDocs(collection(db, "users"));
+       const uList: any[] = [];
+       usersSnap.forEach((doc: any) => {
+         uList.push({ uid: doc.id, ...doc.data() });
+       });
+       usersList = uList;
+ 
+-      const activitiesSnap = await getDocs(collection(db, 'activities'));
++      const activitiesSnap = await getDocs(collection(db, "activities"));
+       const actList: any[] = [];
+       activitiesSnap.forEach((doc: any) => {
+         actList.push({ id: doc.id, ...doc.data() });
+@@ -69,7 +78,7 @@
+       if (!$auth) {
+         setTimeout(() => {
+           if (!clientAuth.currentUser) {
+-            goto('/login');
++            goto("/login");
+           }
+         }, 800);
+       }
+@@ -84,45 +93,50 @@
+     const list = item.listPrice;
+     const min = item.minPrice;
+     const sold = item.priceSold;
+-    
++
+     let ratio = 1;
+     if (list > min) {
+       ratio = (sold - min) / (list - min);
+       if (ratio < 0) ratio = 0;
+       if (ratio > 1) ratio = 1;
+     }
+-    
+-    if (qualification === 'senior') {
+-      return 5.0 + (ratio * 5.0); // 5% to 10%
++
++    if (qualification === "senior") {
++      return 5.0 + ratio * 5.0; // 5% to 10%
+     } else {
+-      return 2.5 + (ratio * 5.0); // 2.5% to 7.5%
++      return 2.5 + ratio * 5.0; // 2.5% to 7.5%
+     }
+   }
+ 
+   // Calculate stats for commercials
+   let commercialStats = $derived.by(() => {
+-    const myContracts = contractsList.filter(c => c.vendorUid === $auth?.uid);
+-    const approvedContracts = myContracts.filter(c => c.status === 'approved');
+-    const pendingContracts = myContracts.filter(c => c.status === 'pending');
++    const myContracts = contractsList.filter((c) => c.vendorUid === $auth?.uid);
++    const approvedContracts = myContracts.filter(
++      (c) => c.status === "approved",
++    );
++    const pendingContracts = myContracts.filter((c) => c.status === "pending");
+ 
+     const totalSold = myContracts.reduce((sum, c) => sum + c.totalPrice, 0);
+-    const approvedSold = approvedContracts.reduce((sum, c) => sum + c.totalPrice, 0);
++    const approvedSold = approvedContracts.reduce(
++      (sum, c) => sum + c.totalPrice,
++      0,
++    );
+ 
+     // Calculate commissions
+-    const vendor = usersList.find(u => u.uid === $auth?.uid);
+-    const qualification = vendor?.qualification || 'junior';
++    const vendor = usersList.find((u) => u.uid === $auth?.uid);
++    const qualification = vendor?.qualification || "junior";
+ 
+     let maturate = 0; // approved
+     let sospese = 0; // pending
+ 
+-    myContracts.forEach(c => {
++    myContracts.forEach((c) => {
+       let comm = 0;
+       c.products.forEach((p: any) => {
+         const pct = calculateCommissionPct(p, qualification);
+-        comm += (p.priceSold * p.quantity) * (pct / 100);
++        comm += p.priceSold * p.quantity * (pct / 100);
+       });
+ 
+-      if (c.status === 'approved') {
++      if (c.status === "approved") {
+         maturate += comm;
+       } else {
+         sospese += comm;
+@@ -134,14 +148,19 @@
+       totalSold,
+       approvedSold,
+       maturate,
+-      sospese
++      sospese,
+     };
+   });
+ 
+   // Global stats for management/admin
+   let globalStats = $derived.by(() => {
+-    const approvedContracts = contractsList.filter(c => c.status === 'approved');
+-    const totalVenduto = approvedContracts.reduce((sum, c) => sum + c.totalPrice, 0);
++    const approvedContracts = contractsList.filter(
++      (c) => c.status === "approved",
++    );
++    const totalVenduto = approvedContracts.reduce(
++      (sum, c) => sum + c.totalPrice,
++      0,
++    );
+     const totalIncassato = paymentsList.reduce((sum, p) => sum + p.amount, 0);
+     const totalClienti = clientsList.length;
+ 
+@@ -150,41 +169,46 @@
+       totalIncassato,
+       totalClienti,
+       totalContratti: contractsList.length,
+-      pendingContratti: contractsList.filter(c => c.status === 'pending').length
++      pendingContratti: contractsList.filter((c) => c.status === "pending")
++        .length,
+     };
+   });
+ 
+   // Activity KPIs derived
+   let activityKPIs = $derived.by(() => {
+-    const isComm = $activeRole === 'commerciale';
+-    const list = isComm 
+-      ? activitiesList.filter(a => a.loggedBy === $auth?.uid)
++    const isComm = $activeRole === "commerciale";
++    const list = isComm
++      ? activitiesList.filter((a) => a.loggedBy === $auth?.uid)
+       : activitiesList;
+ 
+-    const calls = list.filter(a => a.type === 'Telefonata').length;
+-    const meetings = list.filter(a => a.type === 'Incontro').length;
+-    const appointments = list.filter(a => a.type === 'Appuntamento').length;
++    const calls = list.filter((a) => a.type === "Telefonata").length;
++    const meetings = list.filter((a) => a.type === "Incontro").length;
++    const appointments = list.filter((a) => a.type === "Appuntamento").length;
+ 
+     return { calls, meetings, appointments };
+   });
+ 
+   // Mock month distributions to feed graphics
+-  const months = ['Mar', 'Apr', 'Mag', 'Giu'];
+-  
++  const months = ["Mar", "Apr", "Mag", "Giu"];
++
+   let graphData = $derived.by(() => {
+-    const isComm = $activeRole === 'commerciale';
+-    
++    const isComm = $activeRole === "commerciale";
++
+     // Filter lists
+-    const cList = isComm ? clientsList.filter(c => c.createdBy === $auth?.uid) : clientsList;
+-    const coList = isComm ? contractsList.filter(c => c.vendorUid === $auth?.uid) : contractsList;
+-    const pList = isComm 
+-      ? paymentsList.filter(p => coList.some(c => c.id === p.contractId))
++    const cList = isComm
++      ? clientsList.filter((c) => c.createdBy === $auth?.uid)
++      : clientsList;
++    const coList = isComm
++      ? contractsList.filter((c) => c.vendorUid === $auth?.uid)
++      : contractsList;
++    const pList = isComm
++      ? paymentsList.filter((p) => coList.some((c) => c.id === p.contractId))
+       : paymentsList;
+ 
+-    // 1. New Customers Trend (NCF)
+-    const ncfBase = isComm ? [1, 2, 2, 0] : [2, 4, 3, 0];
+-    ncfBase[3] = cList.length; // Live today's count
+-    const maxNcf = Math.max(...ncfBase, 5);
++    // 1. New Customers Trend (NNCF)
++    const nncfBase = isComm ? [1, 2, 2, 0] : [2, 4, 3, 0];
++    nncfBase[3] = cList.length; // Live today's count
++    const maxNncf = Math.max(...nncfBase, 5);
+ 
+     // 2. Sales Trend (VSS)
+     const vssBase = isComm ? [1000, 1800, 900, 0] : [2400, 3800, 1900, 0];
+@@ -197,12 +221,12 @@
+     const maxGi = Math.max(...giBase, 2000);
+ 
+     return {
+-      ncf: ncfBase,
+-      maxNcf,
++      nncf: nncfBase,
++      maxNncf,
+       vss: vssBase,
+       maxVss,
+       gi: giBase,
+-      maxGi
++      maxGi,
+     };
+   });
+ 
+@@ -210,40 +234,40 @@
+   let unifiedChartDetails = $derived.by(() => {
+     let data: number[] = [];
+     let max = 1000;
+-    let label = '';
+-    let stopColor = 'var(--color-primary-500)';
+-    let areaColor = 'rgba(79, 70, 229, 0.2)';
++    let label = "";
++    let stopColor = "var(--color-primary-500)";
++    let areaColor = "rgba(79, 70, 229, 0.2)";
+     let yLabels: string[] = [];
+-    let dotClass = 'primary';
+-    let lineClass = 'primary-line';
++    let dotClass = "primary";
++    let lineClass = "primary-line";
+ 
+-    if (activeChartTab === 'vss') {
++    if (activeChartTab === "vss") {
+       data = graphData.vss;
+       max = Math.max(...data, 1000);
+-      label = 'Valore Venduto (€)';
+-      stopColor = 'var(--color-success)';
+-      areaColor = 'rgba(16, 185, 129, 0.25)';
+-      dotClass = 'success';
+-      lineClass = 'success-line';
+-      yLabels = [`€ ${max.toFixed(0)}`, `€ ${(max / 2).toFixed(0)}`, '€ 0'];
+-    } else if (activeChartTab === 'gi') {
++      label = "Valore Venduto (€)";
++      stopColor = "var(--color-success)";
++      areaColor = "rgba(16, 185, 129, 0.25)";
++      dotClass = "success";
++      lineClass = "success-line";
++      yLabels = [`€ ${max.toFixed(0)}`, `€ ${(max / 2).toFixed(0)}`, "€ 0"];
++    } else if (activeChartTab === "gi") {
+       data = graphData.gi;
+       max = Math.max(...data, 1000);
+-      label = 'Valore Incassato (€)';
+-      stopColor = 'var(--color-warning)';
+-      areaColor = 'rgba(245, 158, 11, 0.2)';
+-      dotClass = 'warning';
+-      lineClass = 'warning-line';
+-      yLabels = [`€ ${max.toFixed(0)}`, `€ ${(max / 2).toFixed(0)}`, '€ 0'];
++      label = "Valore Incassato (€)";
++      stopColor = "var(--color-warning)";
++      areaColor = "rgba(245, 158, 11, 0.2)";
++      dotClass = "warning";
++      lineClass = "warning-line";
++      yLabels = [`€ ${max.toFixed(0)}`, `€ ${(max / 2).toFixed(0)}`, "€ 0"];
+     } else {
+-      data = graphData.ncf;
++      data = graphData.nncf;
+       max = Math.max(...data, 5);
+-      label = 'Nuovi Clienti';
+-      stopColor = 'var(--color-primary-500)';
+-      areaColor = 'rgba(79, 70, 229, 0.25)';
+-      dotClass = 'primary';
+-      lineClass = 'primary-line';
+-      yLabels = [`${max}`, `${(max / 2).toFixed(0)}`, '0'];
++      label = "Nuovi Clienti";
++      stopColor = "var(--color-primary-500)";
++      areaColor = "rgba(79, 70, 229, 0.25)";
++      dotClass = "primary";
++      lineClass = "primary-line";
++      yLabels = [`${max}`, `${(max / 2).toFixed(0)}`, "0"];
+     }
+ 
+     // Points calculation: y range 30 (for max) to 140 (for 0)
+@@ -266,7 +290,7 @@
+       areaColor,
+       yLabels,
+       dotClass,
+-      lineClass
++      lineClass,
+     };
+   });
+ </script>
+@@ -293,14 +317,16 @@
+       </div>
+     {:else}
+       <!-- 1. Financial KPIs Block -->
+-      {#if $activeRole === 'commerciale'}
++      {#if $activeRole === "commerciale"}
+         <section class="kpi-deck">
+           <div class="kpi-tile border-primary">
+             <div class="kpi-icon primary"><Briefcase size={20} /></div>
+             <div class="kpi-text">
+               <span class="kpi-lbl">Contratti Chiusi</span>
+               <span class="kpi-val">{commercialStats.count}</span>
+-              <span class="kpi-sub">Totale ordinato: € {commercialStats.totalSold.toFixed(2)}</span>
++              <span class="kpi-sub"
++                >Totale ordinato: € {commercialStats.totalSold.toFixed(2)}</span
++              >
+             </div>
+           </div>
+ 
+@@ -308,8 +334,14 @@
+             <div class="kpi-icon success"><DollarSign size={20} /></div>
+             <div class="kpi-text">
+               <span class="kpi-lbl">Provvigioni Maturate</span>
+-              <span class="kpi-val text-success">€ {commercialStats.maturate.toFixed(2)}</span>
+-              <span class="kpi-sub">Fatturato incassato: € {commercialStats.approvedSold.toFixed(2)}</span>
++              <span class="kpi-val text-success"
++                >€ {commercialStats.maturate.toFixed(2)}</span
++              >
++              <span class="kpi-sub"
++                >Fatturato incassato: € {commercialStats.approvedSold.toFixed(
++                  2,
++                )}</span
++              >
+             </div>
+           </div>
+ 
+@@ -317,8 +349,12 @@
+             <div class="kpi-icon warning"><Wallet size={20} /></div>
+             <div class="kpi-text">
+               <span class="kpi-lbl">Provvigioni In Sospeso</span>
+-              <span class="kpi-val text-warning">€ {commercialStats.sospese.toFixed(2)}</span>
+-              <span class="kpi-sub">In attesa di approvazione amministrativa</span>
++              <span class="kpi-val text-warning"
++                >€ {commercialStats.sospese.toFixed(2)}</span
++              >
++              <span class="kpi-sub"
++                >In attesa di approvazione amministrativa</span
++              >
+             </div>
+           </div>
+         </section>
+@@ -327,7 +363,7 @@
+           <div class="kpi-tile border-primary">
+             <div class="kpi-icon primary"><Users size={20} /></div>
+             <div class="kpi-text">
+-              <span class="kpi-lbl">Clienti Anagrafati (NCF)</span>
++              <span class="kpi-lbl">Clienti Anagrafati (NNCF)</span>
+               <span class="kpi-val">{globalStats.totalClienti}</span>
+               <span class="kpi-sub">Totalità lead database</span>
+             </div>
+@@ -337,8 +373,13 @@
+             <div class="kpi-icon success"><DollarSign size={20} /></div>
+             <div class="kpi-text">
+               <span class="kpi-lbl">Valore Ordinato (VSS)</span>
+-              <span class="kpi-val text-success">€ {globalStats.totalVenduto.toFixed(2)}</span>
+-              <span class="kpi-sub">Contratti approvati: {globalStats.totalContratti - globalStats.pendingContratti}</span>
++              <span class="kpi-val text-success"
++                >€ {globalStats.totalVenduto.toFixed(2)}</span
++              >
++              <span class="kpi-sub"
++                >Contratti approvati: {globalStats.totalContratti -
++                  globalStats.pendingContratti}</span
++              >
+             </div>
+           </div>
+ 
+@@ -346,8 +387,12 @@
+             <div class="kpi-icon warning"><Wallet size={20} /></div>
+             <div class="kpi-text">
+               <span class="kpi-lbl">Cassa Incassata (GI)</span>
+-              <span class="kpi-val text-warning">€ {globalStats.totalIncassato.toFixed(2)}</span>
+-              <span class="kpi-sub">In attesa di incasso: {globalStats.pendingContratti} contratti</span>
++              <span class="kpi-val text-warning"
++                >€ {globalStats.totalIncassato.toFixed(2)}</span
++              >
++              <span class="kpi-sub"
++                >In attesa di incasso: {globalStats.pendingContratti} contratti</span
++              >
+             </div>
+           </div>
+         </section>
+@@ -356,7 +401,10 @@
+       <!-- 2. Commercial Activities KPIs Section (Widescreen Cards) -->
+       <section class="activity-section-header">
+         <h4>Attività Commerciali Registrate</h4>
+-        <span class="sub-desc">Contatori delle interazioni e degli appuntamenti effettuati con i lead.</span>
++        <span class="sub-desc"
++          >Contatori delle interazioni e degli appuntamenti effettuati con i
++          lead.</span
++        >
+       </section>
+ 
+       <section class="kpi-deck activity-deck">
+@@ -390,8 +438,8 @@
+ 
+       <!-- 3. Unified Interactive Trend Graph -->
+       <div class="unified-chart-wrapper">
+-        <Card 
+-          title="Trend e Andamento Storico" 
++        <Card
++          title="Trend e Andamento Storico"
+           description="Visualizza il trend mensile delle metriche di performance aziendali. Alterna tra le viste usando i tab."
+         >
+           {#snippet icon()}
+@@ -400,26 +448,26 @@
+ 
+           {#snippet headerSnippet()}
+             <div class="chart-tab-switcher">
+-              <button 
+-                class="chart-tab-btn" 
+-                class:active={activeChartTab === 'vss'} 
+-                onclick={() => activeChartTab = 'vss'}
++              <button
++                class="chart-tab-btn"
++                class:active={activeChartTab === "vss"}
++                onclick={() => (activeChartTab = "vss")}
+               >
+                 Valore Venduto (VSS)
+               </button>
+-              <button 
+-                class="chart-tab-btn" 
+-                class:active={activeChartTab === 'gi'} 
+-                onclick={() => activeChartTab = 'gi'}
++              <button
++                class="chart-tab-btn"
++                class:active={activeChartTab === "gi"}
++                onclick={() => (activeChartTab = "gi")}
+               >
+                 Cassa Incassata (GI)
+               </button>
+-              <button 
+-                class="chart-tab-btn" 
+-                class:active={activeChartTab === 'ncf'} 
+-                onclick={() => activeChartTab = 'ncf'}
++              <button
++                class="chart-tab-btn"
++                class:active={activeChartTab === "nncf"}
++                onclick={() => (activeChartTab = "nncf")}
+               >
+-                Nuovi Clienti (NCF)
++                Nuovi Clienti (NNCF)
+               </button>
+             </div>
+           {/snippet}
+@@ -427,38 +475,85 @@
+           <div class="chart-container">
+             <svg class="svg-chart" viewBox="0 0 500 200">
+               <defs>
+-                <linearGradient id="gradient-unified" x1="0" y1="0" x2="0" y2="1">
+-                  <stop offset="0%" stop-color={unifiedChartDetails.stopColor} stop-opacity="0.35"/>
+-                  <stop offset="100%" stop-color={unifiedChartDetails.stopColor} stop-opacity="0.0"/>
++                <linearGradient
++                  id="gradient-unified"
++                  x1="0"
++                  y1="0"
++                  x2="0"
++                  y2="1"
++                >
++                  <stop
++                    offset="0%"
++                    stop-color={unifiedChartDetails.stopColor}
++                    stop-opacity="0.35"
++                  />
++                  <stop
++                    offset="100%"
++                    stop-color={unifiedChartDetails.stopColor}
++                    stop-opacity="0.0"
++                  />
+                 </linearGradient>
+               </defs>
+ 
+               <!-- Grid Lines -->
+               <line x1="50" y1="30" x2="450" y2="30" class="chart-grid-line" />
+               <line x1="50" y1="85" x2="450" y2="85" class="chart-grid-line" />
+-              <line x1="50" y1="140" x2="450" y2="140" class="chart-grid-line" />
++              <line
++                x1="50"
++                y1="140"
++                x2="450"
++                y2="140"
++                class="chart-grid-line"
++              />
+ 
+               <!-- X Axis Labels -->
+               {#each months as month, idx}
+-                <text x={80 + idx * 110} y="180" class="chart-axis-lbl" text-anchor="middle">{month}</text>
++                <text
++                  x={80 + idx * 110}
++                  y="180"
++                  class="chart-axis-lbl"
++                  text-anchor="middle">{month}</text
++                >
+               {/each}
+ 
+               <!-- Y Axis Labels -->
+-              <text x="15" y="35" class="chart-axis-lbl">{unifiedChartDetails.yLabels[0]}</text>
+-              <text x="15" y="90" class="chart-axis-lbl">{unifiedChartDetails.yLabels[1]}</text>
+-              <text x="15" y="145" class="chart-axis-lbl">{unifiedChartDetails.yLabels[2]}</text>
++              <text x="15" y="35" class="chart-axis-lbl"
++                >{unifiedChartDetails.yLabels[0]}</text
++              >
++              <text x="15" y="90" class="chart-axis-lbl"
++                >{unifiedChartDetails.yLabels[1]}</text
++              >
++              <text x="15" y="145" class="chart-axis-lbl"
++                >{unifiedChartDetails.yLabels[2]}</text
++              >
+ 
+               <!-- Area Fill -->
+-              <path d={unifiedChartDetails.areaD} fill="url(#gradient-unified)" />
++              <path
++                d={unifiedChartDetails.areaD}
++                fill="url(#gradient-unified)"
++              />
+ 
+               <!-- Line Chart Path -->
+-              <path d={unifiedChartDetails.pathD} class="chart-line-path {unifiedChartDetails.lineClass}" />
++              <path
++                d={unifiedChartDetails.pathD}
++                class="chart-line-path {unifiedChartDetails.lineClass}"
++              />
+ 
+               <!-- Dots with values on hover -->
+               {#each unifiedChartDetails.points as pt}
+-                <circle cx={pt.x} cy={pt.y} r="5" class="chart-dot {unifiedChartDetails.dotClass}" />
+-                <text x={pt.x} y={pt.y - 10} text-anchor="middle" class="chart-point-val">
+-                  {activeChartTab === 'ncf' ? pt.val : `€${pt.val.toFixed(0)}`}
++                <circle
++                  cx={pt.x}
++                  cy={pt.y}
++                  r="5"
++                  class="chart-dot {unifiedChartDetails.dotClass}"
++                />
++                <text
++                  x={pt.x}
++                  y={pt.y - 10}
++                  text-anchor="middle"
++                  class="chart-point-val"
++                >
++                  {activeChartTab === "nncf" ? pt.val : `€${pt.val.toFixed(0)}`}
+                 </text>
+               {/each}
+             </svg>
+@@ -466,13 +561,15 @@
+ 
+           <div class="legend-row">
+             <div class="legend-item">
+-              <span class="legend-color" style="background-color: {unifiedChartDetails.stopColor}"></span>
++              <span
++                class="legend-color"
++                style="background-color: {unifiedChartDetails.stopColor}"
++              ></span>
+               <span>{unifiedChartDetails.label}</span>
+             </div>
+           </div>
+         </Card>
+       </div>
+-
+     {/if}
+   </div>
+ {/if}
+@@ -486,7 +583,11 @@
+   }
+ 
+   :global(.welcome-banner) {
+-    background: linear-gradient(135deg, var(--color-primary-50), var(--color-neutral-100)) !important;
++    background: linear-gradient(
++      135deg,
++      var(--color-primary-50),
++      var(--color-neutral-100)
++    ) !important;
+   }
+ 
+   .kpi-deck {
+@@ -506,12 +607,24 @@
+     box-shadow: var(--shadow-sm);
+   }
+ 
+-  .kpi-tile.border-primary { border-left: 5px solid var(--color-primary-500); }
+-  .kpi-tile.border-success { border-left: 5px solid var(--color-success); }
+-  .kpi-tile.border-warning { border-left: 5px solid var(--color-warning); }
+-  .kpi-tile.border-info { border-left: 5px solid #0284c7; }
+-  .kpi-tile.border-teal { border-left: 5px solid #0d9488; }
+-  .kpi-tile.border-indigo { border-left: 5px solid #4f46e5; }
++  .kpi-tile.border-primary {
++    border-left: 5px solid var(--color-primary-500);
++  }
++  .kpi-tile.border-success {
++    border-left: 5px solid var(--color-success);
++  }
++  .kpi-tile.border-warning {
++    border-left: 5px solid var(--color-warning);
++  }
++  .kpi-tile.border-info {
++    border-left: 5px solid #0284c7;
++  }
++  .kpi-tile.border-teal {
++    border-left: 5px solid #0d9488;
++  }
++  .kpi-tile.border-indigo {
++    border-left: 5px solid #4f46e5;
++  }
+ 
+   .kpi-icon {
+     width: 44px;
+@@ -523,12 +636,30 @@
+     flex-shrink: 0;
+   }
+ 
+-  .kpi-icon.primary { background: var(--color-primary-50); color: var(--color-primary-600); }
+-  .kpi-icon.success { background: var(--color-success-light); color: var(--color-success-text); }
+-  .kpi-icon.warning { background: var(--color-warning-light); color: var(--color-warning-text); }
+-  .kpi-icon.info { background: #e0f2fe; color: #0369a1; }
+-  .kpi-icon.teal { background: #ccfbf1; color: #0f766e; }
+-  .kpi-icon.indigo { background: #e0e7ff; color: #4338ca; }
++  .kpi-icon.primary {
++    background: var(--color-primary-50);
++    color: var(--color-primary-600);
++  }
++  .kpi-icon.success {
++    background: var(--color-success-light);
++    color: var(--color-success-text);
++  }
++  .kpi-icon.warning {
++    background: var(--color-warning-light);
++    color: var(--color-warning-text);
++  }
++  .kpi-icon.info {
++    background: #e0f2fe;
++    color: #0369a1;
++  }
++  .kpi-icon.teal {
++    background: #ccfbf1;
++    color: #0f766e;
++  }
++  .kpi-icon.indigo {
++    background: #e0e7ff;
++    color: #4338ca;
++  }
+ 
+   .kpi-text {
+     display: flex;
+@@ -621,7 +752,7 @@
+   .chart-grid-line {
+     stroke: var(--color-neutral-200);
+     stroke-width: 1;
+-    stroke-dasharray: 4,4;
++    stroke-dasharray: 4, 4;
+   }
+ 
+   .chart-axis-lbl {
+@@ -641,18 +772,30 @@
+     stroke-linejoin: round;
+   }
+ 
+-  .chart-line-path.primary-line { stroke: var(--color-primary-500); }
+-  .chart-line-path.success-line { stroke: var(--color-success); }
+-  .chart-line-path.warning-line { stroke: var(--color-warning); }
++  .chart-line-path.primary-line {
++    stroke: var(--color-primary-500);
++  }
++  .chart-line-path.success-line {
++    stroke: var(--color-success);
++  }
++  .chart-line-path.warning-line {
++    stroke: var(--color-warning);
++  }
+ 
+   .chart-dot {
+     stroke: var(--color-white);
+     stroke-width: 2;
+   }
+ 
+-  .chart-dot.primary { fill: var(--color-primary-500); }
+-  .chart-dot.success { fill: var(--color-success); }
+-  .chart-dot.warning { fill: var(--color-warning); }
++  .chart-dot.primary {
++    fill: var(--color-primary-500);
++  }
++  .chart-dot.success {
++    fill: var(--color-success);
++  }
++  .chart-dot.warning {
++    fill: var(--color-warning);
++  }
+ 
+   .chart-point-val {
+     font-size: 9.5px;
+@@ -704,7 +847,9 @@
+   }
+ 
+   @keyframes spin {
+-    to { transform: rotate(360deg); }
++    to {
++      transform: rotate(360deg);
++    }
+   }
+ 
+   .animate-fade-in {
+@@ -712,7 +857,13 @@
+   }
+ 
+   @keyframes fadeIn {
+-    from { opacity: 0; transform: translateY(6px); }
+-    to { opacity: 1; transform: translateY(0); }
++    from {
++      opacity: 0;
++      transform: translateY(6px);
++    }
++    to {
++      opacity: 1;
++      transform: translateY(0);
++    }
+   }
+ </style>
