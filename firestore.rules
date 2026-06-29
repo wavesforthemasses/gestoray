@@ -15,17 +15,21 @@ service cloud.firestore {
     function isAdmin() {
       return hasRole('superadmin') || hasRole('amministrazione');
     }
+
+    function isDirezione() {
+      return hasRole('direzione');
+    }
     
     // Blocca scrittura frontend su derived
     function notWritingDerived() {
-      return (resource == null) ||
+      return (request.resource == null) ||
              !('derived' in request.resource.data) ||
-             request.resource.data.derived == resource.data.derived;
+             (resource != null && request.resource.data.derived == resource.data.derived);
     }
     
     // USERS
     match /users/{uid} {
-      allow read: if isAuth();
+      allow read: if isAuth(); // Permesso a tutti per vedere le anagrafiche venditori nei dropdown
       allow create: if isAdmin();
       allow update: if isAuth() && (request.auth.uid == uid || isAdmin());
       allow delete: if hasRole('superadmin');
@@ -33,20 +37,20 @@ service cloud.firestore {
     
     // CLIENTS
     match /clients/{clientId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.createdBy == request.auth.uid);
       allow create: if isAuth() && notWritingDerived();
-      allow update: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.createdBy == request.auth.uid);
       allow delete: if hasRole('superadmin');
       
       match /activities/{actId} {
-        allow read: if isAuth();
+        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
         allow create: if isAuth();
         allow update: if isAdmin();
         allow delete: if hasRole('superadmin') || isAdmin();
       }
       
       match /history/{histId} {
-        allow read: if isAuth();
+        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
         allow create: if isAuth();
         allow update: if false;  // audit trail immutabile per update
         allow delete: if hasRole('superadmin'); // permesso superadmin per cancellazione cliente
@@ -55,13 +59,13 @@ service cloud.firestore {
     
     // CONTRACTS
     match /contracts/{contractId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
       allow create: if isAuth() && notWritingDerived();
-      allow update: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
       allow delete: if hasRole('superadmin');
       
       match /installments/{instId} {
-        allow read: if isAuth();
+        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.vendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.secondVendorUid == request.auth.uid);
         allow create, update: if isAuth() && isAdmin();
         allow delete: if hasRole('superadmin');
       }
@@ -69,7 +73,9 @@ service cloud.firestore {
     
     // PAYMENTS
     match /payments/{payId} {
-      allow read: if isAuth();
+      // Allow read to all for now since frontend fetches all payments to filter in memory.
+      // A more robust solution requires changing the frontend query schema.
+      allow read: if isAuth(); 
       allow create: if isAuth() && isAdmin();
       allow update: if false;  // immutabile dopo creazione (solo derived via CF)
       allow delete: if hasRole('superadmin');
@@ -89,7 +95,7 @@ service cloud.firestore {
     
     // COMMISSIONS CLOSINGS
     match /commissions_closings/{periodId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (isAdmin() || isDirezione());
       allow write: if isAdmin();
     }
     

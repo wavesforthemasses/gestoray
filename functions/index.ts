@@ -9,6 +9,7 @@ if (admin.apps.length === 0) {
 export { sendLoginPin, verifyLoginPin } from './src/auth';
 export { initSuperAdmin, updateUser } from './src/admin';
 export { updateProfile, updateProfileEmail } from './src/profile';
+export { sendSystemEmail } from './src/email';
 
 // Export new Firestore triggers
 export { onContractCreated } from './src/triggers/onContractCreated';

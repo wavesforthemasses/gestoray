@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onContractCreated = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onContractCreated = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
 // Initialize the Firebase Admin SDK once at startup
 if (admin.apps.length === 0) {
@@ -16,6 +16,8 @@ Object.defineProperty(exports, "updateUser", { enumerable: true, get: function (
 var profile_1 = require("./src/profile");
 Object.defineProperty(exports, "updateProfile", { enumerable: true, get: function () { return profile_1.updateProfile; } });
 Object.defineProperty(exports, "updateProfileEmail", { enumerable: true, get: function () { return profile_1.updateProfileEmail; } });
+var email_1 = require("./src/email");
+Object.defineProperty(exports, "sendSystemEmail", { enumerable: true, get: function () { return email_1.sendSystemEmail; } });
 // Export new Firestore triggers
 var onContractCreated_1 = require("./src/triggers/onContractCreated");
 Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: function () { return onContractCreated_1.onContractCreated; } });
