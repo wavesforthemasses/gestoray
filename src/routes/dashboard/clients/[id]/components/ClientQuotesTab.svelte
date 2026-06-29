@@ -285,18 +285,15 @@
           <table class="widescreen-table">
             <thead>
               <tr>
-                <th>Codice Contratto</th>
                 <th>Data Creazione</th>
                 <th>Importo Totale</th>
                 <th>Stato Approvazione</th>
                 <th>Prezzo Sotto Minimo</th>
-                <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
               {#each contractsList as c}
-                <tr>
-                  <td><code>{c.id}</code></td>
+                <tr class="clickable-row" onclick={() => goto(`/dashboard/contracts/${c.id}`)}>
                   <td>{c.edits?.createdAt ? new Date(c.edits.createdAt).toLocaleDateString('it-IT') : 'N/D'}</td>
                   <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
                   <td>
@@ -310,11 +307,6 @@
                     {:else}
                       <span class="regular-price-badge">Prezzi Standard</span>
                     {/if}
-                  </td>
-                  <td>
-                    <Button onclick={() => goto(`/dashboard/contracts/${c.id}`)} variant="secondary" size="sm">
-                      Dettagli Contratto
-                    </Button>
                   </td>
                 </tr>
               {/each}

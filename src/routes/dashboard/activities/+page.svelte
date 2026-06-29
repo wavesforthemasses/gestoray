@@ -49,7 +49,6 @@
       list.push({ key: 'loggedEmail', header: 'Eseguito Da' });
     }
 
-    list.push({ key: 'actions', header: 'Azioni' });
     return list;
   });
 
@@ -289,10 +288,6 @@
           <p class="notes-txt" title={row.notes}>{row.notes || 'Nessuna nota registrata.'}</p>
         {:else if col.key === 'loggedEmail'}
           <span class="logged-txt">{row.loggedEmail}</span>
-        {:else if col.key === 'actions'}
-          <button onclick={() => goto(`/dashboard/clients/${row.clientId}?tab=activities`)} class="view-client-btn" title="Vai alla scheda cliente">
-            <Eye size={14} /> Scheda
-          </button>
         {/if}
       {/snippet}
 

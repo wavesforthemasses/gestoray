@@ -275,6 +275,14 @@ a:hover {
   vertical-align: middle;
 }
 
+.widescreen-table tr.clickable-row {
+  cursor: pointer;
+}
+
 .widescreen-table tr:hover td {
   background: var(--color-neutral-50);
+}
+
+.widescreen-table tr.clickable-row:hover td {
+  background: var(--color-neutral-100);
 }

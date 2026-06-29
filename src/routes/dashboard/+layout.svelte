@@ -114,6 +114,13 @@
         </a>
       {/if}
 
+      {#if $activeRole === 'commerciale'}
+        <a href="/dashboard/my-commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/my-commissions')} title="Le Mie Provvigioni">
+          <span class="nav-icon"><Award size={18} /></span>
+          <span class="nav-label">Le Mie Provvigioni</span>
+        </a>
+      {/if}
+
       {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
         <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
           <span class="nav-icon"><Wallet size={18} /></span>
@@ -154,47 +161,9 @@
   </aside>
 
   <div class="main-container">
-    <header class="navbar">
-      <div class="navbar-left">
-        <button onclick={() => isMobileOpen = !isMobileOpen} class="mobile-menu-btn" aria-label="Apri menu">
-          <Menu size={20} />
-        </button>
-        <div class="navbar-title">
-          {#if $page.url.pathname === '/dashboard'}
-            <h3>Panoramica</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/todo')}
-            <h3>Scadenziario To-Do</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/users')}
-            <h3>Elenco Utenti</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/profile')}
-            <h3>Mio Profilo</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/clients/')}
-            <h3>Dettaglio Cliente</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/clients')}
-            <h3>Gestione Clienti</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/activities')}
-            <h3>Gestione Attività</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/contracts/')}
-            <h3>Dettaglio Contratto</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/contracts')}
-            <h3>Gestione Contratti</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/payments')}
-            <h3>Gestione Incassi</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/commissions')}
-            <h3>Gestione Provvigioni</h3>
-          {:else if $page.url.pathname.startsWith('/dashboard/products')}
-            <h3>Catalogo Prodotti</h3>
-          {/if}
-        </div>
-      </div>
-      <div class="navbar-actions">
-        <div class="navbar-status">
-          <span class="status-indicator online"></span>
-          <span class="status-text">Simulazione Locale Attiva</span>
-        </div>
-        <img src="/logo.png" alt="Gestoray Logo" class="navbar-logo-mobile" />
-      </div>
-    </header>
+    <button onclick={() => isMobileOpen = true} class="floating-mobile-btn" aria-label="Apri menu">
+      <Menu size={24} />
+    </button>
 
     <main class="content-viewport">
       {@render children()}
@@ -227,11 +196,11 @@
     left: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-right: 1px solid var(--color-glass-border);
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.02);
+    background-color: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     padding: 24px;
@@ -258,8 +227,9 @@
   }
 
   .toggle-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-300);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     color: var(--color-neutral-600);
     width: 28px;
     height: 28px;
@@ -272,8 +242,9 @@
   }
 
   .toggle-btn:hover {
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-800);
+    background: var(--color-white);
+    color: var(--color-primary-600);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
 
   .collapsed-toggle {
@@ -284,11 +255,13 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    background: var(--color-neutral-50);
-    border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
     padding: 12px;
     margin-bottom: 25px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03), inset 0 2px 4px rgba(255, 255, 255, 0.5);
     transition: opacity var(--transition-speed);
   }
 
@@ -303,17 +276,17 @@
   }
 
   .user-avatar {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
     color: white;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
+    font-size: 15px;
+    box-shadow: 0 4px 12px rgba(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
     flex-shrink: 0;
   }
 
@@ -322,21 +295,22 @@
     flex-direction: column;
     gap: 2px;
     overflow: hidden;
-    width: calc(100% - 48px);
+    width: calc(100% - 52px);
   }
 
   .user-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-neutral-800);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-neutral-900);
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    letter-spacing: -0.01em;
   }
 
   .role-badge {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-primary-600);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -359,14 +333,14 @@
   }
 
   .role-select {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-300);
-    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
     color: var(--color-neutral-800);
     font-family: inherit;
     font-size: 11px;
     font-weight: 600;
-    padding: 4px 8px;
+    padding: 6px 10px;
     cursor: pointer;
     width: 100%;
     outline: none;
@@ -378,22 +352,23 @@
     background-size: 12px;
     padding-right: 24px;
     text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
   }
 
   .role-select:hover {
-    border-color: var(--color-primary-400);
-    background-color: var(--color-neutral-50);
+    border-color: var(--color-primary-300);
+    background-color: var(--color-white);
   }
 
   .role-select:focus {
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 2px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
+    box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   .nav-menu {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     flex: 1;
   }
 
@@ -402,27 +377,27 @@
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     color: var(--color-neutral-500);
     text-decoration: none;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     border: 1px solid transparent;
-    transition: all var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
   }
 
   .nav-item:hover {
-    background: var(--color-neutral-50);
-    color: var(--color-neutral-800);
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--color-neutral-900);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
   }
 
   .nav-item.active {
-    background: var(--color-neutral-50);
-    border-color: var(--color-neutral-200);
+    background: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.9);
     color: var(--color-primary-600);
-    font-weight: 600;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
   }
 
   .nav-icon {
@@ -512,91 +487,8 @@
     min-width: 0;
   }
 
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 40px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--color-neutral-200);
-    z-index: 10;
-  }
-
-  .navbar-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .mobile-menu-btn {
+  .floating-mobile-btn {
     display: none;
-    background: none;
-    border: none;
-    color: var(--color-neutral-600);
-    cursor: pointer;
-    padding: 4px;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .navbar-title h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-neutral-800);
-  }
-
-  .navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .navbar-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .navbar-logo-mobile {
-    display: none;
-    height: 28px;
-    width: auto;
-    object-fit: contain;
-  }
-
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .status-indicator.online {
-    background-color: var(--color-success);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-    animation: pulse-indicator 2s infinite;
-  }
-
-  @keyframes pulse-indicator {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
-    70% {
-      transform: scale(1);
-      box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-    }
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-    }
-  }
-
-  .status-text {
-    font-size: 12px;
-    color: var(--color-neutral-500);
   }
 
   .content-viewport {
@@ -646,28 +538,30 @@
       width: 100%;
     }
 
-    .mobile-menu-btn {
+    .floating-mobile-btn {
       display: flex;
-    }
-
-    .navbar {
-      padding: 16px 20px;
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 900;
+      background: var(--color-white);
+      border: 1px solid var(--color-neutral-200);
+      color: var(--color-neutral-800);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      cursor: pointer;
     }
 
     .content-viewport {
-      padding: 20px;
+      padding: 70px 20px 20px 20px;
     }
 
     .toggle-btn {
       display: none;
-    }
-
-    .navbar-status {
-      display: none;
-    }
-
-    .navbar-logo-mobile {
-      display: block;
     }
   }
 </style>

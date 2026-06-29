@@ -1,6 +1,13 @@
 <script lang="ts">
-  import { Card, FormField, Button } from '$lib';
-  import { MessageSquare, Phone, Calendar, Users, FileText, Clock } from '@lucide/svelte';
+  import { Card, FormField, Button } from "$lib";
+  import {
+    MessageSquare,
+    Phone,
+    Calendar,
+    Users,
+    FileText,
+    Clock,
+  } from "@lucide/svelte";
 
   interface Props {
     activitiesList: any[];
@@ -15,9 +22,20 @@
     // State & actions
     activeRole: string | null;
     submittingActivity: boolean;
-    logActivity: (type: 'Telefonata' | 'Incontro' | 'Appuntamento' | 'Sollecito Telefonico' | 'Sollecito Email' | 'Sollecito PEC', datetimeVal?: string) => void;
+    logActivity: (
+      type:
+        | "Telefonata"
+        | "Incontro"
+        | "Appuntamento"
+        | "Sollecito Telefonico"
+        | "Sollecito Email"
+        | "Sollecito PEC",
+      datetimeVal?: string,
+    ) => void;
     handleAddNote: (e: Event) => void;
-    parseNote: (noteRaw: string) => { text: string; createdAt: string | null; createdByEmail: string };
+    parseNote: (
+      noteRaw: string,
+    ) => { text: string; createdAt: string | null; createdByEmail: string };
   }
 
   let {
@@ -33,24 +51,31 @@
     submittingActivity,
     logActivity,
     handleAddNote,
-    parseNote
+    parseNote,
   }: Props = $props();
 </script>
 
 <div class="tab-view animate-fade-in">
   <div class="vertical-layout-stack">
-    {#if activeRole !== 'direzione'}
+    {#if activeRole !== "direzione"}
       <!-- Activities Logger Form -->
-      <Card title="Registrazione Attività Semplificata" description="Aggiungi una nota testuale e clicca sul pulsante dell'attività corrispondente. Le attività di Telefonata e Incontro verranno registrate all'istante, gli Appuntamenti consentono di pianificare data/ora.">
+      <Card
+        title="Registrazione Attività Semplificata"
+        description="Aggiungi una nota testuale e clicca sul pulsante dell'attività corrispondente. Le attività di Telefonata e Incontro verranno registrate all'istante, gli Appuntamenti consentono di pianificare data/ora."
+      >
         {#snippet icon()}
           <MessageSquare size={20} class="icon-accent" />
         {/snippet}
 
         <div class="activity-logger-shell">
-          <FormField id="act-notes" label="Note Attività" helpText="Riassumi brevemente l'esito della telefonata o dell'incontro.">
-            <textarea 
-              id="act-notes" 
-              bind:value={activityNotesText} 
+          <FormField
+            id="act-notes"
+            label="Note Attività"
+            helpText="Riassumi brevemente l'esito della telefonata o dell'incontro."
+          >
+            <textarea
+              id="act-notes"
+              bind:value={activityNotesText}
               placeholder="es. Il cliente ha richiesto una quotazione per 3 licenze..."
               rows="3"
               disabled={submittingActivity}
@@ -58,56 +83,64 @@
           </FormField>
 
           <div class="appointment-time-picker">
-            <FormField id="appt-date" label="Data e Ora Appuntamento" helpText="Richiesto solo in caso di registrazione Appuntamento.">
-              <input 
-                type="datetime-local" 
-                id="appt-date" 
-                bind:value={appointmentDateTime} 
-                disabled={submittingActivity} 
+            <FormField
+              id="appt-date"
+              label="Data e Ora Appuntamento"
+              helpText="Richiesto solo in caso di registrazione Appuntamento."
+            >
+              <input
+                type="datetime-local"
+                id="appt-date"
+                bind:value={appointmentDateTime}
+                disabled={submittingActivity}
               />
             </FormField>
           </div>
 
           <div class="quick-log-actions">
-            {#if activeRole === 'amministrazione'}
-              <Button 
-                onclick={() => logActivity('Sollecito Telefonico')} 
+            {#if activeRole === "amministrazione"}
+              <Button
+                onclick={() => logActivity("Sollecito Telefonico")}
                 variant="success"
                 disabled={submittingActivity}
               >
                 <Phone size={14} /> Sollecito Telefonico
               </Button>
-              <Button 
-                onclick={() => logActivity('Sollecito Email')} 
+              <Button
+                onclick={() => logActivity("Sollecito Email")}
                 variant="warning"
                 disabled={submittingActivity}
               >
                 <MessageSquare size={14} /> Sollecito Email
               </Button>
-              <Button 
-                onclick={() => logActivity('Sollecito PEC')} 
+              <Button
+                onclick={() => logActivity("Sollecito PEC")}
                 variant="primary"
                 disabled={submittingActivity}
               >
                 <Calendar size={14} /> Sollecito PEC
               </Button>
             {:else}
-              <Button 
-                onclick={() => logActivity('Telefonata')} 
+              <Button
+                onclick={() => logActivity("Telefonata")}
                 variant="success"
                 disabled={submittingActivity}
               >
                 <Phone size={14} /> Registra Telefonata
               </Button>
-              <Button 
-                onclick={() => logActivity('Incontro')} 
+              <Button
+                onclick={() => logActivity("Incontro")}
                 variant="warning"
                 disabled={submittingActivity}
               >
                 <Users size={14} /> Registra Incontro
               </Button>
-              <Button 
-                onclick={() => logActivity('Appuntamento', new Date(appointmentDateTime).toISOString())} 
+              <Button
+                onclick={() =>
+                  logActivity(
+                    "Appuntamento",
+                    new Date(appointmentDateTime).toISOString(),
+                  )}
                 variant="primary"
                 disabled={submittingActivity || !appointmentDateTime}
               >
@@ -119,16 +152,33 @@
       </Card>
 
       <!-- Quick notes text form -->
-      <Card title="Note Libere Cronologiche" description="Se vuoi registrare una nota informativa slegata da una specifica telefonata o incontro.">
+      <Card
+        title="Note Libere Cronologiche"
+        description="Se vuoi registrare una nota informativa slegata da una specifica telefonata o incontro."
+      >
         {#snippet icon()}
           <FileText size={20} class="icon-accent" />
         {/snippet}
 
         <form onsubmit={handleAddNote} class="simple-note-form">
-          <FormField id="free-note" label="Testo della nota" helpText="Aggiungi una nota libera al profilo cliente.">
+          <FormField
+            id="free-note"
+            label="Testo della nota"
+            helpText="Aggiungi una nota libera al profilo cliente."
+          >
             <div class="note-input-row">
-              <input type="text" id="free-note" name="noteText" placeholder="Scrivi una nota per questa anagrafica..." required />
-              <Button type="submit" style="background: var(--color-neutral-800); border: none;">Posa Nota</Button>
+              <input
+                type="text"
+                id="free-note"
+                name="noteText"
+                placeholder="Scrivi una nota per questa anagrafica..."
+                required
+              />
+              <Button
+                type="submit"
+                style="background: var(--color-neutral-800); border: none;"
+                >Scrivi Nota</Button
+              >
             </div>
           </FormField>
         </form>
@@ -136,54 +186,74 @@
     {/if}
 
     <!-- Combined Activities & Notes Timeline -->
-    <Card title="Cronologia Attività e Note" description="Storico cronologico inverso di tutte le interazioni registrate su questa scheda cliente.">
+    <Card
+      title="Cronologia Attività e Note"
+      description="Storico cronologico inverso di tutte le interazioni registrate su questa scheda cliente."
+    >
       {#snippet icon()}
         <Clock size={20} class="icon-accent" />
       {/snippet}
 
       <div class="timeline-container">
         {#if activitiesList.length === 0 && clientNotes.length === 0}
-          <div class="empty-panel">Nessuna interazione o nota salvata per questo cliente.</div>
+          <div class="empty-panel">
+            Nessuna interazione o nota salvata per questo cliente.
+          </div>
         {:else}
           <!-- Construct unified items list -->
           {@const timelineItems = [
-            ...activitiesList.map(a => ({
+            ...activitiesList.map((a) => ({
               id: a.id,
               time: new Date(a.date),
               author: a.loggedEmail,
               badge: a.type,
               text: a.notes,
-              source: 'activity'
+              source: "activity",
             })),
             ...clientNotes.map((nRaw, idx) => {
               const parsed = parseNote(nRaw);
               return {
                 id: `note-${idx}`,
-                time: parsed.createdAt ? new Date(parsed.createdAt) : new Date(clientCreatedAt),
+                time: parsed.createdAt
+                  ? new Date(parsed.createdAt)
+                  : new Date(clientCreatedAt),
                 author: parsed.createdByEmail,
-                badge: 'NOTA',
+                badge: "NOTA",
                 text: parsed.text,
-                source: 'note'
+                source: "note",
               };
-            })
+            }),
           ].sort((a, b) => b.time.getTime() - a.time.getTime())}
 
           <div class="timeline-flow">
             {#each timelineItems as item}
-              <div 
+              <div
                 id="timeline-item-{item.id}"
-                class="timeline-card" 
-                class:note-item={item.source === 'note'}
+                class="timeline-card"
+                class:note-item={item.source === "note"}
                 class:glow={item.id === newlyCreatedId}
               >
                 <div class="card-top">
-                  <span class="item-badge" class:badge-nota={item.badge === 'NOTA'} class:badge-tel={item.badge === 'Telefonata' || item.badge === 'Sollecito Telefonico'} class:badge-inc={item.badge === 'Incontro' || item.badge === 'Sollecito PEC'} class:badge-app={item.badge === 'Appuntamento' || item.badge === 'Sollecito Email'}>
+                  <span
+                    class="item-badge"
+                    class:badge-nota={item.badge === "NOTA"}
+                    class:badge-tel={item.badge === "Telefonata" ||
+                      item.badge === "Sollecito Telefonico"}
+                    class:badge-inc={item.badge === "Incontro" ||
+                      item.badge === "Sollecito PEC"}
+                    class:badge-app={item.badge === "Appuntamento" ||
+                      item.badge === "Sollecito Email"}
+                  >
                     {item.badge}
                   </span>
-                  <span class="item-time">{item.time.toLocaleString('it-IT')}</span>
+                  <span class="item-time"
+                    >{item.time.toLocaleString("it-IT")}</span
+                  >
                   <span class="item-author">&bull; {item.author}</span>
                 </div>
-                <p class="card-text">{item.text || 'Nessuna nota aggiuntiva.'}</p>
+                <p class="card-text">
+                  {item.text || "Nessuna nota aggiuntiva."}
+                </p>
               </div>
             {/each}
           </div>
@@ -291,7 +361,7 @@
     position: relative;
   }
   .timeline-flow::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     bottom: 0;
@@ -310,7 +380,7 @@
     margin-left: 40px;
   }
   .timeline-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 20px;
     left: -24px;
@@ -331,8 +401,12 @@
     animation: highlightGlow 2s ease-out;
   }
   @keyframes highlightGlow {
-    0% { box-shadow: 0 0 0 2px var(--color-primary-500); }
-    100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+    0% {
+      box-shadow: 0 0 0 2px var(--color-primary-500);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
   }
   .card-top {
     display: flex;
@@ -349,11 +423,22 @@
     background: var(--color-neutral-200);
     color: var(--color-neutral-700);
   }
-  .badge-nota { background: var(--color-neutral-200); }
-  .badge-tel { background: var(--color-success-light); color: var(--color-success-text); }
-  .badge-inc { background: var(--color-warning-light); color: var(--color-warning-text); }
-  .badge-app { background: var(--color-primary-100); color: var(--color-primary-700); }
-  
+  .badge-nota {
+    background: var(--color-neutral-200);
+  }
+  .badge-tel {
+    background: var(--color-success-light);
+    color: var(--color-success-text);
+  }
+  .badge-inc {
+    background: var(--color-warning-light);
+    color: var(--color-warning-text);
+  }
+  .badge-app {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+  }
+
   .item-time {
     font-size: 13px;
     color: var(--color-neutral-500);
@@ -377,7 +462,13 @@
     animation: fadeIn 0.3s ease;
   }
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>

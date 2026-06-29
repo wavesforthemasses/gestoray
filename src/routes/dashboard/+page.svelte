@@ -692,17 +692,17 @@
           <!-- Financial KPIs Block -->
           {#if $activeRole === "commerciale"}
             <section class="kpi-deck">
-              <div class="kpi-tile border-primary">
-                <div class="kpi-icon primary"><Briefcase size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><Briefcase size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Contratti Chiusi</span>
                   <span class="kpi-val">{commContractsCount}</span>
-                  <span class="nav-label">Totale ordinato: € {commTotalSold.toFixed(2)}</span>
+                  <span class="kpi-sub">Totale ordinato: € {commTotalSold.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div class="kpi-tile border-success">
-                <div class="kpi-icon success"><DollarSign size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><DollarSign size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Provvigioni Maturate</span>
                   <span class="kpi-val">€ {commMaturate.toFixed(2)}</span>
@@ -710,8 +710,8 @@
                 </div>
               </div>
 
-              <div class="kpi-tile border-warning">
-                <div class="kpi-icon warning"><Wallet size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><Wallet size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Provvigioni In Sospeso</span>
                   <span class="kpi-val">€ {commSospese.toFixed(2)}</span>
@@ -719,8 +719,8 @@
                 </div>
               </div>
 
-              <div class="kpi-tile border-primary">
-                <div class="kpi-icon primary"><FileText size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><FileText size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Primi Ordini (NNCF)</span>
                   <span class="kpi-val">{commTotalNNCF}</span>
@@ -731,8 +731,8 @@
           {:else}
             <!-- superadmin & direzione global stats view -->
             <section class="kpi-deck">
-              <div class="kpi-tile border-primary">
-                <div class="kpi-icon primary"><Users size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><Users size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Nuove Anagrafiche</span>
                   <span class="kpi-val">{totalClienti}</span>
@@ -740,8 +740,8 @@
                 </div>
               </div>
 
-              <div class="kpi-tile border-success">
-                <div class="kpi-icon success"><DollarSign size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><DollarSign size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Valore Ordinato (VSS)</span>
                   <span class="kpi-val">€ {totalVenduto.toFixed(2)}</span>
@@ -749,8 +749,8 @@
                 </div>
               </div>
 
-              <div class="kpi-tile border-warning">
-                <div class="kpi-icon warning"><Wallet size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><Wallet size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Cassa Incassata (GI)</span>
                   <span class="kpi-val">€ {totalIncassato.toFixed(2)}</span>
@@ -758,8 +758,8 @@
                 </div>
               </div>
 
-              <div class="kpi-tile border-primary">
-                <div class="kpi-icon primary"><FileText size={20} /></div>
+              <div class="kpi-tile border-info">
+                <div class="kpi-icon"><FileText size={20} /></div>
                 <div class="kpi-text">
                   <span class="kpi-lbl">Primi Ordini (NNCF)</span>
                   <span class="kpi-val">{totalNNCF}</span>
@@ -785,8 +785,8 @@
               </div>
             </div>
 
-            <div class="kpi-tile border-teal">
-              <div class="kpi-icon teal"><Users size={20} /></div>
+            <div class="kpi-tile border-info">
+              <div class="kpi-icon"><Users size={20} /></div>
               <div class="kpi-text">
                 <span class="kpi-lbl">Incontri Svolti</span>
                 <span class="kpi-val">{activityMeetings}</span>
@@ -794,8 +794,8 @@
               </div>
             </div>
 
-            <div class="kpi-tile border-indigo">
-              <div class="kpi-icon indigo"><Calendar size={20} /></div>
+            <div class="kpi-tile border-info">
+              <div class="kpi-icon"><Calendar size={20} /></div>
               <div class="kpi-text">
                 <span class="kpi-lbl">Appuntamenti Presi</span>
                 <span class="kpi-val">{activityAppointments}</span>
@@ -814,79 +814,77 @@
                 <TrendingUp size={20} class="icon-accent" />
               {/snippet}
 
-              {#snippet headerSnippet()}
-                <div class="chart-controls-box">
-                  <!-- Tab buttons switcher -->
-                  <div class="chart-tab-switcher">
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "vss"}
-                      onclick={() => { activeChartTab = "vss"; selectedPointIdx = null; }}
-                    >
-                      Valore Venduto (VSS)
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "gi"}
-                      onclick={() => { activeChartTab = "gi"; selectedPointIdx = null; }}
-                    >
-                      Cassa Incassata (GI)
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "nuove_anagrafiche"}
-                      onclick={() => { activeChartTab = "nuove_anagrafiche"; selectedPointIdx = null; }}
-                    >
-                      Nuove Anagrafiche
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "nncf"}
-                      onclick={() => { activeChartTab = "nncf"; selectedPointIdx = null; }}
-                    >
-                      Primi Ordini (NNCF)
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "Telefonata"}
-                      onclick={() => { activeChartTab = "Telefonata"; selectedPointIdx = null; }}
-                    >
-                      Telefonate
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "Incontro"}
-                      onclick={() => { activeChartTab = "Incontro"; selectedPointIdx = null; }}
-                    >
-                      Incontri
-                    </button>
-                    <button
-                      class="chart-tab-btn"
-                      class:active={activeChartTab === "Appuntamento"}
-                      onclick={() => { activeChartTab = "Appuntamento"; selectedPointIdx = null; }}
-                    >
-                      Appuntamenti
-                    </button>
+              <div class="chart-controls-box">
+                <!-- Tab buttons switcher -->
+                <div class="chart-tab-switcher">
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "vss"}
+                    onclick={() => { activeChartTab = "vss"; selectedPointIdx = null; }}
+                  >
+                    Valore Venduto (VSS)
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "gi"}
+                    onclick={() => { activeChartTab = "gi"; selectedPointIdx = null; }}
+                  >
+                    Cassa Incassata (GI)
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "nuove_anagrafiche"}
+                    onclick={() => { activeChartTab = "nuove_anagrafiche"; selectedPointIdx = null; }}
+                  >
+                    Nuove Anagrafiche
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "nncf"}
+                    onclick={() => { activeChartTab = "nncf"; selectedPointIdx = null; }}
+                  >
+                    Primi Ordini (NNCF)
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "Telefonata"}
+                    onclick={() => { activeChartTab = "Telefonata"; selectedPointIdx = null; }}
+                  >
+                    Telefonate
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "Incontro"}
+                    onclick={() => { activeChartTab = "Incontro"; selectedPointIdx = null; }}
+                  >
+                    Incontri
+                  </button>
+                  <button
+                    class="chart-tab-btn"
+                    class:active={activeChartTab === "Appuntamento"}
+                    onclick={() => { activeChartTab = "Appuntamento"; selectedPointIdx = null; }}
+                  >
+                    Appuntamenti
+                  </button>
+                </div>
+
+                <!-- Granularity & Date Picker controls -->
+                <div class="chart-granularity-picker">
+                  <div class="picker-item">
+                    <span class="picker-lbl">Granularità:</span>
+                    <select bind:value={granularity} class="sub-chart-select" onchange={() => selectedPointIdx = null}>
+                      <option value="settimanale">Settimanale (12w)</option>
+                      <option value="mensile">Mensile (12m)</option>
+                      <option value="annuale">Annuale (5y)</option>
+                    </select>
                   </div>
 
-                  <!-- Granularity & Date Picker controls -->
-                  <div class="chart-granularity-picker">
-                    <div class="picker-item">
-                      <span class="picker-lbl">Granularità:</span>
-                      <select bind:value={granularity} class="sub-chart-select" onchange={() => selectedPointIdx = null}>
-                        <option value="settimanale">Settimanale (12w)</option>
-                        <option value="mensile">Mensile (12m)</option>
-                        <option value="annuale">Annuale (5y)</option>
-                      </select>
-                    </div>
-
-                    <div class="picker-item">
-                      <span class="picker-lbl">Data Finale:</span>
-                      <input type="date" bind:value={endDateString} class="sub-chart-date-picker" onchange={() => selectedPointIdx = null} />
-                    </div>
+                  <div class="picker-item">
+                    <span class="picker-lbl">Data Finale:</span>
+                    <input type="date" bind:value={endDateString} class="sub-chart-date-picker" onchange={() => selectedPointIdx = null} />
                   </div>
                 </div>
-              {/snippet}
+              </div>
 
               {#if loadingChart}
                 <div class="loader-box" style="border: none; padding: 30px;">
@@ -1001,133 +999,191 @@
   .dashboard-panoramica {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 36px;
     width: 100%;
   }
 
   :global(.welcome-banner) {
     background: linear-gradient(
       135deg,
-      var(--color-primary-50),
-      var(--color-neutral-100)
+      var(--color-primary-600),
+      var(--color-primary-800)
     ) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.12) !important;
+  }
+  :global(.welcome-banner h3) {
+    color: white !important;
+  }
+  :global(.welcome-banner p) {
+    color: rgba(255,255,255,0.85) !important;
   }
 
   .kpi-deck {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 24px;
   }
 
   .kpi-tile {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
-    padding: 24px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    padding: 24px 28px;
     display: flex;
+    flex-direction: column;
     gap: 16px;
-    align-items: center;
-    box-shadow: var(--shadow-sm);
-    border-left: 5px solid var(--color-secondary-500);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), inset 0 2px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .kpi-tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600));
+    opacity: 0.8;
+  }
+  .kpi-tile.border-success::before { background: linear-gradient(90deg, var(--color-success-400), var(--color-success-600)); }
+  .kpi-tile.border-warning::before { background: linear-gradient(90deg, var(--color-warning-400), var(--color-warning-600)); }
+  .kpi-tile.border-error::before { background: linear-gradient(90deg, var(--color-error-400), var(--color-error-600)); }
+  .kpi-tile.border-info::before { background: linear-gradient(90deg, var(--color-secondary-400), var(--color-secondary-600)); }
+  .kpi-tile.border-teal::before { background: linear-gradient(90deg, var(--color-primary-300), var(--color-primary-500)); }
+  .kpi-tile.border-indigo::before { background: linear-gradient(90deg, var(--color-secondary-500), var(--color-secondary-700)); }
+
+  .kpi-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 2px 0 rgba(255, 255, 255, 0.9);
   }
 
   .kpi-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-md);
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: var(--color-secondary-100);
-    color: var(--color-secondary-700);
+    background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+    color: var(--color-primary-700);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   }
+  .kpi-tile.border-success .kpi-icon { background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200)); color: var(--color-success-800); }
+  .kpi-tile.border-warning .kpi-icon { background: linear-gradient(135deg, var(--color-warning-100), var(--color-warning-200)); color: var(--color-warning-800); }
+  .kpi-tile.border-error .kpi-icon { background: linear-gradient(135deg, var(--color-error-100), var(--color-error-200)); color: var(--color-error-800); }
+  .kpi-tile.border-info .kpi-icon { background: linear-gradient(135deg, var(--color-secondary-100), var(--color-secondary-200)); color: var(--color-secondary-800); }
+  .kpi-tile.border-teal .kpi-icon { background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100)); color: var(--color-primary-600); }
+  .kpi-tile.border-indigo .kpi-icon { background: linear-gradient(135deg, var(--color-secondary-200), var(--color-secondary-300)); color: var(--color-secondary-900); }
 
   .kpi-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .kpi-lbl {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--color-neutral-500);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .kpi-val {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--color-neutral-800);
-  }
-
-  .kpi-sub {
-    font-size: 11px;
-    color: var(--color-neutral-400);
-    font-weight: 500;
-  }
-
-  .activity-section-header {
-    margin-top: 10px;
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
 
+  .kpi-lbl {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-neutral-600);
+    letter-spacing: 0.02em;
+  }
+
+  .kpi-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-neutral-900);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--color-neutral-500);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .activity-section-header {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .activity-section-header h4 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--color-neutral-800);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-neutral-900);
+    letter-spacing: -0.01em;
   }
 
   .activity-section-header .sub-desc {
-    font-size: 12.5px;
-    color: var(--color-neutral-400);
+    font-size: 14px;
+    color: var(--color-neutral-500);
   }
 
   /* Unified chart layout */
   .unified-chart-wrapper {
     width: 100%;
+    margin-top: 16px;
+  }
+
+  :global(.unified-chart-wrapper .card) {
+    border-radius: 24px !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.04) !important;
+    padding: 32px !important;
   }
 
   .chart-controls-box {
-    margin-top: 8px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 16px;
     width: 100%;
+    margin-bottom: 24px;
+    background: transparent;
+    flex-wrap: wrap;
   }
 
   .chart-tab-switcher {
     display: flex;
-    gap: 4px;
-    background: var(--color-neutral-100);
-    padding: 3px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-neutral-200);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 4px;
+    border-radius: 14px;
     flex-wrap: wrap;
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .chart-tab-btn {
     background: transparent;
     border: none;
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    border-radius: 10px;
     font-family: inherit;
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-neutral-500);
+    color: var(--color-neutral-600);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .chart-tab-btn:hover {
+    color: var(--color-neutral-900);
   }
 
   .chart-tab-btn.active {
     background: var(--color-white);
     color: var(--color-primary-600);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   }
 
   .chart-granularity-picker {
