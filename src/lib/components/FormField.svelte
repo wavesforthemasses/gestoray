@@ -63,7 +63,7 @@
     display: inline-block;
   }
 
-  :global(.form-group input),
+  :global(.form-group input:not([type="checkbox"]):not([type="radio"])),
   :global(.form-group select),
   :global(.form-group textarea) {
     background: var(--color-white);
@@ -95,7 +95,7 @@
     cursor: pointer;
   }
 
-  :global(.form-group input:focus:not(:disabled)),
+  :global(.form-group input:not([type="checkbox"]):not([type="radio"]):focus:not(:disabled)),
   :global(.form-group select:focus:not(:disabled)),
   :global(.form-group textarea:focus:not(:disabled)) {
     outline: none;
@@ -104,7 +104,7 @@
   }
 
   /* Globally override disabled styling for target inputs inside children snippets if disabled is passed */
-  :global(.form-group input:disabled),
+  :global(.form-group input:not([type="checkbox"]):not([type="radio"]):disabled),
   :global(.form-group select:disabled),
   :global(.form-group textarea:disabled) {
     background: var(--color-neutral-100) !important;

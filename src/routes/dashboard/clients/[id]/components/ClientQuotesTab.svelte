@@ -122,7 +122,7 @@
             </div>
 
             <Button 
-              style="margin-top: 16px; background: var(--color-neutral-800); border: none;"
+              style="margin-top: 16px; margin-bottom: 24px;"
               disabled={!selectedProductId || itemPriceSold === null || itemQuantity < 1}
               onclick={onAddQuoteItem}
             >
@@ -131,8 +131,8 @@
           </div>
 
           <!-- Selected items list -->
-          <div class="quote-current-items">
-            <h4>Articoli nel Preventivo Corrente</h4>
+          <div class="quote-current-items" style="border-top: 1px solid var(--color-neutral-200); padding-top: 24px;">
+            <h4 style="margin-bottom: 12px; font-size: 14px; font-weight: 700; color: var(--color-neutral-800);">Articoli nel Preventivo Corrente</h4>
             {#if quoteItems.length === 0}
               <div class="empty-items-placeholder">Il preventivo è vuoto. Aggiungi prodotti dal catalogo per iniziare.</div>
             {:else}
@@ -312,9 +312,9 @@
                     {/if}
                   </td>
                   <td>
-                    <button onclick={() => goto(`/dashboard/contracts/${c.id}`)} class="go-details-btn">
+                    <Button onclick={() => goto(`/dashboard/contracts/${c.id}`)} variant="secondary" size="sm">
                       Dettagli Contratto
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               {/each}

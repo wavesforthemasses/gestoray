@@ -249,3 +249,32 @@ a:hover {
   color: var(--color-secondary-text-contrast) !important;
   box-shadow: 0 6px 16px hsla(var(--sec-h), var(--sec-s), var(--sec-l), 0.25) !important;
 }
+
+/* ==========================================================================
+   GLOBAL TABLE STYLING
+   ========================================================================== */
+.widescreen-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.widescreen-table th {
+  background: var(--color-neutral-100);
+  padding: 12px 14px;
+  font-weight: 600;
+  color: var(--color-neutral-600);
+  border-bottom: 2px solid var(--color-neutral-200);
+}
+
+.widescreen-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-neutral-100);
+  color: var(--color-neutral-700);
+  vertical-align: middle;
+}
+
+.widescreen-table tr:hover td {
+  background: var(--color-neutral-50);
+}

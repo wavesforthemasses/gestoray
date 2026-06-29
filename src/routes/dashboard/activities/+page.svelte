@@ -59,14 +59,16 @@
       const querySnapshot = await getDocs(collectionGroup(db, 'activities'));
       const list: typeof activitiesList = [];
       querySnapshot.forEach((doc: any) => {
-        const data = doc.data();
+        const payload = doc.data();
+        const data = payload.original || payload; // Support both nested structure and flat structure
+        
         list.push({
           id: doc.id,
           clientId: data.clientId,
           clientName: data.clientName || 'Sconosciuto',
           type: data.type,
           notes: data.notes || '',
-          date: data.date,
+          date: data.date || payload.edits?.createdAt || payload.createdAt || new Date().toISOString(),
           loggedBy: data.loggedBy,
           loggedEmail: data.loggedEmail || 'Sistema'
         });
