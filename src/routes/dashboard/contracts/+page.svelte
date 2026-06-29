@@ -1,10 +1,28 @@
 <script lang="ts">
   import { activeRole, auth } from '$lib/auth';
-  import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
+  import { db, doc, setDoc, collection, getDocs, query, where, orderBy } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Card, Table } from '$lib';
+  import { Card, Table, LineChart } from '$lib';
   import { FileText, Award, Clock, DollarSign, Wallet, TrendingUp, Users, ChevronUp, ChevronDown } from '@lucide/svelte';
+  import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
+
+  let contractsList = $state<any[]>([]);
+  let usersList = $state<any[]>([]);
+  let loading = $state(true);
+  let loadingChart = $state(false);
+
+  // Tab filters: 'all' | 'pending' | 'approved' | 'commissions'
+  let activeTab = $state<'all' | 'pending' | 'approved' | 'commissions'>('all');
+
+  // Collapse/Expand state for chart
+  let isGraphExpanded = $state(false);
+  let selectedPointIdx = $state<number | null>(null);
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+  let activeChartTab = $state<'vss' | 'commission'>('vss');
+
+  let chartRawDataList = $state<any[]>([]); // holds contracts fetched for time-period chart
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
@@ -21,63 +39,66 @@
     return () => unsubscribe();
   });
 
-  let contractsList = $state<Array<{ id: string, clientId: string, clientName: string, clientEmail: string, vendorUid: string, vendorEmail: string, totalPrice: number, products: any[], status: string, hasWarning: boolean, createdAt: string, approvedAt?: string, secondVendorUid?: string, secondVendorEmail?: string, secondVendorShare?: number }>>([]);
-  let usersList = $state<Array<{ uid: string, email: string, nome?: string, cognome?: string, qualification?: 'junior' | 'senior' }>>([]);
-  let loading = $state(true);
-
-  // Tab filters: 'all' | 'pending' | 'approved' | 'commissions'
-  let activeTab = $state<'all' | 'pending' | 'approved' | 'commissions'>('all');
-
-  // Collapse/Expand state for chart
-  let isGraphExpanded = $state(false);
-  let selectedPointIdx = $state<number | null>(null);
-  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
-  let endDateString = $state(new Date().toISOString().split('T')[0]);
-  let activeChartTab = $state<'vss' | 'commission'>('vss');
-
   async function fetchData() {
     loading = true;
     try {
-      // 1. Fetch Users
-      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const myUid = auth.subscribe(($auth) => {}) ? $auth?.uid : null;
+
+      // 1. Fetch Users (for consultant details and tab)
+      const usersQuery = query(collection(db, 'users'));
+      const usersSnapshot = await getDocs(usersQuery);
       const uList: typeof usersList = [];
       usersSnapshot.forEach((doc: any) => {
         const data = doc.data();
         uList.push({
           uid: doc.id,
-          email: data.email,
-          nome: data.nome,
-          cognome: data.cognome,
-          qualification: data.qualification || 'junior'
+          email: data.original?.email || data.email,
+          nome: data.original?.nome || data.nome,
+          cognome: data.original?.cognome || data.cognome,
+          roles: data.original?.roles || data.roles || [],
+          qualification: data.original?.qualification || data.qualification || 'junior',
+          derived: data.derived || {}
         });
       });
       usersList = uList;
 
-      // 2. Fetch Contracts
-      const contractsSnapshot = await getDocs(collection(db, 'contracts'));
-      const cList: typeof contractsList = [];
-      contractsSnapshot.forEach((doc: any) => {
-        const data = doc.data();
-        cList.push({
-          id: doc.id,
-          clientId: data.clientId,
-          clientName: data.clientName,
-          clientEmail: data.clientEmail,
-          vendorUid: data.vendorUid,
-          vendorEmail: data.vendorEmail,
-          totalPrice: data.totalPrice,
-          products: data.products || [],
-          status: data.status,
-          hasWarning: data.hasWarning || false,
-          createdAt: data.createdAt,
-          approvedAt: data.approvedAt,
-          secondVendorUid: data.secondVendorUid,
-          secondVendorEmail: data.secondVendorEmail,
-          secondVendorShare: data.secondVendorShare
+      // 2. Fetch Contracts based on active tab and role
+      const cList: any[] = [];
+      const role = $activeRole;
+      const uid = $auth?.uid;
+
+      if (role === 'commerciale') {
+        // Query primary vendor
+        const primaryQuery = query(collection(db, 'contracts'), where('original.vendorUid', '==', uid));
+        const primarySnap = await getDocs(primaryQuery);
+        primarySnap.forEach((doc: any) => {
+          cList.push({ id: doc.id, ...doc.data() });
         });
-      });
-      
-      contractsList = cList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Query secondary vendor
+        const secondaryQuery = query(collection(db, 'contracts'), where('original.secondVendorUid', '==', uid));
+        const secondarySnap = await getDocs(secondaryQuery);
+        secondarySnap.forEach((doc: any) => {
+          if (!cList.some(x => x.id === doc.id)) {
+            cList.push({ id: doc.id, ...doc.data() });
+          }
+        });
+      } else {
+        let q;
+        if (activeTab === 'pending') {
+          q = query(collection(db, 'contracts'), where('original.status', '==', 'pending'));
+        } else if (activeTab === 'approved') {
+          q = query(collection(db, 'contracts'), where('original.status', '==', 'approved'));
+        } else {
+          q = query(collection(db, 'contracts'));
+        }
+        const snap = await getDocs(q);
+        snap.forEach((doc: any) => {
+          cList.push({ id: doc.id, ...doc.data() });
+        });
+      }
+
+      contractsList = cList.sort((a, b) => new Date(b.edits?.createdAt || b.original?.createdAt).getTime() - new Date(a.edits?.createdAt || a.original?.createdAt).getTime());
     } catch (e) {
       console.error('Error fetching contracts data:', e);
     } finally {
@@ -85,68 +106,26 @@
     }
   }
 
-  // Calculate commission taking co-selling splits into account
-  function calculateContractCommission(contract: typeof contractsList[0]) {
-    const vendor = usersList.find(u => u.uid === contract.vendorUid);
-    const qualification = vendor?.qualification || 'junior';
-
-    let totalCommission = 0;
-    contract.products.forEach(item => {
-      const list = item.listPrice;
-      const min = item.minPrice;
-      const sold = item.priceSold;
-      const qty = item.quantity;
-      const itemTotal = sold * qty;
-
-      let ratio = 1;
-      if (list > min) {
-        ratio = (sold - min) / (list - min);
-        if (ratio < 0) ratio = 0;
-        if (ratio > 1) ratio = 1;
-      }
-
-      let commPct = 0;
-      if (qualification === 'senior') {
-        commPct = 5.0 + (ratio * 5.0);
-      } else {
-        commPct = 2.5 + (ratio * 5.0);
-      }
-
-      totalCommission += itemTotal * (commPct / 100);
-    });
-
-    const secondShare = contract.secondVendorShare || 0;
-    const primaryCommission = totalCommission * (100 - secondShare) / 100;
-    const secondaryCommission = totalCommission * secondShare / 100;
-
-    return {
-      qualification,
-      totalCommission,
-      primaryCommission,
-      secondaryCommission
-    };
-  }
-
-  function toggleGraph() {
-    isGraphExpanded = !isGraphExpanded;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('subpage_graph_expanded', String(isGraphExpanded));
+  // Reactively refetch when active tab changes (for admins)
+  $effect(() => {
+    if (activeTab && $activeRole !== 'commerciale') {
+      fetchData();
     }
-  }
+  });
 
-  // Generate date ranges backwards from endDateString
+  // Expandable Trend Chart Data logic
   let chartPeriods = $derived.by(() => {
     const end = new Date(endDateString);
-    const periods: Array<{ start: Date, end: Date, label: string }> = [];
+    const periods: Array<{ start: Date; end: Date; label: string }> = [];
 
     if (granularity === 'settimanale') {
-      for (let i = 51; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) { // 12 weeks
         const pEnd = new Date(end.getTime() - i * 7 * 24 * 60 * 60 * 1000);
         const pStart = new Date(pEnd.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
         periods.push({ start: pStart, end: pEnd, label: `${pEnd.getDate()}/${pEnd.getMonth() + 1}` });
       }
     } else if (granularity === 'mensile') {
-      for (let i = 23; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) { // 12 months
         const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
         const pStart = new Date(d.getFullYear(), d.getMonth(), 1);
         const pEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -154,7 +133,7 @@
         periods.push({ start: pStart, end: pEnd, label: `${monthNames[pStart.getMonth()]} ${String(pStart.getFullYear()).slice(2)}` });
       }
     } else {
-      for (let i = 9; i >= 0; i--) {
+      for (let i = 4; i >= 0; i--) { // 5 years
         const year = end.getFullYear() - i;
         const pStart = new Date(year, 0, 1);
         const pEnd = new Date(year, 11, 31, 23, 59, 59, 999);
@@ -164,162 +143,149 @@
     return periods;
   });
 
+  async function fetchChartDataPoints() {
+    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    loadingChart = true;
+
+    try {
+      const minDate = chartPeriods[0].start.toISOString();
+      const myUid = $auth?.uid;
+      const isComm = $activeRole === 'commerciale';
+
+      let q;
+      if (isComm) {
+        // Fetch commercial specific contracts
+        const [primarySnap, secondarySnap] = await Promise.all([
+          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid), where('edits.createdAt', '>=', minDate))),
+          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid), where('edits.createdAt', '>=', minDate)))
+        ]);
+        const docsList: any[] = [];
+        primarySnap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+        secondarySnap.forEach((d: any) => {
+          if (!docsList.some(x => x.id === d.id)) docsList.push({ id: d.id, ...d.data() });
+        });
+        chartRawDataList = docsList;
+      } else {
+        q = query(collection(db, 'contracts'), where('edits.createdAt', '>=', minDate));
+        const snap = await getDocs(q);
+        const docsList: any[] = [];
+        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+        chartRawDataList = docsList;
+      }
+    } catch (e) {
+      console.error("Error loading chart data:", e);
+    } finally {
+      loadingChart = false;
+    }
+  }
+
+  $effect(() => {
+    if (isGraphExpanded || granularity || endDateString || activeChartTab) {
+      fetchChartDataPoints();
+    }
+  });
+
   let computedChartPoints = $derived.by(() => {
     const isComm = $activeRole === 'commerciale';
     const myUid = $auth?.uid;
 
     return chartPeriods.map((p) => {
-      let dbValue = 0;
-
-      const filtered = contractsList.filter(c => {
-        const d = new Date(c.createdAt);
-        const inPeriod = d >= p.start && d <= p.end;
-        if (!inPeriod) return false;
-        const belongs = !isComm || c.vendorUid === myUid || c.secondVendorUid === myUid;
-        return belongs;
+      const filtered = chartRawDataList.filter(c => {
+        const d = new Date(c.edits?.createdAt || c.original?.createdAt);
+        return d >= p.start && d <= p.end;
       });
 
       if (activeChartTab === 'vss') {
-        dbValue = filtered.reduce((sum, c) => {
+        return filtered.reduce((sum, c) => {
+          const orig = c.original || {};
+          let price = orig.totalPrice || 0;
           if (isComm) {
-            if (c.vendorUid === myUid) {
-              return sum + c.totalPrice * (100 - (c.secondVendorShare || 0)) / 100;
-            } else if (c.secondVendorUid === myUid) {
-              return sum + c.totalPrice * (c.secondVendorShare || 0) / 100;
+            if (orig.vendorUid === myUid) {
+              return sum + price * (100 - (orig.secondVendorShare || 0)) / 100;
+            } else if (orig.secondVendorUid === myUid) {
+              return sum + price * (orig.secondVendorShare || 0) / 100;
             }
           }
-          return sum + c.totalPrice;
+          return sum + price;
         }, 0);
       } else {
-        dbValue = filtered.reduce((sum, c) => {
-          const commInfo = calculateContractCommission(c);
+        // Provvigioni
+        return filtered.reduce((sum, c) => {
+          const deriv = c.derived || {};
+          const orig = c.original || {};
           if (isComm) {
-            if (c.vendorUid === myUid) {
-              return sum + commInfo.primaryCommission;
-            } else if (c.secondVendorUid === myUid) {
-              return sum + commInfo.secondaryCommission;
+            if (orig.vendorUid === myUid) {
+              return sum + (deriv.commissionPrimary || 0);
+            } else if (orig.secondVendorUid === myUid) {
+              return sum + (deriv.commissionSecondary || 0);
             }
           }
-          return sum + commInfo.totalCommission;
+          return sum + (deriv.commissionTotal || 0);
         }, 0);
       }
-
-      return dbValue;
     });
   });
 
-  let svgPointsData = $derived.by(() => {
-    const data = computedChartPoints;
-    const maxVal = Math.max(...data, activeChartTab === 'commission' ? 100 : 1000);
-    const count = data.length;
+  function toggleGraph() {
+    isGraphExpanded = !isGraphExpanded;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('subpage_graph_expanded', String(isGraphExpanded));
+    }
+  }
 
-    const points = data.map((val, idx) => {
-      const x = 40 + (idx / (count - 1)) * 400;
-      const y = 120 - (val / maxVal) * 100;
-      return { x, y, val };
-    });
-
-    const pathD = points.reduce((acc, pt, idx) => {
-      return acc + (idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`);
-    }, '');
-
-    const areaD = pathD + ` L ${points[points.length - 1].x} 120 L ${points[0].x} 120 Z`;
-
-    return { points, pathD, areaD, maxVal };
-  });
-
-  // Filtered list
+  // Filtered list shown in Svelte table
   let filteredContracts = $derived.by(() => {
-    let result = contractsList.filter(c => {
-      if ($activeRole === 'commerciale' && c.vendorUid !== $auth?.uid && c.secondVendorUid !== $auth?.uid) {
-        return false;
-      }
-      
-      if (activeTab === 'pending' && c.status !== 'pending') return false;
-      if (activeTab === 'approved' && c.status !== 'approved') return false;
-      
-      return true;
-    });
+    let result = contractsList;
 
     if (selectedPointIdx !== null && selectedPointIdx >= 0 && selectedPointIdx < chartPeriods.length) {
       const period = chartPeriods[selectedPointIdx];
       result = result.filter(c => {
-        const d = new Date(c.createdAt);
+        const d = new Date(c.edits?.createdAt || c.original?.createdAt);
         return d >= period.start && d <= period.end;
       });
     }
 
-    return result;
+    return result.map(c => ({
+      id: c.id,
+      createdAt: c.edits?.createdAt || c.original?.createdAt,
+      clientName: c.original?.clientName,
+      clientEmail: c.original?.clientEmail,
+      totalPrice: c.original?.totalPrice,
+      vendorEmail: c.original?.vendorEmail,
+      vendorUid: c.original?.vendorUid,
+      secondVendorUid: c.original?.secondVendorUid,
+      secondVendorEmail: c.original?.secondVendorEmail,
+      secondVendorShare: c.original?.secondVendorShare,
+      status: c.original?.status,
+      hasWarning: c.original?.hasWarning,
+      derived: c.derived || {}
+    }));
   });
 
-  // Expected/Earned totals for Commercial
+  // Expected/Earned totals for Commercial (read from user document directly)
   let commercialStats = $derived.by(() => {
-    let sospese = 0;
-    let maturate = 0;
-    let totalVenduto = 0;
-
-    contractsList.forEach(c => {
-      const belongs = c.vendorUid === $auth?.uid || c.secondVendorUid === $auth?.uid;
-      if (belongs) {
-        const commInfo = calculateContractCommission(c);
-        let comm = 0;
-        if (c.vendorUid === $auth?.uid) {
-          comm = commInfo.primaryCommission;
-          totalVenduto += c.totalPrice * (100 - (c.secondVendorShare || 0)) / 100;
-        } else {
-          comm = commInfo.secondaryCommission;
-          totalVenduto += c.totalPrice * (c.secondVendorShare || 0) / 100;
-        }
-
-        if (c.status === 'approved') {
-          maturate += comm;
-        } else {
-          sospese += comm;
-        }
-      }
-    });
-
-    return { sospese, maturate, totalVenduto };
+    const myUser = usersList.find(u => u.uid === $auth?.uid);
+    const uDerived = myUser?.derived || {};
+    return {
+      sospese: uDerived.totalCommissionPending || 0,
+      maturate: uDerived.totalCommissionEarned || 0,
+      totalVenduto: (uDerived.totalPendingSales || 0) + (uDerived.totalApprovedSales || 0)
+    };
   });
 
-  // Admin summary per consultant
+  // Admin summary per consultant (using pre-calculated derived fields)
   let adminConsultantsSummary = $derived.by(() => {
-    const summary: Record<string, { name: string, email: string, qualification: string, approvedSales: number, totalCommission: number, pendingSales: number }> = {};
-    
-    usersList.forEach(u => {
-      summary[u.uid] = {
+    return usersList
+      .filter(u => u.roles.includes('commerciale'))
+      .map(u => ({
         name: `${u.nome || ''} ${u.cognome || ''}`.trim() || u.email,
         email: u.email,
         qualification: u.qualification || 'junior',
-        approvedSales: 0,
-        totalCommission: 0,
-        pendingSales: 0
-      };
-    });
-
-    contractsList.forEach(c => {
-      const commInfo = calculateContractCommission(c);
-      
-      if (summary[c.vendorUid]) {
-        if (c.status === 'approved') {
-          summary[c.vendorUid].approvedSales += c.totalPrice * (100 - (c.secondVendorShare || 0)) / 100;
-          summary[c.vendorUid].totalCommission += commInfo.primaryCommission;
-        } else {
-          summary[c.vendorUid].pendingSales += c.totalPrice * (100 - (c.secondVendorShare || 0)) / 100;
-        }
-      }
-
-      if (c.secondVendorUid && summary[c.secondVendorUid]) {
-        if (c.status === 'approved') {
-          summary[c.secondVendorUid].approvedSales += c.totalPrice * (c.secondVendorShare || 0) / 100;
-          summary[c.secondVendorUid].totalCommission += commInfo.secondaryCommission;
-        } else {
-          summary[c.secondVendorUid].pendingSales += c.totalPrice * (c.secondVendorShare || 0) / 100;
-        }
-      }
-    });
-
-    return Object.values(summary).filter(s => s.approvedSales > 0 || s.pendingSales > 0 || s.totalCommission > 0);
+        approvedSales: u.derived?.totalApprovedSales || 0,
+        totalCommission: u.derived?.totalCommissionEarned || 0,
+        pendingSales: u.derived?.totalPendingSales || 0
+      }))
+      .filter(s => s.approvedSales > 0 || s.pendingSales > 0 || s.totalCommission > 0);
   });
 
   // Columns layout
@@ -358,7 +324,7 @@
         </div>
         <div class="stat-body">
           <span class="stat-lbl">Provvigioni Maturate (Incassate)</span>
-          <span class="stat-val text-success">€ {commercialStats.maturate.toFixed(2)}</span>
+          <span class="stat-val">€ {commercialStats.maturate.toFixed(2)}</span>
           <span class="stat-sub">Fatturato incassato: € {commercialStats.totalVenduto.toFixed(2)}</span>
         </div>
       </div>
@@ -369,7 +335,7 @@
         </div>
         <div class="stat-body">
           <span class="stat-lbl">Provvigioni Sospese (In Attesa)</span>
-          <span class="stat-val text-warning">€ {commercialStats.sospese.toFixed(2)}</span>
+          <span class="stat-val">€ {commercialStats.sospese.toFixed(2)}</span>
           <span class="stat-sub">Visualizzato non appena l'amministrazione approva l'incasso.</span>
         </div>
       </div>
@@ -400,9 +366,9 @@
           <div class="chart-controls-sub">
             <!-- Period Granularity -->
             <select bind:value={granularity} class="sub-chart-select">
-              <option value="settimanale">Settimanale (52w)</option>
-              <option value="mensile">Mensile (24m)</option>
-              <option value="annuale">Annuale (10y)</option>
+              <option value="settimanale">Settimanale (12w)</option>
+              <option value="mensile">Mensile (12m)</option>
+              <option value="annuale">Annuale (5y)</option>
             </select>
 
             <!-- End Date Picker -->
@@ -416,61 +382,20 @@
           </div>
         {/snippet}
 
-        <div class="svg-chart-container-sub">
-          <svg class="sub-svg" viewBox="0 0 480 150">
-            <!-- Grid Lines -->
-            <line x1="40" y1="20" x2="440" y2="20" class="grid-line" />
-            <line x1="40" y1="70" x2="440" y2="70" class="grid-line" />
-            <line x1="40" y1="120" x2="440" y2="120" class="grid-line" />
-
-            <!-- Area -->
-            <path d={svgPointsData.areaD} class="chart-area-fill" fill="rgba(79, 70, 229, 0.12)" />
-
-            <!-- Path Line -->
-            <path d={svgPointsData.pathD} class="chart-line-stroke" />
-
-            <!-- Dots -->
-            {#each svgPointsData.points as pt, idx}
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r={selectedPointIdx === idx ? "7" : "4"}
-                class="chart-point-dot"
-                class:selected={selectedPointIdx === idx}
-                role="button"
-                tabindex="0"
-                aria-label="Seleziona punto grafico"
-                onclick={() => {
-                  if (selectedPointIdx === idx) {
-                    selectedPointIdx = null;
-                  } else {
-                    selectedPointIdx = idx;
-                  }
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    if (selectedPointIdx === idx) {
-                      selectedPointIdx = null;
-                    } else {
-                      selectedPointIdx = idx;
-                    }
-                  }
-                }}
-              />
-            {/each}
-          </svg>
-        </div>
-
-        <div class="chart-y-axis-lbls">
-          <span>Massimo: €{svgPointsData.maxVal.toLocaleString('it-IT')}</span>
-          {#if selectedPointIdx !== null}
-            <span class="selected-period-banner">
-              Filtro attivo: <strong>{chartPeriods[selectedPointIdx].label}</strong> (Valore: €{computedChartPoints[selectedPointIdx].toLocaleString('it-IT')})
-              <button onclick={() => selectedPointIdx = null} class="clear-filter-btn">Azzera filtro</button>
-            </span>
-          {/if}
-          <span>Minimo: 0</span>
-        </div>
+        {#if loadingChart}
+          <div class="loader-box" style="border: none; padding: 20px;">
+            <span class="spinner"></span>
+            Caricamento grafico andamento...
+          </div>
+        {:else}
+          <LineChart
+            data={computedChartPoints}
+            labels={chartPeriods.map(p => p.label)}
+            selectedIdx={selectedPointIdx}
+            onSelect={(idx) => selectedPointIdx = idx}
+            isCurrency={true}
+          />
+        {/if}
       </Card>
     </div>
   {/if}
@@ -482,13 +407,41 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        <div class="filter-tabs">
-          <button class="tab-btn" class:active={activeTab === 'all'} onclick={() => activeTab = 'all'}>Tutti</button>
-          <button class="tab-btn" class:active={activeTab === 'pending'} onclick={() => activeTab = 'pending'}>In Attesa</button>
-          <button class="tab-btn" class:active={activeTab === 'approved'} onclick={() => activeTab = 'approved'}>Approvati</button>
-          {#if $activeRole !== 'commerciale'}
-            <button class="tab-btn accent-tab" class:active={activeTab === 'commissions'} onclick={() => activeTab = 'commissions'}>Provvigioni Consulenti</button>
-          {/if}
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+          <div class="filter-tabs" style="margin: 0;">
+            <button class="tab-btn" class:active={activeTab === 'all'} onclick={() => activeTab = 'all'}>Tutti</button>
+            <button class="tab-btn" class:active={activeTab === 'pending'} onclick={() => activeTab = 'pending'}>In Attesa</button>
+            <button class="tab-btn" class:active={activeTab === 'approved'} onclick={() => activeTab = 'approved'}>Approvati</button>
+            {#if $activeRole !== 'commerciale'}
+              <button class="tab-btn accent-tab" class:active={activeTab === 'commissions'} onclick={() => activeTab = 'commissions'}>Provvigioni Consulenti</button>
+            {/if}
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button onclick={() => exportToCSV(filteredContracts, [
+              { key: 'id', header: 'ID Contratto' },
+              { key: 'createdAt', header: 'Data Creazione' },
+              { key: 'clientName', header: 'Cliente' },
+              { key: 'vendorEmail', header: 'Commerciale' },
+              { key: 'totalPrice', header: 'Valore Lordo' },
+              { key: 'status', header: 'Stato' }
+            ], 'gestoray_contratti')} class="back-link-btn" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in formato CSV">
+              CSV
+            </button>
+            <button onclick={() => exportToExcel(filteredContracts, [
+              { key: 'id', header: 'ID Contratto' },
+              { key: 'createdAt', header: 'Data Creazione' },
+              { key: 'clientName', header: 'Cliente' },
+              { key: 'vendorEmail', header: 'Commerciale' },
+              { key: 'totalPrice', header: 'Valore Lordo' },
+              { key: 'status', header: 'Stato' }
+            ], 'gestoray_contratti')} class="back-link-btn" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in Excel (XLS)">
+              Excel
+            </button>
+            <button onclick={triggerPrint} class="back-link-btn" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Stampa l'elenco / Salva PDF">
+              Stampa / PDF
+            </button>
+          </div>
         </div>
       {/snippet}
 
@@ -547,10 +500,19 @@
               {/if}
             </div>
           {:else if col.key === 'commission'}
-            {@const calculation = calculateContractCommission(row)}
+            {@const deriv = row.derived || {}}
+            {@const isComm = $activeRole === 'commerciale'}
+            {@const myUid = $auth?.uid}
+            {@const myComm = (isComm && row.secondVendorUid === myUid) ? (deriv.commissionSecondary || 0) : (deriv.commissionPrimary || 0)}
             <div class="comm-cell">
-              <strong class="comm-total">€ {calculation.totalCommission.toFixed(2)}</strong>
-              <span class="comm-sub">({calculation.qualification.toUpperCase()})</span>
+              <strong class="comm-total">€ {myComm.toFixed(2)}</strong>
+              <span class="comm-sub">
+                {#if isComm && row.secondVendorUid === myUid}
+                  (CO-SELLING {row.secondVendorShare}%)
+                {:else}
+                  (TOT: €{(deriv.commissionTotal || 0).toFixed(2)})
+                {/if}
+              </span>
             </div>
           {:else if col.key === 'status'}
             <div class="status-cell">
@@ -603,13 +565,7 @@
     gap: 20px;
     align-items: center;
     box-shadow: var(--shadow-sm);
-  }
-
-  .stat-card.border-success {
-    border-left: 5px solid var(--color-success);
-  }
-  .stat-card.border-warning {
-    border-left: 5px solid var(--color-warning);
+    border-left: 5px solid var(--color-secondary-500);
   }
 
   .stat-icon {
@@ -620,16 +576,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-  }
-
-  .stat-icon.success {
-    background: var(--color-success-light);
-    color: var(--color-success-text);
-  }
-
-  .stat-icon.warning {
-    background: var(--color-warning-light);
-    color: var(--color-warning-text);
+    background: var(--color-secondary-100);
+    color: var(--color-secondary-700);
   }
 
   .stat-body {
@@ -704,7 +652,7 @@
   .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;
@@ -917,7 +865,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Expandable trend chart styles */
   .subpage-chart-control {
     margin-bottom: 16px;
     display: flex;
@@ -990,75 +937,5 @@
     background: var(--color-white);
     color: var(--color-primary-600);
     box-shadow: var(--shadow-sm);
-  }
-
-  .svg-chart-container-sub {
-    background: var(--color-white);
-    padding: 16px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-neutral-200);
-    margin-top: 12px;
-  }
-
-  .sub-svg {
-    width: 100%;
-    height: 120px;
-    overflow: visible;
-  }
-
-  .grid-line {
-    stroke: var(--color-neutral-200);
-    stroke-width: 1;
-    stroke-dasharray: 4 4;
-  }
-
-  .chart-line-stroke {
-    stroke: var(--color-primary-500);
-    stroke-width: 2.5;
-    fill: none;
-  }
-
-  .chart-point-dot {
-    fill: var(--color-white);
-    stroke: var(--color-primary-500);
-    stroke-width: 2;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .chart-point-dot:hover, .chart-point-dot.selected {
-    fill: var(--color-primary-500);
-    r: 7px;
-  }
-
-  .chart-y-axis-lbls {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--color-neutral-500);
-    margin-top: 8px;
-    align-items: center;
-  }
-
-  .selected-period-banner {
-    background: var(--color-primary-50);
-    color: var(--color-primary-700);
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .clear-filter-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-primary-200);
-    color: var(--color-primary-600);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: var(--radius-xs);
-    cursor: pointer;
   }
 </style>

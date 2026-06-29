@@ -5,10 +5,22 @@
      sidebar backgrounds, active states, focus rings, shadows, and text colors 
      will dynamically recalculate.
      ========================================================================== */
-  --brand-h: 220;
+  --brand-h: 211;
   /* HUE: 220 = Corporate Blue. Try 120 (Green), 270 (Purple), 0 (Red), etc. */
-  --brand-s: 90%;
+  --brand-s: 28%;
   /* SATURATION: Base brand color saturation level. */
+  --brand-l-num: 26;
+  /* LIGHTNESS: Base brand color lightness level (0-100). Exposes control over V/L. */
+  --brand-l: calc(var(--brand-l-num) * 1%);
+
+  /* Secondary Color Configuration (defaults to primary for monochromatic theme) */
+  --sec-h: 38;
+  /* Hue (defaults to primary) */
+  --sec-s: 92%;
+  /* Saturation (defaults to primary) */
+  --sec-l-num: 50;
+  /* Lightness (defaults to primary) */
+  --sec-l: calc(var(--sec-l-num) * 1%);
 
   /* NEUTRAL SCALE CHROMA CONFIGURATION
      Set --neutral-s to 0% for pure greys (chromaless).
@@ -19,17 +31,34 @@
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* Brand / Logo Accent Color dynamically generated using intensity scales */
-  --color-primary-50: hsl(var(--brand-h), var(--brand-s), 97%);
-  --color-primary-100: hsl(var(--brand-h), var(--brand-s), 93%);
-  --color-primary-200: hsl(var(--brand-h), var(--brand-s), 85%);
-  --color-primary-300: hsl(var(--brand-h), var(--brand-s), 75%);
-  --color-primary-400: hsl(var(--brand-h), var(--brand-s), 60%);
-  --color-primary-500: hsl(var(--brand-h), var(--brand-s), 50%);
+  --color-primary-50: hsl(var(--brand-h), var(--brand-s), calc((var(--brand-l-num) + 0.94 * (100 - var(--brand-l-num))) * 1%));
+  --color-primary-100: hsl(var(--brand-h), var(--brand-s), calc((var(--brand-l-num) + 0.85 * (100 - var(--brand-l-num))) * 1%));
+  --color-primary-200: hsl(var(--brand-h), var(--brand-s), calc((var(--brand-l-num) + 0.70 * (100 - var(--brand-l-num))) * 1%));
+  --color-primary-300: hsl(var(--brand-h), var(--brand-s), calc((var(--brand-l-num) + 0.50 * (100 - var(--brand-l-num))) * 1%));
+  --color-primary-400: hsl(var(--brand-h), var(--brand-s), calc((var(--brand-l-num) + 0.20 * (100 - var(--brand-l-num))) * 1%));
+  --color-primary-500: hsl(var(--brand-h), var(--brand-s), var(--brand-l));
   /* Base Brand Color */
-  --color-primary-600: hsl(var(--brand-h), var(--brand-s), 42%);
-  --color-primary-700: hsl(var(--brand-h), var(--brand-s), 35%);
-  --color-primary-800: hsl(var(--brand-h), var(--brand-s), 28%);
-  --color-primary-900: hsl(var(--brand-h), var(--brand-s), 20%);
+  --color-primary-600: hsl(var(--brand-h), var(--brand-s), calc(var(--brand-l-num) * 0.84 * 1%));
+  --color-primary-700: hsl(var(--brand-h), var(--brand-s), calc(var(--brand-l-num) * 0.70 * 1%));
+  --color-primary-800: hsl(var(--brand-h), var(--brand-s), calc(var(--brand-l-num) * 0.56 * 1%));
+  --color-primary-900: hsl(var(--brand-h), var(--brand-s), calc(var(--brand-l-num) * 0.40 * 1%));
+
+  /* Brand Secondary Accent Color dynamically generated using intensity scales */
+  --color-secondary-50: hsl(var(--sec-h), var(--sec-s), calc((var(--sec-l-num) + 0.94 * (100 - var(--sec-l-num))) * 1%));
+  --color-secondary-100: hsl(var(--sec-h), var(--sec-s), calc((var(--sec-l-num) + 0.85 * (100 - var(--sec-l-num))) * 1%));
+  --color-secondary-200: hsl(var(--sec-h), var(--sec-s), calc((var(--sec-l-num) + 0.70 * (100 - var(--sec-l-num))) * 1%));
+  --color-secondary-300: hsl(var(--sec-h), var(--sec-s), calc((var(--sec-l-num) + 0.50 * (100 - var(--sec-l-num))) * 1%));
+  --color-secondary-400: hsl(var(--sec-h), var(--sec-s), calc((var(--sec-l-num) + 0.20 * (100 - var(--sec-l-num))) * 1%));
+  --color-secondary-500: hsl(var(--sec-h), var(--sec-s), var(--sec-l));
+  /* Base Brand Secondary Color */
+  --color-secondary-600: hsl(var(--sec-h), var(--sec-s), calc(var(--sec-l-num) * 0.84 * 1%));
+  --color-secondary-700: hsl(var(--sec-h), var(--sec-s), calc(var(--sec-l-num) * 0.70 * 1%));
+  --color-secondary-800: hsl(var(--sec-h), var(--sec-s), calc(var(--sec-l-num) * 0.56 * 1%));
+  --color-secondary-900: hsl(var(--sec-h), var(--sec-s), calc(var(--sec-l-num) * 0.40 * 1%));
+
+  /* Automatic high-contrast text colors based on lightness */
+  --color-primary-text-contrast: hsl(var(--brand-h), var(--brand-s), calc(clamp(10%, (var(--brand-l-num) - 50) * -9999%, 95%)));
+  --color-secondary-text-contrast: hsl(var(--sec-h), var(--sec-s), calc(clamp(10%, (var(--sec-l-num) - 50) * -9999%, 95%)));
 
   /* Neutral scale (between white and black) generated dynamically using saturation */
   --color-white: #ffffff;
@@ -82,7 +111,8 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(0, 0, 0, 0.02);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 16px -6px rgba(0, 0, 0, 0.02);
   --shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.04), 0 15px 30px -15px rgba(0, 0, 0, 0.03);
-  --shadow-primary-glow: 0 0 35px hsla(var(--brand-h), var(--brand-s), 50%, 0.08);
+  --shadow-primary-glow: 0 0 35px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08);
+  --shadow-secondary-glow: 0 0 35px hsla(var(--sec-h), var(--sec-s), var(--sec-l), 0.08);
 
   /* Border radiuses */
   --radius-sm: 6px;
@@ -109,7 +139,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin-top: 0;
   letter-spacing: -0.025em;
   font-weight: 600;
@@ -144,7 +179,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+  box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
 }
 
 input:disabled,
@@ -173,4 +208,44 @@ textarea:disabled {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-400);
+}
+
+/* ==========================================================================
+   INTERACTIVE HOVER STATES USING SECONDARY COLOR
+   ========================================================================== */
+a {
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-secondary-500);
+}
+
+.toggle-btn:hover {
+  border-color: var(--color-secondary-500) !important;
+  color: var(--color-secondary-500) !important;
+}
+
+.nav-item:hover {
+  color: var(--color-secondary-500) !important;
+  background-color: var(--color-secondary-100) !important;
+}
+
+/* Primary buttons hover transition to secondary color */
+.btn-primary:hover,
+.btn:not(.btn-secondary):not(.btn-primary):hover:not(:disabled),
+.submit-btn:hover:not(:disabled),
+.save-btn:hover:not(:disabled),
+.add-client-btn:hover,
+.add-user-btn:hover,
+.add-product-btn:hover,
+.submit-profile-btn:hover,
+.add-to-items-btn:hover,
+.convert-contract-btn:hover,
+.approve-collect-btn:hover {
+  background: linear-gradient(135deg,
+      var(--color-secondary-500),
+      var(--color-secondary-600)) !important;
+  color: var(--color-secondary-text-contrast) !important;
+  box-shadow: 0 6px 16px hsla(var(--sec-h), var(--sec-s), var(--sec-l), 0.25) !important;
 }

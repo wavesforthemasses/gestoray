@@ -93,7 +93,7 @@
   :global(.form-group select:focus:not(:disabled)) {
     outline: none;
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   /* Globally override disabled styling for target inputs inside children snippets if disabled is passed */

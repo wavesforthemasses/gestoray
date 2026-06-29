@@ -3,7 +3,7 @@
   import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Card, Table, Pagination, FormField, RoleSelector } from '$lib';
+  import { Card, Table, Pagination, FormField, RoleSelector, generateSearchTerms } from '$lib';
   import { Database, UserPlus, ArrowLeft } from '@lucide/svelte';
 
   let showAddForm = $state(false);
@@ -40,14 +40,15 @@
       const querySnapshot = await getDocs(collection(db, 'users'));
       const list: Array<{ uid: string, email: string, roles: string[], nome?: string, cognome?: string, createdAt?: string }> = [];
       querySnapshot.forEach((doc: any) => {
-        const data = doc.data();
+        const data = doc.data() || {};
+        const original = data.original || data || {};
         list.push({
           uid: doc.id,
-          email: data.email,
-          roles: data.roles || [],
-          nome: data.nome,
-          cognome: data.cognome,
-          createdAt: data.createdAt
+          email: original.email,
+          roles: original.roles || [],
+          nome: original.nome,
+          cognome: original.cognome,
+          createdAt: data.edits?.createdAt || data.createdAt
         });
       });
       registeredUsers = list;
@@ -93,12 +94,27 @@
       const uid = 'uid_' + Math.random().toString(36).substring(2, 11);
 
       await setDoc(doc(db, 'users', uid), {
-        nome: cleanNome,
-        cognome: cleanCognome,
-        email: cleanEmail,
-        roles: selectedRoles,
-        qualification: qualification,
-        createdAt: new Date().toISOString()
+        original: {
+          nome: cleanNome,
+          cognome: cleanCognome,
+          email: cleanEmail,
+          roles: selectedRoles,
+          qualification: qualification
+        },
+        derived: {
+          totalContractsCount: 0,
+          totalApprovedSales: 0,
+          totalPendingSales: 0,
+          totalCommissionEarned: 0,
+          totalCommissionPending: 0,
+          totalClientsCreated: 0,
+          totalNNCF: 0,
+          textSearch: generateSearchTerms(cleanNome + ' ' + cleanCognome + ' ' + cleanEmail)
+        },
+        edits: {
+          createdAt: new Date().toISOString(),
+          createdBy: $auth?.uid || 'system'
+        }
       });
 
       statusMessage = `Utente ${cleanNome} ${cleanCognome} creato con successo!`;
@@ -283,7 +299,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   .add-user-btn:hover {
@@ -387,7 +403,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity var(--transition-fast);
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
   }
 
   .save-btn:hover:not(:disabled) {

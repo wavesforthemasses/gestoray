@@ -1,10 +1,11 @@
 <script lang="ts">
   import { activeRole, auth } from '$lib/auth';
-  import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
+  import { db, doc, setDoc, collection, getDocs, getDoc, query, where, orderBy } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Card, Table, FormField } from '$lib';
+  import { Card, Table, FormField, LineChart } from '$lib';
   import { Wallet, Plus, ArrowLeft, Percent, Check, ChevronDown, ChevronUp, TrendingUp } from '@lucide/svelte';
+  import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
@@ -17,16 +18,17 @@
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
 
-    fetchData();
+    fetchPayments();
     return () => unsubscribe();
   });
 
   // Data collections
-  let paymentsList = $state<Array<{ id: string, clientId: string, clientName: string, contractId: string, amount: number, date: string, recordedBy: string, recordedEmail: string }>>([]);
-  let clientsList = $state<Array<{ id: string, nome: string, cognome?: string, email?: string }>>([]);
-  let contractsList = $state<Array<{ id: string, clientId: string, clientName: string, totalPrice: number, status: string }>>([]);
+  let paymentsList = $state<any[]>([]);
+  let clientsList = $state<any[]>([]);
+  let clientContracts = $state<any[]>([]);
   
   let loading = $state(true);
+  let loadingDropdowns = $state(false);
   let showAddForm = $state(false);
 
   // Form state
@@ -43,58 +45,33 @@
     { key: 'clientName', header: 'Cliente' },
     { key: 'contractId', header: 'ID Contratto' },
     { key: 'amount', header: 'Importo Netto' },
-    { key: 'recordedEmail', header: 'Registrato Da' }
+    { key: 'recordedEmail', header: 'Registrato Da' },
+    { key: 'actions', header: 'Azioni' }
   ];
 
-  async function fetchData() {
+  async function fetchPayments() {
     loading = true;
     try {
-      // 1. Fetch Payments
-      const paymentsSnapshot = await getDocs(collection(db, 'payments'));
-      const pList: typeof paymentsList = [];
-      paymentsSnapshot.forEach((doc: any) => {
+      // Query top-level payments
+      const snap = await getDocs(collection(db, 'payments'));
+      const pList: any[] = [];
+      snap.forEach((doc: any) => {
         const d = doc.data();
+        const orig = d.original || {};
         pList.push({
           id: doc.id,
-          clientId: d.clientId,
-          clientName: d.clientName,
-          contractId: d.contractId,
-          amount: d.amount,
-          date: d.date,
-          recordedBy: d.recordedBy,
-          recordedEmail: d.recordedEmail
+          clientId: orig.clientId,
+          clientName: orig.clientName,
+          // Since payment can be split across multiple contracts, the list shows contractId or "Ripartito"
+          // We can read it from payments, or just reference the field if denormalized
+          contractId: orig.contractId || 'Vedi dettaglio',
+          amount: orig.amount,
+          date: orig.date,
+          recordedBy: orig.recordedBy,
+          recordedEmail: orig.recordedEmail
         });
       });
       paymentsList = pList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      // 2. Fetch Clients (for form select dropdown)
-      const clientsSnapshot = await getDocs(collection(db, 'clients'));
-      const clList: typeof clientsList = [];
-      clientsSnapshot.forEach((doc: any) => {
-        const d = doc.data();
-        clList.push({
-          id: doc.id,
-          nome: d.nome,
-          cognome: d.cognome,
-          email: d.email
-        });
-      });
-      clientsList = clList.sort((a, b) => a.nome.localeCompare(b.nome));
-
-      // 3. Fetch Contracts
-      const contractsSnapshot = await getDocs(collection(db, 'contracts'));
-      const coList: typeof contractsList = [];
-      contractsSnapshot.forEach((doc: any) => {
-        const d = doc.data();
-        coList.push({
-          id: doc.id,
-          clientId: d.clientId,
-          clientName: d.clientName,
-          totalPrice: d.totalPrice,
-          status: d.status
-        });
-      });
-      contractsList = coList;
     } catch (e) {
       console.error('Error fetching payments data:', e);
     } finally {
@@ -102,10 +79,74 @@
     }
   }
 
-  // Filtered contracts of selected client
-  let clientContracts = $derived(
-    contractsList.filter(c => c.clientId === selectedClientId)
-  );
+  // Load clients list only when opening form
+  async function loadClients() {
+    loadingDropdowns = true;
+    try {
+      const snap = await getDocs(collection(db, 'clients'));
+      const clList: any[] = [];
+      snap.forEach((doc: any) => {
+        const d = doc.data()?.original || doc.data() || {};
+        clList.push({
+          id: doc.id,
+          nome: d.nome || '',
+          cognome: d.cognome || '',
+          email: d.email || ''
+        });
+      });
+      clientsList = clList.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+    } catch (e) {
+      console.error('Error fetching clients for dropdown:', e);
+    } finally {
+      loadingDropdowns = false;
+    }
+  }
+
+  // Load contracts dynamically when client is selected in the form
+  async function loadClientContracts(clientId: string) {
+    if (!clientId) {
+      clientContracts = [];
+      return;
+    }
+    loadingDropdowns = true;
+    try {
+      const q = query(collection(db, 'contracts'), where('original.clientId', '==', clientId));
+      const snap = await getDocs(q);
+      const coList: any[] = [];
+      snap.forEach((doc: any) => {
+        const d = doc.data();
+        const orig = d.original || {};
+        coList.push({
+          id: doc.id,
+          clientId: orig.clientId,
+          clientName: orig.clientName,
+          totalPrice: orig.totalPrice,
+          status: orig.status
+        });
+      });
+      clientContracts = coList;
+    } catch (e) {
+      console.error('Error fetching client contracts:', e);
+    } finally {
+      loadingDropdowns = false;
+    }
+  }
+
+  // React to client selection
+  $effect(() => {
+    if (selectedClientId) {
+      loadClientContracts(selectedClientId);
+    } else {
+      clientContracts = [];
+    }
+  });
+
+  // React to form opening
+  $effect(() => {
+    if (showAddForm) {
+      loadClients();
+    }
+  });
 
   // Sync amount field to contract price when selecting a contract
   function handleContractChange(id: string) {
@@ -136,42 +177,47 @@
     try {
       const client = clientsList.find(c => c.id === selectedClientId);
       const clientFullName = client ? `${client.nome} ${client.cognome || ''}`.trim() : 'Sconosciuto';
+      const now = new Date().toISOString();
 
       const paymentId = 'pay_' + Math.random().toString(36).substring(2, 11);
+      
+      // 1. Create top-level payment document
       const newPayment = {
-        clientId: selectedClientId,
-        clientName: clientFullName,
-        contractId: selectedContractId,
-        amount: amountInput,
-        date: new Date().toISOString(),
-        recordedBy: $auth.uid,
-        recordedEmail: $auth.email
+        original: {
+          clientId: selectedClientId,
+          clientName: clientFullName,
+          contractId: selectedContractId,
+          amount: amountInput,
+          date: now,
+          recordedBy: $auth.uid,
+          recordedEmail: $auth.email
+        },
+        edits: {
+          createdAt: now,
+          createdBy: $auth.uid
+        }
       };
-
-      // 1. Save payment record
       await setDoc(doc(db, 'payments', paymentId), newPayment);
 
-      // 2. Set contract status to approved and record approval timestamps
-      // Fetch full contract object to preserve structure
-      const contractDoc = await getDocs(collection(db, 'contracts'));
-      let fullContractData: any = null;
-      contractDoc.forEach((doc: any) => {
-        if (doc.id === selectedContractId) {
-          fullContractData = doc.data();
+      // 2. Create payment contract allocation sub-document
+      await setDoc(doc(db, 'payments', paymentId, 'contractsPaid', selectedContractId), {
+        original: {
+          contractId: selectedContractId,
+          paymentId: paymentId,
+          amount: amountInput,
+          clientId: selectedClientId,
+          clientName: clientFullName,
+          date: now
+        },
+        edits: {
+          createdAt: now,
+          createdBy: $auth.uid
         }
       });
 
-      if (fullContractData) {
-        await setDoc(doc(db, 'contracts', selectedContractId), {
-          ...fullContractData,
-          status: 'approved',
-          approvedAt: new Date().toISOString(),
-          approvedBy: $auth.uid,
-          approvedEmail: $auth.email
-        });
-      }
+      // Side-effects (approving contract, updating client status customer, NNCF) are triggered server-side!
 
-      successMsg = `Incasso registrato con successo per €${amountInput.toFixed(2)}. Il contratto è stato approvato!`;
+      successMsg = `Incasso registrato con successo per €${amountInput.toFixed(2)}. Il contratto è in fase di approvazione!`;
       
       // Reset form
       selectedClientId = '';
@@ -179,7 +225,7 @@
       amountInput = null;
       showAddForm = false;
 
-      await fetchData();
+      await fetchPayments();
     } catch (err: any) {
       errorMsg = err.message || 'Errore durante la registrazione dell\'incasso.';
     } finally {
@@ -206,13 +252,13 @@
     const periods: Array<{ start: Date, end: Date, label: string }> = [];
 
     if (granularity === 'settimanale') {
-      for (let i = 51; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) { // 12 weeks
         const pEnd = new Date(end.getTime() - i * 7 * 24 * 60 * 60 * 1000);
         const pStart = new Date(pEnd.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
         periods.push({ start: pStart, end: pEnd, label: `${pEnd.getDate()}/${pEnd.getMonth() + 1}` });
       }
     } else if (granularity === 'mensile') {
-      for (let i = 23; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) { // 12 months
         const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
         const pStart = new Date(d.getFullYear(), d.getMonth(), 1);
         const pEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -220,7 +266,7 @@
         periods.push({ start: pStart, end: pEnd, label: `${monthNames[pStart.getMonth()]} ${String(pStart.getFullYear()).slice(2)}` });
       }
     } else {
-      for (let i = 9; i >= 0; i--) {
+      for (let i = 4; i >= 0; i--) { // 5 years
         const year = end.getFullYear() - i;
         const pStart = new Date(year, 0, 1);
         const pEnd = new Date(year, 11, 31, 23, 59, 59, 999);
@@ -241,26 +287,6 @@
 
       return dbValue;
     });
-  });
-
-  let svgPointsData = $derived.by(() => {
-    const data = computedChartPoints;
-    const maxVal = Math.max(...data, 1000);
-    const count = data.length;
-
-    const points = data.map((val, idx) => {
-      const x = 40 + (idx / (count - 1)) * 400;
-      const y = 120 - (val / maxVal) * 100;
-      return { x, y, val };
-    });
-
-    const pathD = points.reduce((acc, pt, idx) => {
-      return acc + (idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`);
-    }, '');
-
-    const areaD = pathD + ` L ${points[points.length - 1].x} 120 L ${points[0].x} 120 Z`;
-
-    return { points, pathD, areaD, maxVal };
   });
 
   // Filtered payments list based on selected point
@@ -313,9 +339,9 @@
             <div class="chart-controls-sub">
               <!-- Period Granularity -->
               <select bind:value={granularity} class="sub-chart-select">
-                <option value="settimanale">Settimanale (52w)</option>
-                <option value="mensile">Mensile (24m)</option>
-                <option value="annuale">Annuale (10y)</option>
+                <option value="settimanale">Settimanale (12w)</option>
+                <option value="mensile">Mensile (12m)</option>
+                <option value="annuale">Annuale (5y)</option>
               </select>
 
               <!-- End Date Picker -->
@@ -323,61 +349,13 @@
             </div>
           {/snippet}
 
-          <div class="svg-chart-container-sub">
-            <svg class="sub-svg" viewBox="0 0 480 150">
-              <!-- Grid Lines -->
-              <line x1="40" y1="20" x2="440" y2="20" class="grid-line" />
-              <line x1="40" y1="70" x2="440" y2="70" class="grid-line" />
-              <line x1="40" y1="120" x2="440" y2="120" class="grid-line" />
-
-              <!-- Area -->
-              <path d={svgPointsData.areaD} class="chart-area-fill" fill="rgba(79, 70, 229, 0.12)" />
-
-              <!-- Path Line -->
-              <path d={svgPointsData.pathD} class="chart-line-stroke" />
-
-              <!-- Dots -->
-              {#each svgPointsData.points as pt, idx}
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={selectedPointIdx === idx ? "7" : "4"}
-                  class="chart-point-dot"
-                  class:selected={selectedPointIdx === idx}
-                  role="button"
-                  tabindex="0"
-                  aria-label="Seleziona punto grafico"
-                  onclick={() => {
-                    if (selectedPointIdx === idx) {
-                      selectedPointIdx = null;
-                    } else {
-                      selectedPointIdx = idx;
-                    }
-                  }}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      if (selectedPointIdx === idx) {
-                        selectedPointIdx = null;
-                      } else {
-                        selectedPointIdx = idx;
-                      }
-                    }
-                  }}
-                />
-              {/each}
-            </svg>
-          </div>
-
-          <div class="chart-y-axis-lbls">
-            <span>Massimo: €{svgPointsData.maxVal.toLocaleString('it-IT')}</span>
-            {#if selectedPointIdx !== null}
-              <span class="selected-period-banner">
-                Filtro attivo: <strong>{chartPeriods[selectedPointIdx].label}</strong> (Valore: €{computedChartPoints[selectedPointIdx].toLocaleString('it-IT')})
-                <button onclick={() => selectedPointIdx = null} class="clear-filter-btn">Azzera filtro</button>
-              </span>
-            {/if}
-            <span>Minimo: 0</span>
-          </div>
+          <LineChart
+            data={computedChartPoints}
+            labels={chartPeriods.map(p => p.label)}
+            selectedIdx={selectedPointIdx}
+            onSelect={(idx) => selectedPointIdx = idx}
+            isCurrency={true}
+          />
         </Card>
       </div>
     {/if}
@@ -392,11 +370,34 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        {#if $activeRole !== 'direzione'}
-          <button onclick={() => { showAddForm = true; successMsg = ''; errorMsg = ''; }} class="add-payment-btn">
-            <Plus size={16} /> Registra Nuovo Incasso
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <button onclick={() => exportToCSV(filteredPayments, [
+            { key: 'date', header: 'Data Incasso' },
+            { key: 'clientName', header: 'Cliente' },
+            { key: 'contractId', header: 'ID Contratto' },
+            { key: 'amount', header: 'Importo Netto' },
+            { key: 'recordedEmail', header: 'Registrato Da' }
+          ], 'gestoray_incassi')} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in formato CSV">
+            CSV
           </button>
-        {/if}
+          <button onclick={() => exportToExcel(filteredPayments, [
+            { key: 'date', header: 'Data Incasso' },
+            { key: 'clientName', header: 'Cliente' },
+            { key: 'contractId', header: 'ID Contratto' },
+            { key: 'amount', header: 'Importo Netto' },
+            { key: 'recordedEmail', header: 'Registrato Da' }
+          ], 'gestoray_incassi')} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in Excel (XLS)">
+            Excel
+          </button>
+          <button onclick={triggerPrint} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Stampa l'elenco / Salva PDF">
+            Stampa / PDF
+          </button>
+          {#if $activeRole !== 'direzione'}
+            <button onclick={() => { showAddForm = true; successMsg = ''; errorMsg = ''; }} class="add-payment-btn" style="height: 34px;">
+              <Plus size={16} /> Registra Nuovo Incasso
+            </button>
+          {/if}
+        </div>
       {/snippet}
 
       {#if loading}
@@ -416,6 +417,10 @@
             <span class="amount-cell">€ {row.amount.toFixed(2)}</span>
           {:else if col.key === 'recordedEmail'}
             <span class="recorded-cell">{row.recordedEmail}</span>
+          {:else if col.key === 'actions'}
+            <button onclick={() => goto(`/dashboard/payments/${row.id}`)} class="back-link-btn" style="padding: 4px 8px; font-size: 11px;">
+              Dettagli
+            </button>
           {/if}
         {/snippet}
 
@@ -445,81 +450,88 @@
         </button>
       {/snippet}
 
-      <form onsubmit={handleRegisterPayment} class="payment-form">
-        <!-- 1. Select Client -->
-        <FormField id="pay-client" label="Seleziona Cliente" helpText="Scegli il cliente per visualizzarne i contratti emessi.">
-          <select id="pay-client" bind:value={selectedClientId} required disabled={submitting}>
-            <option value="">-- Seleziona Cliente --</option>
-            {#each clientsList as c}
-              <option value={c.id}>{c.nome} {c.cognome || ''}</option>
-            {/each}
-          </select>
-        </FormField>
-
-        <!-- 2. Select Contract (after client chosen) -->
-        {#if selectedClientId}
-          <FormField id="pay-contract" label="Seleziona Contratto Associato" helpText="Seleziona il contratto per cui inserire il saldo cassa.">
-            <select 
-              id="pay-contract" 
-              bind:value={selectedContractId} 
-              onchange={(e) => handleContractChange((e.target as HTMLSelectElement).value)}
-              required 
-              disabled={submitting}
-            >
-              <option value="">-- Seleziona Contratto --</option>
-              {#each clientContracts as contr}
-                <option value={contr.id}>
-                  Contratto {contr.id} &mdash; €{contr.totalPrice.toFixed(2)} ({contr.status === 'approved' ? 'Approvato' : 'In attesa'})
-                </option>
+      {#if loadingDropdowns}
+        <div class="loader-box">
+          <span class="spinner"></span>
+          Caricamento dati di supporto...
+        </div>
+      {:else}
+        <form onsubmit={handleRegisterPayment} class="payment-form">
+          <!-- 1. Select Client -->
+          <FormField id="pay-client" label="Seleziona Cliente" helpText="Scegli il cliente per visualizzarne i contratti emessi.">
+            <select id="pay-client" bind:value={selectedClientId} required disabled={submitting}>
+              <option value="">-- Seleziona Cliente --</option>
+              {#each clientsList as c}
+                <option value={c.id}>{c.nome} {c.cognome || ''}</option>
               {/each}
-              {#if clientContracts.length === 0}
-                <option value="" disabled>Nessun contratto registrato per questo cliente</option>
-              {/if}
             </select>
           </FormField>
-        {/if}
 
-        <!-- 3. Net Value Input & VAT calculator -->
-        {#if selectedContractId}
-          <div class="amount-field-wrapper">
-            <FormField 
-              id="pay-amount" 
-              label="Importo Netto Incassato (€)" 
-              helpText="Digita l'importo imponibile al netto di IVA. Il prezzo lordo contrattuale è preselezionato."
-            >
-              <div class="input-with-button">
-                <input
-                  type="number"
-                  id="pay-amount"
-                  bind:value={amountInput}
-                  placeholder="es. 1000.00"
-                  required
-                  min="0"
-                  step="0.01"
-                  disabled={submitting}
-                />
-                <button 
-                  type="button" 
-                  onclick={handleScorporoIva} 
-                  class="vat-btn"
-                  title="Dividi l'importo immesso per 1.22 per ricavare l'imponibile netto al volo"
-                  disabled={submitting || amountInput === null}
-                >
-                  <Percent size={14} /> Scorpora IVA (22%)
-                </button>
-              </div>
+          <!-- 2. Select Contract (after client chosen) -->
+          {#if selectedClientId}
+            <FormField id="pay-contract" label="Seleziona Contratto Associato" helpText="Seleziona il contratto per cui inserire il saldo cassa.">
+              <select 
+                id="pay-contract" 
+                bind:value={selectedContractId} 
+                onchange={(e) => handleContractChange((e.target as HTMLSelectElement).value)}
+                required 
+                disabled={submitting}
+              >
+                <option value="">-- Seleziona Contratto --</option>
+                {#each clientContracts as contr}
+                  <option value={contr.id}>
+                    Contratto {contr.id} &mdash; €{contr.totalPrice.toFixed(2)} ({contr.status === 'approved' ? 'Approvato' : 'In attesa'})
+                  </option>
+                {/each}
+                {#if clientContracts.length === 0}
+                  <option value="" disabled>Nessun contratto registrato per questo cliente</option>
+                {/if}
+              </select>
             </FormField>
-          </div>
-        {/if}
-
-        <button type="submit" class="submit-btn" disabled={submitting || !selectedContractId || amountInput === null}>
-          {#if submitting}
-            Registrazione in corso...
-          {:else}
-            Registra e Approva Contratto
           {/if}
-        </button>
-      </form>
+
+          <!-- 3. Net Value Input & VAT calculator -->
+          {#if selectedContractId}
+            <div class="amount-field-wrapper">
+              <FormField 
+                id="pay-amount" 
+                label="Importo Netto Incassato (€)" 
+                helpText="Digita l'importo imponibile al netto di IVA. Il prezzo lordo contrattuale è preselezionato."
+              >
+                <div class="input-with-button">
+                  <input
+                    type="number"
+                    id="pay-amount"
+                    bind:value={amountInput}
+                    placeholder="es. 1000.00"
+                    required
+                    min="0"
+                    step="0.01"
+                    disabled={submitting}
+                  />
+                  <button 
+                    type="button" 
+                    onclick={handleScorporoIva} 
+                    class="vat-btn"
+                    title="Dividi l'importo immesso per 1.22 per ricavare l'imponibile netto al volo"
+                    disabled={submitting || amountInput === null}
+                  >
+                    <Percent size={14} /> Scorpora IVA (22%)
+                  </button>
+                </div>
+              </FormField>
+            </div>
+          {/if}
+
+          <button type="submit" class="submit-btn" disabled={submitting || !selectedContractId || amountInput === null}>
+            {#if submitting}
+              Registrazione in corso...
+            {:else}
+              Registra e Approva Contratto
+            {/if}
+          </button>
+        </form>
+      {/if}
     </Card>
   {/if}
 </div>
@@ -547,7 +559,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   .add-payment-btn:hover {
@@ -614,7 +626,7 @@
   .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;
@@ -678,7 +690,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity var(--transition-fast);
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
     margin-top: 10px;
     width: 100%;
   }
@@ -725,7 +737,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Expandable trend chart styles */
   .subpage-chart-control {
     margin-bottom: 16px;
     display: flex;
@@ -771,75 +782,5 @@
     font-family: inherit;
     font-size: 12px;
     background: var(--color-white);
-  }
-
-  .svg-chart-container-sub {
-    background: var(--color-white);
-    padding: 16px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-neutral-200);
-    margin-top: 12px;
-  }
-
-  .sub-svg {
-    width: 100%;
-    height: 120px;
-    overflow: visible;
-  }
-
-  .grid-line {
-    stroke: var(--color-neutral-200);
-    stroke-width: 1;
-    stroke-dasharray: 4 4;
-  }
-
-  .chart-line-stroke {
-    stroke: var(--color-primary-500);
-    stroke-width: 2.5;
-    fill: none;
-  }
-
-  .chart-point-dot {
-    fill: var(--color-white);
-    stroke: var(--color-primary-500);
-    stroke-width: 2;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .chart-point-dot:hover, .chart-point-dot.selected {
-    fill: var(--color-primary-500);
-    r: 7px;
-  }
-
-  .chart-y-axis-lbls {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--color-neutral-500);
-    margin-top: 8px;
-    align-items: center;
-  }
-
-  .selected-period-banner {
-    background: var(--color-primary-50);
-    color: var(--color-primary-700);
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .clear-filter-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-primary-200);
-    color: var(--color-primary-600);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: var(--radius-xs);
-    cursor: pointer;
   }
 </style>

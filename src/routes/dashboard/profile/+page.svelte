@@ -2,6 +2,7 @@
   import { auth } from '$lib/auth';
   import { Card, FormField } from '$lib';
   import { UserCog } from '@lucide/svelte';
+  import { functions, httpsCallable } from '$lib/firebase';
 
   let newEmail = $state('');
   let nome = $state('');
@@ -31,21 +32,13 @@
     isError = false;
 
     try {
-      const response = await fetch('/api/profile/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: $auth.uid,
-          email: cleanEmail,
-          nome: cleanNome,
-          cognome: cleanCognome
-        })
+      const updateProfileFn = httpsCallable(functions, 'updateProfile');
+      await updateProfileFn({
+        uid: $auth.uid,
+        email: cleanEmail,
+        nome: cleanNome,
+        cognome: cleanCognome
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Errore durante l\'aggiornamento del profilo.');
-      }
 
       auth.set({
         ...$auth,
@@ -259,7 +252,7 @@
     cursor: pointer;
     transition: opacity var(--transition-fast);
     margin-top: 10px;
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
   }
 
   .save-btn:hover:not(:disabled) {

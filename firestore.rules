@@ -1,8 +1,120 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    function hasRole(role) {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.original.roles.hasAny([role]);
+    }
+    
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return hasRole('superadmin') || hasRole('amministrazione');
+    }
+    
+    // Blocca scrittura frontend su derived
+    function notWritingDerived() {
+      return (resource == null) ||
+             !('derived' in request.resource.data) ||
+             request.resource.data.derived == resource.data.derived;
+    }
+    
+    // USERS
+    match /users/{uid} {
+      allow read: if isAuth();
+      allow create: if isAdmin();
+      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());
+      allow delete: if hasRole('superadmin');
+    }
+    
+    // CLIENTS
+    match /clients/{clientId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived();
+      allow delete: if hasRole('superadmin');
+      
+      match /activities/{actId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow update: if isAdmin();
+        allow delete: if hasRole('superadmin') || isAdmin();
+      }
+      
+      match /history/{histId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow update: if false;  // audit trail immutabile per update
+        allow delete: if hasRole('superadmin'); // permesso superadmin per cancellazione cliente
+      }
+    }
+    
+    // CONTRACTS
+    match /contracts/{contractId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived();
+      allow delete: if hasRole('superadmin');
+      
+      match /installments/{instId} {
+        allow read: if isAuth();
+        allow create, update: if isAuth() && isAdmin();
+        allow delete: if hasRole('superadmin');
+      }
+    }
+    
+    // PAYMENTS
+    match /payments/{payId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isAdmin();
+      allow update: if false;  // immutabile dopo creazione (solo derived via CF)
+      allow delete: if hasRole('superadmin');
+      
+      match /contractsPaid/{contractId} {
+        allow read: if isAuth();
+        allow create: if isAuth() && isAdmin();
+        allow update, delete: if hasRole('superadmin');
+      }
+    }
+    
+    // PRODUCTS
+    match /products/{productId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    
+    // COMMISSIONS CLOSINGS
+    match /commissions_closings/{periodId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    
+    // LOGIN PINS — solo server-side
+    match /login_pins/{email} {
+      allow read, write: if false;
+    }
+    
+    // COLLECTION GROUPS
+    match /{path=**}/installments/{instId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth() && isAdmin();
+      allow delete: if hasRole('superadmin');
+    }
+    
+    match /{path=**}/activities/{actId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+    
+    match /{path=**}/contractsPaid/{contractId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isAdmin();
+      allow update, delete: if hasRole('superadmin');
     }
   }
 }

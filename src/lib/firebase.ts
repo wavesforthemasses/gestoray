@@ -1,161 +1,147 @@
-import { writable } from 'svelte/store';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { 
+  getAuth, 
+  onAuthStateChanged as fbOnAuthStateChanged, 
+  signInWithCustomToken as fbSignInWithCustomToken, 
+  signOut as fbSignOut,
+  reload,
+  connectAuthEmulator
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc as fbDoc, 
+  collection as fbCollection, 
+  getDoc as fbGetDoc, 
+  setDoc as fbSetDoc, 
+  getDocs as fbGetDocs, 
+  updateDoc as fbUpdateDoc, 
+  deleteDoc as fbDeleteDoc,
+  connectFirestoreEmulator,
+  query as fbQuery,
+  where as fbWhere
+} from 'firebase/firestore';
+import { 
+  getStorage, 
+  ref as fbRef, 
+  uploadBytes as fbUploadBytes, 
+  getDownloadURL as fbGetDownloadURL,
+  deleteObject as fbDeleteObject
+} from 'firebase/storage';
+import { 
+  getFunctions, 
+  httpsCallable as fbHttpsCallable,
+  connectFunctionsEmulator
+} from 'firebase/functions';
 
-class MockAuth {
-  currentUser: any = null;
-  private listeners: any[] = [];
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
 
-  constructor() {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('mock_firebase_user');
-      if (savedUser) {
-        this.currentUser = JSON.parse(savedUser);
-      }
-    }
-  }
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(app) as any;
+export const db = getFirestore(app) as any;
+export const storage = getStorage(app) as any;
+export const functions = getFunctions(app, 'europe-west3') as any;
 
-  onAuthStateChanged(callback: any) {
-    this.listeners.push(callback);
-    callback(this.currentUser);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== callback);
-    };
-  }
-
-  async signInWithCustomToken(token: string) {
-    const uid = token.replace('mock-token-', '');
-    
-    const response = await fetch('/api/mock-db');
-    const dbData = await response.json();
-    const userProfile = dbData.users?.[uid];
-
-    if (!userProfile) {
-      throw new Error('Profilo utente non trovato nel database simulato.');
-    }
-
-    this.currentUser = {
-      uid,
-      email: userProfile.email
-    };
-
-    localStorage.setItem('mock_firebase_user', JSON.stringify(this.currentUser));
-    this.listeners.forEach(l => l(this.currentUser));
-    return { user: this.currentUser };
-  }
-
-  async updateEmail(newEmail: string) {
-    if (!this.currentUser) throw new Error('Utente non autenticato.');
-    const uid = this.currentUser.uid;
-
-    const response = await fetch('/api/profile/update-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid, newEmail })
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Errore durante la modifica dell\'email.');
-    }
-
-    this.currentUser.email = newEmail;
-    localStorage.setItem('mock_firebase_user', JSON.stringify(this.currentUser));
-    this.listeners.forEach(l => l(this.currentUser));
-  }
-
-  async signOut() {
-    this.currentUser = null;
-    localStorage.removeItem('mock_firebase_user');
-    this.listeners.forEach(l => l(null));
-  }
+if (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
 }
 
-class MockFirestore {
-  async getDoc(docRef: any) {
-    const { path } = docRef;
-    const parts = path.split('/');
-    const collection = parts[0];
-    const id = parts[1];
-
-    const response = await fetch('/api/mock-db');
-    const dbData = await response.json();
-    const docData = dbData[collection]?.[id];
-
-    return {
-      exists: () => docData !== undefined,
-      data: () => docData
-    };
-  }
-
-  async setDoc(docRef: any, data: any) {
-    const { path } = docRef;
-    const parts = path.split('/');
-    const collection = parts[0];
-    const id = parts[1];
-
-    await fetch('/api/mock-db', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'set',
-        collection,
-        id,
-        data
-      })
-    });
-  }
-
-  async getDocs(colRef: any) {
-    const { path } = colRef;
-    const response = await fetch('/api/mock-db');
-    const dbData = await response.json();
-    const collectionData = dbData[path] || {};
-    
-    const docs = Object.keys(collectionData).map(id => ({
-      id,
-      data: () => collectionData[id]
-    }));
-
-    return {
-      forEach: (callback: any) => docs.forEach(callback)
-    };
-  }
+export function doc(dbInstance: any, collectionName: string, id: string, ...moreSegments: string[]): any {
+  return fbDoc(dbInstance, collectionName, id, ...moreSegments) as any;
 }
 
-export const auth = new MockAuth();
-export const db = new MockFirestore();
-
-export function doc(dbInstance: any, collection: string, id: string) {
-  return { path: `${collection}/${id}` };
+export function collection(dbInstance: any, path: string, ...moreSegments: string[]): any {
+  return fbCollection(dbInstance, path, ...moreSegments) as any;
 }
 
-export function collection(dbInstance: any, path: string) {
-  return { path };
+export async function getDoc(docRef: any): Promise<any> {
+  return fbGetDoc(docRef) as any;
 }
 
-export async function getDoc(docRef: any) {
-  return db.getDoc(docRef);
+export async function setDoc(docRef: any, data: any): Promise<any> {
+  return fbSetDoc(docRef, data) as any;
 }
 
-export async function setDoc(docRef: any, data: any) {
-  return db.setDoc(docRef, data);
+export async function getDocs(colRef: any): Promise<any> {
+  return fbGetDocs(colRef) as any;
 }
 
-export async function getDocs(colRef: any) {
-  return db.getDocs(colRef);
+export async function updateDoc(docRef: any, data: any): Promise<any> {
+  return fbUpdateDoc(docRef, data) as any;
 }
 
-export function onAuthStateChanged(authInstance: any, callback: any) {
-  return authInstance.onAuthStateChanged(callback);
+export async function deleteDoc(docRef: any): Promise<any> {
+  return fbDeleteDoc(docRef) as any;
 }
 
-export async function signInWithCustomToken(authInstance: any, token: string) {
-  return authInstance.signInWithCustomToken(token);
+export function query(colRef: any, ...constraints: any[]): any {
+  return fbQuery(colRef, ...constraints) as any;
 }
 
-export async function signOut(authInstance: any) {
-  return authInstance.signOut();
+export function where(field: string, opStr: any, value: any): any {
+  return fbWhere(field, opStr, value) as any;
 }
 
-export async function updateEmail(userInstance: any, newEmail: string) {
-  return auth.updateEmail(newEmail);
+export function ref(storageInstance: any, path: string): any {
+  return fbRef(storageInstance, path) as any;
 }
+
+export async function uploadBytes(refInstance: any, data: any): Promise<any> {
+  return fbUploadBytes(refInstance, data) as any;
+}
+
+export async function getDownloadURL(refInstance: any): Promise<any> {
+  return fbGetDownloadURL(refInstance) as any;
+}
+
+export async function deleteObject(refInstance: any): Promise<any> {
+  return fbDeleteObject(refInstance) as any;
+}
+
+export function onAuthStateChanged(authInstance: any, callback: any): any {
+  return fbOnAuthStateChanged(authInstance, callback) as any;
+}
+
+export async function signInWithCustomToken(authInstance: any, token: string): Promise<any> {
+  return fbSignInWithCustomToken(authInstance, token) as any;
+}
+
+export async function signOut(authInstance: any): Promise<any> {
+  return fbSignOut(authInstance) as any;
+}
+
+export function httpsCallable(functionsInstance: any, name: string): any {
+  return fbHttpsCallable(functionsInstance, name) as any;
+}
+
+export async function updateEmail(userInstance: any, newEmail: string): Promise<any> {
+  // Use Cloud Function for updating email
+  const updateEmailCallable = httpsCallable(functions, 'updateProfileEmail');
+  const result = await updateEmailCallable({ uid: userInstance.uid, newEmail });
+  
+  // Reload client auth session to reflect email update
+  await reload(userInstance);
+  return result.data;
+}
+
+export { 
+  getCountFromServer, 
+  getAggregateFromServer, 
+  sum, 
+  count, 
+  orderBy, 
+  limit, 
+  startAfter, 
+  collectionGroup, 
+  addDoc, 
+  Timestamp,
+  deleteField
+} from 'firebase/firestore';

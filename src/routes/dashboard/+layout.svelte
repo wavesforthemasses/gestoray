@@ -5,7 +5,7 @@
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList } from '@lucide/svelte';
+  import { LayoutDashboard, CheckSquare, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList, Award } from '@lucide/svelte';
 
   let { children } = $props();
 
@@ -91,6 +91,11 @@
         <span class="nav-label">Dashboard</span>
       </a>
 
+      <a href="/dashboard/todo" class="nav-item" class:active={$page.url.pathname === '/dashboard/todo'} title="Scadenziario To-Do">
+        <span class="nav-icon"><CheckSquare size={18} /></span>
+        <span class="nav-label">Scadenziario To-Do</span>
+      </a>
+
       {#if $activeRole === 'commerciale' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
         <a href="/dashboard/clients" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/clients')} title="Gestione Clienti">
           <span class="nav-icon"><Briefcase size={18} /></span>
@@ -113,6 +118,10 @@
         <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
           <span class="nav-icon"><Wallet size={18} /></span>
           <span class="nav-label">Gestione Incassi</span>
+        </a>
+        <a href="/dashboard/commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/commissions')} title="Gestione Provvigioni">
+          <span class="nav-icon"><Award size={18} /></span>
+          <span class="nav-label">Gestione Provvigioni</span>
         </a>
       {/if}
 
@@ -153,6 +162,8 @@
         <div class="navbar-title">
           {#if $page.url.pathname === '/dashboard'}
             <h3>Panoramica</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/todo')}
+            <h3>Scadenziario To-Do</h3>
           {:else if $page.url.pathname.startsWith('/dashboard/users')}
             <h3>Elenco Utenti</h3>
           {:else if $page.url.pathname.startsWith('/dashboard/profile')}
@@ -169,6 +180,8 @@
             <h3>Gestione Contratti</h3>
           {:else if $page.url.pathname.startsWith('/dashboard/payments')}
             <h3>Gestione Incassi</h3>
+          {:else if $page.url.pathname.startsWith('/dashboard/commissions')}
+            <h3>Gestione Provvigioni</h3>
           {:else if $page.url.pathname.startsWith('/dashboard/products')}
             <h3>Catalogo Prodotti</h3>
           {/if}
@@ -300,7 +313,7 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     flex-shrink: 0;
   }
 
@@ -374,7 +387,7 @@
 
   .role-select:focus {
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 2px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 0 0 2px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   .nav-menu {

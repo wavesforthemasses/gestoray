@@ -1,6 +1,6 @@
 <script lang="ts">
   import { activeRole } from '$lib/auth';
-  import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
+  import { db, doc, setDoc, collection, getDocs, deleteDoc } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card, Table, FormField } from '$lib';
@@ -43,11 +43,12 @@
       const list: typeof productsList = [];
       querySnapshot.forEach((doc: any) => {
         const data = doc.data();
+        const orig = data.original || data;
         list.push({
           id: doc.id,
-          name: data.name,
-          listPrice: data.listPrice,
-          minPrice: data.minPrice
+          name: orig.name,
+          listPrice: orig.listPrice,
+          minPrice: orig.minPrice
         });
       });
       productsList = list;
@@ -73,10 +74,16 @@
 
     try {
       const id = 'prod_' + Math.random().toString(36).substring(2, 11);
+      const now = new Date().toISOString();
       const newProd = {
-        name: name.trim(),
-        listPrice,
-        minPrice
+        original: {
+          name: name.trim(),
+          listPrice,
+          minPrice
+        },
+        edits: {
+          createdAt: now
+        }
       };
 
       await setDoc(doc(db, 'products', id), newProd);
@@ -99,15 +106,7 @@
   async function handleDeleteProduct(id: string) {
     if (!confirm('Sei sicuro di voler rimuovere questo prodotto dal catalogo?')) return;
     try {
-      await fetch('/api/mock-db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete',
-          collection: 'products',
-          id
-        })
-      });
+      await deleteDoc(doc(db, 'products', id));
       successMsg = 'Prodotto rimosso con successo!';
       await fetchProducts();
     } catch (e: any) {
@@ -269,7 +268,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    box-shadow: 0 4px 10px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
   }
 
   .add-product-btn:hover {
@@ -341,7 +340,7 @@
   .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;
@@ -384,7 +383,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity var(--transition-fast);
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
     margin-top: 10px;
     width: 100%;
   }

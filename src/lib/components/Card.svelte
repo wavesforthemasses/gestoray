@@ -93,7 +93,7 @@
   
   .gestoray-card.card-variant-glass:hover {
     background-color: var(--card-bg-hover, var(--color-glass-bg-hover));
-    border-color: hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    border-color: hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
     box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.04);
   }
 

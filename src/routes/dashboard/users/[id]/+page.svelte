@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { auth, activeRole } from '$lib/auth';
-  import { db, doc, getDoc } from '$lib/firebase';
+  import { db, doc, getDoc, functions, httpsCallable } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card, FormField, RoleSelector } from '$lib';
@@ -25,13 +25,14 @@
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
-        const data = userDoc.data();
-        userEmail = data.email || '';
-        userNome = data.nome || '';
-        userCognome = data.cognome || '';
-        createdAt = data.createdAt || '';
-        selectedRoles = data.roles || [];
-        qualification = data.qualification || 'junior';
+        const data = userDoc.data() || {};
+        const original = data.original || data || {};
+        userEmail = original.email || '';
+        userNome = original.nome || '';
+        userCognome = original.cognome || '';
+        createdAt = data.edits?.createdAt || data.createdAt || '';
+        selectedRoles = original.roles || [];
+        qualification = original.qualification || 'junior';
       } else {
         isError = true;
         statusMessage = 'Impossibile trovare l\'utente specificato nel database.';
@@ -74,23 +75,15 @@
       const cleanNome = userNome.trim();
       const cleanCognome = userCognome.trim();
 
-      const response = await fetch('/api/users/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid,
-          email: cleanEmail,
-          nome: cleanNome,
-          cognome: cleanCognome,
-          roles: selectedRoles,
-          qualification: qualification
-        })
+      const updateUserFn = httpsCallable(functions, 'updateUser');
+      await updateUserFn({
+        uid,
+        email: cleanEmail,
+        nome: cleanNome,
+        cognome: cleanCognome,
+        roles: selectedRoles,
+        qualification: qualification
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Errore durante l\'aggiornamento dell\'utente.');
-      }
 
       statusMessage = 'Dati utente aggiornati con successo!';
     } catch (err: any) {
@@ -278,7 +271,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity var(--transition-fast);
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
   }
 
   .save-btn:hover:not(:disabled) {
@@ -337,7 +330,7 @@
   .spinner {
     width: 24px;
     height: 24px;
-    border: 3px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 3px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;

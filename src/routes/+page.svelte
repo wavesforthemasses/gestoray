@@ -40,7 +40,7 @@
   .spinner {
     width: 28px;
     height: 28px;
-    border: 3px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 3px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;

@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { enhance } from "$app/forms";
-  import { auth as clientAuth, signInWithCustomToken } from "$lib/firebase";
+  import { auth as clientAuth, signInWithCustomToken, functions, httpsCallable } from "$lib/firebase";
   import { goto } from "$app/navigation";
   import { FormField } from "$lib";
-
-  let { form } = $props<{ form: any }>();
 
   let email = $state("");
   let pin = $state("");
@@ -13,35 +10,51 @@
   let loading = $state(false);
   let localPinNotification = $state("");
 
-  $effect(() => {
-    if (form) {
-      if (form.error) {
-        errorMessage = form.error;
-        loading = false;
-      } else if (form.success && form.debugPin) {
-        currentStep = 2;
-        email = form.email;
-        localPinNotification = form.debugPin;
-        errorMessage = "";
-        loading = false;
-      } else if (form.success && form.customToken) {
-        loading = true;
-        signInWithCustomToken(clientAuth, form.customToken)
-          .then(() => {
-            goto("/dashboard");
-          })
-          .catch((err) => {
-            console.error("Auth error:", err);
-            errorMessage = "Errore di autenticazione client: " + err.message;
-            loading = false;
-          });
-      }
-    }
-  });
-
-  function handleSubmit() {
+  async function handleSendPin(e: Event) {
+    e.preventDefault();
     loading = true;
     errorMessage = "";
+    localPinNotification = "";
+    
+    try {
+      const sendPinFn = httpsCallable(functions, 'sendLoginPin');
+      const result = await sendPinFn({ email });
+      
+      if (result.data.success) {
+        currentStep = 2;
+        if (result.data.debugPin) {
+          localPinNotification = result.data.debugPin;
+        }
+      }
+    } catch (err: any) {
+      console.error("Error sending PIN:", err);
+      errorMessage = err.message || "Errore durante l'invio del PIN.";
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function handleVerifyPin(e: Event) {
+    e.preventDefault();
+    loading = true;
+    errorMessage = "";
+
+    try {
+      const verifyPinFn = httpsCallable(functions, 'verifyLoginPin');
+      const result = await verifyPinFn({ email, pin });
+
+      if (result.data.success && result.data.customToken) {
+        await signInWithCustomToken(clientAuth, result.data.customToken);
+        goto("/dashboard");
+      } else {
+        errorMessage = "Errore durante la verifica del PIN.";
+        loading = false;
+      }
+    } catch (err: any) {
+      console.error("Error verifying PIN:", err);
+      errorMessage = err.message || "PIN non valido o scaduto.";
+      loading = false;
+    }
   }
 </script>
 
@@ -89,7 +102,7 @@
     {/if}
 
     {#if currentStep === 1}
-      <form method="POST" action="?/sendPin" use:enhance={handleSubmit}>
+      <form onsubmit={handleSendPin}>
         <div class="header">
           <h2>Benvenuto</h2>
           <p>
@@ -120,15 +133,13 @@
         </button>
       </form>
     {:else}
-      <form method="POST" action="?/verifyPin" use:enhance={handleSubmit}>
+      <form onsubmit={handleVerifyPin}>
         <input type="hidden" name="email" value={email} />
 
         <div class="header">
           <h2>Verifica PIN</h2>
           <p>
-            Inserisci il codice PIN di 6 cifre inviato all'indirizzo <strong
-              >{email}</strong
-            >.
+            Inserisci il codice PIN di 6 cifre inviato all'indirizzo <strong>{email}</strong>.
           </p>
         </div>
 
@@ -211,7 +222,7 @@
     height: 60vw;
     background: radial-gradient(
       circle,
-      hsla(var(--brand-h), var(--brand-s), 50%, 0.12) 0%,
+      hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.12) 0%,
       transparent 70%
     );
   }
@@ -223,7 +234,7 @@
     height: 60vw;
     background: radial-gradient(
       circle,
-      hsla(calc(var(--brand-h) + 40), var(--brand-s), 50%, 0.08) 0%,
+      hsla(calc(var(--brand-h) + 40), var(--brand-s), var(--brand-l), 0.08) 0%,
       transparent 70%
     );
   }
@@ -312,12 +323,12 @@
       var(--color-primary-600)
     );
     color: var(--color-white);
-    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), 50%, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
   }
 
   .btn:not(.btn-secondary):not(.btn-primary):hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px hsla(var(--brand-h), var(--brand-s), 50%, 0.25);
+    box-shadow: 0 6px 16px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.25);
   }
 
   .btn-primary {

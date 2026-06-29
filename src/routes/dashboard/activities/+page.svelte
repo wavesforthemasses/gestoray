@@ -1,9 +1,9 @@
 <script lang="ts">
   import { activeRole, auth } from '$lib/auth';
-  import { db, collection, getDocs } from '$lib/firebase';
+  import { db, collection, getDocs, collectionGroup } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Card, Table } from '$lib';
+  import { Card, Table, LineChart } from '$lib';
   import { 
     ClipboardList, MessageSquare, Phone, Calendar, 
     Users, ArrowRight, Search, Eye, TrendingUp, ChevronUp, ChevronDown 
@@ -56,7 +56,7 @@
   async function fetchActivities() {
     loading = true;
     try {
-      const querySnapshot = await getDocs(collection(db, 'activities'));
+      const querySnapshot = await getDocs(collectionGroup(db, 'activities'));
       const list: typeof activitiesList = [];
       querySnapshot.forEach((doc: any) => {
         const data = doc.data();
@@ -136,25 +136,7 @@
     });
   });
 
-  let svgPointsData = $derived.by(() => {
-    const data = computedChartPoints;
-    const maxVal = Math.max(...data, 5);
-    const count = data.length;
 
-    const points = data.map((val, idx) => {
-      const x = 40 + (idx / (count - 1)) * 400;
-      const y = 120 - (val / maxVal) * 100;
-      return { x, y, val };
-    });
-
-    const pathD = points.reduce((acc, pt, idx) => {
-      return acc + (idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`);
-    }, '');
-
-    const areaD = pathD + ` L ${points[points.length - 1].x} 120 L ${points[0].x} 120 Z`;
-
-    return { points, pathD, areaD, maxVal };
-  });
 
   // Filtered activities list
   let filteredActivities = $derived.by(() => {
@@ -236,61 +218,12 @@
           </div>
         {/snippet}
 
-        <div class="svg-chart-container-sub">
-          <svg class="sub-svg" viewBox="0 0 480 150">
-            <!-- Grid Lines -->
-            <line x1="40" y1="20" x2="440" y2="20" class="grid-line" />
-            <line x1="40" y1="70" x2="440" y2="70" class="grid-line" />
-            <line x1="40" y1="120" x2="440" y2="120" class="grid-line" />
-
-            <!-- Area -->
-            <path d={svgPointsData.areaD} class="chart-area-fill" fill="rgba(79, 70, 229, 0.12)" />
-
-            <!-- Path Line -->
-            <path d={svgPointsData.pathD} class="chart-line-stroke" />
-
-            <!-- Dots -->
-            {#each svgPointsData.points as pt, idx}
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r={selectedPointIdx === idx ? "7" : "4"}
-                class="chart-point-dot"
-                class:selected={selectedPointIdx === idx}
-                role="button"
-                tabindex="0"
-                aria-label="Seleziona punto grafico"
-                onclick={() => {
-                  if (selectedPointIdx === idx) {
-                    selectedPointIdx = null;
-                  } else {
-                    selectedPointIdx = idx;
-                  }
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    if (selectedPointIdx === idx) {
-                      selectedPointIdx = null;
-                    } else {
-                      selectedPointIdx = idx;
-                    }
-                  }
-                }}
+              <LineChart
+                data={computedChartPoints}
+                labels={chartPeriods.map(p => p.label)}
+                selectedIdx={selectedPointIdx}
+                onSelect={(idx) => selectedPointIdx = idx}
               />
-            {/each}
-          </svg>
-        </div>
-
-        <div class="chart-y-axis-lbls">
-          <span>Massimo: {svgPointsData.maxVal}</span>
-          {#if selectedPointIdx !== null}
-            <span class="selected-period-banner">
-              Filtro attivo: <strong>{chartPeriods[selectedPointIdx].label}</strong> (Attività: {computedChartPoints[selectedPointIdx]})
-              <button onclick={() => selectedPointIdx = null} class="clear-filter-btn">Azzera filtro</button>
-            </span>
-          {/if}
-          <span>Minimo: 0</span>
-        </div>
       </Card>
     </div>
   {/if}
@@ -555,7 +488,7 @@
   .filter-search-input:focus {
     outline: none;
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 2px hsla(var(--brand-h), var(--brand-s), 50%, 0.1);
+    box-shadow: 0 0 0 2px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.1);
   }
 
   .type-filter-tabs {
@@ -657,7 +590,7 @@
   .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), 50%, 0.15);
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);
     animation: spin 1s linear infinite;
