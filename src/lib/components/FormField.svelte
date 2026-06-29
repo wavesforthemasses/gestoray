@@ -63,8 +63,9 @@
     display: inline-block;
   }
 
-  .form-group input,
-  :global(.form-group select) {
+  :global(.form-group input),
+  :global(.form-group select),
+  :global(.form-group textarea) {
     background: var(--color-white);
     border: 1px solid var(--color-neutral-300);
     border-radius: var(--radius-md);
@@ -78,6 +79,11 @@
     height: 46px;
   }
 
+  :global(.form-group textarea) {
+    height: auto;
+    resize: vertical;
+  }
+
   :global(.form-group select) {
     appearance: none;
     -webkit-appearance: none;
@@ -89,8 +95,9 @@
     cursor: pointer;
   }
 
-  .form-group input:focus:not(:disabled),
-  :global(.form-group select:focus:not(:disabled)) {
+  :global(.form-group input:focus:not(:disabled)),
+  :global(.form-group select:focus:not(:disabled)),
+  :global(.form-group textarea:focus:not(:disabled)) {
     outline: none;
     border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
@@ -98,7 +105,8 @@
 
   /* Globally override disabled styling for target inputs inside children snippets if disabled is passed */
   :global(.form-group input:disabled),
-  :global(.form-group select:disabled) {
+  :global(.form-group select:disabled),
+  :global(.form-group textarea:disabled) {
     background: var(--color-neutral-100) !important;
     border-color: var(--color-neutral-200) !important;
     color: var(--color-neutral-400) !important;

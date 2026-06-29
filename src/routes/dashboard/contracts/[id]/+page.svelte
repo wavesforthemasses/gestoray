@@ -4,7 +4,7 @@
   import { db, doc, getDoc, getDocs, updateDoc, setDoc, deleteDoc, collection, collectionGroup, query, where } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Card, FormField } from '$lib';
+  import { Card, FormField, Button } from '$lib';
   import { 
     FileText, ArrowLeft, ShieldAlert, CheckCircle, 
     Clock, Award, AlertTriangle, User, DollarSign, Calendar, Wallet, Trash2 
@@ -825,40 +825,36 @@
               </div>
               <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                  <button 
+                  <Button 
                     onclick={handleApproveOnly} 
-                    class="approve-collect-btn"
-                    style="background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));"
+                    variant="primary"
                     disabled={submitting}
                   >
                     <CheckCircle size={16} /> Solo Approva
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onclick={handleApproveAndPlanInstallments} 
-                    class="approve-collect-btn"
                     style="background: #4f46e5;"
                     disabled={submitting}
                   >
                     <Calendar size={16} /> Approva e Pianifica Rate
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onclick={handleApproveAndCollect} 
-                    class="approve-collect-btn"
-                    style="background: #10b981;"
+                    variant="success"
                     disabled={submitting}
                   >
                     <DollarSign size={16} /> Approva e Incassa Saldo Completo
-                  </button>
+                  </Button>
                 </div>
                 {#if ($activeRole === 'superadmin' || $activeRole === 'amministrazione')}
-                  <button 
+                  <Button 
                     onclick={handleDeleteContract} 
-                    class="approve-collect-btn"
-                    style="background: var(--color-error);"
+                    variant="danger"
                     disabled={submitting}
                   >
                     <Trash2 size={16} /> Elimina Contratto
-                  </button>
+                  </Button>
                 {/if}
               </div>
             {:else}
@@ -872,22 +868,20 @@
                 </div>
                 {#if ($activeRole === 'superadmin' || $activeRole === 'amministrazione')}
                   <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; width: 100%; border-top: 1px solid var(--color-neutral-200); padding-top: 16px;">
-                    <button 
+                    <Button 
                       onclick={handleReopenContract} 
-                      class="back-link-btn"
-                      style="border: 1px solid var(--color-neutral-300); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px;"
+                      variant="secondary"
                       disabled={submitting}
                     >
-                      <Clock size={14} /> Ripristina Stato di Attesa (Riapri)
-                    </button>
-                    <button 
+                      <Clock size={16} /> Ripristina Stato di Attesa (Riapri)
+                    </Button>
+                    <Button 
                       onclick={handleDeleteContract} 
-                      class="approve-collect-btn"
-                      style="background: var(--color-error); padding: 8px 16px; font-size: 13px;"
+                      variant="danger"
                       disabled={submitting}
                     >
-                      <Trash2 size={14} /> Elimina Contratto
-                    </button>
+                      <Trash2 size={16} /> Elimina Contratto Definitivamente
+                    </Button>
                   </div>
                 {/if}
               </div>
@@ -1001,9 +995,9 @@
                   <FormField id="inst-amount" label="Importo Dovuto (€)">
                     <input type="number" id="inst-amount" bind:value={installmentExpectedAmount} min="1" step="0.01" required placeholder="es. 500" />
                   </FormField>
-                  <button type="submit" class="approve-collect-btn" style="height: 38px; padding: 0 16px;">
+                  <Button type="submit" variant="success" style="height: 46px; padding: 0 16px;">
                     Pianifica Scadenza
-                  </button>
+                  </Button>
                 </form>
               </div>
             {/if}

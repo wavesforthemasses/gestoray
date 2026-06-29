@@ -8,7 +8,7 @@
   import ClientProfileTab from './components/ClientProfileTab.svelte';
   import ClientActivitiesTab from './components/ClientActivitiesTab.svelte';
   import ClientQuotesTab from './components/ClientQuotesTab.svelte';
-  import { generateSearchTerms } from '$lib';
+  import { generateSearchTerms, Card } from '$lib';
 
   const clientId = $page.params.id as string;
 
@@ -657,49 +657,53 @@
 </svelte:head>
 
 <div class="client-details-page animate-fade-in">
-  <div class="page-top-actions">
-    <button onclick={() => goto('/dashboard/clients')} class="back-link-btn">
-      <ArrowLeft size={16} /> Torna a elenco clienti
-    </button>
-    <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
-  </div>
-
-  {#if statusMessage}
-    <div class="status-alert-box animate-fade-in" class:error={isError}>
-      {statusMessage}
-    </div>
-  {/if}
-
-  {#if loadingData}
-    <div class="loading-box">
-      <span class="spinner"></span>
-      Caricamento dati in corso...
-    </div>
-  {:else if !isError}
-    <div class="details-tab-nav">
-      <button 
-        class="tab-nav-btn" 
-        class:active={activeTab === 'profile'} 
-        onclick={() => activeTab = 'profile'}
-      >
-        <User size={16} /> Profilo & Audit Log
+  <Card class="header-card">
+    <div class="page-top-actions">
+      <button onclick={() => goto('/dashboard/clients')} class="back-link-btn">
+        <ArrowLeft size={16} /> Torna a elenco clienti
       </button>
-      <button 
-        class="tab-nav-btn" 
-        class:active={activeTab === 'activities'} 
-        onclick={() => activeTab = 'activities'}
-      >
-        <MessageSquare size={16} /> Attività & Note
-      </button>
-      <button 
-        class="tab-nav-btn" 
-        class:active={activeTab === 'quotes'} 
-        onclick={() => activeTab = 'quotes'}
-      >
-        <FileText size={16} /> Preventivatore ({quotesList.length})
-      </button>
+      <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
     </div>
 
+    {#if statusMessage}
+      <div class="status-alert-box animate-fade-in" class:error={isError}>
+        {statusMessage}
+      </div>
+    {/if}
+
+    {#if loadingData}
+      <div class="loading-box">
+        <span class="spinner"></span>
+        Caricamento dati in corso...
+      </div>
+    {:else if !isError}
+      <div class="details-tab-nav">
+        <button 
+          class="tab-nav-btn" 
+          class:active={activeTab === 'profile'} 
+          onclick={() => activeTab = 'profile'}
+        >
+          <User size={16} /> Profilo & Audit Log
+        </button>
+        <button 
+          class="tab-nav-btn" 
+          class:active={activeTab === 'activities'} 
+          onclick={() => activeTab = 'activities'}
+        >
+          <MessageSquare size={16} /> Attività & Note
+        </button>
+        <button 
+          class="tab-nav-btn" 
+          class:active={activeTab === 'quotes'} 
+          onclick={() => activeTab = 'quotes'}
+        >
+          <FileText size={16} /> Preventivatore ({quotesList.length})
+        </button>
+      </div>
+    {/if}
+  </Card>
+
+  {#if !loadingData && !isError}
     <div class="tab-content-panel">
       {#if activeTab === 'profile'}
         <ClientProfileTab
@@ -853,7 +857,7 @@
   .details-tab-nav {
     display: flex;
     gap: 10px;
-    margin-bottom: 24px;
+    margin-top: 24px;
     border-bottom: 1px solid var(--color-neutral-200);
     padding-bottom: 8px;
   }
@@ -887,5 +891,8 @@
 
   .tab-content-panel {
     width: 100%;
+  }
+  .tab-content-panel {
+    margin-top: 24px;
   }
 </style>

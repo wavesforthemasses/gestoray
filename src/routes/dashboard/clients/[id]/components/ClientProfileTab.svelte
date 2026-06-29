@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, FormField } from '$lib';
+  import { Card, FormField, Button } from '$lib';
   import { User, Clock, Trash2 } from '@lucide/svelte';
 
   interface Props {
@@ -117,9 +117,9 @@
           <div></div>
         </div>
 
-        <button type="submit" class="submit-profile-btn" disabled={submittingProfile}>
+        <Button type="submit" disabled={submittingProfile}>
           {submittingProfile ? 'Aggiornamento...' : 'Salva Modifiche Anagrafica'}
-        </button>
+        </Button>
       </form>
     </Card>
 
@@ -161,7 +161,7 @@
     </Card>
 
     <!-- Danger Zone Card (Admin only) -->
-    {#if activeRole === 'superadmin' || activeRole === 'amministrazione'}
+    {#if activeRole === 'superadmin'}
       <Card title="Zona Pericolo: Eliminazione Cliente" description="L'eliminazione della scheda anagrafica è irreversibile e cancellerà tutte le attività collegate.">
         {#snippet icon()}
           <Trash2 size={20} style="color: var(--color-error);" />
@@ -172,17 +172,116 @@
             Puoi eliminare questa anagrafica solo se non possiede contratti associati.
             Se possiede contratti, dovrai prima eliminarli o stornarli singolarmente.
           </p>
-          <button 
-            type="button"
+          <Button 
             onclick={onDeleteClient} 
-            class="submit-profile-btn" 
-            style="background: var(--color-error); margin-top: 8px; width: fit-content;"
+            variant="danger"
+            style="margin-top: 8px; width: fit-content;"
             disabled={submittingProfile}
           >
             <Trash2 size={16} /> Elimina questa Anagrafica Cliente
-          </button>
+          </Button>
         </div>
       </Card>
     {/if}
   </div>
 </div>
+
+<style>
+  .tab-view {
+    padding-top: 10px;
+  }
+  .vertical-layout-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .widescreen-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .form-grid-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 768px) {
+    .form-grid-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+  .submit-profile-btn {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: var(--color-white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+  }
+  .submit-profile-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .empty-panel {
+    padding: 30px;
+    text-align: center;
+    color: var(--color-neutral-500);
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-neutral-300);
+    font-size: 14px;
+  }
+  .audit-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .audit-log-item {
+    padding: 12px;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-md);
+    background: var(--color-neutral-50);
+  }
+  .audit-log-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--color-neutral-500);
+  }
+  .audit-author {
+    font-weight: 600;
+    color: var(--color-neutral-700);
+  }
+  .changes-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--color-neutral-600);
+  }
+  .old-val {
+    text-decoration: line-through;
+    color: var(--color-error);
+  }
+  .new-val {
+    font-weight: 600;
+    color: var(--color-success);
+  }
+  :global(.icon-accent) {
+    color: var(--color-primary-500);
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, FormField } from '$lib';
+  import { Card, FormField, Button } from '$lib';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
   import { goto } from '$app/navigation';
 
@@ -84,53 +84,50 @@
         <!-- Builder Selection Form -->
         <div class="quote-builder-form">
           <div class="builder-inputs">
-            <FormField id="q-prod" label="Seleziona Prodotto">
-              <select 
-                id="q-prod" 
-                bind:value={selectedProductId}
-                onchange={(e) => onProductSelectChange((e.target as HTMLSelectElement).value)}
-              >
-                <option value="">-- Seleziona Prodotto dal Catalogo --</option>
-                {#each productsList as p}
-                  <option value={p.id}>{p.name} (Listino: €{p.listPrice.toFixed(2)})</option>
-                {/each}
-              </select>
-            </FormField>
+            <div class="form-grid-columns">
+              <FormField id="q-product" label="SELEZIONA PRODOTTO">
+                <select id="q-product" bind:value={selectedProductId} onchange={(e) => onProductSelectChange(e.currentTarget.value)}>
+                  <option value="">-- Seleziona Prodotto dal Catalogo --</option>
+                  {#each productsList as p}
+                    <option value={p.id}>{p.name} (Listino: €{p.listPrice.toFixed(2)})</option>
+                  {/each}
+                </select>
+              </FormField>
+            </div>
 
-            {#if selectedProductId}
-              {@const chosenProd = productsList.find(p => p.id === selectedProductId)}
-              {#if chosenProd}
-                <FormField id="q-price" label="Prezzo Venduto Singolo (€)" helpText="Prezzo listino: €{chosenProd.listPrice.toFixed(2)}. Prezzo minimo consentito: €{chosenProd.minPrice.toFixed(2)}.">
-                  <input 
-                    type="number" 
-                    id="q-price" 
-                    bind:value={itemPriceSold} 
-                    step="0.01" 
-                    min="0" 
-                  />
-                  {#if itemPriceSold !== null && itemPriceSold < chosenProd.minPrice}
-                    <span class="warning-inline"><ShieldAlert size={12} /> Prezzo inferiore al minimo di catalogo!</span>
-                  {/if}
+            <div class="form-grid-columns" style="margin-top: 10px;">
+              {#if selectedProductId && itemPriceSold !== null}
+                {@const prod = productsList.find(p => p.id === selectedProductId)}
+                {#if prod}
+                  <FormField id="q-price" label="PREZZO VENDUTO SINGOLO (€)" helpText="Prezzo listino: €{prod.listPrice.toFixed(2)}. Prezzo minimo consentito: €{prod.minPrice.toFixed(2)}.">
+                    <input type="number" id="q-price" bind:value={itemPriceSold} step="0.01" />
+                    {#if itemPriceSold < prod.minPrice}
+                      <span class="warning-inline"><ShieldAlert size={12} /> Prezzo inferiore al minimo di catalogo!</span>
+                    {/if}
+                  </FormField>
+                {:else}
+                  <FormField id="q-price" label="PREZZO VENDUTO SINGOLO (€)">
+                    <input type="number" id="q-price" bind:value={itemPriceSold} step="0.01" />
+                  </FormField>
+                {/if}
+              {:else}
+                <FormField id="q-price" label="PREZZO VENDUTO SINGOLO (€)">
+                  <input type="number" id="q-price" bind:value={itemPriceSold} step="0.01" />
                 </FormField>
-
-                <FormField id="q-qty" label="Quantità">
-                  <input 
-                    type="number" 
-                    id="q-qty" 
-                    bind:value={itemQuantity} 
-                    min="1" 
-                    step="1" 
-                  />
-                </FormField>
-
-                <div class="btn-align-group">
-                  <span class="invisible-label">&nbsp;</span>
-                  <button type="button" onclick={onAddQuoteItem} class="add-to-items-btn">
-                    Inserisci Prodotto
-                  </button>
-                </div>
               {/if}
-            {/if}
+              
+              <FormField id="q-qty" label="QUANTITÀ">
+                <input type="number" id="q-qty" bind:value={itemQuantity} min="1" step="1" />
+              </FormField>
+            </div>
+
+            <Button 
+              style="margin-top: 16px; background: var(--color-neutral-800); border: none;"
+              disabled={!selectedProductId || itemPriceSold === null || itemQuantity < 1}
+              onclick={onAddQuoteItem}
+            >
+              Inserisci Prodotto
+            </Button>
           </div>
 
           <!-- Selected items list -->
@@ -209,13 +206,19 @@
                   <span class="tot-val">€ {quoteTotal.toFixed(2)}</span>
                 </div>
 
-                <div class="actions-group">
-                  <button onclick={onSaveQuote} class="save-draft-btn" disabled={submittingQuote}>
-                    Salva Bozza Preventivo
-                  </button>
-                  <button onclick={() => onConvertToContract(quoteItems)} class="convert-contract-btn" disabled={submittingQuote}>
+                <div class="save-quote-actions">
+                  <Button 
+                    onclick={onSaveQuote} 
+                    disabled={submittingQuote}
+                  >
+                    {submittingQuote ? 'Salvataggio...' : 'Salva Bozza Preventivo'}
+                  </Button>
+                  <Button 
+                    onclick={() => onConvertToContract(quoteItems)} 
+                    disabled={submittingQuote}
+                  >
                     <CheckCircle size={14} /> Converti in Contratto
-                  </button>
+                  </Button>
                 </div>
               </div>
             {/if}
@@ -322,3 +325,231 @@
     </Card>
   </div>
 </div>
+
+<style>
+  .tab-view {
+    padding-top: 10px;
+  }
+  .vertical-layout-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .empty-state {
+    padding: 30px;
+    text-align: center;
+    color: var(--color-neutral-500);
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-neutral-300);
+    font-size: 14px;
+  }
+  .quote-item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--color-neutral-50);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-neutral-200);
+  }
+  .form-grid-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 768px) {
+    .form-grid-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+  .product-select-row {
+    margin-bottom: 16px;
+  }
+  .add-to-items-btn {
+    background: var(--color-neutral-800);
+    color: var(--color-white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background var(--transition-fast);
+  }
+  .add-to-items-btn:hover {
+    background: var(--color-neutral-900);
+  }
+  .add-to-items-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .quote-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .quote-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-sm);
+  }
+  .item-name {
+    font-weight: 600;
+    color: var(--color-neutral-800);
+    flex: 1;
+  }
+  .item-price {
+    font-family: monospace;
+    font-size: 15px;
+    color: var(--color-primary-600);
+    margin: 0 16px;
+    min-width: 100px;
+    text-align: right;
+  }
+  .remove-item-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-error);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .remove-item-btn:hover {
+    background: var(--color-error-light);
+  }
+  .quote-summary {
+    margin-top: 16px;
+    border-top: 1px solid var(--color-neutral-200);
+    padding-top: 16px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-neutral-900);
+  }
+  .total-row span:last-child {
+    color: var(--color-primary-600);
+  }
+  .save-quote-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  .submit-profile-btn {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: var(--color-white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+  }
+  .submit-profile-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .quotes-history-list, .contracts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .quote-card, .contract-card {
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: var(--color-white);
+  }
+  .quote-header, .contract-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .quote-meta {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+  }
+  .quote-meta strong {
+    color: var(--color-neutral-800);
+  }
+  .convert-contract-btn {
+    background: var(--color-success);
+    color: var(--color-white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background var(--transition-fast);
+  }
+  .convert-contract-btn:hover:not(:disabled) {
+    background: hsl(142, 76%, 30%);
+  }
+  .quote-items {
+    font-size: 13px;
+    color: var(--color-neutral-600);
+    padding-left: 20px;
+    margin: 0;
+  }
+  .contract-status {
+    font-weight: 600;
+    color: var(--color-neutral-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: var(--radius-round);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .status-badge.approvazione {
+    background: var(--color-warning-light);
+    color: var(--color-warning-text);
+  }
+  .status-badge.attivo {
+    background: var(--color-success-light);
+    color: var(--color-success-text);
+  }
+  .status-badge.annullato {
+    background: var(--color-neutral-200);
+    color: var(--color-neutral-600);
+  }
+  .status-badge.completato {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+  }
+  :global(.icon-accent) {
+    color: var(--color-primary-500);
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
