@@ -67,10 +67,17 @@ export const retryFailedSyncs = onCall(
               
               if (vendorUid) {
                 const vendorSnap = await db.collection('users').doc(vendorUid).get();
-                const qualification = vendorSnap.data()?.original?.qualification || 'junior';
+                const qualificationId = vendorSnap.data()?.original?.qualification;
+                let qualification = null;
+                if (qualificationId) {
+                  const qualSnap = await db.collection('qualifications').doc(qualificationId).get();
+                  if (qualSnap.exists) {
+                    qualification = qualSnap.data();
+                  }
+                }
                 const products = original.products || [];
                 const secondVendorShare = original.secondVendorShare || 0;
-                const commission = calculateCommission(products, qualification, secondVendorShare);
+                const commission = calculateCommission(products, qualification as any, secondVendorShare);
 
                 await db.collection('contracts').doc(documentId).update({
                   'derived.commissionTotal': commission.total,

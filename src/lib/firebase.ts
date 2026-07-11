@@ -66,8 +66,8 @@ export async function getDoc(docRef: any): Promise<any> {
   return fbGetDoc(docRef) as any;
 }
 
-export async function setDoc(docRef: any, data: any): Promise<any> {
-  return fbSetDoc(docRef, data) as any;
+export async function setDoc(docRef: any, data: any, options?: any): Promise<any> {
+  return options ? fbSetDoc(docRef, data, options) as any : fbSetDoc(docRef, data) as any;
 }
 
 export async function getDocs(colRef: any): Promise<any> {

@@ -93,10 +93,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // QUALIFICATIONS
+    match /qualifications/{qualId} {
+      allow read: if isAuth();
+      allow create, update, delete: if hasRole('superadmin');
+    }
+    
     // COMMISSIONS CLOSINGS
     match /commissions_closings/{periodId} {
       allow read: if isAuth() && (isAdmin() || isDirezione());
       allow write: if isAdmin();
+      
+      match /versions/{versionId} {
+        allow read: if isAuth() && (isAdmin() || isDirezione());
+        allow write: if isAdmin();
+      }
     }
     
     // LOGIN PINS — solo server-side

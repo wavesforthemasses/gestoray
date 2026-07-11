@@ -164,8 +164,15 @@ export const onContractCreated = onDocumentWritten(
 
         if (vendorUid) {
           const vendorSnap = await db.collection('users').doc(vendorUid).get();
-          const qualification = vendorSnap.data()?.original?.qualification || 'junior';
-          const commission = calculateCommission(products, qualification, secondVendorShare);
+          const qualificationId = vendorSnap.data()?.original?.qualification;
+          let qualification = null;
+          if (qualificationId) {
+            const qualSnap = await db.collection('qualifications').doc(qualificationId).get();
+            if (qualSnap.exists) {
+              qualification = qualSnap.data();
+            }
+          }
+          const commission = calculateCommission(products, qualification as any, secondVendorShare);
 
           await db.collection('contracts').doc(contractId).update({
             'derived.totalPaid': 0,

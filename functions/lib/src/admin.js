@@ -115,7 +115,7 @@ exports.updateUser = (0, https_1.onCall)({ region: REGION }, async (request) => 
     if (!request.auth) {
         throw new https_1.HttpsError('unauthenticated', 'Devi essere autenticato.');
     }
-    const { uid, email, roles, nome, cognome, qualification } = request.data;
+    const { uid, email, roles, nome, cognome, qualification, supervisorUid } = request.data;
     if (!uid || !email || !roles || !nome || !cognome) {
         throw new https_1.HttpsError('invalid-argument', 'Parametri mancanti per la modifica utente.');
     }
@@ -147,7 +147,8 @@ exports.updateUser = (0, https_1.onCall)({ region: REGION }, async (request) => 
                 cognome: cognome.trim(),
                 email: cleanEmail,
                 roles: roles,
-                qualification: qualification || userOriginal.qualification || 'junior'
+                qualification: qualification || userOriginal.qualification || '',
+                supervisorUid: supervisorUid || userOriginal.supervisorUid || ''
             },
             derived: {
                 ...(userData.derived || {

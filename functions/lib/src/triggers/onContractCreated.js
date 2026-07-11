@@ -144,7 +144,14 @@ exports.onContractCreated = (0, firestore_1.onDocumentWritten)({ region: REGION,
             const { vendorUid, products = [], secondVendorShare = 0 } = original;
             if (vendorUid) {
                 const vendorSnap = await db.collection('users').doc(vendorUid).get();
-                const qualification = vendorSnap.data()?.original?.qualification || 'junior';
+                const qualificationId = vendorSnap.data()?.original?.qualification;
+                let qualification = null;
+                if (qualificationId) {
+                    const qualSnap = await db.collection('qualifications').doc(qualificationId).get();
+                    if (qualSnap.exists) {
+                        qualification = qualSnap.data();
+                    }
+                }
                 const commission = (0, business_logic_1.calculateCommission)(products, qualification, secondVendorShare);
                 await db.collection('contracts').doc(contractId).update({
                     'derived.totalPaid': 0,

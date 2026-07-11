@@ -254,30 +254,31 @@
       </div>
     </div>
 
+    {#snippet cell(col: any, row: any)}
+      {#if col.key === 'paymentDate'}
+        <span class="date-txt">{new Date(row.paymentDate).toLocaleDateString('it-IT')}</span>
+      {:else if col.key === 'clientName'}
+        <div class="client-info">
+          <span class="client-name">{row.clientName}</span>
+          <span class="contract-id">Contratto: {row.contractId.substring(0, 8)}...</span>
+        </div>
+      {:else if col.key === 'amount'}
+        <span class="money-txt">€ {row.amount.toFixed(2)}</span>
+      {:else if col.key === 'shareText'}
+        <div class="share-info">
+          <span class="share-pct">{row.shareText}</span>
+          <span class="share-role">{row.myRole}</span>
+        </div>
+      {:else if col.key === 'myCommission'}
+        <span class="money-txt success">€ {row.myCommission.toFixed(2)}</span>
+      {:else if col.key === 'actions'}
+        <Button size="sm" variant="secondary" onclick={() => goto(`/dashboard/contracts/${row.contractId}`)}>
+          <Eye size={14} /> Vedi Contratto
+        </Button>
+      {/if}
+    {/snippet}
+
     <Card title="Dettaglio Incassi e Provvigioni" description="Elenco di tutti gli incassi che hanno generato una tua provvigione in questo periodo.">
-      {#snippet cell(col: any, row: any)}
-        {#if col.key === 'paymentDate'}
-          <span class="date-txt">{new Date(row.paymentDate).toLocaleDateString('it-IT')}</span>
-        {:else if col.key === 'clientName'}
-          <div class="client-info">
-            <span class="client-name">{row.clientName}</span>
-            <span class="contract-id">Contratto: {row.contractId.substring(0, 8)}...</span>
-          </div>
-        {:else if col.key === 'amount'}
-          <span class="money-txt">€ {row.amount.toFixed(2)}</span>
-        {:else if col.key === 'shareText'}
-          <div class="share-info">
-            <span class="share-pct">{row.shareText}</span>
-            <span class="share-role">{row.myRole}</span>
-          </div>
-        {:else if col.key === 'myCommission'}
-          <span class="money-txt success">€ {row.myCommission.toFixed(2)}</span>
-        {:else if col.key === 'actions'}
-          <Button size="sm" variant="secondary" onclick={() => goto(`/dashboard/contracts/${row.contractId}`)}>
-            <Eye size={14} /> Vedi Contratto
-          </Button>
-        {/if}
-      {/snippet}
 
       <div class="table-wrapper">
         <Table

@@ -144,6 +144,10 @@
           <span class="nav-icon"><Users size={18} /></span>
           <span class="nav-label">Gestione Utenti</span>
         </a>
+        <a href="/dashboard/qualifications" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/qualifications')} title="Gestione Qualifiche">
+          <span class="nav-icon"><Award size={18} /></span>
+          <span class="nav-label">Gestione Qualifiche</span>
+        </a>
       {/if}
 
       <a href="/dashboard/profile" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/profile')} title="Profilo">

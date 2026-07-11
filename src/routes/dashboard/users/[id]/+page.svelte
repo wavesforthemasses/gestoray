@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { auth, activeRole } from '$lib/auth';
-  import { db, doc, getDoc, functions, httpsCallable } from '$lib/firebase';
+  import { db, doc, getDoc, getDocs, collection, functions, httpsCallable } from '$lib/firebase';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card, FormField, RoleSelector } from '$lib';
@@ -14,7 +14,11 @@
   let userCognome = $state('');
   let createdAt = $state('');
   let selectedRoles = $state<string[]>([]);
-  let qualification = $state('junior');
+  let qualification = $state('');
+  let supervisorUid = $state('');
+
+  let qualificationsList = $state<any[]>([]);
+  let supervisorsList = $state<any[]>([]);
 
   let statusMessage = $state('');
   let isError = $state(false);
@@ -32,7 +36,8 @@
         userCognome = original.cognome || '';
         createdAt = data.edits?.createdAt || data.createdAt || '';
         selectedRoles = original.roles || [];
-        qualification = original.qualification || 'junior';
+        qualification = original.qualification || '';
+        supervisorUid = original.supervisorUid || '';
       } else {
         isError = true;
         statusMessage = 'Impossibile trovare l\'utente specificato nel database.';
@@ -54,9 +59,29 @@
     });
 
     fetchUserDetails();
+    fetchQualificationsAndSupervisors();
 
     return () => unsubscribe();
   });
+
+  async function fetchQualificationsAndSupervisors() {
+    try {
+      const qSnap = await getDocs(collection(db, 'qualifications'));
+      const qList: any[] = [];
+      qSnap.forEach((d: any) => qList.push({ id: d.id, ...d.data() }));
+      qualificationsList = qList.sort((a, b) => a.percentage - b.percentage);
+
+      const uSnap = await getDocs(collection(db, 'users'));
+      const uList: any[] = [];
+      uSnap.forEach((d: any) => {
+        const u = d.data().original || d.data() || {};
+        uList.push({ uid: d.id, name: `${u.nome || ''} ${u.cognome || ''}`.trim() || u.email });
+      });
+      supervisorsList = uList.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (e) {
+      console.error('Error fetching refs:', e);
+    }
+  }
 
   async function handleUpdateUser(e: Event) {
     e.preventDefault();
@@ -82,7 +107,8 @@
         nome: cleanNome,
         cognome: cleanCognome,
         roles: selectedRoles,
-        qualification: qualification
+        qualification: qualification,
+        supervisorUid: supervisorUid
       });
 
       statusMessage = 'Dati utente aggiornati con successo!';
@@ -171,8 +197,21 @@
 
         <FormField id="user-qualification" label="Qualifica Consulente">
           <select id="user-qualification" bind:value={qualification} disabled={saving}>
-            <option value="junior">Junior (2.5% - 7.5% provvigione)</option>
-            <option value="senior">Senior (5.0% - 10.0% provvigione)</option>
+            <option value="">Nessuna qualifica</option>
+            {#each qualificationsList as q}
+              <option value={q.id}>{q.name} ({q.percentage}% / {q.supervisorPercentage}%)</option>
+            {/each}
+          </select>
+        </FormField>
+
+        <FormField id="user-supervisor" label="Supervisore">
+          <select id="user-supervisor" bind:value={supervisorUid} disabled={saving}>
+            <option value="">Nessun supervisore</option>
+            {#each supervisorsList as s}
+              {#if s.uid !== uid}
+                <option value={s.uid}>{s.name}</option>
+              {/if}
+            {/each}
           </select>
         </FormField>
 
