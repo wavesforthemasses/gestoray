@@ -15,10 +15,20 @@ async function runContractsPaidCreated(db, paymentId, contractId) {
         .get();
     let totalPaid = 0;
     let paymentsCount = 0;
+    const productPaidAmount = {};
     contractsPaidSnap.forEach((doc) => {
-        const amt = doc.data()?.original?.amount || 0;
+        const data = doc.data()?.original || {};
+        const amt = data.amount || 0;
         totalPaid += amt;
         paymentsCount += 1;
+        const allocs = data.productAllocations || [];
+        allocs.forEach((pa) => {
+            const pid = pa.productId;
+            const pamnt = pa.amount || 0;
+            if (pid) {
+                productPaidAmount[pid] = (productPaidAmount[pid] || 0) + pamnt;
+            }
+        });
     });
     // 2. Fetch contract doc
     const contractRef = db.collection('contracts').doc(contractId);
@@ -62,7 +72,8 @@ async function runContractsPaidCreated(db, paymentId, contractId) {
         const updateData = {
             'derived.totalPaid': totalPaid,
             'derived.totalRemaining': totalRemaining,
-            'derived.paymentsCount': paymentsCount
+            'derived.paymentsCount': paymentsCount,
+            'derived.productPaidAmount': productPaidAmount
         };
         if (totalPaid >= totalPrice && oldStatus === 'pending') {
             updateData['original.status'] = 'approved';

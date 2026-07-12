@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from "$lib";
   import {
     MessageSquare,
@@ -247,7 +248,7 @@
                     {item.badge}
                   </span>
                   <span class="item-time"
-                    >{item.time.toLocaleString("it-IT")}</span
+                    >{formatDateTime(item.time)}</span
                   >
                   <span class="item-author">&bull; {item.author}</span>
                 </div>

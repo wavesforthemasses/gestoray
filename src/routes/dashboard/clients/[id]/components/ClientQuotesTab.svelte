@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDate, formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from '$lib';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
   import { goto } from '$app/navigation';
@@ -75,10 +76,10 @@
         {/snippet}
 
         {#if quoteSuccessMsg}
-          <div class="alert-box success animate-fade-in">{quoteSuccessMsg}</div>
+          <div class="status-alert-box animate-fade-in">{quoteSuccessMsg}</div>
         {/if}
         {#if quoteErrorMsg}
-          <div class="alert-box error animate-fade-in">{quoteErrorMsg}</div>
+          <div class="status-alert-box error animate-fade-in">{quoteErrorMsg}</div>
         {/if}
 
         <!-- Builder Selection Form -->
@@ -155,11 +156,13 @@
                         <td>{item.name}</td>
                         <td>€ {item.listPrice.toFixed(2)}</td>
                         <td>
-                          <strong class:text-warning={item.priceSold < item.minPrice}>
-                            € {item.priceSold.toFixed(2)}
-                          </strong>
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            € <input type="number" bind:value={item.priceSold} step="0.01" style="width: 80px; padding: 4px; border: 1px solid var(--color-neutral-300); border-radius: 4px;" class:text-warning={item.priceSold < item.minPrice} />
+                          </div>
                         </td>
-                        <td>{item.quantity}</td>
+                        <td>
+                          <input type="number" bind:value={item.quantity} min="1" step="1" style="width: 60px; padding: 4px; border: 1px solid var(--color-neutral-300); border-radius: 4px;" />
+                        </td>
                         <td><strong>€ {(item.priceSold * item.quantity).toFixed(2)}</strong></td>
                         <td>
                           <span class="min-threshold-cell">€ {item.minPrice.toFixed(2)}</span>
@@ -240,7 +243,7 @@
           {#each quotesList as q}
             <div class="quote-history-card">
               <div class="q-header">
-                <span class="q-date">Preventivo del {q.edits?.createdAt ? new Date(q.edits.createdAt).toLocaleString('it-IT') : 'N/D'}</span>
+                <span class="q-date">Preventivo del {q.edits?.createdAt ? formatDateTime(q.edits.createdAt) : 'N/D'}</span>
                 <span class="q-creator">Creato da: {q.createdEmail || 'N/D'}</span>
                 <span class="q-amount">€ {q.totalPrice.toFixed(2)}</span>
               </div>
@@ -294,7 +297,7 @@
             <tbody>
               {#each contractsList as c}
                 <tr class="clickable-row" onclick={() => goto(`/dashboard/contracts/${c.id}`)}>
-                  <td>{c.edits?.createdAt ? new Date(c.edits.createdAt).toLocaleDateString('it-IT') : 'N/D'}</td>
+                  <td>{c.edits?.createdAt ? formatDate(c.edits.createdAt) : 'N/D'}</td>
                   <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
                   <td>
                     <span class="badge-status" class:approved={c.status === 'approved'}>
@@ -458,6 +461,29 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  .status-alert-box {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    margin-bottom: 20px;
+    background: var(--color-success-light);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
+  }
+
+  .status-alert-box.error {
+    background: var(--color-error-light);
+    border: 1px solid var(--color-error-border);
+    color: var(--color-error-text);
+  }
+
+  .tab-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .quotes-history-list, .contracts-list {
     display: flex;
     flex-direction: column;

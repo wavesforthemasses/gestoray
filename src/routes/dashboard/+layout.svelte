@@ -5,12 +5,14 @@
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, CheckSquare, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList, Award } from '@lucide/svelte';
+  import { LayoutDashboard, CheckSquare, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList, Award, Info, X } from '@lucide/svelte';
+  import { KPI_LEGEND } from '$lib/kpiLegend';
 
   let { children } = $props();
 
   let isCollapsed = $state(false);
   let isMobileOpen = $state(false);
+  let showLegend = $state(false);
 
   onMount(() => {
     if (typeof window !== 'undefined') {
@@ -148,6 +150,10 @@
           <span class="nav-icon"><Award size={18} /></span>
           <span class="nav-label">Gestione Qualifiche</span>
         </a>
+        <a href="/dashboard/settings" class="nav-item" class:active={$page.url.pathname === '/dashboard/settings'} title="Impostazioni">
+          <span class="nav-icon"><Settings size={18} /></span>
+          <span class="nav-label">Impostazioni</span>
+        </a>
       {/if}
 
       <a href="/dashboard/profile" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/profile')} title="Profilo">
@@ -172,6 +178,36 @@
     <main class="content-viewport">
       {@render children()}
     </main>
+
+    <!-- KPI Legend Floating Button -->
+    <button class="floating-legend-btn" onclick={() => showLegend = true} title="Legenda KPI">
+      <Info size={24} />
+    </button>
+
+    <!-- KPI Legend Modal -->
+    {#if showLegend}
+      <div class="legend-modal-overlay" onclick={() => showLegend = false} role="presentation">
+        <div class="legend-modal" onclick={(e) => e.stopPropagation()} role="dialog">
+          <div class="legend-header">
+            <h3>Legenda KPI</h3>
+            <button class="close-btn" onclick={() => showLegend = false} aria-label="Chiudi">
+              <X size={20} />
+            </button>
+          </div>
+          <div class="legend-body">
+            {#each Object.entries(KPI_LEGEND) as [key, value]}
+              <div class="legend-item">
+                <span class="legend-key">{key}</span>
+                <div class="legend-desc">
+                  <strong>{value.label}</strong>
+                  <p>{value.description}</p>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -564,8 +600,145 @@
       padding: 70px 20px 20px 20px;
     }
 
+    .floating-legend-btn {
+      top: 16px;
+      right: 70px;
+    }
+
+    .legend-modal {
+      width: 90%;
+      max-height: 80vh;
+    }
+
     .toggle-btn {
       display: none;
     }
+  }
+
+  /* Legend Floating Button & Modal Styles */
+  .floating-legend-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-primary-600);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 990;
+    transition: all 0.2s ease;
+  }
+  @media (max-width: 1024px) {
+    .floating-legend-btn {
+      right: 70px; /* Make space for mobile menu button */
+    }
+  }
+  .floating-legend-btn:hover {
+    transform: scale(1.05);
+    background: var(--color-primary-700);
+  }
+
+  .legend-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .legend-modal {
+    background: var(--color-white);
+    border-radius: 12px;
+    width: 450px;
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-neutral-200);
+  }
+  .legend-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-neutral-800);
+  }
+  .legend-header .close-btn {
+    background: none;
+    border: none;
+    color: var(--color-neutral-500);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 4px;
+  }
+  .legend-header .close-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+
+  .legend-body {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .legend-key {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 50px;
+    text-align: center;
+    border: 1px solid var(--color-primary-100);
+  }
+
+  .legend-desc {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .legend-desc strong {
+    font-size: 15px;
+    color: var(--color-neutral-800);
+  }
+  .legend-desc p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-neutral-600);
+    line-height: 1.4;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 </style>

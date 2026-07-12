@@ -1,5 +1,7 @@
 <script lang="ts">
   import "../app.css";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import ConfirmModal from "$lib/components/ConfirmModal.svelte";
   import { onMount } from "svelte";
   import {
     auth as clientAuth,
@@ -66,3 +68,5 @@
 </svelte:head>
 
 {@render children()}
+<ToastContainer />
+<ConfirmModal />

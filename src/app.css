@@ -286,3 +286,78 @@ a:hover {
 .widescreen-table tr.clickable-row:hover td {
   background: var(--color-neutral-100);
 }
+
+/* ==========================================================================
+   EXPORT/PRINT BUTTONS
+   ========================================================================== */
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--color-white);
+  color: var(--color-neutral-700);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  height: 34px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.export-btn:hover {
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-primary-400);
+  color: var(--color-primary-600);
+  box-shadow: var(--shadow-md);
+}
+
+.card-header .icon-accent {
+  color: var(--color-primary-500);
+}
+
+/* Grid Layouts */
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 992px) {
+  .grid-cols-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-cols-2, .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grid-3-2 {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
+}
+
+@media (max-width: 992px) {
+  .grid-3-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Flexbox Layouts */
+
+.export-btn:active {
+  transform: translateY(1px);
+}

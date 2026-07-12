@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from '$lib';
   import { User, Clock, Trash2 } from '@lucide/svelte';
 
@@ -137,7 +138,7 @@
             <div class="audit-log-item">
               <div class="audit-log-meta">
                 <span class="audit-author">{log.updatedEmail}</span>
-                <span class="audit-time">{log.edits?.createdAt ? new Date(log.edits.createdAt).toLocaleString('it-IT') : 'N/D'}</span>
+                <span class="audit-time">{log.edits?.createdAt ? formatDateTime(log.edits.createdAt) : 'N/D'}</span>
               </div>
               
               <div class="audit-log-changes">

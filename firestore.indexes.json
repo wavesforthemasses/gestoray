@@ -63,6 +63,14 @@
         { "fieldPath": "original.status", "order": "ASCENDING" },
         { "fieldPath": "original.dueDate", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "contracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "original.status", "order": "ASCENDING" },
+        { "fieldPath": "original.totalPrice", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -83,6 +91,13 @@
     {
       "collectionGroup": "contractsPaid",
       "fieldPath": "original.contractId",
+      "indexes": [
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "installments",
+      "fieldPath": "original.status",
       "indexes": [
         { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
       ]

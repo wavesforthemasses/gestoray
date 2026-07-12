@@ -1,42 +1,23 @@
 <script lang="ts">
+  import { confirmStore } from '$lib/stores/confirm';
   import { auth, activeRole } from "$lib/auth";
   import { auth as clientAuth } from "$lib/firebase";
   import { 
     db, 
-    collection, 
-    getDocs, 
-    getDoc, 
     doc, 
-    query, 
-    where, 
-    getCountFromServer, 
-    getAggregateFromServer, 
-    sum,
-    collectionGroup,
-    orderBy
+    updateDoc
   } from "$lib/firebase";
+  import StatusBadge from "$lib/components/StatusBadge.svelte";
+  import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
+  import AdminKPIs from "$lib/components/Dashboard/AdminKPIs.svelte";
+  import AdminTasks from "$lib/components/Dashboard/AdminTasks.svelte";
+  import { ContractService } from "$lib/services/ContractService";
+  import { DashboardService } from "./dashboard.service";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { Card, FormField, LineChart } from "$lib";
-  import {
-    Zap,
-    Shield,
-    Briefcase,
-    TrendingUp,
-    Users,
-    DollarSign,
-    Wallet,
-    FileText,
-    Phone,
-    Calendar,
-    CheckCircle,
-    Clock,
-    AlertTriangle,
-    ChevronUp,
-    ChevronDown,
-    Search,
-    Eye
-  } from "@lucide/svelte";
+  import { Card, TrendChart } from "$lib";
+  import { KPI_LEGEND } from "$lib/kpiLegend";
+  import { formatCurrency } from "$lib/utils/formatters";
 
   // Dashboard Stats States
   let loadingData = $state(true);
@@ -57,6 +38,8 @@
   let commMaturate = $state(0);
   let commSospese = $state(0);
   let commTotalNNCF = $state(0);
+  let commTotalNA = $state(0);
+  let commIncassato = $state(0);
 
   // Activity KPIs
   let activityCalls = $state(0);
@@ -66,10 +49,13 @@
   // Administration Tables
   let adminPendingContracts = $state<any[]>([]);
   let adminOverdueInstallments = $state<any[]>([]);
+  let adminPendingCommissions = $state<any[]>([]);
+  let adminFinalizedCommissions = $state<any[]>([]);
+  let adminUndistributedPayments = $state<any[]>([]);
 
   // Advanced chart configurations
-  let activeChartTab = $state<"vss" | "gi" | "nuove_anagrafiche" | "nncf" | "Telefonata" | "Incontro" | "Appuntamento">("vss");
-  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let activeChartTab: 'vss' | 'gi' | 'nuove_anagrafiche' | 'nncf' | 'Telefonata' | 'Incontro' | 'Appuntamento' | 'provvigioni_maturate' = $state('vss');
+  let granularity: 'settimanale' | 'mensile' | 'annuale' = $state('mensile');
   let endDateString = $state(new Date().toISOString().split('T')[0]);
   let selectedPointIdx = $state<number | null>(null);
 
@@ -81,433 +67,102 @@
   let clientFilter = $state('');
   let vendorFilter = $state('');
   let productFilter = $state('');
+  
+  let isChartFullscreen = $state(false);
+  let chartWrapperW = $state(0);
+  let chartWrapperH = $state(0);
 
-  async function fetchDashboardKPIs() {
+  let loadingAdminTables = $state(true);
+
+  async function loadKPIs() {
     loadingData = true;
     try {
-      const myUid = clientAuth.currentUser?.uid;
-      if (!myUid) return;
+      const kpis = await DashboardService.fetchGlobalKPIs($activeRole || '', $auth?.uid || '');
+      commContractsCount = kpis.commContractsCount;
+      commTotalSold = kpis.commTotalSold;
+      commApprovedSold = kpis.commApprovedSold;
+      commTotalNNCF = kpis.commTotalNNCF;
+      commMaturate = kpis.commMaturate;
+      commIncassato = kpis.commIncassato;
+      totalClienti = kpis.totalClienti;
+      totalVenduto = kpis.totalVenduto;
+      totalIncassato = kpis.totalIncassato;
+      totalNNCF = kpis.totalNNCF;
+      totalContratti = kpis.totalContratti;
+      pendingContratti = kpis.pendingContratti;
+      activityCalls = kpis.activityCalls;
+      activityMeetings = kpis.activityMeetings;
+      activityAppointments = kpis.activityAppointments;
+      commTotalNA = kpis.commTotalNA;
+      usersList = kpis.usersList;
 
-      const role = $activeRole;
-
-      // 1. Fetch current user profile to read derived KPIs
-      const userSnap = await getDoc(doc(db, 'users', myUid));
-      if (userSnap.exists()) {
-        const uData = userSnap.data() || {};
-        const uDerived = uData.derived || {};
-        commContractsCount = uDerived.totalContractsCount || 0;
-        commTotalSold = (uDerived.totalPendingSales || 0) + (uDerived.totalApprovedSales || 0);
-        commApprovedSold = uDerived.totalApprovedSales || 0;
-        commMaturate = uDerived.totalCommissionEarned || 0;
-        commSospese = uDerived.totalCommissionPending || 0;
-        commTotalNNCF = uDerived.totalNNCF || 0;
+      if ($activeRole === 'amministrazione' || $activeRole === 'superadmin') {
+        loadingAdminTables = true;
+        const tables = await DashboardService.fetchAdminTables(new Date().toISOString());
+        adminPendingContracts = tables.adminPendingContracts;
+        adminOverdueInstallments = tables.adminOverdueInstallments;
+        adminPendingCommissions = tables.adminPendingCommissions;
+        adminFinalizedCommissions = tables.adminFinalizedCommissions;
+        adminUndistributedPayments = tables.adminUndistributedPayments;
+        loadingAdminTables = false;
       }
-
-      // 2. Fetch global directional KPIs if admin/direzione
-      if (role !== 'commerciale') {
-        const [
-          clientsCountSnap,
-          approvedContractsValSnap,
-          paymentsValSnap,
-          nncfCountSnap,
-          contractsCountSnap,
-          pendingContractsSnap
-        ] = await Promise.all([
-          getCountFromServer(collection(db, 'clients')),
-          getAggregateFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'approved')), { val: sum('original.totalPrice') }),
-          getAggregateFromServer(collection(db, 'payments'), { val: sum('original.amount') }),
-          getCountFromServer(query(collection(db, 'clients'), where('derived.nncfOrderId', '!=', null))),
-          getCountFromServer(collection(db, 'contracts')),
-          getCountFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'pending')))
-        ]);
-
-        totalClienti = clientsCountSnap.data().count;
-        totalVenduto = approvedContractsValSnap.data().val || 0;
-        totalIncassato = paymentsValSnap.data().val || 0;
-        totalNNCF = nncfCountSnap.data().count;
-        totalContratti = contractsCountSnap.data().count;
-        pendingContratti = pendingContractsSnap.data().count;
-
-        // Fetch users list for vendor dropdown filters
-        const usersSnap = await getDocs(query(collection(db, 'users'), where('original.roles', 'array-contains', 'commerciale')));
-        const uList: any[] = [];
-        usersSnap.forEach((d: any) => {
-          uList.push({ uid: d.id, ...d.data()?.original });
-        });
-        usersList = uList;
-      }
-
-      // 3. Fetch activity counts
-      const today = new Date().toISOString();
-      if (role === 'commerciale') {
-        const [callsSnap, meetingsSnap, apptsSnap] = await Promise.all([
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Telefonata', 'Sollecito Telefonico']))),
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Incontro', 'Sollecito PEC']))),
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Appuntamento', 'Sollecito Email'])))
-        ]);
-        activityCalls = callsSnap.data().count;
-        activityMeetings = meetingsSnap.data().count;
-        activityAppointments = apptsSnap.data().count;
-      } else {
-        const [callsSnap, meetingsSnap, apptsSnap] = await Promise.all([
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Telefonata', 'Sollecito Telefonico']))),
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Incontro', 'Sollecito PEC']))),
-          getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Appuntamento', 'Sollecito Email'])))
-        ]);
-        activityCalls = callsSnap.data().count;
-        activityMeetings = meetingsSnap.data().count;
-        activityAppointments = apptsSnap.data().count;
-      }
-
-      // 4. Fetch admin tables
-      if (role === 'amministrazione' || role === 'superadmin') {
-        const [pendingContrSnap, overdueInstSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('original.status', '==', 'pending'), orderBy('edits.createdAt', 'desc'))),
-          getDocs(query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending'), where('original.dueDate', '<', today.split('T')[0])))
-        ]);
-
-        const pList: any[] = [];
-        pendingContrSnap.forEach((docSnap: any) => {
-          const data = docSnap.data();
-          pList.push({ id: docSnap.id, ...data.original, ...data.edits });
-        });
-        adminPendingContracts = pList;
-
-        const oList: any[] = [];
-        overdueInstSnap.forEach((docSnap: any) => {
-          const data = docSnap.data()?.original || {};
-          oList.push({
-            id: docSnap.id,
-            ...data
-          });
-        });
-        adminOverdueInstallments = oList.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-      }
-
-    } catch (e) {
-      console.error("Error loading KPIs:", e);
     } finally {
       loadingData = false;
     }
   }
 
-  // Generate date ranges backwards from endDateString
-  let chartPeriods = $derived.by(() => {
-    const end = new Date(endDateString);
-    const periods: Array<{ start: Date; end: Date; label: string }> = [];
+  let chartPeriods = $derived(DashboardService.generateChartPeriods(endDateString, granularity));
 
-    if (granularity === 'settimanale') {
-      for (let i = 11; i >= 0; i--) { // Shortened to 12 weeks for better UX and performance
-        const pEnd = new Date(end.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-        const pStart = new Date(pEnd.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
-        periods.push({
-          start: pStart,
-          end: pEnd,
-          label: `${pEnd.getDate()}/${pEnd.getMonth() + 1}`
-        });
-      }
-    } else if (granularity === 'mensile') {
-      for (let i = 11; i >= 0; i--) { // 12 months
-        const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
-        const pStart = new Date(d.getFullYear(), d.getMonth(), 1);
-        const pEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-        const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-        periods.push({
-          start: pStart,
-          end: pEnd,
-          label: `${monthNames[pStart.getMonth()]} ${String(pStart.getFullYear()).slice(2)}`
-        });
-      }
-    } else {
-      for (let i = 4; i >= 0; i--) { // 5 years
-        const year = end.getFullYear() - i;
-        const pStart = new Date(year, 0, 1);
-        const pEnd = new Date(year, 11, 31, 23, 59, 59, 999);
-        periods.push({
-          start: pStart,
-          end: pEnd,
-          label: String(year)
-        });
-      }
-    }
-    return periods;
-  });
-
-  async function fetchChartDataPoints() {
+  async function loadChartData() {
     if (chartPeriods.length === 0) return;
     loadingChart = true;
-
     try {
-      const minDate = chartPeriods[0].start.toISOString();
-      const myUid = clientAuth.currentUser?.uid;
-      const isComm = $activeRole === 'commerciale';
-
-      let docsList: any[] = [];
-
-      if (activeChartTab === 'vss') {
-        // Query contracts in timeframe
-        let q;
-        if (isComm) {
-          // Fetch where vendor is primary or secondary
-          const [primarySnap, secondarySnap] = await Promise.all([
-            getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid), where('edits.createdAt', '>=', minDate))),
-            getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid), where('edits.createdAt', '>=', minDate)))
-          ]);
-          primarySnap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-          secondarySnap.forEach((d: any) => {
-            if (!docsList.some(x => x.id === d.id)) docsList.push({ id: d.id, ...d.data() });
-          });
-        } else {
-          const snap = await getDocs(query(collection(db, 'contracts'), where('edits.createdAt', '>=', minDate)));
-          snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-        }
-      } else if (activeChartTab === 'gi') {
-        // Query payments in timeframe
-        const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', minDate)));
-        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-
-        // If commercial, fetch their contracts to filter payments in memory
-        if (isComm) {
-          const [primarySnap, secondarySnap] = await Promise.all([
-            getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid))),
-            getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid)))
-          ]);
-          const myContractIds = new Set<string>();
-          primarySnap.forEach((d: any) => myContractIds.add(d.id));
-          secondarySnap.forEach((d: any) => myContractIds.add(d.id));
-
-          // Fetch allocated slices for these contracts (collectionGroup contractsPaid query)
-          const allocationsSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', Array.from(myContractIds))));
-          const validPaymentIds = new Set(allocationsSnap.docs.map((doc: any) => doc.data()?.original?.paymentId));
-          
-          docsList = docsList.filter(pay => validPaymentIds.has(pay.id)).map(pay => {
-            // Find allocation amount
-            const alloc = allocationsSnap.docs.find((a: any) => a.data()?.original?.paymentId === pay.id);
-            return {
-              ...pay,
-              original: {
-                ...pay.original,
-                amount: alloc ? alloc.data().original.amount : pay.original.amount
-              }
-            };
-          });
-        }
-      } else if (activeChartTab === 'nuove_anagrafiche') {
-        let q;
-        if (isComm) {
-          q = query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('edits.createdAt', '>=', minDate));
-        } else {
-          q = query(collection(db, 'clients'), where('edits.createdAt', '>=', minDate));
-        }
-        const snap = await getDocs(q);
-        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-      } else if (activeChartTab === 'nncf') {
-        let q;
-        if (isComm) {
-          q = query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('derived.nncfDate', '>=', minDate));
-        } else {
-          q = query(collection(db, 'clients'), where('derived.nncfDate', '>=', minDate));
-        }
-        const snap = await getDocs(q);
-        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-      } else {
-        // Activity tab types
-        let q;
-        if (isComm) {
-          q = query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('edits.createdAt', '>=', minDate));
-        } else {
-          q = query(collectionGroup(db, 'activities'), where('edits.createdAt', '>=', minDate));
-        }
-        const snap = await getDocs(q);
-        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-      }
-
-      chartRawDataList = docsList;
-    } catch (e) {
-      console.error("Error fetching chart data:", e);
+      chartRawDataList = await DashboardService.fetchChartRawData(
+        chartPeriods[0].start.toISOString(), 
+        $activeRole || '', 
+        $auth?.uid || '', 
+        activeChartTab
+      );
     } finally {
       loadingChart = false;
     }
   }
 
-  // Reactively calculate chart points
-  let computedChartPoints = $derived.by(() => {
-    return chartPeriods.map((p) => {
-      const filtered = chartRawDataList.filter((item) => {
-        let dateVal = '';
-        if (activeChartTab === 'vss') {
-          dateVal = item.edits?.createdAt || item.original?.createdAt;
-        } else if (activeChartTab === 'gi') {
-          dateVal = item.original?.date;
-        } else if (activeChartTab === 'nuove_anagrafiche') {
-          dateVal = item.edits?.createdAt;
-        } else if (activeChartTab === 'nncf') {
-          dateVal = item.derived?.nncfDate;
-        } else {
-          dateVal = item.edits?.createdAt || item.original?.date;
-        }
+  let computedChartPoints = $derived(DashboardService.computeChartPoints(chartRawDataList, chartPeriods, activeChartTab));
 
-        if (!dateVal) return false;
-        const d = new Date(dateVal);
-        return d >= p.start && d <= p.end;
-      });
-
-      if (activeChartTab === 'vss' || activeChartTab === 'gi') {
-        return filtered.reduce((sum, item) => sum + (item.original?.totalPrice || item.original?.amount || 0), 0);
-      }
-
-      // For activity types tab, filter by the active activity type
-      if (activeChartTab === 'Telefonata' || activeChartTab === 'Incontro' || activeChartTab === 'Appuntamento') {
-        const matchType = activeChartTab;
-        const activityFiltered = filtered.filter(a => {
-          const type = a.original?.type || '';
-          if (matchType === 'Telefonata') return type === 'Telefonata' || type === 'Sollecito Telefonico';
-          if (matchType === 'Incontro') return type === 'Incontro' || type === 'Sollecito PEC';
-          if (matchType === 'Appuntamento') return type === 'Appuntamento' || type === 'Sollecito Email';
-          return type === matchType;
-        });
-        return activityFiltered.length;
-      }
-
-      return filtered.length;
-    });
-  });
-
-  // Drill-Down detailed records
-  let drillDownItems = $derived.by(() => {
-    if (selectedPointIdx === null || selectedPointIdx < 0 || selectedPointIdx >= chartPeriods.length) {
-      return [];
-    }
-
-    const period = chartPeriods[selectedPointIdx];
-    const matchQuery = (val: string | undefined, q: string) => {
-      if (!q) return true;
-      return val?.toLowerCase().includes(q.toLowerCase()) || false;
-    };
-
-    let items = chartRawDataList.filter((item) => {
-      let dateVal = '';
-      if (activeChartTab === 'vss') {
-        dateVal = item.edits?.createdAt || item.original?.createdAt;
-      } else if (activeChartTab === 'gi') {
-        dateVal = item.original?.date;
-      } else if (activeChartTab === 'nuove_anagrafiche') {
-        dateVal = item.edits?.createdAt;
-      } else if (activeChartTab === 'nncf') {
-        dateVal = item.derived?.nncfDate;
-      } else {
-        dateVal = item.edits?.createdAt || item.original?.date;
-      }
-
-      if (!dateVal) return false;
-      const d = new Date(dateVal);
-      return d >= period.start && d <= period.end;
-    });
-
-    // Apply drilldown filters
-    if (clientFilter) {
-      items = items.filter(i => matchQuery(i.original?.clientName || i.original?.nome, clientFilter));
-    }
-    if (vendorFilter) {
-      items = items.filter(i => i.original?.vendorUid === vendorFilter || i.original?.createdBy === vendorFilter || i.original?.loggedBy === vendorFilter);
-    }
-    if (productFilter) {
-      items = items.filter(i => {
-        const prods = i.original?.products || i.original?.items || [];
-        return prods.some((p: any) => matchQuery(p.name, productFilter));
-      });
-    }
-
-    return items.map((item) => {
-      const isComm = $activeRole === 'commerciale';
-      const myUid = clientAuth.currentUser?.uid;
-
-      if (activeChartTab === 'vss') {
-        const orig = item.original || {};
-        let displayVal = orig.totalPrice || 0;
-        let info = 'Quota Primario (100%)';
-        if (orig.secondVendorUid) {
-          if (isComm) {
-            if (orig.vendorUid === myUid) {
-              displayVal = displayVal * (100 - orig.secondVendorShare) / 100;
-              info = `Quota Primario (${100 - orig.secondVendorShare}%)`;
-            } else {
-              displayVal = displayVal * orig.secondVendorShare / 100;
-              info = `Quota Co-selling (${orig.secondVendorShare}%)`;
-            }
-          } else {
-            info = `Ripartito: ${100 - orig.secondVendorShare}% / ${orig.secondVendorShare}%`;
-          }
-        }
-        return {
-          id: item.id,
-          cliente: orig.clientName,
-          consulente: orig.vendorEmail + (orig.secondVendorEmail ? ` / ${orig.secondVendorEmail}` : ''),
-          data: new Date(item.edits?.createdAt || orig.createdAt).toLocaleDateString('it-IT'),
-          valore: displayVal,
-          dettaglio: info,
-          status: orig.status === 'approved' ? 'Approvato' : 'In attesa',
-          link: `/dashboard/contracts/${item.id}`
-        };
-      } else if (activeChartTab === 'gi') {
-        const orig = item.original || {};
-        return {
-          id: item.id,
-          cliente: orig.clientName,
-          consulente: orig.recordedEmail || 'Cassa',
-          data: new Date(orig.date).toLocaleDateString('it-IT'),
-          valore: orig.amount,
-          dettaglio: 'Riscossione fattura',
-          status: 'Incassato',
-          link: `/dashboard/payments`
-        };
-      } else if (activeChartTab === 'nuove_anagrafiche' || activeChartTab === 'nncf') {
-        const orig = item.original || {};
-        return {
-          id: item.id,
-          cliente: `${orig.nome} ${orig.cognome || ''}`.trim(),
-          consulente: orig.email || 'N/A',
-          data: new Date(item.derived?.nncfDate || item.edits?.createdAt).toLocaleDateString('it-IT'),
-          valore: activeChartTab === 'nncf' ? 'NNCF Attivo' : 'Nuovo Lead',
-          dettaglio: orig.phone || 'N/D',
-          status: 'Anagrafica',
-          link: `/dashboard/clients/${item.id}`
-        };
-      } else {
-        const orig = item.original || {};
-        return {
-          id: item.id,
-          cliente: orig.clientName || 'N/D',
-          consulente: orig.loggedEmail || 'Commerciale',
-          data: new Date(item.edits?.createdAt || orig.date).toLocaleDateString('it-IT'),
-          valore: '-',
-          dettaglio: orig.notes || 'Registrazione attività',
-          status: orig.type || 'Attività',
-          link: `/dashboard/clients/${orig.clientId}?tab=activities`
-        };
-      }
-    });
-  });
+  let drillDownItems = $derived(DashboardService.computeDrillDownItems(
+    chartRawDataList, 
+    selectedPointIdx !== null ? chartPeriods[selectedPointIdx] : null, 
+    activeChartTab, 
+    $activeRole || '', 
+    $auth?.uid || '', 
+    clientFilter, 
+    vendorFilter, 
+    productFilter
+  ));
 
   onMount(() => {
     const unsubscribe = auth.subscribe(($auth) => {
       if (!$auth) {
         setTimeout(() => {
-          if (!clientAuth.currentUser) {
-            goto("/login");
-          }
+          if (!clientAuth.currentUser && !$auth) goto("/login");
         }, 800);
       }
     });
-
-    fetchDashboardKPIs();
     return () => unsubscribe();
+  });
+
+  // Reactively fetch KPIs whenever auth or role changes
+  $effect(() => {
+    if ($auth && $activeRole) {
+      loadKPIs();
+    }
   });
 
   // Reactively fetch new chart points whenever filters or tabs change
   $effect(() => {
     if (activeChartTab || granularity || endDateString || $activeRole) {
-      fetchChartDataPoints();
+      loadChartData();
     }
   });
 
@@ -516,21 +171,27 @@
     if (role !== 'superadmin' && role !== 'amministrazione') return;
 
     try {
-      const contractRef = doc(db, 'contracts', contractId);
-      const contractSnap = await getDoc(contractRef);
-      if (contractSnap.exists()) {
-        const cData = contractSnap.data();
-        await contractRef.update({
-          'original.status': 'approved',
-          'original.approvedAt': new Date().toISOString(),
-          'original.approvedBy': clientAuth.currentUser?.uid || 'system',
-          'original.approvedEmail': clientAuth.currentUser?.email || 'system'
-        });
-        alert('Contratto approvato con successo!');
-        await fetchDashboardKPIs();
-      }
+      await ContractService.approveContract(contractId, clientAuth.currentUser?.uid || 'system', clientAuth.currentUser?.email || 'system');
+      alert('Contratto approvato con successo!');
+      await loadKPIs();
     } catch (e: any) {
       alert('Errore durante l\'approvazione: ' + e.message);
+    }
+  }
+
+  async function handleMarkCommissionPaid(periodId: string) {
+    const ok = await confirmStore.prompt('Sei sicuro di voler contrassegnare questo mese provvigionale come pagato? Scomparirà dalla dashboard e non sarà più considerato in attesa.');
+    if (!ok) return;
+    try {
+      await updateDoc(doc(db, 'commissions_closings', periodId), {
+        isPaid: true,
+        paidAt: new Date().toISOString(),
+        paidBy: clientAuth.currentUser?.uid || 'system'
+      });
+      alert('Provvigione segnata come pagata!');
+      await loadKPIs();
+    } catch (e: any) {
+      alert('Errore: ' + e.message);
     }
   }
 </script>
@@ -552,123 +213,21 @@
           style="--card-padding: 30px 40px;"
         />
 
-        {#if loadingData}
+        {#if loadingAdminTables}
           <div class="loader-box">
             <span class="spinner"></span>
             Caricamento dati amministrativi...
           </div>
         {:else}
-          <!-- Admin KPIs Deck -->
-          <section class="kpi-deck">
-            <div class="kpi-tile border-warning">
-              <div class="kpi-icon warning"><Clock size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Contratti Da Approvare</span>
-                <span class="kpi-val">{adminPendingContracts.length}</span>
-                <span class="kpi-sub">In attesa di verifica contabile</span>
-              </div>
-            </div>
-
-            <div class="kpi-tile border-success">
-              <div class="kpi-icon success"><CheckCircle size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Contratti Approvati</span>
-                <span class="kpi-val">{totalContratti - pendingContratti}</span>
-                <span class="kpi-sub">Transazioni chiuse nel sistema</span>
-              </div>
-            </div>
-
-            <div class="kpi-tile border-error">
-              <div class="kpi-icon error"><AlertTriangle size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Rate Overdue (Insoluti)</span>
-                <span class="kpi-val">{adminOverdueInstallments.length}</span>
-                <span class="kpi-sub">Scadenze di pagamento superate</span>
-              </div>
-            </div>
-          </section>
-
           <!-- Main Content split -->
-          <div class="admin-split-grid">
-            <!-- Section 1: Pending contracts list -->
-            <Card title="Nuovi Ordini Da Approvare" description="Elenco dei contratti pendenti. Clicca su Gestisci per approvarli o verificare i dettagli.">
-              {#snippet icon()}
-                <Clock size={20} class="icon-accent" />
-              {/snippet}
-              
-              {#if adminPendingContracts.length === 0}
-                <div class="empty-panel">Nessun ordine in attesa di approvazione.</div>
-              {:else}
-                <div class="table-wrapper">
-                  <table class="widescreen-table admin-table">
-                    <thead>
-                      <tr>
-                        <th>Cliente</th>
-                        <th>Consulente</th>
-                        <th>Prezzo Totale</th>
-                        <th>Azioni</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {#each adminPendingContracts as c}
-                        <tr>
-                          <td><strong>{c.clientName}</strong></td>
-                          <td>{c.vendorEmail}</td>
-                          <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
-                          <td>
-                            <button onclick={() => goto(`/dashboard/contracts/${c.id}`)} class="approve-collect-btn" style="padding: 4px 10px; font-size: 11px;">
-                              Gestisci
-                            </button>
-                          </td>
-                        </tr>
-                      {/each}
-                    </tbody>
-                  </table>
-                </div>
-              {/if}
-            </Card>
-
-            <!-- Section 2: Overdue payments tracker -->
-            <Card title="Scadenziario Recupero Crediti" description="Registro delle rate insolute. Ricorda di sollecitare il cliente se lo stato è overdue.">
-              {#snippet icon()}
-                <AlertTriangle size={20} class="icon-error-accent" style="color: var(--color-error);" />
-              {/snippet}
-
-              {#if adminOverdueInstallments.length === 0}
-                <div class="empty-panel">Nessuna rata o scadenza insoluta rilevata.</div>
-              {:else}
-                <div class="table-wrapper">
-                  <table class="widescreen-table admin-table">
-                    <thead>
-                      <tr>
-                        <th>Cliente</th>
-                        <th>Scadenza</th>
-                        <th>Importo</th>
-                        <th>Azioni</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {#each adminOverdueInstallments as inst}
-                        <tr style="background-color: hsla(0, 100%, 99%, 1);">
-                          <td>
-                            <strong>{inst.clientName}</strong>
-                            <span class="warning-badge-inline">SOLLECITARE CLIENTE!</span>
-                          </td>
-                          <td><span style="font-weight: 600; color: var(--color-error-text);">{new Date(inst.dueDate).toLocaleDateString('it-IT')}</span></td>
-                          <td><strong>€ {inst.expectedAmount.toFixed(2)}</strong></td>
-                          <td>
-                            <button onclick={() => goto(`/dashboard/contracts/${inst.contractId}`)} class="back-link-btn" style="padding: 4px 10px; font-size: 11px;">
-                              Dettaglio
-                            </button>
-                          </td>
-                        </tr>
-                      {/each}
-                    </tbody>
-                  </table>
-                </div>
-              {/if}
-            </Card>
-          </div>
+          <AdminTasks 
+            {adminPendingContracts}
+            {adminOverdueInstallments}
+            {adminUndistributedPayments}
+            {adminPendingCommissions}
+            {adminFinalizedCommissions}
+            onMarkCommissionPaid={handleMarkCommissionPaid}
+          />
         {/if}
       </div>
     {:else}
@@ -689,302 +248,67 @@
             Aggiornamento dati analitici...
           </div>
         {:else}
-          <!-- Financial KPIs Block -->
-          {#if $activeRole === "commerciale"}
-            <section class="kpi-deck">
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><Briefcase size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Contratti Chiusi</span>
-                  <span class="kpi-val">{commContractsCount}</span>
-                  <span class="kpi-sub">Totale ordinato: € {commTotalSold.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><DollarSign size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Provvigioni Maturate</span>
-                  <span class="kpi-val">€ {commMaturate.toFixed(2)}</span>
-                  <span class="kpi-sub">Fatturato incassato: € {commApprovedSold.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><Wallet size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Provvigioni In Sospeso</span>
-                  <span class="kpi-val">€ {commSospese.toFixed(2)}</span>
-                  <span class="kpi-sub">In attesa di approvazione amministrativa</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><FileText size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Primi Ordini (NNCF)</span>
-                  <span class="kpi-val">{commTotalNNCF}</span>
-                  <span class="kpi-sub">Contratti primo acquisto clienti</span>
-                </div>
-              </div>
-            </section>
-          {:else}
-            <!-- superadmin & direzione global stats view -->
-            <section class="kpi-deck">
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><Users size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Nuove Anagrafiche</span>
-                  <span class="kpi-val">{totalClienti}</span>
-                  <span class="kpi-sub">Totalità lead database</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><DollarSign size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Valore Ordinato (VSS)</span>
-                  <span class="kpi-val">€ {totalVenduto.toFixed(2)}</span>
-                  <span class="kpi-sub">Contratti approvati: {totalContratti - pendingContratti}</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><Wallet size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Cassa Incassata (GI)</span>
-                  <span class="kpi-val">€ {totalIncassato.toFixed(2)}</span>
-                  <span class="kpi-sub">In attesa di incasso: {pendingContratti} contratti</span>
-                </div>
-              </div>
-
-              <div class="kpi-tile border-info">
-                <div class="kpi-icon"><FileText size={20} /></div>
-                <div class="kpi-text">
-                  <span class="kpi-lbl">Primi Ordini (NNCF)</span>
-                  <span class="kpi-val">{totalNNCF}</span>
-                  <span class="kpi-sub">Conversione primi ordini totali</span>
-                </div>
-              </div>
-            </section>
-          {/if}
-
-          <!-- Commercial Activities KPIs Section -->
-          <section class="activity-section-header">
-            <h4>Attività Commerciali Registrate</h4>
-            <span class="sub-desc">Contatori delle interazioni e degli appuntamenti effettuati con i lead.</span>
-          </section>
-
-          <section class="kpi-deck activity-deck">
-            <div class="kpi-tile border-info">
-              <div class="kpi-icon info"><Phone size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Telefonate Loggate</span>
-                <span class="kpi-val">{activityCalls}</span>
-                <span class="kpi-sub">Chiamate e feedback rapidi</span>
-              </div>
+          <div class="dashboard-main-split">
+            <div class="dashboard-left-col">
+              <!-- Unified Interactive Trend Graph Card -->
+              <!-- Unified Interactive Trend Graph Card -->
+              <TrendChart
+                bind:isChartFullscreen
+                bind:activeChartTab
+                bind:selectedPointIdx
+                bind:granularity
+                bind:endDateString
+                bind:clientFilter
+                bind:vendorFilter
+                bind:productFilter
+                {KPI_LEGEND}
+                {loadingData}
+                {computedChartPoints}
+                {chartPeriods}
+                {drillDownItems}
+                {usersList}
+                activeRole={$activeRole || ''}
+                {formatCurrency}
+              />
             </div>
 
-            <div class="kpi-tile border-info">
-              <div class="kpi-icon"><Users size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Incontri Svolti</span>
-                <span class="kpi-val">{activityMeetings}</span>
-                <span class="kpi-sub">Riunioni e incontri conoscitivi</span>
-              </div>
-            </div>
-
-            <div class="kpi-tile border-info">
-              <div class="kpi-icon"><Calendar size={20} /></div>
-              <div class="kpi-text">
-                <span class="kpi-lbl">Appuntamenti Presi</span>
-                <span class="kpi-val">{activityAppointments}</span>
-                <span class="kpi-sub">Demo commerciali pianificate</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Unified Interactive Trend Graph Card -->
-          <div class="unified-chart-wrapper">
-            <Card
-              title="Trend e Andamento Storico"
-              description="Visualizza il trend dinamico delle metriche di performance aziendali. Alterna tra le viste usando i tab e seleziona un punto per il drill-down."
-            >
-              {#snippet icon()}
-                <TrendingUp size={20} class="icon-accent" />
-              {/snippet}
-
-              <div class="chart-controls-box">
-                <!-- Tab buttons switcher -->
-                <div class="chart-tab-switcher">
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "vss"}
-                    onclick={() => { activeChartTab = "vss"; selectedPointIdx = null; }}
-                  >
-                    Valore Venduto (VSS)
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "gi"}
-                    onclick={() => { activeChartTab = "gi"; selectedPointIdx = null; }}
-                  >
-                    Cassa Incassata (GI)
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "nuove_anagrafiche"}
-                    onclick={() => { activeChartTab = "nuove_anagrafiche"; selectedPointIdx = null; }}
-                  >
-                    Nuove Anagrafiche
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "nncf"}
-                    onclick={() => { activeChartTab = "nncf"; selectedPointIdx = null; }}
-                  >
-                    Primi Ordini (NNCF)
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "Telefonata"}
-                    onclick={() => { activeChartTab = "Telefonata"; selectedPointIdx = null; }}
-                  >
-                    Telefonate
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "Incontro"}
-                    onclick={() => { activeChartTab = "Incontro"; selectedPointIdx = null; }}
-                  >
-                    Incontri
-                  </button>
-                  <button
-                    class="chart-tab-btn"
-                    class:active={activeChartTab === "Appuntamento"}
-                    onclick={() => { activeChartTab = "Appuntamento"; selectedPointIdx = null; }}
-                  >
-                    Appuntamenti
-                  </button>
-                </div>
-
-                <!-- Granularity & Date Picker controls -->
-                <div class="chart-granularity-picker">
-                  <div class="picker-item">
-                    <span class="picker-lbl">Granularità:</span>
-                    <select bind:value={granularity} class="sub-chart-select" onchange={() => selectedPointIdx = null}>
-                      <option value="settimanale">Settimanale (12w)</option>
-                      <option value="mensile">Mensile (12m)</option>
-                      <option value="annuale">Annuale (5y)</option>
-                    </select>
-                  </div>
-
-                  <div class="picker-item">
-                    <span class="picker-lbl">Data Finale:</span>
-                    <input type="date" bind:value={endDateString} class="sub-chart-date-picker" onchange={() => selectedPointIdx = null} />
-                  </div>
-                </div>
-              </div>
-
-              {#if loadingChart}
-                <div class="loader-box" style="border: none; padding: 30px;">
-                  <span class="spinner"></span>
-                  Caricamento andamento grafico...
-                </div>
+            <div class="dashboard-right-col">
+              <!-- Financial KPIs Block -->
+              {#if $activeRole === "commerciale"}
+                <CommercialKPIs 
+                  {commTotalNA}
+                  {commContractsCount}
+                  {commTotalSold}
+                  {commMaturate}
+                  {commTotalNNCF}
+                  {commIncassato}
+                  {activityCalls}
+                  {activityMeetings}
+                  {activityAppointments}
+                  onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
+                />
               {:else}
-                <LineChart
-                  data={computedChartPoints}
-                  labels={chartPeriods.map(p => p.label)}
-                  selectedIdx={selectedPointIdx}
-                  onSelect={(idx) => selectedPointIdx = idx}
-                  width={500}
-                  height={200}
-                  xPadding={50}
-                  yPadding={30}
-                  isCurrency={activeChartTab === 'vss' || activeChartTab === 'gi'}
+                <!-- superadmin & direzione global stats view -->
+                <AdminKPIs 
+                  {totalClienti}
+                  {totalVenduto}
+                  {totalContratti}
+                  {pendingContratti}
+                  {totalIncassato}
+                  {totalNNCF}
+                  {commMaturate}
+                  {activityCalls}
+                  {activityMeetings}
+                  {activityAppointments}
+                  onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
                 />
               {/if}
-            </Card>
+            </div>
           </div>
 
-          <!-- Drill-Down detailed section -->
-          {#if selectedPointIdx !== null}
-            <div class="drilldown-wrapper animate-fade-in">
-              <Card title="Dettaglio Analitico Periodo" description="Dettaglio delle transazioni, lead o attività registrate nel periodo selezionato ({chartPeriods[selectedPointIdx].label}).">
-                {#snippet icon()}
-                  <Search size={20} class="icon-accent" />
-                {/snippet}
 
-                <!-- Filters -->
-                <div class="drilldown-filters-pane">
-                  <FormField id="dd-client-filter" label="Filtra per Cliente">
-                    <input type="text" id="dd-client-filter" bind:value={clientFilter} placeholder="Inserisci nome cliente..." />
-                  </FormField>
 
-                  {#if $activeRole !== 'commerciale'}
-                    <FormField id="dd-vendor-filter" label="Filtra per Consulente">
-                      <select id="dd-vendor-filter" bind:value={vendorFilter} class="sub-chart-select" style="width: 100%;">
-                        <option value="">Tutti i consulenti</option>
-                        {#each usersList as u}
-                          <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
-                        {/each}
-                      </select>
-                    </FormField>
-                  {/if}
 
-                  <FormField id="dd-product-filter" label="Filtra per Prodotto">
-                    <input type="text" id="dd-product-filter" bind:value={productFilter} placeholder="es. Hosting, CRM..." />
-                  </FormField>
-                </div>
-
-                <!-- Results Table -->
-                {#if drillDownItems.length === 0}
-                  <div class="empty-panel">Nessun dato registrato corrisponde ai filtri impostati per questo periodo.</div>
-                {:else}
-                  <div class="table-wrapper" style="margin-top: 16px;">
-                    <table class="widescreen-table drilldown-table">
-                      <thead>
-                        <tr>
-                          <th>Cliente</th>
-                          <th>Consulente</th>
-                          <th>Data</th>
-                          <th>Stato / Tipo</th>
-                          {#if activeChartTab === 'vss' || activeChartTab === 'gi'}
-                            <th>Importo Quota</th>
-                          {/if}
-                          <th>Note / Ripartizione</th>
-                          <th>Azione</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {#each drillDownItems as item}
-                          <tr>
-                            <td><strong>{item.cliente}</strong></td>
-                            <td>{item.consulente}</td>
-                            <td>{item.data}</td>
-                            <td>
-                              <span class="badge" class:status-approved={item.status === 'Approvato' || item.status === 'Incassato' || item.status === 'Anagrafica'} class:status-pending={item.status === 'In attesa' || item.status.includes('Soll') || item.status === 'Telefonata' || item.status === 'Incontro' || item.status === 'Appuntamento'}>
-                                {item.status}
-                              </span>
-                            </td>
-                            {#if activeChartTab === 'vss' || activeChartTab === 'gi'}
-                              <td><strong>€ {item.valore.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong></td>
-                            {/if}
-                            <td><span style="font-size: 12px; color: var(--color-neutral-600);">{item.dettaglio}</span></td>
-                            <td>
-                              <button onclick={() => goto(item.link)} class="back-link-btn" style="padding: 4px 8px; font-size: 11px;">
-                                <Eye size={12} style="margin-right: 4px;" /> Vedi
-                              </button>
-                            </td>
-                          </tr>
-                        {/each}
-                      </tbody>
-                    </table>
-                  </div>
-                {/if}
-              </Card>
-            </div>
-          {/if}
         {/if}
       </div>
     {/if}
@@ -1016,402 +340,27 @@
   :global(.welcome-banner h3) {
     color: white !important;
   }
-  :global(.welcome-banner p) {
-    color: rgba(255,255,255,0.85) !important;
-  }
-
-  .kpi-deck {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
-  }
-
-  .kpi-tile {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 20px;
-    padding: 24px 28px;
+  .dashboard-main-split {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), inset 0 2px 0 rgba(255, 255, 255, 0.8);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    gap: 30px;
+    align-items: flex-start;
   }
-  
-  .kpi-tile::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600));
-    opacity: 0.8;
+  .dashboard-left-col {
+    flex: 1;
+    min-width: 0;
   }
-  .kpi-tile.border-success::before { background: linear-gradient(90deg, var(--color-success-400), var(--color-success-600)); }
-  .kpi-tile.border-warning::before { background: linear-gradient(90deg, var(--color-warning-400), var(--color-warning-600)); }
-  .kpi-tile.border-error::before { background: linear-gradient(90deg, var(--color-error-400), var(--color-error-600)); }
-  .kpi-tile.border-info::before { background: linear-gradient(90deg, var(--color-secondary-400), var(--color-secondary-600)); }
-  .kpi-tile.border-teal::before { background: linear-gradient(90deg, var(--color-primary-300), var(--color-primary-500)); }
-  .kpi-tile.border-indigo::before { background: linear-gradient(90deg, var(--color-secondary-500), var(--color-secondary-700)); }
-
-  .kpi-tile:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  .dashboard-right-col {
+    flex: 0 0 280px;
   }
-
-  .kpi-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
-    color: var(--color-primary-700);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  }
-  .kpi-tile.border-success .kpi-icon { background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200)); color: var(--color-success-800); }
-  .kpi-tile.border-warning .kpi-icon { background: linear-gradient(135deg, var(--color-warning-100), var(--color-warning-200)); color: var(--color-warning-800); }
-  .kpi-tile.border-error .kpi-icon { background: linear-gradient(135deg, var(--color-error-100), var(--color-error-200)); color: var(--color-error-800); }
-  .kpi-tile.border-info .kpi-icon { background: linear-gradient(135deg, var(--color-secondary-100), var(--color-secondary-200)); color: var(--color-secondary-800); }
-  .kpi-tile.border-teal .kpi-icon { background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100)); color: var(--color-primary-600); }
-  .kpi-tile.border-indigo .kpi-icon { background: linear-gradient(135deg, var(--color-secondary-200), var(--color-secondary-300)); color: var(--color-secondary-900); }
-
-  .kpi-text {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .kpi-lbl {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-neutral-600);
-    letter-spacing: 0.02em;
-  }
-
-  .kpi-val {
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--color-neutral-900);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  .kpi-sub {
-    font-size: 12px;
-    color: var(--color-neutral-500);
-    font-weight: 600;
-    margin-top: 4px;
-  }
-
-  .activity-section-header {
-    margin-top: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .activity-section-header h4 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--color-neutral-900);
-    letter-spacing: -0.01em;
-  }
-
-  .activity-section-header .sub-desc {
-    font-size: 14px;
-    color: var(--color-neutral-500);
-  }
-
-  /* Unified chart layout */
-  .unified-chart-wrapper {
-    width: 100%;
-    margin-top: 16px;
-  }
-
-  :global(.unified-chart-wrapper .card) {
-    border-radius: 24px !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.04) !important;
-    padding: 32px !important;
-  }
-
-  .chart-controls-box {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    width: 100%;
-    margin-bottom: 24px;
-    background: transparent;
-    flex-wrap: wrap;
-  }
-
-  .chart-tab-switcher {
-    display: flex;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.03);
-    padding: 4px;
-    border-radius: 14px;
-    flex-wrap: wrap;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .chart-tab-btn {
-    background: transparent;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-neutral-600);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .chart-tab-btn:hover {
-    color: var(--color-neutral-900);
-  }
-
-  .chart-tab-btn.active {
-    background: var(--color-white);
-    color: var(--color-primary-600);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  }
-
-  .chart-granularity-picker {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .picker-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .picker-lbl {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--color-neutral-400);
-    letter-spacing: 0.05em;
-  }
-
-  .sub-chart-select, .sub-chart-date-picker {
-    height: 36px;
-    padding: 0 10px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-neutral-300);
-    font-family: inherit;
-    font-size: 12.5px;
-    background: var(--color-white);
-    color: var(--color-neutral-800);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .sub-chart-select:focus, .sub-chart-date-picker:focus {
-    border-color: var(--color-primary-500);
-  }
-
-  .sub-chart-select {
-    padding-right: 28px;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 12px;
-    cursor: pointer;
-  }
-
-  .loader-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 60px;
-    color: var(--color-neutral-500);
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
-  }
-
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
-    border-radius: 50%;
-    border-top-color: var(--color-primary-500);
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
+  @media (max-width: 1024px) {
+    .dashboard-main-split {
+      flex-direction: column;
+    }
+    .dashboard-right-col {
+      flex: none;
+      width: 100%;
     }
   }
 
-  .animate-fade-in {
-    animation: fadeIn 0.4s ease;
-  }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Admin Dashboard Layout split grid */
-  .admin-split-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  @media (max-width: 992px) {
-    .admin-split-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .empty-panel {
-    padding: 30px;
-    text-align: center;
-    color: var(--color-neutral-400);
-    background: var(--color-neutral-50);
-    border-radius: var(--radius-md);
-    font-size: 13.5px;
-    font-weight: 500;
-  }
-
-  .admin-table th, .admin-table td {
-    padding: 10px 14px;
-  }
-
-  .warning-badge-inline {
-    background: hsla(0, 100%, 96%, 1);
-    color: var(--color-error-text);
-    padding: 2px 6px;
-    border-radius: 3px;
-    border: 1px solid var(--color-error-border);
-    display: inline-block;
-    font-size: 9px;
-    font-weight: 700;
-    margin-top: 4px;
-  }
-
-  .approve-collect-btn {
-    background: var(--color-primary-500);
-    color: var(--color-white);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    box-shadow: 0 2px 6px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .approve-collect-btn:hover {
-    opacity: 0.9;
-  }
-
-  .back-link-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-300);
-    color: var(--color-neutral-600);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .back-link-btn:hover {
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-800);
-  }
-
-  /* Drill-down styles */
-  .drilldown-filters-pane {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--color-neutral-200);
-    padding-bottom: 16px;
-  }
-
-  .drilldown-table th, .drilldown-table td {
-    padding: 12px 14px;
-  }
-
-  .selected-period-banner {
-    background: var(--color-primary-50);
-    color: var(--color-primary-700);
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-  }
-
-  .clear-filter-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-primary-200);
-    color: var(--color-primary-600);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: var(--radius-xs);
-    cursor: pointer;
-  }
-
-  .badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    display: inline-block;
-  }
-
-  .badge.status-approved {
-    background: var(--color-success-light);
-    color: var(--color-success-text);
-  }
-
-  .badge.status-pending {
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-500);
-    border: 1px solid var(--color-neutral-200);
-  }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatCurrency } from '$lib/utils/formatters';
   interface Props {
     data: number[];
     labels: string[];
@@ -117,10 +118,10 @@
   </div>
 
   <div class="chart-y-axis-lbls">
-    <span>Massimo: {isCurrency ? '€' + maxVal.toLocaleString('it-IT') : maxVal}</span>
+    <span>Massimo: {isCurrency ? formatCurrency(maxVal) : maxVal}</span>
     {#if selectedIdx !== null && labels[selectedIdx]}
       <span class="selected-period-banner">
-        Filtro attivo: <strong>{labels[selectedIdx]}</strong> (Valore: {isCurrency ? '€' + data[selectedIdx].toLocaleString('it-IT') : data[selectedIdx]})
+        Filtro attivo: <strong>{labels[selectedIdx]}</strong> (Valore: {isCurrency ? formatCurrency(data[selectedIdx]) : data[selectedIdx]})
         <button onclick={() => onSelect(null)} class="clear-filter-btn" type="button">Azzera</button>
       </span>
     {/if}

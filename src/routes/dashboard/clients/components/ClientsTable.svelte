@@ -1,0 +1,296 @@
+<script lang="ts">
+  import { Table, Card } from '$lib';
+  import { Users, Search } from '@lucide/svelte';
+  import { goto } from '$app/navigation';
+  import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
+  import StatusBadge from '$lib/components/StatusBadge.svelte';
+  import { activeRole } from '$lib/auth';
+
+  interface Props {
+    clientsList: any[];
+    searchQuery: string;
+    onSearch: (q: string) => void;
+    onReset: () => void;
+    onAddClick: () => void;
+    selectedPeriod: { start: Date; end: Date } | null;
+  }
+
+  let { 
+    clientsList,
+    searchQuery = $bindable(''),
+    onSearch,
+    onReset,
+    onAddClick,
+    selectedPeriod
+  } = $props();
+
+  let filteredClients = $derived.by(() => {
+    let list = clientsList;
+
+    if (selectedPeriod) {
+      list = list.filter(c => {
+        const creationDate = new Date(c.createdAt);
+        return creationDate >= selectedPeriod.start && creationDate <= selectedPeriod.end;
+      });
+    }
+
+    return list;
+  });
+
+  const columns = [
+    { key: 'nome', header: 'Nome Azienda' },
+    { key: 'cognome', header: 'Referente' },
+    { key: 'email', header: 'Indirizzo Email' },
+    { key: 'status', header: 'Stato Funnel' },
+    { key: 'notesCount', header: 'Note' },
+    { key: 'activitiesCount', header: 'Attività' },
+    { key: 'actions', header: 'Azioni' }
+  ];
+
+  function handleSelectClient(item: any) {
+    goto(`/dashboard/clients/${item.id}`);
+  }
+</script>
+
+<Card
+  title="Anagrafica Clienti CRM"
+  description="Database dei contatti e dei lead commerciali. Fai clic su un cliente per vederne i dettagli, le note, e loggare le attività."
+  class="list-card"
+>
+  {#snippet icon()}
+    <Users size={20} class="icon-accent" />
+  {/snippet}
+
+  {#snippet headerSnippet()}
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <button onclick={() => exportToCSV(filteredClients, [
+        { key: 'nome', header: 'Nome Azienda' },
+        { key: 'cognome', header: 'Referente' },
+        { key: 'email', header: 'Indirizzo Email' },
+        { key: 'phone', header: 'Telefono' },
+        { key: 'status', header: 'Stato Funnel' }
+      ], 'gestoray_clienti')} class="export-btn" title="Esporta in formato CSV">
+        CSV
+      </button>
+      <button onclick={() => exportToExcel(filteredClients, [
+        { key: 'nome', header: 'Nome Azienda' },
+        { key: 'cognome', header: 'Referente' },
+        { key: 'email', header: 'Indirizzo Email' },
+        { key: 'phone', header: 'Telefono' },
+        { key: 'status', header: 'Stato Funnel' }
+      ], 'gestoray_clienti')} class="export-btn" title="Esporta in Excel (XLS)">
+        Excel
+      </button>
+      <button onclick={triggerPrint} class="export-btn" title="Stampa l'elenco / Salva PDF">
+        Stampa / PDF
+      </button>
+      {#if $activeRole !== 'direzione'}
+        <button onclick={onAddClick} class="add-client-btn" style="height: 34px;">
+          Aggiungi Cliente
+        </button>
+      {/if}
+    </div>
+  {/snippet}
+
+  {#snippet cell(col: any, row: any)}
+    {#if col.key === 'nome'}
+      <span class="name-cell">{row.nome}</span>
+    {:else if col.key === 'cognome'}
+      <span>{row.cognome || 'N/D'}</span>
+    {:else if col.key === 'email'}
+      <span class="mail-cell">{row.email || 'N/D'}</span>
+    {:else if col.key === 'status'}
+      <StatusBadge status={row.status || 'prospect'} />
+    {:else if col.key === 'notesCount'}
+      <span class="count-badge">{row.notes?.length || 0}</span>
+    {:else if col.key === 'activitiesCount'}
+      <span class="count-badge active">{row.derived?.activitiesCount || 0}</span>
+    {:else if col.key === 'actions'}
+      <div class="row-actions" role="presentation" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
+        <button 
+          onclick={() => goto(`/dashboard/clients/${row.id}?tab=quotes`)} 
+          class="quick-action-btn"
+          title="Nuovo Preventivo per questo cliente"
+        >
+          Nuovo Preventivo
+        </button>
+      </div>
+    {/if}
+  {/snippet}
+
+  <div class="search-bar-row">
+    <input 
+      type="text" 
+      bind:value={searchQuery} 
+      placeholder="Cerca cliente per nome, partita IVA o codice fiscale..." 
+      class="search-input"
+      onkeydown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }}
+    />
+    <button onclick={() => onSearch(searchQuery)} class="search-btn">Cerca</button>
+    {#if searchQuery}
+      <button onclick={onReset} class="clear-search-btn">Reset</button>
+    {/if}
+  </div>
+
+  <div class="table-wrapper">
+    <Table
+      {columns}
+      data={filteredClients}
+      cellSnippet={cell}
+      onRowClick={handleSelectClient}
+      emptyText="Nessun cliente registrato nel database vendite."
+    />
+  </div>
+</Card>
+
+<style>
+  :global(.icon-accent) {
+    color: var(--color-primary-500);
+  }
+
+  .export-btn {
+    background: var(--color-white);
+    color: var(--color-neutral-600);
+    border: 1px solid var(--color-neutral-300);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .export-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+
+  .add-client-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-primary-600);
+    color: var(--color-white);
+    border: none;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .add-client-btn:hover {
+    background: var(--color-primary-700);
+  }
+
+  .name-cell {
+    font-weight: 600;
+    color: var(--color-neutral-800);
+  }
+
+  .mail-cell {
+    color: var(--color-neutral-500);
+  }
+
+  .count-badge {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-600);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+
+  .count-badge.active {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .search-bar-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .search-input {
+    flex: 1;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-neutral-300);
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--color-white);
+    color: var(--color-neutral-800);
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+  }
+
+  .search-btn {
+    background: var(--color-primary-500);
+    color: var(--color-white);
+    border: none;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .search-btn:hover {
+    background: var(--color-primary-600);
+  }
+
+  .clear-search-btn {
+    background: var(--color-white);
+    color: var(--color-neutral-600);
+    border: 1px solid var(--color-neutral-300);
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .clear-search-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+
+  .row-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .quick-action-btn {
+    background: var(--color-primary-500);
+    color: var(--color-white);
+    border: none;
+    padding: 5px 11px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .quick-action-btn:hover, .quick-action-btn:focus {
+    background: var(--color-primary-600);
+    outline: none;
+  }
+</style>
