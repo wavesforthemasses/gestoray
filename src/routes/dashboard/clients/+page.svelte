@@ -28,6 +28,10 @@
 
   let clientsList = $state<any[]>([]);
   let loadingClients = $state(true);
+  let loadingMore = $state(false);
+  let hasMore = $state(true);
+  let lastVisible = $state<any>(null);
+  
   let showAddForm = $state(false);
   let searchQuery = $state('');
 
@@ -41,14 +45,31 @@
       : null
   );
 
-  async function fetchClients(searchVal?: string) {
-    loadingClients = true;
+  async function fetchClients(searchVal?: string, reset = true) {
+    if (reset) {
+      loadingClients = true;
+      lastVisible = null;
+      clientsList = [];
+    } else {
+      loadingMore = true;
+    }
+    
     try {
-      clientsList = await ClientsService.fetchClients(searchVal, $activeRole || '', $auth?.uid);
+      const result = await ClientsService.fetchClients(searchVal, $activeRole || '', $auth?.uid, 50, lastVisible);
+      
+      if (reset) {
+        clientsList = result.list;
+      } else {
+        clientsList = [...clientsList, ...result.list];
+      }
+      
+      lastVisible = result.lastDoc;
+      hasMore = result.hasMore;
     } catch (e) {
       console.error('Error fetching clients:', e);
     } finally {
       loadingClients = false;
+      loadingMore = false;
     }
   }
 
@@ -83,11 +104,23 @@
       <ClientsTable 
         {clientsList}
         bind:searchQuery
-        onSearch={(q) => fetchClients(q)}
-        onReset={() => { searchQuery = ''; fetchClients(); }}
+        onSearch={(q) => fetchClients(q, true)}
+        onReset={() => { searchQuery = ''; fetchClients(undefined, true); }}
         onAddClick={() => showAddForm = true}
         {selectedPeriod}
       />
+      
+      {#if hasMore}
+        <div class="load-more-container">
+          <button class="btn-load-more" onclick={() => fetchClients(searchQuery, false)} disabled={loadingMore}>
+            {#if loadingMore}
+              <span class="spinner-small"></span> Caricamento...
+            {:else}
+              Carica Altri Risultati
+            {/if}
+          </button>
+        </div>
+      {/if}
     {/if}
   {:else}
     <Card
@@ -154,5 +187,46 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .spinner-small {
+    width: 14px;
+    height: 14px;
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
+    border-radius: 50%;
+    border-top-color: var(--color-primary-500);
+    animation: spin 1s linear infinite;
+  }
+
+  .load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 40px;
+  }
+
+  .btn-load-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-neutral-700);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-load-more:hover:not(:disabled) {
+    background: var(--color-neutral-100);
+    color: var(--color-primary-600);
+  }
+
+  .btn-load-more:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>

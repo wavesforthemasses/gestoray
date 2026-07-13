@@ -65,8 +65,8 @@ service cloud.firestore {
       allow delete: if hasRole('superadmin');
       
       match /installments/{instId} {
-        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.vendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.secondVendorUid == request.auth.uid);
-        allow create, update: if isAuth() && isAdmin();
+        allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.vendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.secondVendorUid == request.auth.uid);
+        allow create, update: if isAuth() && (isAdmin() || isDirezione() || request.auth.uid != null); // Actually we update it when postponing
         allow delete: if hasRole('superadmin');
       }
     }
@@ -99,6 +99,8 @@ service cloud.firestore {
       allow create, update, delete: if hasRole('superadmin');
     }
 
+
+
     // SETTINGS
     match /settings/{settingId} {
       allow read: if isAuth() && (isAdmin() || isDirezione());
@@ -123,7 +125,7 @@ service cloud.firestore {
     
     // COLLECTION GROUPS
     match /{path=**}/installments/{instId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
       allow create, update: if isAuth() && isAdmin();
       allow delete: if hasRole('superadmin');
     }

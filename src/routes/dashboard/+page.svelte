@@ -2,11 +2,6 @@
   import { confirmStore } from '$lib/stores/confirm';
   import { auth, activeRole } from "$lib/auth";
   import { auth as clientAuth } from "$lib/firebase";
-  import { 
-    db, 
-    doc, 
-    updateDoc
-  } from "$lib/firebase";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
   import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
   import AdminKPIs from "$lib/components/Dashboard/AdminKPIs.svelte";
@@ -60,7 +55,8 @@
   let selectedPointIdx = $state<number | null>(null);
 
   // Chart data
-  let chartRawDataList = $state<any[]>([]); // holds raw docs fetched for memory filtering
+  let computedChartPoints = $state<number[]>([]);
+  let drillDownItems = $state<any[]>([]);
   let usersList = $state<any[]>([]);
 
   // Drill-down live filters
@@ -117,8 +113,8 @@
     if (chartPeriods.length === 0) return;
     loadingChart = true;
     try {
-      chartRawDataList = await DashboardService.fetchChartRawData(
-        chartPeriods[0].start.toISOString(), 
+      computedChartPoints = await DashboardService.fetchChartAggregations(
+        chartPeriods, 
         $activeRole || '', 
         $auth?.uid || '', 
         activeChartTab
@@ -128,18 +124,27 @@
     }
   }
 
-  let computedChartPoints = $derived(DashboardService.computeChartPoints(chartRawDataList, chartPeriods, activeChartTab));
-
-  let drillDownItems = $derived(DashboardService.computeDrillDownItems(
-    chartRawDataList, 
-    selectedPointIdx !== null ? chartPeriods[selectedPointIdx] : null, 
-    activeChartTab, 
-    $activeRole || '', 
-    $auth?.uid || '', 
-    clientFilter, 
-    vendorFilter, 
-    productFilter
-  ));
+  let loadingDrillDown = $state(false);
+  async function loadDrillDown() {
+    if (selectedPointIdx === null || !chartPeriods[selectedPointIdx]) {
+      drillDownItems = [];
+      return;
+    }
+    loadingDrillDown = true;
+    try {
+      drillDownItems = await DashboardService.fetchDrillDownItems(
+        chartPeriods[selectedPointIdx], 
+        activeChartTab, 
+        $activeRole || '', 
+        $auth?.uid || '', 
+        clientFilter, 
+        vendorFilter, 
+        productFilter
+      );
+    } finally {
+      loadingDrillDown = false;
+    }
+  }
 
   onMount(() => {
     const unsubscribe = auth.subscribe(($auth) => {
@@ -163,6 +168,14 @@
   $effect(() => {
     if (activeChartTab || granularity || endDateString || $activeRole) {
       loadChartData();
+      selectedPointIdx = null; // reset selection on tab change
+    }
+  });
+
+  // Reactively fetch drilldown items
+  $effect(() => {
+    if (selectedPointIdx !== null || clientFilter !== undefined || vendorFilter !== undefined || productFilter !== undefined) {
+      loadDrillDown();
     }
   });
 
@@ -183,11 +196,7 @@
     const ok = await confirmStore.prompt('Sei sicuro di voler contrassegnare questo mese provvigionale come pagato? Scomparirà dalla dashboard e non sarà più considerato in attesa.');
     if (!ok) return;
     try {
-      await updateDoc(doc(db, 'commissions_closings', periodId), {
-        isPaid: true,
-        paidAt: new Date().toISOString(),
-        paidBy: clientAuth.currentUser?.uid || 'system'
-      });
+      await DashboardService.markCommissionPaid(periodId, clientAuth.currentUser?.uid || 'system');
       alert('Provvigione segnata come pagata!');
       await loadKPIs();
     } catch (e: any) {
@@ -262,7 +271,8 @@
                 bind:vendorFilter
                 bind:productFilter
                 {KPI_LEGEND}
-                {loadingData}
+                {loadingChart}
+                {loadingDrillDown}
                 {computedChartPoints}
                 {chartPeriods}
                 {drillDownItems}

@@ -7,6 +7,8 @@
   import { goto } from '$app/navigation';
   import ActivitiesChart from './components/ActivitiesChart.svelte';
   import ActivitiesTable from './components/ActivitiesTable.svelte';
+  import { httpsCallable } from 'firebase/functions';
+  import { functions } from '$lib/firebase';
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
@@ -19,12 +21,18 @@
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
 
-    fetchActivities();
+    // Initial load
+    fetchActivitiesData(true);
+    
     return () => unsubscribe();
   });
 
   let activitiesList = $state<ActivityItem[]>([]);
+  let chartData = $state<number[]>([]);
   let loading = $state(true);
+  let loadingMore = $state(false);
+  let hasMore = $state(true);
+  let lastVisible = $state<any>(null);
 
   // Collapse/Expand state for chart
   let isGraphExpanded = $state(false);
@@ -36,14 +44,79 @@
   let filterType = $state<'all' | 'Telefonata' | 'Incontro' | 'Appuntamento' | 'Sollecito Telefonico' | 'Sollecito Email' | 'Sollecito PEC'>('all');
   let searchQuery = $state('');
 
-  async function fetchActivities() {
-    loading = true;
+  // Let svelte react to parameter changes and trigger fetch
+  $effect(() => {
+    if (filterType || searchQuery) {
+      // Small debounce
+      const t = setTimeout(() => fetchActivitiesData(true), 300);
+      return () => clearTimeout(t);
+    }
+  });
+  
+  $effect(() => {
+    if (granularity || endDateString || filterType) {
+      const t2 = setTimeout(() => fetchChartData(), 300);
+      return () => clearTimeout(t2);
+    }
+  });
+
+  async function fetchActivitiesData(reset = false) {
+    if (reset) {
+      loading = true;
+      lastVisible = null;
+      activitiesList = [];
+    } else {
+      loadingMore = true;
+    }
+    
     try {
-      activitiesList = await ActivitiesService.fetchActivities();
+      const myUid = $activeRole === 'commerciale' ? $auth?.uid : undefined;
+      const result = await ActivitiesService.fetchActivities(
+        50, 
+        lastVisible, 
+        searchQuery, 
+        filterType,
+        myUid
+      );
+      
+      if (reset) {
+        activitiesList = result.list;
+      } else {
+        activitiesList = [...activitiesList, ...result.list];
+      }
+      
+      lastVisible = result.lastDoc;
+      hasMore = result.hasMore;
     } catch (e) {
       console.error('Error fetching activities:', e);
     } finally {
       loading = false;
+      loadingMore = false;
+    }
+  }
+  
+  async function fetchChartData() {
+    try {
+      const getChartAggregations = httpsCallable(functions, 'getChartAggregations');
+      const myUid = $activeRole === 'commerciale' ? $auth?.uid : undefined;
+      
+      const periods = DashboardService.generateChartPeriods(endDateString, granularity);
+      const reqData = {
+        entity: 'activities',
+        periods: periods.map(p => ({
+          start: p.start.toISOString(),
+          end: p.end.toISOString()
+        })),
+        filters: {
+          type: filterType,
+          loggedBy: myUid
+        }
+      };
+      
+      const res: any = await getChartAggregations(reqData);
+      chartData = res.data.data;
+    } catch (e) {
+      console.error('Error fetching chart data:', e);
     }
   }
 
@@ -54,30 +127,12 @@
     }
   }
 
-  // Generate date ranges backwards from endDateString
   let chartPeriods = $derived(DashboardService.generateChartPeriods(endDateString, granularity));
 
-  // Filtered activities list
+  // Client side filtering for selected point (since pagination affects it)
+  // It's acceptable for the selected point to only filter the current loaded chunk.
   let filteredActivities = $derived.by(() => {
     let result = activitiesList;
-
-    if ($activeRole === 'commerciale' && $auth) {
-      result = result.filter(a => a.loggedBy === $auth.uid);
-    }
-
-    if (filterType !== 'all') {
-      result = result.filter(a => a.type === filterType);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      result = result.filter(a => 
-        a.clientName.toLowerCase().includes(query) || 
-        a.notes.toLowerCase().includes(query) ||
-        a.loggedEmail.toLowerCase().includes(query)
-      );
-    }
-
     if (selectedPointIdx !== null && selectedPointIdx >= 0 && selectedPointIdx < chartPeriods.length) {
       const period = chartPeriods[selectedPointIdx];
       result = result.filter(a => {
@@ -85,7 +140,6 @@
         return d >= period.start && d <= period.end;
       });
     }
-
     return result;
   });
 
@@ -100,7 +154,7 @@
 
 <div class="activities-page animate-fade-in">
   <ActivitiesChart
-    {activitiesList}
+    {chartData}
     activeRole={$activeRole}
     myUid={$auth?.uid}
     {filterType}
@@ -116,21 +170,31 @@
     {chartPeriods}
   />
 
+  <ActivitiesTable
+    {filteredActivities}
+    activeRole={$activeRole}
+    {searchQuery}
+    {filterType}
+    onSearchChange={(q) => { searchQuery = q; selectedPointIdx = null; }}
+    onFilterChange={(t) => { filterType = t as any; selectedPointIdx = null; }}
+    onRowClick={handleSelectRow}
+  />
+  
   {#if loading}
     <div class="loader-box">
       <span class="spinner"></span>
-      Caricamento storico attività...
+      Caricamento...
     </div>
-  {:else}
-    <ActivitiesTable
-      {filteredActivities}
-      activeRole={$activeRole}
-      {searchQuery}
-      {filterType}
-      onSearchChange={(q) => searchQuery = q}
-      onFilterChange={(t) => filterType = t as any}
-      onRowClick={handleSelectRow}
-    />
+  {:else if hasMore}
+    <div class="load-more-container">
+      <button class="btn-load-more" onclick={() => fetchActivitiesData(false)} disabled={loadingMore}>
+        {#if loadingMore}
+          <span class="spinner-small"></span> Caricamento...
+        {:else}
+          Carica Altri Risultati
+        {/if}
+      </button>
+    </div>
   {/if}
 </div>
 
@@ -148,9 +212,50 @@
     color: var(--color-neutral-500);
   }
 
+  .load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 40px;
+  }
+
+  .btn-load-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-neutral-700);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-load-more:hover:not(:disabled) {
+    background: var(--color-neutral-100);
+    color: var(--color-primary-600);
+  }
+
+  .btn-load-more:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .spinner {
     width: 20px;
     height: 20px;
+    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
+    border-radius: 50%;
+    border-top-color: var(--color-primary-500);
+    animation: spin 1s linear infinite;
+  }
+
+  .spinner-small {
+    width: 14px;
+    height: 14px;
     border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
     border-radius: 50%;
     border-top-color: var(--color-primary-500);

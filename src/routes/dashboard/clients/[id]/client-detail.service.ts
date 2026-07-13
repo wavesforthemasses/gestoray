@@ -235,6 +235,8 @@ export class ClientDetailService {
   ) {
     const activityId = generateId('act');
     const activityDate = datetimeVal || new Date().toISOString();
+    
+    const terms = generateSearchTerms(clientNameStr + ' ' + type + ' ' + notes + ' ' + authObj.email);
 
     await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
       original: {
@@ -250,6 +252,9 @@ export class ClientDetailService {
       edits: {
         createdAt: activityDate,
         createdBy: authObj.uid
+      },
+      derived: {
+        textSearch: terms
       }
     });
 

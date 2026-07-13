@@ -1,4 +1,11 @@
-import { db, collection, getDocs, query, where } from '$lib/firebase';
+import { db, collection, getDocs, query, where, limit, startAfter, orderBy, or } from '$lib/firebase';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
+
+export interface ContractsFetchResult {
+  list: any[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
 
 export class ContractsService {
   static async fetchUsers() {
@@ -20,41 +27,47 @@ export class ContractsService {
     return uList;
   }
 
-  static async fetchContracts(activeRole: string, activeTab: string, uid: string | undefined) {
-    const cList: any[] = [];
+  static async fetchContracts(
+    activeRole: string, 
+    activeTab: string, 
+    uid: string | undefined,
+    itemsPerPage: number = 50,
+    lastVisible: QueryDocumentSnapshot | null = null
+  ): Promise<ContractsFetchResult> {
+    
+    let q: any = collection(db, 'contracts');
 
     if (activeRole === 'commerciale') {
-      // Query primary vendor
-      const primaryQuery = query(collection(db, 'contracts'), where('original.vendorUid', '==', uid));
-      const primarySnap = await getDocs(primaryQuery);
-      primarySnap.forEach((doc: any) => {
-        cList.push({ id: doc.id, ...doc.data() });
-      });
-
-      // Query secondary vendor
-      const secondaryQuery = query(collection(db, 'contracts'), where('original.secondVendorUid', '==', uid));
-      const secondarySnap = await getDocs(secondaryQuery);
-      secondarySnap.forEach((doc: any) => {
-        if (!cList.some(x => x.id === doc.id)) {
-          cList.push({ id: doc.id, ...doc.data() });
-        }
-      });
-    } else {
-      let q;
-      if (activeTab === 'pending') {
-        q = query(collection(db, 'contracts'), where('original.status', '==', 'pending'));
-      } else if (activeTab === 'approved') {
-        q = query(collection(db, 'contracts'), where('original.status', '==', 'approved'));
-      } else {
-        q = query(collection(db, 'contracts'));
+      if (uid) {
+        q = query(q, or(where('original.vendorUid', '==', uid), where('original.secondVendorUid', '==', uid)));
       }
-      const snap = await getDocs(q);
-      snap.forEach((doc: any) => {
-        cList.push({ id: doc.id, ...doc.data() });
-      });
+    } else {
+      if (activeTab === 'pending') {
+        q = query(q, where('original.status', '==', 'pending'));
+      } else if (activeTab === 'approved') {
+        q = query(q, where('original.status', '==', 'approved'));
+      }
     }
 
-    return cList.sort((a, b) => new Date(b.edits?.createdAt || b.original?.createdAt).getTime() - new Date(a.edits?.createdAt || a.original?.createdAt).getTime());
+    q = query(q, orderBy('edits.createdAt', 'desc'));
+
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+
+    q = query(q, limit(itemsPerPage));
+
+    const snap = await getDocs(q);
+    const cList: any[] = [];
+    
+    snap.forEach((doc: any) => {
+      cList.push({ id: doc.id, ...doc.data() });
+    });
+
+    const hasMore = snap.docs.length === itemsPerPage;
+    const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+
+    return { list: cList, lastDoc: newLastDoc, hasMore };
   }
 
   static computeCommercialStats(usersList: any[], uid: string | undefined) {

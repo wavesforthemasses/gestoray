@@ -1,6 +1,6 @@
-import { db, doc, updateDoc, setDoc, collection, getDocs, collectionGroup, query, where } from '$lib/firebase';
+import { db, doc, updateDoc, setDoc, collection, getDocs, collectionGroup, query, where, or } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
-import { ContractService } from '$lib/services/ContractService';
+import { generateSearchTerms } from '$lib';
 import { formatCurrency } from '$lib/utils/formatters';
 
 export interface TodoDataPayload {
@@ -20,34 +20,46 @@ export interface TodoItem {
 }
 
 export class TodoService {
-  static async fetchTodoData(): Promise<TodoDataPayload> {
+  static async fetchTodoData(activeRole: string | null, myUid: string | undefined): Promise<TodoDataPayload> {
     const payload: TodoDataPayload = {
       clientsList: [],
       contractsList: [],
       installmentsList: []
     };
 
-    const [clientsSnapshot, contractsSnapshot, installmentsSnapshot] = await Promise.all([
-      getDocs(collection(db, 'clients')),
-      getDocs(collection(db, 'contracts')),
-      getDocs(query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending')))
-    ]);
+    if (!activeRole || !myUid) return payload;
+    const isComm = activeRole === 'commerciale';
+    const isAdmin = activeRole === 'superadmin' || activeRole === 'amministrazione' || activeRole === 'direzione';
 
-    clientsSnapshot.forEach((doc: any) => {
-      const d = doc.data();
-      payload.clientsList.push({ id: doc.id, ...d.original, derived: d.derived, edits: d.edits });
-    });
+    const queries: Promise<any>[] = [];
 
-    contractsSnapshot.forEach((doc: any) => {
-      const d = doc.data();
-      payload.contractsList.push({ id: doc.id, ...d.original, derived: d.derived, edits: d.edits });
-    });
+    // 1. Clients: Only prospect or proposal_sent
+    let qClients = query(collection(db, 'clients'), where('original.status', 'in', ['prospect', 'proposal_sent']));
+    if (isComm) {
+      qClients = query(qClients, where('original.createdBy', '==', myUid));
+    }
+    queries.push(getDocs(qClients).then(snap => {
+      snap.forEach(doc => payload.clientsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
+    }));
 
-    installmentsSnapshot.forEach((doc: any) => {
-      const d = doc.data();
-      payload.installmentsList.push({ id: doc.id, ...d.original, edits: d.edits });
-    });
+    // 2. Contracts: Only pending approval (Only for admins)
+    if (isAdmin) {
+      const qContracts = query(collection(db, 'contracts'), where('original.status', '==', 'pending'));
+      queries.push(getDocs(qContracts).then(snap => {
+        snap.forEach(doc => payload.contractsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
+      }));
+    }
 
+    // 3. Installments: Only pending
+    let qInst = query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending'));
+    if (isComm) {
+      qInst = query(qInst, or(where('original.vendorUid', '==', myUid), where('original.secondVendorUid', '==', myUid)));
+    }
+    queries.push(getDocs(qInst).then(snap => {
+      snap.forEach(doc => payload.installmentsList.push({ id: doc.id, ...doc.data()?.original, edits: doc.data()?.edits }));
+    }));
+
+    await Promise.all(queries);
     return payload;
   }
 
@@ -64,13 +76,11 @@ export class TodoService {
     const items: TodoItem[] = [];
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
+    const isAdmin = role === 'superadmin' || role === 'amministrazione' || role === 'direzione';
 
     // 1. Pending approval contracts
-    contractsList.forEach(c => {
-      const belongs = role !== 'commerciale' || c.vendorUid === myUid || c.secondVendorUid === myUid;
-      if (!belongs) return;
-
-      if (c.status === 'pending' && (role === 'superadmin' || role === 'amministrazione' || role === 'direzione')) {
+    if (isAdmin) {
+      contractsList.forEach(c => {
         items.push({
           id: `approval_${c.id}`,
           type: 'pending_approval',
@@ -80,20 +90,16 @@ export class TodoService {
           dueDate: c.edits?.createdAt || c.createdAt,
           meta: { contractId: c.id }
         });
-      }
-    });
+      });
+    }
 
     // 2. Overdue or future payments
     installmentsList.forEach(inst => {
-      const c = contractsList.find(x => x.id === inst.contractId);
-      if (!c) return;
-
-      const belongs = role !== 'commerciale' || c.vendorUid === myUid || c.secondVendorUid === myUid;
-      if (!belongs) return;
-
-      if (inst.status === 'paid') return;
-
       const isOverdue = inst.dueDate < todayStr;
+      
+      // Fallback per i vecchi documenti senza clientName/clientId
+      const clientName = inst.clientName || 'Cliente non specificato';
+      const clientId = inst.clientId || '';
 
       if (isOverdue) {
         items.push({
@@ -101,9 +107,9 @@ export class TodoService {
           type: 'overdue_payment',
           urgency: 'high',
           title: `Rata Scaduta - ${formatCurrency(inst.expectedAmount || 0)}`,
-          description: `Rata insoluta per "${c.clientName}" (Contratto ${c.id}). Sollecitare telefonicamente o via PEC.`,
+          description: `Rata insoluta per "${clientName}" (Contratto ${inst.contractId}). Sollecitare telefonicamente o via PEC.`,
           dueDate: inst.dueDate,
-          meta: { contractId: c.id, installmentId: inst.id, amount: inst.expectedAmount, clientName: c.clientName, clientId: c.clientId }
+          meta: { contractId: inst.contractId, installmentId: inst.id, amount: inst.expectedAmount, clientName, clientId }
         });
       } else {
         items.push({
@@ -111,27 +117,23 @@ export class TodoService {
           type: 'future_payment',
           urgency: 'low',
           title: `Incasso Rata Previsto - ${formatCurrency(inst.expectedAmount || 0)}`,
-          description: `Rata in scadenza per "${c.clientName}" (Contratto ${c.id}).`,
+          description: `Rata in scadenza per "${clientName}" (Contratto ${inst.contractId}).`,
           dueDate: inst.dueDate,
-          meta: { contractId: c.id, installmentId: inst.id, amount: inst.expectedAmount, clientName: c.clientName, clientId: c.clientId }
+          meta: { contractId: inst.contractId, installmentId: inst.id, amount: inst.expectedAmount, clientName, clientId }
         });
       }
     });
 
     // 3. Prospects & Quotes (Commerciale mostly)
     clientsList.forEach(cl => {
-      const isOwner = role !== 'commerciale' || cl.createdBy === myUid;
-      if (!isOwner) return;
-
-      const hasComms = (cl.derived?.activitiesCount || 0) > 0;
-      const isProspect = cl.status === 'prospect' || !hasComms;
+      const isProspect = cl.status === 'prospect';
 
       if (isProspect) {
         items.push({
           id: `prospect_${cl.id}`,
           type: 'prospect_followup',
           urgency: 'medium',
-          title: `Primo Contatto Lead: ${cl.nome}`,
+          title: `Primo Contatto Lead: ${cl.nome} ${cl.cognome || ''}`.trim(),
           description: `Lead registrato ma non ancora contattato. Effettua una telefonata conoscitiva.`,
           dueDate: cl.edits?.createdAt || cl.createdAt,
           meta: { clientId: cl.id }
@@ -145,7 +147,7 @@ export class TodoService {
           id: `quote_${cl.id}`,
           type: 'quote_followup',
           urgency: 'medium',
-          title: `Follow-up Preventivo: ${cl.nome}`,
+          title: `Follow-up Preventivo: ${cl.nome} ${cl.cognome || ''}`.trim(),
           description: `Proposta inviata al cliente. Ricontatta il referente per negoziare la firma del contratto.`,
           dueDate: cl.edits?.createdAt || cl.createdAt,
           meta: { clientId: cl.id }
@@ -180,30 +182,28 @@ export class TodoService {
       'edits.modifiedBy': authObj.uid
     });
 
-    const activityId = generateId('act');
-    await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
-      original: {
-        clientId,
-        clientName,
-        type: 'Sollecito Telefonico',
-        notes: `Posticipata scadenza pagamento al ${newDate}`,
-        date: now,
-        loggedBy: authObj.uid,
-        loggedEmail: authObj.email,
-        status: 'completata'
-      },
-      edits: {
-        createdAt: now,
-        createdBy: authObj.uid
-      }
-    });
-  }
-
-  static async collectInstallment(contractId: string, installmentId: string, actualAmount: number, authObj: { uid: string, email: string }) {
-    await ContractService.collectInstallment(contractId, installmentId, actualAmount, authObj.uid, authObj.email);
-  }
-
-  static async approveContract(contractId: string, authObj: { uid: string, email: string }) {
-    await ContractService.approveAndCollectFull(contractId, authObj.uid, authObj.email);
+    if (clientId) {
+      const activityId = generateId('act');
+      const terms = generateSearchTerms(clientName + ' Sollecito Telefonico Posticipata scadenza ' + authObj.email);
+      await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
+        original: {
+          clientId,
+          clientName,
+          type: 'Sollecito Telefonico',
+          notes: `Posticipata scadenza pagamento al ${newDate}`,
+          date: now,
+          loggedBy: authObj.uid,
+          loggedEmail: authObj.email,
+          status: 'completata'
+        },
+        edits: {
+          createdAt: now,
+          createdBy: authObj.uid
+        },
+        derived: {
+          textSearch: terms
+        }
+      });
+    }
   }
 }

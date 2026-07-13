@@ -5,7 +5,7 @@
   import { DashboardService } from '../../dashboard.service';
 
   interface Props {
-    activitiesList: ActivityItem[];
+    chartData: number[];
     activeRole: string | null;
     myUid: string | undefined;
     filterType: string;
@@ -22,7 +22,7 @@
   }
 
   let {
-    activitiesList,
+    chartData,
     activeRole,
     myUid,
     filterType,
@@ -42,21 +42,7 @@
   let chartWrapperH = $state(0);
 
   let computedChartPoints = $derived.by(() => {
-    const isComm = activeRole === 'commerciale';
-
-    return chartPeriods.map((p) => {
-      const dbValue = activitiesList.filter(a => {
-        const d = new Date(a.date);
-        const inPeriod = d >= p.start && d <= p.end;
-        if (!inPeriod) return false;
-        const belongs = !isComm || a.loggedBy === myUid;
-        if (!belongs) return false;
-        if (filterType !== 'all' && a.type !== filterType) return false;
-        return true;
-      }).length;
-
-      return dbValue;
-    });
+    return chartData || chartPeriods.map(() => 0);
   });
 </script>
 

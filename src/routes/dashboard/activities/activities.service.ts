@@ -1,4 +1,5 @@
-import { db, collectionGroup, getDocs } from '$lib/firebase';
+import { db, collectionGroup, getDocs, query, limit, startAfter, orderBy, where } from '$lib/firebase';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
 
 export interface ActivityItem {
   id: string;
@@ -11,14 +12,51 @@ export interface ActivityItem {
   loggedEmail: string;
 }
 
+export interface ActivityFetchResult {
+  list: ActivityItem[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
+
 export class ActivitiesService {
-  static async fetchActivities(): Promise<ActivityItem[]> {
-    const querySnapshot = await getDocs(collectionGroup(db, 'activities'));
+  static async fetchActivities(
+    itemsPerPage: number = 50,
+    lastVisible: QueryDocumentSnapshot | null = null,
+    searchQuery: string = '',
+    filterType: string = 'all',
+    loggedByFilter?: string
+  ): Promise<ActivityFetchResult> {
+    
+    let q: any = collectionGroup(db, 'activities');
+
+    if (filterType && filterType !== 'all') {
+      q = query(q, where('original.type', '==', filterType));
+    }
+    
+    if (loggedByFilter) {
+      q = query(q, where('original.loggedBy', '==', loggedByFilter));
+    }
+
+    if (searchQuery.trim()) {
+      const qLower = searchQuery.toLowerCase().trim();
+      q = query(q, where('derived.textSearch', 'array-contains', qLower));
+    }
+
+    // We must orderBy edits.createdAt desc
+    q = query(q, orderBy('edits.createdAt', 'desc'));
+
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+
+    q = query(q, limit(itemsPerPage));
+
+    const querySnapshot = await getDocs(q);
     const list: ActivityItem[] = [];
     
     querySnapshot.forEach((doc: any) => {
       const payload = doc.data();
-      const data = payload.original || payload; // Support both nested structure and flat structure
+      const data = payload.original || payload; 
       
       list.push({
         id: doc.id,
@@ -32,6 +70,9 @@ export class ActivitiesService {
       });
     });
 
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const hasMore = querySnapshot.docs.length === itemsPerPage;
+    const newLastDoc = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+
+    return { list, lastDoc: newLastDoc, hasMore };
   }
 }

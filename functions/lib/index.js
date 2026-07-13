@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onContractCreated = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onContractCreated = exports.generateCommissionsCalculation = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
+const v2_1 = require("firebase-functions/v2");
+(0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
 // Initialize the Firebase Admin SDK once at startup
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -18,6 +20,10 @@ Object.defineProperty(exports, "updateProfile", { enumerable: true, get: functio
 Object.defineProperty(exports, "updateProfileEmail", { enumerable: true, get: function () { return profile_1.updateProfileEmail; } });
 var email_1 = require("./src/email");
 Object.defineProperty(exports, "sendSystemEmail", { enumerable: true, get: function () { return email_1.sendSystemEmail; } });
+var aggregations_1 = require("./src/aggregations");
+Object.defineProperty(exports, "getChartAggregations", { enumerable: true, get: function () { return aggregations_1.getChartAggregations; } });
+var commissions_1 = require("./src/commissions");
+Object.defineProperty(exports, "generateCommissionsCalculation", { enumerable: true, get: function () { return commissions_1.generateCommissionsCalculation; } });
 // Export new Firestore triggers
 var onContractCreated_1 = require("./src/triggers/onContractCreated");
 Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: function () { return onContractCreated_1.onContractCreated; } });

@@ -5,6 +5,7 @@
   import { activeRole, auth } from '$lib/auth';
 
   interface Props {
+    chartData: number[];
     isGraphExpanded: boolean;
     onToggle: () => void;
     selectedPointIdx: number | null;
@@ -13,6 +14,7 @@
   }
 
   let { 
+    chartData = [],
     isGraphExpanded = $bindable(false),
     onToggle,
     selectedPointIdx = $bindable(null),
@@ -26,38 +28,12 @@
   let endDateString = $state(new Date().toISOString().split('T')[0]);
   
   let chartWrapperW = $state(0);
-  let loadingChart = $state(false);
-  let chartRawPayments = $state<any[]>([]);
-
   // Synchronize periods out to the parent so it can filter the table
   $effect(() => {
     chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
   });
 
-  async function loadChartData() {
-    if (!isGraphExpanded || chartPeriods.length === 0) return;
-    loadingChart = true;
-
-    try {
-      const minDate = chartPeriods[0].start.toISOString();
-      const roleToUse = $activeRole || '';
-      const uidToUse = $auth?.uid || '';
-      
-      chartRawPayments = await DashboardService.fetchChartRawData(minDate, roleToUse, uidToUse, activeChartTab);
-    } catch (e) {
-      console.error("Error loading payments chart data:", e);
-    } finally {
-      loadingChart = false;
-    }
-  }
-
-  $effect(() => {
-    if (isGraphExpanded || granularity || endDateString) {
-      loadChartData();
-    }
-  });
-
-  let computedChartPoints = $derived(DashboardService.computeChartPoints(chartRawPayments, chartPeriods, activeChartTab));
+  let computedChartPoints = $derived(chartData || chartPeriods.map(() => 0));
 </script>
 
 <div class="subpage-chart-control">
@@ -96,28 +72,20 @@
         </div>
       </div>
 
-      {#if loadingChart}
-        <div class="loader-box" style="border: none; padding: 20px;">
-          <span class="spinner"></span>
-          Caricamento grafico andamento...
-        </div>
-      {:else}
-        <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} style="flex: 1; min-height: 250px; width: 100%; display: flex; flex-direction: column;">
-          {#if chartWrapperW > 0}
-            <LineChart
-              data={computedChartPoints}
-              labels={chartPeriods.map(p => p.label)}
-              selectedIdx={selectedPointIdx}
-              onSelect={onPointSelect}
-              width={Math.max(chartWrapperW - 34, 300)}
-              height={250}
-              xPadding={50}
-              yPadding={30}
-              isCurrency={true}
-            />
-          {/if}
-        </div>
-      {/if}
+      <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} style="flex: 1; min-height: 250px; width: 100%; display: flex; flex-direction: column;">
+        {#if chartWrapperW > 0}
+          <LineChart
+            data={computedChartPoints}
+            labels={chartPeriods.map(p => p.label)}
+            selectedIdx={selectedPointIdx}
+            onSelect={onPointSelect}
+            width={Math.max(chartWrapperW - 34, 300)}
+            height={250}
+            xPadding={50}
+            yPadding={30}
+          />
+        {/if}
+      </div>
     </Card>
   </div>
 {/if}

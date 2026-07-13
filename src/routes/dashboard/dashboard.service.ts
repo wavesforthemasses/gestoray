@@ -1,4 +1,4 @@
-import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy } from "$lib/firebase";
+import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy, functions, httpsCallable } from "$lib/firebase";
 import { formatDate } from "$lib/utils/formatters";
 
 export interface DashboardKPIs {
@@ -183,6 +183,14 @@ export class DashboardService {
     return res;
   }
 
+  static async markCommissionPaid(periodId: string, uid: string) {
+    await updateDoc(doc(db, 'commissions_closings', periodId), {
+      isPaid: true,
+      paidAt: new Date().toISOString(),
+      paidBy: uid
+    });
+  }
+
   static generateChartPeriods(endDateString: string, granularity: 'settimanale' | 'mensile' | 'annuale') {
     const end = new Date(endDateString);
     const periods: Array<{ start: Date; end: Date; label: string }> = [];
@@ -212,25 +220,71 @@ export class DashboardService {
     return periods;
   }
 
-  static async fetchChartRawData(minDate: string, role: string, myUid: string, activeChartTab: string) {
-    let docsList: any[] = [];
+  static async fetchChartAggregations(periods: any[], role: string, myUid: string, activeChartTab: string) {
     const isComm = role === 'commerciale';
+    const getChartAggregations = httpsCallable(functions, 'getChartAggregations');
+    
+    let filters: any = {};
+    if (isComm) {
+      if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) filters.loggedBy = myUid;
+      else if (activeChartTab === 'nuove_anagrafiche' || activeChartTab === 'nncf') filters.createdBy = myUid;
+      else filters.vendorUid = myUid;
+    }
+    
+    if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
+      if (activeChartTab === 'Telefonata') filters.type = 'Telefonata'; // TODO: handle multiple types in CF if needed, for now we will send 'Telefonata' and 'Sollecito Telefonico' separately or update CF.
+      // Wait, let's keep it simple: the cloud function checks `filters.type === filters.type`
+      filters.type = activeChartTab; 
+    }
 
+    // Call Cloud function
+    // Map periods for CF
+    const payload = {
+      entity: activeChartTab,
+      periods: periods.map(p => ({ start: p.start.toISOString(), end: p.end.toISOString() })),
+      filters
+    };
+    
+    try {
+      const res = await getChartAggregations(payload);
+      return (res.data as any).data || periods.map(() => 0);
+    } catch (e) {
+      console.error("Aggregation error", e);
+      return periods.map(() => 0);
+    }
+  }
+
+  static async fetchDrillDownItems(
+    period: any, 
+    activeChartTab: string, 
+    role: string, 
+    myUid: string, 
+    clientFilter: string, 
+    vendorFilter: string, 
+    productFilter: string
+  ) {
+    if (!period) return [];
+
+    const isComm = role === 'commerciale';
+    const matchQuery = (val: string | undefined, q: string) => !q || (val?.toLowerCase().includes(q.toLowerCase()) || false);
+    let items: any[] = [];
+    
+    // 1. Fetch data directly for the period
     if (activeChartTab === 'vss') {
       if (isComm) {
         const [pSnap, sSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid), where('edits.createdAt', '>=', minDate))),
-          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid), where('edits.createdAt', '>=', minDate)))
+          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()))),
+          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())))
         ]);
-        pSnap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-        sSnap.forEach((d: any) => { if (!docsList.some(x => x.id === d.id)) docsList.push({ id: d.id, ...d.data() }); });
+        pSnap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
+        sSnap.forEach((d: any) => { if (!items.some(x => x.id === d.id)) items.push({ id: d.id, ...d.data() }); });
       } else {
-        const snap = await getDocs(query(collection(db, 'contracts'), where('edits.createdAt', '>=', minDate)));
-        snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+        const snap = await getDocs(query(collection(db, 'contracts'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())));
+        snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
       }
-    } else if (activeChartTab === 'gi') {
-      const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', minDate)));
-      snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+    } else if (activeChartTab === 'gi' || activeChartTab === 'payments') {
+      const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
+      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
 
       if (isComm) {
         const [pSnap, sSnap] = await Promise.all([
@@ -243,21 +297,20 @@ export class DashboardService {
 
         const allocSnapDocs: any[] = [];
         const idsArray = Array.from(myContractIds);
-        for (let i = 0; i < idsArray.length; i += 10) {
-          const chunk = idsArray.slice(i, i + 10);
-          const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk)));
+        for (let i = 0; i < idsArray.length; i += 30) {
+          const chunk = idsArray.slice(i, i + 30);
+          const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
           chunkSnap.forEach(d => allocSnapDocs.push(d));
         }
         
         const validPaymentIds = new Set(allocSnapDocs.map((doc: any) => doc.data()?.original?.paymentId));
-
-        docsList = docsList.filter(pay => validPaymentIds.has(pay.id)).map(pay => {
+        items = items.filter(pay => validPaymentIds.has(pay.id)).map(pay => {
           const alloc = allocSnapDocs.find((a: any) => a.data()?.original?.paymentId === pay.id);
           return { ...pay, original: { ...pay.original, amount: alloc ? alloc.data().original.amount : pay.original.amount } };
         });
       }
     } else if (activeChartTab === 'provvigioni_maturate') {
-      const snap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized')));
+      const snap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized'), where('periodEnd', '>=', period.start.toISOString()), where('periodEnd', '<=', period.end.toISOString())));
       await Promise.all(snap.docs.map(async (d: any) => {
         const vSnap = await getDocs(query(collection(db, 'commissions_closings', d.id, 'versions'), where('status', '==', 'finalized')));
         if (!vSnap.empty) {
@@ -271,86 +324,44 @@ export class DashboardService {
             amount = version.totalCommissions || 0;
           }
           if (amount > 0) {
-            docsList.push({ id: d.id, original: { date: generatedAt, amount } });
+            items.push({ id: d.id, original: { date: generatedAt, amount } });
           }
         }
       }));
     } else if (activeChartTab === 'nuove_anagrafiche') {
-      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('edits.createdAt', '>=', minDate)) 
-                       : query(collection(db, 'clients'), where('edits.createdAt', '>=', minDate));
+      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())) 
+                       : query(collection(db, 'clients'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()));
       const snap = await getDocs(q);
-      snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
     } else if (activeChartTab === 'nncf') {
-      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('derived.nncfDate', '>=', minDate)) 
-                       : query(collection(db, 'clients'), where('derived.nncfDate', '>=', minDate));
+      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('derived.nncfDate', '>=', period.start.toISOString()), where('derived.nncfDate', '<=', period.end.toISOString())) 
+                       : query(collection(db, 'clients'), where('derived.nncfDate', '>=', period.start.toISOString()), where('derived.nncfDate', '<=', period.end.toISOString()));
       const snap = await getDocs(q);
-      snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
+      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
     } else {
-      const q = isComm ? query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('edits.createdAt', '>=', minDate)) 
-                       : query(collectionGroup(db, 'activities'), where('edits.createdAt', '>=', minDate));
-      const snap = await getDocs(q);
-      snap.forEach((d: any) => docsList.push({ id: d.id, ...d.data() }));
-    }
-    return docsList;
-  }
-
-  static computeChartPoints(rawList: any[], periods: any[], activeChartTab: string) {
-    return periods.map((p) => {
-      const filtered = rawList.filter((item) => {
-        let dateVal = '';
-        if (activeChartTab === 'vss') dateVal = item.edits?.createdAt || item.original?.createdAt;
-        else if (activeChartTab === 'gi' || activeChartTab === 'provvigioni_maturate') dateVal = item.original?.date;
-        else if (activeChartTab === 'nuove_anagrafiche') dateVal = item.edits?.createdAt;
-        else if (activeChartTab === 'nncf') dateVal = item.derived?.nncfDate;
-        else dateVal = item.edits?.createdAt || item.original?.date;
-
-        if (!dateVal) return false;
-        const d = new Date(dateVal);
-        return d >= p.start && d <= p.end;
-      });
-
-      if (activeChartTab === 'vss' || activeChartTab === 'gi' || activeChartTab === 'provvigioni_maturate') {
-        return filtered.reduce((sum, item) => sum + (item.original?.totalPrice || item.original?.amount || 0), 0);
-      }
+      let q = isComm ? query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())) 
+                     : query(collectionGroup(db, 'activities'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()));
+                     
       if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
-        return filtered.filter(a => {
-          const type = a.original?.type || '';
-          if (activeChartTab === 'Telefonata') return type === 'Telefonata' || type === 'Sollecito Telefonico';
-          if (activeChartTab === 'Incontro') return type === 'Incontro' || type === 'Sollecito PEC';
-          if (activeChartTab === 'Appuntamento') return type === 'Appuntamento' || type === 'Sollecito Email';
-          return type === activeChartTab;
-        }).length;
+        // Unfortunately, Firestore doesn't support inequality with equality on different fields easily if we don't have composite indexes for all permutations.
+        // We will filter type in-memory since we already limited by date.
       }
-      return filtered.length;
-    });
-  }
-
-  static computeDrillDownItems(
-    rawList: any[], 
-    period: any, 
-    activeChartTab: string, 
-    role: string, 
-    myUid: string, 
-    clientFilter: string, 
-    vendorFilter: string, 
-    productFilter: string
-  ) {
-    if (!period) return [];
-
-    const matchQuery = (val: string | undefined, q: string) => !q || (val?.toLowerCase().includes(q.toLowerCase()) || false);
-
-    let items = rawList.filter((item) => {
-      let dateVal = '';
-      if (activeChartTab === 'vss') dateVal = item.edits?.createdAt || item.original?.createdAt;
-      else if (activeChartTab === 'gi' || activeChartTab === 'provvigioni_maturate') dateVal = item.original?.date;
-      else if (activeChartTab === 'nuove_anagrafiche') dateVal = item.edits?.createdAt;
-      else if (activeChartTab === 'nncf') dateVal = item.derived?.nncfDate;
-      else dateVal = item.edits?.createdAt || item.original?.date;
-
-      if (!dateVal) return false;
-      const d = new Date(dateVal);
-      return d >= period.start && d <= period.end;
-    });
+      
+      const snap = await getDocs(q);
+      snap.forEach((d: any) => {
+        if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
+          const type = d.data().original?.type || '';
+          let match = false;
+          if (activeChartTab === 'Telefonata') match = type === 'Telefonata' || type === 'Sollecito Telefonico';
+          else if (activeChartTab === 'Incontro') match = type === 'Incontro' || type === 'Sollecito PEC';
+          else if (activeChartTab === 'Appuntamento') match = type === 'Appuntamento' || type === 'Sollecito Email';
+          
+          if (match) items.push({ id: d.id, ...d.data() });
+        } else {
+           items.push({ id: d.id, ...d.data() });
+        }
+      });
+    }
 
     if (clientFilter) items = items.filter(i => matchQuery(i.original?.clientName || i.original?.nome, clientFilter));
     if (vendorFilter) items = items.filter(i => i.original?.vendorUid === vendorFilter || i.original?.createdBy === vendorFilter || i.original?.loggedBy === vendorFilter);

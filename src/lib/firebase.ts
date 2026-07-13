@@ -143,5 +143,6 @@ export {
   collectionGroup, 
   addDoc, 
   Timestamp,
-  deleteField
+  deleteField,
+  or
 } from 'firebase/firestore';

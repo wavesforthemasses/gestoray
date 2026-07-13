@@ -13,7 +13,8 @@
     vendorFilter: string;
     productFilter: string;
     KPI_LEGEND: any;
-    loadingData: boolean;
+    loadingChart: boolean;
+    loadingDrillDown: boolean;
     computedChartPoints: any[];
     chartPeriods: any[];
     drillDownItems: any[];
@@ -32,7 +33,8 @@
     vendorFilter = $bindable(),
     productFilter = $bindable(),
     KPI_LEGEND,
-    loadingData,
+    loadingChart,
+    loadingDrillDown,
     computedChartPoints,
     chartPeriods,
     drillDownItems,
@@ -150,7 +152,7 @@
     </div>
 
     <!-- The Chart itself -->
-    {#if loadingData}
+    {#if loadingChart}
       <div class="loader-box">
         <span class="spinner"></span>
         Caricamento andamento grafico...
@@ -206,7 +208,12 @@
       </div>
 
       <!-- Results Table -->
-      {#if drillDownItems.length === 0}
+      {#if loadingDrillDown}
+        <div class="loader-box">
+          <span class="spinner"></span>
+          Caricamento dati di dettaglio...
+        </div>
+      {:else if drillDownItems.length === 0}
         <div class="empty-panel">Nessun dato registrato corrisponde ai filtri impostati per questo periodo.</div>
       {:else}
         <div class="table-wrapper" style="margin-top: 16px;">

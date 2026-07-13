@@ -1,4 +1,7 @@
 import * as admin from 'firebase-admin';
+import { setGlobalOptions } from 'firebase-functions/v2';
+
+setGlobalOptions({ region: 'europe-west3' });
 
 // Initialize the Firebase Admin SDK once at startup
 if (admin.apps.length === 0) {
@@ -10,6 +13,8 @@ export { sendLoginPin, verifyLoginPin } from './src/auth';
 export { initSuperAdmin, updateUser } from './src/admin';
 export { updateProfile, updateProfileEmail } from './src/profile';
 export { sendSystemEmail } from './src/email';
+export { getChartAggregations } from './src/aggregations';
+export { generateCommissionsCalculation } from './src/commissions';
 
 // Export new Firestore triggers
 export { onContractCreated } from './src/triggers/onContractCreated';

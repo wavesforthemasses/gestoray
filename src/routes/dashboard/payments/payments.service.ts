@@ -1,9 +1,38 @@
-import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
+import { db, doc, setDoc, collection, getDocs, query, where, limit, startAfter, orderBy } from '$lib/firebase';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import { generateSearchTerms } from '$lib';
+
+export interface PaymentFetchResult {
+  list: any[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
 
 export class PaymentsService {
-  static async fetchPayments() {
-    const snap = await getDocs(collection(db, 'payments'));
+  static async fetchPayments(
+    itemsPerPage: number = 50,
+    lastVisible: QueryDocumentSnapshot | null = null,
+    searchQuery: string = ''
+  ): Promise<PaymentFetchResult> {
+    
+    let q: any = collection(db, 'payments');
+
+    if (searchQuery.trim()) {
+      const qLower = searchQuery.toLowerCase().trim();
+      q = query(q, where('derived.textSearch', 'array-contains', qLower));
+    }
+
+    q = query(q, orderBy('edits.createdAt', 'desc'));
+
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+
+    q = query(q, limit(itemsPerPage));
+
+    const snap = await getDocs(q);
     const pList: any[] = [];
+    
     snap.forEach((doc: any) => {
       const d = doc.data();
       const orig = d.original || {};
@@ -18,7 +47,11 @@ export class PaymentsService {
         recordedEmail: orig.recordedEmail
       });
     });
-    return pList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const hasMore = snap.docs.length === itemsPerPage;
+    const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+
+    return { list: pList, lastDoc: newLastDoc, hasMore };
   }
 
   static async fetchClients() {
@@ -72,6 +105,8 @@ export class PaymentsService {
     const now = new Date().toISOString();
     const paymentId = 'pay_' + Math.random().toString(36).substring(2, 11);
     
+    const terms = generateSearchTerms(clientFullName + ' ' + selectedContractId + ' ' + authUser.email);
+
     // 1. Create top-level payment document
     const newPayment = {
       original: {
@@ -86,6 +121,9 @@ export class PaymentsService {
       edits: {
         createdAt: now,
         createdBy: authUser.uid
+      },
+      derived: {
+        textSearch: terms
       }
     };
     await setDoc(doc(db, 'payments', paymentId), newPayment);

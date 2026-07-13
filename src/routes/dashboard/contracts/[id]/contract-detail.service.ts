@@ -126,7 +126,9 @@ export class ContractDetailService {
         clientName: contract.original.clientName,
         dueDate: installmentDueDate,
         expectedAmount: Number(installmentExpectedAmount),
-        status: 'pending'
+        status: 'pending',
+        vendorUid: contract.original.vendorUid || null,
+        secondVendorUid: contract.original.secondVendorUid || null
       },
       edits: {
         createdAt: now,
