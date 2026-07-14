@@ -8,6 +8,8 @@
   import ContractsChart from './components/ContractsChart.svelte';
   import ContractsTable from './components/ContractsTable.svelte';
   import { ContractsService } from './contracts.service';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Gestione Contratti');
 
   let contractsList = $state<any[]>([]);
   let usersList = $state<any[]>([]);
@@ -85,9 +87,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Gestione Contratti | Gestoray</title>
-</svelte:head>
+
 
 <div class="contracts-page animate-fade-in">
   <ContractsKPIs {commercialStats} />

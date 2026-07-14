@@ -17,6 +17,20 @@ export const QualificationsService = {
     snap.forEach((docSnap: any) => {
       list.push({ id: docSnap.id, ...(docSnap.data() as Omit<Qualification, 'id'>) });
     });
+
+    // Auto-insert defaults if empty
+    if (list.length === 0) {
+      const defaults = [
+        { name: 'Junior', percentage: 10, supervisorPercentage: 0 },
+        { name: 'Senior', percentage: 15, supervisorPercentage: 0 }
+      ];
+      for (const d of defaults) {
+        const newId = 'qual_' + Math.random().toString(36).substring(2, 11);
+        await setDoc(doc(db, COLLECTION_NAME, newId), d);
+        list.push({ id: newId, ...d });
+      }
+    }
+
     return list;
   },
 

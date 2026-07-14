@@ -2,7 +2,9 @@
   import { Table, Card } from '$lib';
   import { Wallet } from '@lucide/svelte';
   import { goto } from '$app/navigation';
+  import { activeRole } from '$lib/auth';
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
+  import { projectStore } from '$lib/stores/project';
 
   interface Props {
     paymentsList: any[];
@@ -73,7 +75,7 @@
         { key: 'contractId', header: 'ID Contratto' },
         { key: 'amount', header: 'Importo Netto' },
         { key: 'recordedEmail', header: 'Registrato Da' }
-      ], 'gestoray_incassi')} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in formato CSV">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`)} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in formato CSV">
         CSV
       </button>
       <button onclick={() => exportToExcel(filteredPayments, [
@@ -82,7 +84,7 @@
         { key: 'contractId', header: 'ID Contratto' },
         { key: 'amount', header: 'Importo Netto' },
         { key: 'recordedEmail', header: 'Registrato Da' }
-      ], 'gestoray_incassi')} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in Excel (XLS)">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`)} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in Excel (XLS)">
         Excel
       </button>
       <button onclick={triggerPrint} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Stampa l'elenco / Salva PDF">

@@ -1,12 +1,15 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
-  import { confirmStore } from '$lib/stores/confirm';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { page } from '$app/stores';
   import { auth, activeRole } from '$lib/auth';
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft, User, MessageSquare, FileText } from '@lucide/svelte';
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Scheda Cliente CRM');
   import ClientProfileTab from './components/ClientProfileTab.svelte';
   import ClientActivitiesTab from './components/ClientActivitiesTab.svelte';
   import ClientQuotesTab from './components/ClientQuotesTab.svelte';
@@ -178,15 +181,15 @@
 
   async function handleDeleteClient() {
     if ($activeRole !== 'superadmin') {
-      alert("Solo il Superadmin può eliminare un cliente.");
+      toast.error("Solo il Superadmin può eliminare un cliente.");
       return;
     }
 
     let hasNestedData = (clientDerived.contractsCount || 0) > 0 || historyList.length > 0 || activitiesList.length > 0;
     
     if (hasNestedData) {
-      const resp = prompt("ATTENZIONE: Questo cliente possiede dati collegati (contratti, incassi, log, attività). Vuoi procedere? Verranno eliminati definitivamente in cascata tutti i suoi dati. Scrivi 'ELIMINA' per confermare.");
-      if (resp !== 'ELIMINA') return;
+      const resp = await confirmStore.requireMatch("ATTENZIONE: Questo cliente possiede dati collegati (contratti, incassi, log, attività). Vuoi procedere? Verranno eliminati definitivamente in cascata tutti i suoi dati.", 'ELIMINA');
+      if (!resp) return;
     } else {
       const ok = await confirmStore.prompt("Sei sicuro di voler eliminare definitivamente questa anagrafica cliente? Questa azione è irreversibile.");
       if (!ok) return;
@@ -222,7 +225,7 @@
     }
   }
 
-  async function logActivity(type: string, datetimeVal?: string) {
+  async function logActivity(type: string) {
     if (!$auth) return;
     submittingActivity = true;
 
@@ -233,14 +236,12 @@
         clientNameStr, 
         clientStatus, 
         type, 
-        activityNotesText.trim(), 
-        datetimeVal, 
+        '', // Empty note initially
+        undefined, // Empty datetime initially
         { uid: $auth.uid, email: $auth.email! }
       );
 
-      activityNotesText = '';
-      appointmentDateTime = getNowDateTimeString();
-      toast.success(`Attività "${type}" registrata correttamente!`);
+      toast.success(`Attività registrata! Ora puoi modificarla se serve aggiungere note o date.`);
       newlyCreatedId = activityId;
       await loadAllData();
       await tick();
@@ -250,6 +251,19 @@
       }
     } catch (err: any) {
       toast.error(err.message || 'Errore nel salvataggio dell\'attività.');
+    } finally {
+      submittingActivity = false;
+    }
+  }
+
+  async function updateActivity(activityId: string, payload: any) {
+    submittingActivity = true;
+    try {
+      await ClientDetailService.updateActivity(clientId, activityId, payload);
+      toast.success('Attività aggiornata!');
+      await loadAllData();
+    } catch (e: any) {
+      toast.error('Errore durante l\'aggiornamento: ' + e.message);
     } finally {
       submittingActivity = false;
     }
@@ -392,9 +406,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Scheda Cliente CRM | Gestoray</title>
-</svelte:head>
+
 
 <div class="client-details-page animate-fade-in">
   <Card class="header-card">
@@ -471,6 +483,7 @@
           activeRole={$activeRole}
           submittingActivity={submittingActivity}
           logActivity={logActivity}
+          updateActivity={updateActivity}
           handleAddNote={handleAddNote}
           parseNote={parseNote}
         />

@@ -1,15 +1,15 @@
 <script lang="ts">
   import { auth } from '$lib/auth';
   import ProfileSettings from './components/ProfileSettings.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Il Mio Profilo');
 
   function handleUpdateSuccess(updatedAuth: any) {
     auth.set(updatedAuth);
   }
 </script>
 
-<svelte:head>
-  <title>Il Mio Profilo | Gestoray</title>
-</svelte:head>
+
 
 <div class="profile-container animate-fade-in">
   {#if $auth}

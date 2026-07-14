@@ -3,6 +3,7 @@
   import { TrendingUp, ChevronUp, ChevronDown } from '@lucide/svelte';
   import type { ActivityItem } from '../activities.service';
   import { DashboardService } from '../../dashboard.service';
+  import { activitiesConfigStore } from '$lib/stores/activities';
 
   interface Props {
     chartData: number[];
@@ -67,11 +68,20 @@
 
       <div class="chart-controls-box" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;">
         <!-- Metrics Switcher -->
-        <div class="chart-tab-switcher" style="display: flex; gap: 4px; background: var(--color-neutral-100); padding: 4px; border-radius: var(--radius-md);">
-          <button class="chart-tab-btn" class:active={filterType === 'all'} onclick={() => onFilterChange('all')} style="border: none; background: {filterType === 'all' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'all' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'all' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Tutte le Attività">Tutte</button>
-          <button class="chart-tab-btn" class:active={filterType === 'Telefonata'} onclick={() => onFilterChange('Telefonata')} style="border: none; background: {filterType === 'Telefonata' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'Telefonata' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'Telefonata' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Telefonate">TF</button>
-          <button class="chart-tab-btn" class:active={filterType === 'Incontro'} onclick={() => onFilterChange('Incontro')} style="border: none; background: {filterType === 'Incontro' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'Incontro' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'Incontro' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Incontri">IF</button>
-          <button class="chart-tab-btn" class:active={filterType === 'Appuntamento'} onclick={() => onFilterChange('Appuntamento')} style="border: none; background: {filterType === 'Appuntamento' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'Appuntamento' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'Appuntamento' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Appuntamenti">AF</button>
+        <div class="chart-tab-switcher" style="display: flex; gap: 4px; background: var(--color-neutral-100); padding: 4px; border-radius: var(--radius-md); overflow-x: auto; max-width: 100%;">
+          <button class="chart-tab-btn" class:active={filterType === 'all'} onclick={() => onFilterChange('all')} style="border: none; background: {filterType === 'all' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'all' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'all' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s; white-space: nowrap;" title="Tutte le Attività">Tutte</button>
+          
+          {#each $activitiesConfigStore.filter(kpi => kpi.rolesView.includes(activeRole || '')) as kpi}
+            <button 
+              class="chart-tab-btn" 
+              class:active={filterType === kpi.id} 
+              onclick={() => onFilterChange(kpi.id)} 
+              style="border: none; background: {filterType === kpi.id ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === kpi.id ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === kpi.id ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s; white-space: nowrap;" 
+              title={kpi.name}
+            >
+              {kpi.name.substring(0, 3).toUpperCase()}
+            </button>
+          {/each}
         </div>
 
         <div class="chart-granularity-picker" style="display: flex; gap: 16px; align-items: center;">

@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { confirmStore } from '$lib/stores/confirm';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   import { auth, activeRole } from "$lib/auth";
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Dashboard');
   import { auth as clientAuth } from "$lib/firebase";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
   import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
-  import AdminKPIs from "$lib/components/Dashboard/AdminKPIs.svelte";
+  import AdminKPIs from '$lib/components/Dashboard/AdminKPIs.svelte';
+  import { activitiesConfigStore } from '$lib/stores/activities';
   import AdminTasks from "$lib/components/Dashboard/AdminTasks.svelte";
   import { ContractService } from "$lib/services/ContractService";
   import { DashboardService } from "./dashboard.service";
@@ -37,9 +41,7 @@
   let commIncassato = $state(0);
 
   // Activity KPIs
-  let activityCalls = $state(0);
-  let activityMeetings = $state(0);
-  let activityAppointments = $state(0);
+  let activityCounts = $state<Record<string, number>>({});
 
   // Administration Tables
   let adminPendingContracts = $state<any[]>([]);
@@ -49,7 +51,7 @@
   let adminUndistributedPayments = $state<any[]>([]);
 
   // Advanced chart configurations
-  let activeChartTab: 'vss' | 'gi' | 'nuove_anagrafiche' | 'nncf' | 'Telefonata' | 'Incontro' | 'Appuntamento' | 'provvigioni_maturate' = $state('vss');
+  let activeChartTab = $state<string>('vss');
   let granularity: 'settimanale' | 'mensile' | 'annuale' = $state('mensile');
   let endDateString = $state(new Date().toISOString().split('T')[0]);
   let selectedPointIdx = $state<number | null>(null);
@@ -73,7 +75,7 @@
   async function loadKPIs() {
     loadingData = true;
     try {
-      const kpis = await DashboardService.fetchGlobalKPIs($activeRole || '', $auth?.uid || '');
+      const kpis = await DashboardService.fetchGlobalKPIs($activeRole || '', $auth?.uid || '', $activitiesConfigStore);
       commContractsCount = kpis.commContractsCount;
       commTotalSold = kpis.commTotalSold;
       commApprovedSold = kpis.commApprovedSold;
@@ -86,9 +88,7 @@
       totalNNCF = kpis.totalNNCF;
       totalContratti = kpis.totalContratti;
       pendingContratti = kpis.pendingContratti;
-      activityCalls = kpis.activityCalls;
-      activityMeetings = kpis.activityMeetings;
-      activityAppointments = kpis.activityAppointments;
+      activityCounts = kpis.activityCounts;
       commTotalNA = kpis.commTotalNA;
       usersList = kpis.usersList;
 
@@ -150,7 +150,7 @@
     const unsubscribe = auth.subscribe(($auth) => {
       if (!$auth) {
         setTimeout(() => {
-          if (!clientAuth.currentUser && !$auth) goto("/login");
+          if (!$auth) goto("/login");
         }, 800);
       }
     });
@@ -184,11 +184,11 @@
     if (role !== 'superadmin' && role !== 'amministrazione') return;
 
     try {
-      await ContractService.approveContract(contractId, clientAuth.currentUser?.uid || 'system', clientAuth.currentUser?.email || 'system');
-      alert('Contratto approvato con successo!');
+      await ContractService.approveContract(contractId, $auth?.uid || 'system', $auth?.email || 'system');
+      toast.success('Contratto approvato con successo!');
       await loadKPIs();
     } catch (e: any) {
-      alert('Errore durante l\'approvazione: ' + e.message);
+      toast.error('Errore durante l\'approvazione: ' + e.message);
     }
   }
 
@@ -196,18 +196,16 @@
     const ok = await confirmStore.prompt('Sei sicuro di voler contrassegnare questo mese provvigionale come pagato? Scomparirà dalla dashboard e non sarà più considerato in attesa.');
     if (!ok) return;
     try {
-      await DashboardService.markCommissionPaid(periodId, clientAuth.currentUser?.uid || 'system');
-      alert('Provvigione segnata come pagata!');
+      await DashboardService.markCommissionPaid(periodId, $auth?.uid || 'system');
+      toast.success('Provvigione segnata come pagata!');
       await loadKPIs();
     } catch (e: any) {
-      alert('Errore: ' + e.message);
+      toast.error('Errore: ' + e.message);
     }
   }
 </script>
 
-<svelte:head>
-  <title>Dashboard | Gestoray</title>
-</svelte:head>
+
 
 {#if $auth}
   <div class="dashboard-viewport">
@@ -279,6 +277,7 @@
                 {usersList}
                 activeRole={$activeRole || ''}
                 {formatCurrency}
+                activitiesConfig={$activitiesConfigStore}
               />
             </div>
 
@@ -292,9 +291,8 @@
                   {commMaturate}
                   {commTotalNNCF}
                   {commIncassato}
-                  {activityCalls}
-                  {activityMeetings}
-                  {activityAppointments}
+                  {activityCounts}
+                  activitiesConfig={$activitiesConfigStore}
                   onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
                 />
               {:else}
@@ -307,9 +305,8 @@
                   {totalIncassato}
                   {totalNNCF}
                   {commMaturate}
-                  {activityCalls}
-                  {activityMeetings}
-                  {activityAppointments}
+                  {activityCounts}
+                  activitiesConfig={$activitiesConfigStore}
                   onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
                 />
               {/if}

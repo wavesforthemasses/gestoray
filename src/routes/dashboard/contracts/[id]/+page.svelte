@@ -1,7 +1,7 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
-  import { confirmStore } from '$lib/stores/confirm';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { formatDate } from '$lib/utils/formatters';
   import { page } from '$app/stores';
   import { auth, activeRole } from '$lib/auth';
@@ -14,6 +14,8 @@
   import ContractSummary from './components/ContractSummary.svelte';
   import ContractAdminActions from './components/ContractAdminActions.svelte';
   import ContractPaymentsList from './components/ContractPaymentsList.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Dettaglio Contratto');
   import ContractInstallmentModal from './components/ContractInstallmentModal.svelte';
 
   const contractId = $page.params.id as string;
@@ -195,7 +197,7 @@
   async function handleDeleteContract() {
     if (!payload) return;
     if (payload.paymentsList.length > 0) {
-      alert("Impossibile eliminare un contratto con pagamenti reali/incassi attivi. Storna prima tutti gli incassi collegati.");
+      toast.error("Impossibile eliminare un contratto con pagamenti reali/incassi attivi. Storna prima tutti gli incassi collegati.");
       return;
     }
     const ok = await confirmStore.prompt("Sei sicuro di voler eliminare definitivamente questo contratto? Tutte le rate e le scadenze associate verranno eliminate. Questa azione è irreversibile.");
@@ -366,7 +368,7 @@
     const inst = payload.installmentsList.find(i => i.id === instId);
     if (!inst) return;
     if (inst.status === 'paid') {
-      alert("Impossibile eliminare una rata già pagata. Storna prima il relativo incasso.");
+      toast.error("Impossibile eliminare una rata già pagata. Storna prima il relativo incasso.");
       return;
     }
     const ok = await confirmStore.prompt("Sei sicuro di voler eliminare questa rata dallo scadenziario?");
@@ -409,9 +411,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Dettaglio Contratto | Gestoray</title>
-</svelte:head>
+
 
 <div class="contract-details-page animate-fade-in">
   <div class="page-top-actions">

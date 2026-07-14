@@ -9,6 +9,8 @@
   import ActivitiesTable from './components/ActivitiesTable.svelte';
   import { httpsCallable } from 'firebase/functions';
   import { functions } from '$lib/firebase';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Registro Attività');
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
@@ -41,7 +43,7 @@
   let endDateString = $state(new Date().toISOString().split('T')[0]);
 
   // Filters state
-  let filterType = $state<'all' | 'Telefonata' | 'Incontro' | 'Appuntamento' | 'Sollecito Telefonico' | 'Sollecito Email' | 'Sollecito PEC'>('all');
+  let filterType = $state<string>('all');
   let searchQuery = $state('');
 
   // Let svelte react to parameter changes and trigger fetch
@@ -148,9 +150,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Registro Attività | Gestoray</title>
-</svelte:head>
+
 
 <div class="activities-page animate-fade-in">
   <ActivitiesChart

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { auth as clientAuth, signInWithCustomToken, functions, httpsCallable } from "$lib/firebase";
+  import { projectStore } from '$lib/stores/project';
   import { goto } from "$app/navigation";
   import { FormField } from "$lib";
 
@@ -59,7 +60,7 @@
 </script>
 
 <svelte:head>
-  <title>Login | Gestoray</title>
+  <title>Login | {$projectStore?.projectName || 'CRM'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     rel="preconnect"
@@ -80,7 +81,7 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png?gestoray" alt="Gestoray Logo" class="login-logo" />
+      <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="login-logo" />
     </div>
 
     {#if errorMessage}

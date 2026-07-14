@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onContractCreated = exports.generateCommissionsCalculation = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.retryFailedSyncs = exports.onPaymentCreated = exports.onInstallmentWrite = exports.onActivityCreated = exports.onContractUpdated = exports.onContractsPaidCreated = exports.onClientCreated = exports.onContractCreated = exports.generateCommissionsCalculation = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
 const v2_1 = require("firebase-functions/v2");
 (0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
@@ -27,6 +27,8 @@ Object.defineProperty(exports, "generateCommissionsCalculation", { enumerable: t
 // Export new Firestore triggers
 var onContractCreated_1 = require("./src/triggers/onContractCreated");
 Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: function () { return onContractCreated_1.onContractCreated; } });
+var onClientCreated_1 = require("./src/triggers/onClientCreated");
+Object.defineProperty(exports, "onClientCreated", { enumerable: true, get: function () { return onClientCreated_1.onClientCreated; } });
 var onContractsPaidCreated_1 = require("./src/triggers/onContractsPaidCreated");
 Object.defineProperty(exports, "onContractsPaidCreated", { enumerable: true, get: function () { return onContractsPaidCreated_1.onContractsPaidCreated; } });
 var onContractUpdated_1 = require("./src/triggers/onContractUpdated");

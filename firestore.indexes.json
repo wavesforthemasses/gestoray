@@ -178,6 +178,39 @@
         { "fieldPath": "original.type", "order": "ASCENDING" },
         { "fieldPath": "edits.createdAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "original.type", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "original.type", "order": "ASCENDING" },
+        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -192,7 +225,8 @@
       "collectionGroup": "activities",
       "fieldPath": "edits.createdAt",
       "indexes": [
-        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
       ]
     },
     {

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth } from '$lib/auth';
+  import { projectStore } from '$lib/stores/project';
 
   onMount(() => {
     const unsubscribe = auth.subscribe(($auth) => {
@@ -16,7 +17,7 @@
 </script>
 
 <svelte:head>
-  <title>Gestoray</title>
+  <title>{$projectStore?.projectName || 'CRM'}</title>
 </svelte:head>
 
 <div class="homepage-redirect-loader">

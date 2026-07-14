@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { CheckCircle, AlertCircle, Info, X } from '@lucide/svelte';
   import { fade, slide } from 'svelte/transition';
   import { flip } from 'svelte/animate';
 </script>
 
 <div class="toast-container">
-  {#each $toast as t (t.id)}
+  {#each toast.messages as t (t.id)}
     <div 
       class="toast toast-{t.type}" 
       in:slide={{ duration: 300 }} 

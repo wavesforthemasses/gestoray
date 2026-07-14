@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Storico Provvigioni');
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
-  import { confirmStore } from '$lib/stores/confirm';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { activeRole, auth } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -94,9 +96,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Storico Provvigioni | Gestoray</title>
-</svelte:head>
+
 
 <div class="commissions-page animate-fade-in">
   <div class="header-dashboard-section">

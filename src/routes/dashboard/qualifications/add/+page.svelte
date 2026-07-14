@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { activeRole } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -8,6 +8,8 @@
   import { Award, ArrowLeft } from '@lucide/svelte';
   import { QualificationsService } from '$lib/services/qualifications';
   import QualificationForm from '../components/QualificationForm.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Aggiungi Qualifica');
 
   let name = $state('');
   let percentage = $state(0);
@@ -47,9 +49,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Aggiungi Qualifica | Gestoray</title>
-</svelte:head>
+
 
 <div class="add-page animate-fade-in">
   <Card

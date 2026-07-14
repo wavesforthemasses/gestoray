@@ -20,7 +20,7 @@
     chartPeriods = $bindable([])
   } = $props();
 
-  let activeChartTab = $state<'vss' | 'commission'>('vss');
+  let activeChartTab = $state<'vss' | 'provvigioni_maturate'>('vss');
   let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
   let endDateString = $state(new Date().toISOString().split('T')[0]);
   
@@ -33,18 +33,21 @@
     chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
   });
 
+  let computedChartPoints = $state<number[]>([]);
+
   async function loadChartData() {
     if (!isGraphExpanded || chartPeriods.length === 0) return;
     loadingChart = true;
 
     try {
-      const minDate = chartPeriods[0].start.toISOString();
       const roleToUse = $activeRole || '';
       const uidToUse = $auth?.uid || '';
       
-      chartRawContracts = await DashboardService.fetchChartRawData(minDate, roleToUse, uidToUse, activeChartTab);
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
     } catch (e) {
       console.error("Error loading contracts chart data:", e);
+      computedChartPoints = chartPeriods.map(() => 0);
     } finally {
       loadingChart = false;
     }
@@ -55,8 +58,6 @@
       loadChartData();
     }
   });
-
-  let computedChartPoints = $derived(DashboardService.computeChartPoints(chartRawContracts, chartPeriods, activeChartTab));
 </script>
 
 <div class="subpage-chart-control">
@@ -81,7 +82,7 @@
       <div class="chart-controls-box" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;">
         <div class="chart-tab-switcher" style="display: flex; gap: 4px; background: var(--color-neutral-100); padding: 4px; border-radius: var(--radius-md);">
           <button class="chart-tab-btn" class:active={activeChartTab === 'vss'} onclick={() => { activeChartTab = 'vss'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'vss' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'vss' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'vss' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Valore Venduto (VSS)">VSS</button>
-          <button class="chart-tab-btn" class:active={activeChartTab === 'commission'} onclick={() => { activeChartTab = 'commission'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'commission' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'commission' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'commission' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Provvigioni Maturate">PM</button>
+          <button class="chart-tab-btn" class:active={activeChartTab === 'provvigioni_maturate'} onclick={() => { activeChartTab = 'provvigioni_maturate'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'provvigioni_maturate' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'provvigioni_maturate' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'provvigioni_maturate' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Provvigioni Maturate">PM</button>
         </div>
 
         <div class="chart-granularity-picker" style="display: flex; gap: 16px; align-items: center;">

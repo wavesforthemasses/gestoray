@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, FormField } from '$lib';
   import { UserCog } from '@lucide/svelte';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { ProfileService } from '../profile.service';
 
   interface Props {

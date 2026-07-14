@@ -144,5 +144,6 @@ export {
   addDoc, 
   Timestamp,
   deleteField,
-  or
+  or,
+  onSnapshot
 } from 'firebase/firestore';

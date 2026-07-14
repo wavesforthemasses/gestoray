@@ -5,6 +5,7 @@
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
   import StatusBadge from '$lib/components/StatusBadge.svelte';
   import { activeRole } from '$lib/auth';
+  import { projectStore } from '$lib/stores/project';
 
   interface Props {
     clientsList: any[];
@@ -69,7 +70,7 @@
         { key: 'email', header: 'Indirizzo Email' },
         { key: 'phone', header: 'Telefono' },
         { key: 'status', header: 'Stato Funnel' }
-      ], 'gestoray_clienti')} class="export-btn" title="Esporta in formato CSV">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_clienti`)} class="export-btn" title="Esporta in formato CSV">
         CSV
       </button>
       <button onclick={() => exportToExcel(filteredClients, [
@@ -78,7 +79,7 @@
         { key: 'email', header: 'Indirizzo Email' },
         { key: 'phone', header: 'Telefono' },
         { key: 'status', header: 'Stato Funnel' }
-      ], 'gestoray_clienti')} class="export-btn" title="Esporta in Excel (XLS)">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_clienti`)} class="export-btn" title="Esporta in Excel (XLS)">
         Excel
       </button>
       <button onclick={triggerPrint} class="export-btn" title="Stampa l'elenco / Salva PDF">

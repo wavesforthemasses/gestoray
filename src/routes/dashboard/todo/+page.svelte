@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { toast } from '$lib/stores/toast';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   import { activeRole, auth } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { CheckCircle, RefreshCw } from '@lucide/svelte';
   import { TodoService, type TodoItem } from './todo.service';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Scadenziario To-Do');
   import TodoItemCard from './components/TodoItemCard.svelte';
   import TodoInstallmentModal from './components/TodoInstallmentModal.svelte';
 
@@ -53,7 +56,7 @@
 
   // Action: Postpone Installment
   async function handlePostponeInstallment(contractId: string, installmentId: string, currentDueDate: string, clientId: string, clientName: string) {
-    const newDate = prompt("Inserisci la nuova data di scadenza (AAAA-MM-GG):", currentDueDate);
+    const newDate = await confirmStore.askInput("Inserisci la nuova data di scadenza (AAAA-MM-GG):", currentDueDate);
     if (!newDate) return;
 
     try {
@@ -104,9 +107,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Scadenziario To-Do | Gestoray</title>
-</svelte:head>
+
 
 <div class="todo-page animate-fade-in">
 

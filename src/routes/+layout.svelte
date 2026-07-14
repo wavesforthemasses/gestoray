@@ -11,11 +11,17 @@
     getDoc,
   } from "$lib/firebase";
   import { auth, activeRole } from "$lib/auth";
+  import { initProjectStore, destroyProjectStore } from "$lib/stores/project";
+  import { initActivitiesStore, destroyActivitiesStore } from "$lib/stores/activities";
+  import { initMenuStore, destroyMenuStore } from "$lib/stores/menu";
   import { get } from "svelte/store";
 
   let { children } = $props();
 
   onMount(() => {
+    initProjectStore();
+    initActivitiesStore();
+    initMenuStore();
     const unsubscribe = onAuthStateChanged(
       clientAuth,
       async (firebaseUser: any) => {
@@ -59,7 +65,12 @@
       },
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      destroyProjectStore();
+      destroyActivitiesStore();
+      destroyMenuStore();
+    };
   });
 </script>
 

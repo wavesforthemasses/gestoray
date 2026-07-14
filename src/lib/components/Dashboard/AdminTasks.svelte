@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Card, KPITile, DeadlinesList } from "$lib";
+  import { Card, KPITile, DeadlinesList, Button } from "$lib";
   import { Clock, AlertTriangle, CreditCard, Banknote, FileText } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
   import { formatDate } from "$lib/utils/formatters";
 
   let { 
@@ -24,7 +23,7 @@
 <div class="dashboard-main-split">
   <!-- Left Column: Tables -->
   <div class="dashboard-left-col">
-    <div class="admin-table-stack" style="display: flex; flex-direction: column; gap: 24px;">
+    <div class="admin-table-stack">
       <!-- 1. Contratti Da Approvare -->
       <Card title="Nuovi Ordini Da Approvare" description="Elenco dei contratti pendenti. Clicca su Gestisci per approvarli o verificare i dettagli.">
         {#snippet icon()}
@@ -51,9 +50,9 @@
                     <td>{c.vendorEmail}</td>
                     <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
                     <td>
-                      <button onclick={() => goto(`/dashboard/contracts/${c.id}`)} class="approve-collect-btn" style="padding: 4px 10px; font-size: 11px;">
+                      <Button href={`/dashboard/contracts/${c.id}`} size="sm">
                         Gestisci
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 {/each}
@@ -92,11 +91,11 @@
                     <td><strong>{p.clientName}</strong></td>
                     <td>{formatDate(p.date)}</td>
                     <td>€ {p.amount.toFixed(2)}</td>
-                    <td><strong style="color: var(--color-warning-text);">€ {(p.remainingToDistribute || 0).toFixed(2)}</strong></td>
+                    <td><strong class="warning-text">€ {(p.remainingToDistribute || 0).toFixed(2)}</strong></td>
                     <td>
-                      <button onclick={() => goto(`/dashboard/payments/${p.id}`)} class="approve-collect-btn" style="padding: 4px 10px; font-size: 11px;">
+                      <Button href={`/dashboard/payments/${p.id}`} size="sm">
                         Gestisci
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 {/each}
@@ -130,9 +129,9 @@
                     <td><strong>{c.id.replace('_', '/')}</strong></td>
                     <td>{c.updatedAt ? formatDate(c.updatedAt) : '-'}</td>
                     <td>
-                      <button onclick={() => goto(`/dashboard/commissions`)} class="approve-collect-btn" style="padding: 4px 10px; font-size: 11px;">
+                      <Button href={`/dashboard/commissions`} size="sm">
                         Gestisci
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 {/each}
@@ -163,14 +162,14 @@
               </thead>
               <tbody>
                 {#each adminFinalizedCommissions as c}
-                  <tr style="background-color: var(--color-success-light);">
+                  <tr class="success-row">
                     <td><strong>{c.id.replace('_', '/')}</strong></td>
                     <td>{c.updatedAt ? formatDate(c.updatedAt) : '-'}</td>
                     <td><strong>€ {(c.totalToPay || 0).toFixed(2)}</strong></td>
                     <td>
-                      <button onclick={() => onMarkCommissionPaid(c.id)} class="approve-collect-btn" style="padding: 4px 10px; font-size: 11px; background: var(--color-success); border-color: var(--color-success);">
+                      <Button onclick={() => onMarkCommissionPaid(c.id)} variant="success" size="sm">
                         Segna come Pagato
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 {/each}
@@ -248,6 +247,12 @@
     }
   }
 
+  .admin-table-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
   .kpi-deck {
     display: flex;
     flex-direction: column;
@@ -268,23 +273,11 @@
     padding: 10px 14px;
   }
 
-  .approve-collect-btn {
-    background: var(--color-primary-500);
-    color: var(--color-white);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    box-shadow: 0 2px 6px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .warning-text {
+    color: var(--color-warning-text);
   }
 
-  .approve-collect-btn:hover {
-    opacity: 0.9;
+  .success-row {
+    background-color: var(--color-success-light);
   }
 </style>

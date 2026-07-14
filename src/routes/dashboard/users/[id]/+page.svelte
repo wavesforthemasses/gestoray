@@ -1,8 +1,10 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { page } from '$app/stores';
   import { activeRole } from '$lib/auth';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Dettagli Utente');
   import { UserDetailService } from './user-detail.service';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -94,9 +96,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Dettagli Utente | Gestoray</title>
-</svelte:head>
+
 
 <div class="details-page-container animate-fade-in">
   <Card

@@ -7,6 +7,10 @@
   import { onMount } from 'svelte';
   import { LayoutDashboard, CheckSquare, Users, Settings, LogOut, Menu, ChevronLeft, ChevronRight, Briefcase, Tag, FileText, Wallet, ClipboardList, Award, Info, X } from '@lucide/svelte';
   import { KPI_LEGEND } from '$lib/kpiLegend';
+  import ProjectSetupBlocker from '$lib/components/ProjectSetupBlocker.svelte';
+  import { projectStore } from '$lib/stores/project';
+  import { pageTitle } from '$lib/stores/page';
+  import { menuConfigStore } from '$lib/stores/menu';
 
   let { children } = $props();
 
@@ -37,6 +41,12 @@
   }
 </script>
 
+<svelte:head>
+  <title>{$pageTitle} | {$projectStore?.projectName || 'CRM'}</title>
+</svelte:head>
+
+<ProjectSetupBlocker />
+
 <div class="dashboard-shell" class:collapsed={isCollapsed} class:mobile-open={isMobileOpen}>
   <!-- Backdrop for mobile drawer -->
   {#if isMobileOpen}
@@ -46,7 +56,7 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       {#if !isCollapsed}
-        <img src="/logo.png" alt="Gestoray Logo" class="sidebar-logo" />
+        <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="sidebar-logo" />
         <button onclick={toggleSidebar} class="toggle-btn" aria-label="Nascondi barra laterale">
           <ChevronLeft size={18} />
         </button>
@@ -88,72 +98,90 @@
     {/if}
 
     <nav class="nav-menu">
-      <a href="/dashboard" class="nav-item" class:active={$page.url.pathname === '/dashboard'} title="Dashboard">
-        <span class="nav-icon"><LayoutDashboard size={18} /></span>
-        <span class="nav-label">Dashboard</span>
-      </a>
+      {#if $activeRole}
+        {@const menuConf = $menuConfigStore.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.rolesView.includes($activeRole || '') }), {})}
 
-      <a href="/dashboard/todo" class="nav-item" class:active={$page.url.pathname === '/dashboard/todo'} title="Scadenziario To-Do">
-        <span class="nav-icon"><CheckSquare size={18} /></span>
-        <span class="nav-label">Scadenziario To-Do</span>
-      </a>
+        <a href="/dashboard" class="nav-item" class:active={$page.url.pathname === '/dashboard'} title="Dashboard">
+          <span class="nav-icon"><LayoutDashboard size={18} /></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
 
-      {#if $activeRole === 'commerciale' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
-        <a href="/dashboard/clients" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/clients')} title="Gestione Clienti">
-          <span class="nav-icon"><Briefcase size={18} /></span>
-          <span class="nav-label">Gestione Clienti</span>
-        </a>
-      {/if}
+        {#if menuConf['todo']}
+          <a href="/dashboard/todo" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/todo')} title="Cose da Fare">
+            <span class="nav-icon"><CheckSquare size={18} /></span>
+            <span class="nav-label">Cose da Fare</span>
+          </a>
+        {/if}
 
-      {#if $activeRole === 'commerciale' || $activeRole === 'amministrazione' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
-        <a href="/dashboard/activities" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/activities')} title="Gestione Attività">
-          <span class="nav-icon"><ClipboardList size={18} /></span>
-          <span class="nav-label">Gestione Attività</span>
-        </a>
-        <a href="/dashboard/contracts" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/contracts')} title="Gestione Contratti">
-          <span class="nav-icon"><FileText size={18} /></span>
-          <span class="nav-label">Gestione Contratti</span>
-        </a>
-      {/if}
+        {#if menuConf['clients']}
+          <a href="/dashboard/clients" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/clients')} title="Gestione Clienti">
+            <span class="nav-icon"><Briefcase size={18} /></span>
+            <span class="nav-label">Gestione Clienti</span>
+          </a>
+        {/if}
 
-      {#if $activeRole === 'commerciale'}
-        <a href="/dashboard/my-commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/my-commissions')} title="Le Mie Provvigioni">
-          <span class="nav-icon"><Award size={18} /></span>
-          <span class="nav-label">Le Mie Provvigioni</span>
-        </a>
-      {/if}
+        {#if menuConf['activities']}
+          <a href="/dashboard/activities" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/activities')} title="Gestione Attività">
+            <span class="nav-icon"><ClipboardList size={18} /></span>
+            <span class="nav-label">Gestione Attività</span>
+          </a>
+        {/if}
 
-      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin' || $activeRole === 'direzione'}
-        <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
-          <span class="nav-icon"><Wallet size={18} /></span>
-          <span class="nav-label">Gestione Incassi</span>
-        </a>
-        <a href="/dashboard/commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/commissions')} title="Gestione Provvigioni">
-          <span class="nav-icon"><Award size={18} /></span>
-          <span class="nav-label">Gestione Provvigioni</span>
-        </a>
-      {/if}
+        {#if menuConf['contracts']}
+          <a href="/dashboard/contracts" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/contracts')} title="Gestione Contratti">
+            <span class="nav-icon"><FileText size={18} /></span>
+            <span class="nav-label">Gestione Contratti</span>
+          </a>
+        {/if}
 
-      {#if $activeRole === 'amministrazione' || $activeRole === 'superadmin'}
-        <a href="/dashboard/products" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/products')} title="Catalogo Prodotti">
-          <span class="nav-icon"><Tag size={18} /></span>
-          <span class="nav-label">Catalogo Prodotti</span>
-        </a>
-      {/if}
+        {#if menuConf['my-commissions']}
+          <a href="/dashboard/my-commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/my-commissions')} title="Le Mie Provvigioni">
+            <span class="nav-icon"><Award size={18} /></span>
+            <span class="nav-label">Le Mie Provvigioni</span>
+          </a>
+        {/if}
 
-      {#if $activeRole === 'superadmin'}
-        <a href="/dashboard/users" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/users')} title="Gestione Utenti">
-          <span class="nav-icon"><Users size={18} /></span>
-          <span class="nav-label">Gestione Utenti</span>
-        </a>
-        <a href="/dashboard/qualifications" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/qualifications')} title="Gestione Qualifiche">
-          <span class="nav-icon"><Award size={18} /></span>
-          <span class="nav-label">Gestione Qualifiche</span>
-        </a>
-        <a href="/dashboard/settings" class="nav-item" class:active={$page.url.pathname === '/dashboard/settings'} title="Impostazioni">
-          <span class="nav-icon"><Settings size={18} /></span>
-          <span class="nav-label">Impostazioni</span>
-        </a>
+        {#if menuConf['payments']}
+          <a href="/dashboard/payments" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/payments')} title="Gestione Incassi">
+            <span class="nav-icon"><Wallet size={18} /></span>
+            <span class="nav-label">Gestione Incassi</span>
+          </a>
+        {/if}
+
+        {#if menuConf['commissions']}
+          <a href="/dashboard/commissions" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/commissions')} title="Gestione Provvigioni">
+            <span class="nav-icon"><Award size={18} /></span>
+            <span class="nav-label">Gestione Provvigioni</span>
+          </a>
+        {/if}
+
+        {#if menuConf['products']}
+          <a href="/dashboard/products" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/products')} title="Catalogo Prodotti">
+            <span class="nav-icon"><Tag size={18} /></span>
+            <span class="nav-label">Catalogo Prodotti</span>
+          </a>
+        {/if}
+
+        {#if menuConf['users']}
+          <a href="/dashboard/users" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/users')} title="Gestione Utenti">
+            <span class="nav-icon"><Users size={18} /></span>
+            <span class="nav-label">Gestione Utenti</span>
+          </a>
+        {/if}
+
+        {#if menuConf['qualifications']}
+          <a href="/dashboard/qualifications" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/qualifications')} title="Gestione Qualifiche">
+            <span class="nav-icon"><Award size={18} /></span>
+            <span class="nav-label">Gestione Qualifiche</span>
+          </a>
+        {/if}
+
+        {#if menuConf['settings']}
+          <a href="/dashboard/settings" class="nav-item" class:active={$page.url.pathname === '/dashboard/settings'} title="Impostazioni">
+            <span class="nav-icon"><Settings size={18} /></span>
+            <span class="nav-label">Impostazioni</span>
+          </a>
+        {/if}
       {/if}
 
       <a href="/dashboard/profile" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/profile')} title="Profilo">

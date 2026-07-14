@@ -267,6 +267,25 @@ export class ClientDetailService {
     return activityId;
   }
 
+  static async updateActivity(
+    clientId: string,
+    activityId: string,
+    payload: { notes?: string, date?: string }
+  ) {
+    const docRef = doc(db, 'clients', clientId, 'activities', activityId);
+    const updates: any = {
+      'edits.modifiedAt': new Date().toISOString()
+    };
+    if (payload.notes !== undefined) {
+      updates['original.notes'] = payload.notes;
+    }
+    if (payload.date !== undefined) {
+      updates['original.date'] = payload.date;
+    }
+
+    await updateDoc(docRef, updates);
+  }
+
   static async saveQuote(
     clientId: string, 
     clientNameStr: string, 

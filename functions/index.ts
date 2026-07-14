@@ -18,6 +18,7 @@ export { generateCommissionsCalculation } from './src/commissions';
 
 // Export new Firestore triggers
 export { onContractCreated } from './src/triggers/onContractCreated';
+export { onClientCreated } from './src/triggers/onClientCreated';
 export { onContractsPaidCreated } from './src/triggers/onContractsPaidCreated';
 export { onContractUpdated } from './src/triggers/onContractUpdated';
 export { onActivityCreated } from './src/triggers/onActivityCreated';

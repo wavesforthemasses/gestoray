@@ -3,11 +3,13 @@
 
   interface Props {
     type?: 'button' | 'submit' | 'reset';
-    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning';
+    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
     disabled?: boolean;
     class?: string;
     style?: string;
+    href?: string;
+    target?: string;
     onclick?: (e: MouseEvent) => void;
     children?: Snippet;
   }
@@ -19,6 +21,8 @@
     disabled = false,
     class: className = '',
     style = '',
+    href,
+    target,
     onclick,
     children
   }: Props = $props();
@@ -30,17 +34,31 @@
   }
 </script>
 
-<button
-  {type}
-  class="btn-generic variant-{variant} size-{size} {className}"
-  {style}
-  {disabled}
-  onclick={handleClick}
->
-  {#if children}
-    {@render children()}
-  {/if}
-</button>
+{#if href}
+  <a
+    {href}
+    {target}
+    class="btn-generic variant-{variant} size-{size} {className}"
+    {style}
+    onclick={handleClick}
+  >
+    {#if children}
+      {@render children()}
+    {/if}
+  </a>
+{:else}
+  <button
+    {type}
+    class="btn-generic variant-{variant} size-{size} {className}"
+    {style}
+    {disabled}
+    onclick={handleClick}
+  >
+    {#if children}
+      {@render children()}
+    {/if}
+  </button>
+{/if}
 
 <style>
   .btn-generic {
@@ -52,6 +70,7 @@
     font-weight: 600;
     border: none;
     cursor: pointer;
+    text-decoration: none;
     transition: all var(--transition-fast);
   }
 
@@ -126,5 +145,14 @@
   }
   .variant-warning:hover:not(:disabled) {
     background: hsl(38, 92%, 40%);
+  }
+
+  .variant-ghost {
+    background: transparent;
+    color: var(--color-neutral-600);
+  }
+  .variant-ghost:hover:not(:disabled) {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
   }
 </style>

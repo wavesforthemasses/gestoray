@@ -45,7 +45,7 @@ service cloud.firestore {
       match /activities/{actId} {
         allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
         allow create: if isAuth();
-        allow update: if isAdmin();
+        allow update: if isAuth() && (isAdmin() || resource.data.original.loggedBy == request.auth.uid);
         allow delete: if hasRole('superadmin') || isAdmin();
       }
       
@@ -103,8 +103,8 @@ service cloud.firestore {
 
     // SETTINGS
     match /settings/{settingId} {
-      allow read: if isAuth() && (isAdmin() || isDirezione());
-      allow write: if isAuth() && (hasRole('superadmin') || isDirezione());
+      allow read: if isAuth();
+      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
     }
     
     // COMMISSIONS CLOSINGS
@@ -133,7 +133,8 @@ service cloud.firestore {
     match /{path=**}/activities/{actId} {
       allow read: if isAuth();
       allow create: if isAuth();
-      allow update, delete: if isAdmin();
+      allow update: if isAuth() && (isAdmin() || resource.data.original.loggedBy == request.auth.uid);
+      allow delete: if isAdmin();
     }
     
     match /{path=**}/contractsPaid/{contractId} {

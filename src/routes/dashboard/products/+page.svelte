@@ -2,12 +2,14 @@
   import { activeRole } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { confirmStore } from '$lib/stores/confirm';
-  import { toast } from '$lib/stores/toast';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
 
   import { ProductsService, type ProductData } from './products.service';
   import ProductsTable from './components/ProductsTable.svelte';
   import ProductAddForm from './components/ProductAddForm.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Catalogo Prodotti');
 
   let productsList = $state<Array<ProductData & { id: string }>>([]);
   let loading = $state(true);
@@ -75,9 +77,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Catalogo Prodotti | Gestoray</title>
-</svelte:head>
+
 
 <div class="products-page animate-fade-in">
   {#if showAddForm}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { functions, httpsCallable } from "$lib/firebase";
+  import { projectStore } from '$lib/stores/project';
   import { ShieldCheck, Loader2 } from "lucide-svelte";
 
   let status = $state<"idle" | "loading" | "success" | "error">("idle");
@@ -27,7 +28,7 @@
 </script>
 
 <svelte:head>
-  <title>Setup Iniziale | Gestoray</title>
+  <title>Setup Iniziale | {$projectStore?.projectName || 'CRM'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     rel="preconnect"
@@ -48,14 +49,14 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png?gestoray" alt="Gestoray Logo" class="setup-logo" />
+      <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="setup-logo" />
     </div>
 
     <div class="header">
       <h2>Setup Iniziale Database</h2>
       <p>
         Questa procedura inizializzerà l'account Superadmin reale per consentire
-        l'accesso al CRM Gestoray.
+        l'accesso al CRM {$projectStore?.projectName || ''}.
       </p>
     </div>
 

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { auth, activeRole } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   
   import { CommissionsSettingsService, type CommissionsSettingsPayload } from './commissions-settings.service';
   import CommissionsRulesForm from './components/CommissionsRulesForm.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Impostazioni Provvigioni');
 
   let loading = $state(true);
   let submitting = $state(false);
@@ -54,9 +56,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Impostazioni Provvigioni | Gestoray</title>
-</svelte:head>
+
 
 <div class="settings-page animate-fade-in">
   <div class="page-top-actions">

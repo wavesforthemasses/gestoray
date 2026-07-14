@@ -10,9 +10,8 @@
     commMaturate,
     commTotalNNCF,
     commIncassato,
-    activityCalls,
-    activityMeetings,
-    activityAppointments,
+    activityCounts,
+    activitiesConfig,
     onTabSelect
   } = $props<{
     commTotalNA: number;
@@ -21,11 +20,26 @@
     commMaturate: number;
     commTotalNNCF: number;
     commIncassato: number;
-    activityCalls: number;
-    activityMeetings: number;
-    activityAppointments: number;
+    activityCounts: Record<string, number>;
+    activitiesConfig: any[];
     onTabSelect: (tab: string) => void;
   }>();
+
+  import { MessageSquare, ActivitySquare, CheckCircle, Mail } from "@lucide/svelte";
+
+  const iconMap: Record<string, any> = {
+    'Phone': Phone,
+    'Users': Users,
+    'Calendar': Calendar,
+    'MessageSquare': MessageSquare,
+    'FileText': FileText,
+    'ActivitySquare': ActivitySquare,
+    'CheckCircle': CheckCircle,
+    'Briefcase': Briefcase,
+    'Mail': Mail
+  };
+
+  const allowedActivities = $derived(activitiesConfig.filter(a => a.rolesView.includes('commerciale')));
 </script>
 
 <section class="kpi-deck">
@@ -40,38 +54,18 @@
     inlineSubtitle={true}
   />
 
-  <KPITile 
-    theme="info" 
-    icon={Phone} 
-    title="TF" 
-    value={activityCalls} 
-    subtitle="Loggate" 
-    titleAttr={`${KPI_LEGEND.TF.label} - ${KPI_LEGEND.TF.description}`} 
-    onclick={() => onTabSelect("Telefonata")} 
-    inlineSubtitle={true}
-  />
-
-  <KPITile 
-    theme="info" 
-    icon={Users} 
-    title="IF" 
-    value={activityMeetings} 
-    subtitle="Riunioni" 
-    titleAttr={`${KPI_LEGEND.IF.label} - ${KPI_LEGEND.IF.description}`} 
-    onclick={() => onTabSelect("Incontro")} 
-    inlineSubtitle={true}
-  />
-
-  <KPITile 
-    theme="info" 
-    icon={Calendar} 
-    title="AF" 
-    value={activityAppointments} 
-    subtitle="Pianificati" 
-    titleAttr={`${KPI_LEGEND.AF.label} - ${KPI_LEGEND.AF.description}`} 
-    onclick={() => onTabSelect("Appuntamento")} 
-    inlineSubtitle={true}
-  />
+  {#each allowedActivities as act}
+    <KPITile 
+      theme="info" 
+      icon={iconMap[act.icon] || ActivitySquare} 
+      title={act.acronym || act.name.substring(0, 3).toUpperCase()} 
+      value={activityCounts[act.id] || 0} 
+      subtitle={act.name} 
+      titleAttr={act.name} 
+      onclick={() => onTabSelect(act.id)} 
+      inlineSubtitle={true}
+    />
+  {/each}
 
   <KPITile 
     theme="info" 

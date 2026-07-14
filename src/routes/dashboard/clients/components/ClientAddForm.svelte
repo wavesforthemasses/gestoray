@@ -3,7 +3,7 @@
   import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
   import { generateId } from '$lib/utils/helpers';
   import { generateSearchTerms } from '$lib';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { FormField } from '$lib';
   import { createEventDispatcher } from 'svelte';
 
@@ -59,19 +59,6 @@
           status: 'prospect',
           notes: [],
           createdBy: $auth.uid
-        },
-        derived: {
-          contractsCount: 0,
-          approvedContractsCount: 0,
-          totalContractValue: 0,
-          totalPaid: 0,
-          totalRemaining: 0,
-          activitiesCount: 0,
-          quotesCount: 0,
-          nncfDate: null,
-          nncfOrderId: null,
-          lastActivityDate: null,
-          textSearch: generateSearchTerms(nome.trim() + ' ' + (partitaIva ? partitaIva.trim() : '') + ' ' + (codiceFiscale ? codiceFiscale.trim() : ''))
         },
         edits: {
           createdAt: now,

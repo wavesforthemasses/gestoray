@@ -60,8 +60,8 @@
 
   {#if isEditingProducts}
     <!-- In-place Editor -->
-    <div class="inline-editor-pane" style="background: var(--color-neutral-50); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
-      <div class="form-grid-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="inline-editor-pane editor-pane-styled">
+      <div class="form-grid-columns grid-two-cols">
         <FormField id="e-product" label="SELEZIONA PRODOTTO">
           <select id="e-product" bind:value={editSelectedProductId} onchange={(e) => handleEditProductSelectChange(e.currentTarget.value)}>
             <option value="">-- Seleziona Prodotto --</option>
@@ -71,13 +71,13 @@
           </select>
         </FormField>
 
-        <div style="display: flex; gap: 12px;">
-          <div style="flex: 2;">
+        <div class="flex-gap-12">
+          <div class="flex-2">
             <FormField id="e-price" label="PREZZO VENDUTO (€)">
               <input type="number" id="e-price" bind:value={editItemPriceSold} step="0.01" />
             </FormField>
           </div>
-          <div style="flex: 1;">
+          <div class="flex-1">
             <FormField id="e-qty" label="Q.TÀ">
               <input type="number" id="e-qty" bind:value={editItemQuantity} min="1" step="1" />
             </FormField>
@@ -86,18 +86,18 @@
       </div>
 
       <Button 
-        style="margin-top: 16px; margin-bottom: 24px;"
+        class="insert-btn"
         disabled={!editSelectedProductId || editItemPriceSold === null || editItemQuantity < 1}
         onclick={handleAddEditQuoteItem}
       >
         Inserisci Articolo
       </Button>
 
-      <h4 style="margin-bottom: 12px; font-size: 14px; font-weight: 700;">Articoli nel Preventivo</h4>
+      <h4 class="quote-title">Articoli nel Preventivo</h4>
       {#if editQuoteItems.length === 0}
         <div class="empty-items-placeholder">Il preventivo è vuoto.</div>
       {:else}
-        <table class="widescreen-table" style="background: var(--color-white); margin-bottom: 24px;">
+        <table class="widescreen-table quote-table">
           <thead>
             <tr>
               <th>Prodotto</th>
@@ -114,16 +114,16 @@
                 <td>{item.name}</td>
                 <td>€ {item.listPrice.toFixed(2)}</td>
                 <td>
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    € <input type="number" bind:value={item.priceSold} step="0.01" style="width: 80px; padding: 4px; border: 1px solid var(--color-neutral-300); border-radius: 4px;" />
+                  <div class="price-input-wrapper">
+                    € <input type="number" bind:value={item.priceSold} step="0.01" class="small-input price-input" />
                   </div>
                 </td>
                 <td>
-                  <input type="number" bind:value={item.quantity} min="1" step="1" style="width: 60px; padding: 4px; border: 1px solid var(--color-neutral-300); border-radius: 4px;" />
+                  <input type="number" bind:value={item.quantity} min="1" step="1" class="small-input qty-input" />
                 </td>
                 <td><strong>€ {(item.priceSold * item.quantity).toFixed(2)}</strong></td>
                 <td>
-                  <button onclick={() => handleRemoveEditQuoteItem(index)} class="remove-item-btn" style="color: var(--color-error); background: transparent; border: none; cursor: pointer;">
+                  <button onclick={() => handleRemoveEditQuoteItem(index)} class="remove-item-btn danger-icon-btn">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -132,9 +132,9 @@
           </tbody>
         </table>
 
-        <div class="co-selling-config-panel" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-neutral-200);">
-          <h4 style="font-size: 13.5px; font-weight: 600; margin-bottom: 8px;">Ripartizione Co-Selling</h4>
-          <div class="form-grid-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="co-selling-config-panel co-selling-panel-styled">
+          <h4 class="co-selling-title">Ripartizione Co-Selling</h4>
+          <div class="form-grid-columns grid-two-cols">
             <FormField id="e-second-vendor" label="Secondo Consulente">
               <select id="e-second-vendor" bind:value={editSecondVendorUid}>
                 <option value="">Nessuno (100% principale)</option>
@@ -151,12 +151,12 @@
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-neutral-200);">
-          <div style="font-size: 16px; font-weight: 700;">
-            Totale: <span style="color: var(--color-primary-600);">€ {editQuoteTotal.toFixed(2)}</span>
+        <div class="total-footer">
+          <div class="total-label">
+            Totale: <span class="total-amount">€ {editQuoteTotal.toFixed(2)}</span>
           </div>
-          <div style="display: flex; gap: 12px;">
-            <button onclick={cancelEditingProducts} class="cancel-btn" style="padding: 8px 16px; border-radius: 6px; border: 1px solid var(--color-neutral-300); background: var(--color-white); cursor: pointer;">Annulla</button>
+          <div class="flex-gap-12">
+            <button onclick={cancelEditingProducts} class="cancel-btn footer-cancel-btn">Annulla</button>
             <Button onclick={saveEditedProducts} disabled={submitting}>Salva Modifiche</Button>
           </div>
         </div>
@@ -278,5 +278,111 @@
   .gap-negative.heavy-discount {
     color: var(--color-error);
     font-weight: 800;
+  }
+  :global(.insert-btn) {
+    margin-top: 16px;
+    margin-bottom: 24px;
+  }
+
+  .editor-pane-styled {
+    background: var(--color-neutral-50);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-neutral-200);
+  }
+
+  .grid-two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .flex-gap-12 {
+    display: flex;
+    gap: 12px;
+  }
+
+  .flex-2 {
+    flex: 2;
+  }
+
+  .flex-1 {
+    flex: 1;
+  }
+
+  .quote-title {
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .quote-table {
+    background: var(--color-white);
+    margin-bottom: 24px;
+  }
+
+  .price-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .small-input {
+    padding: 4px;
+    border: 1px solid var(--color-neutral-300);
+    border-radius: 4px;
+  }
+
+  .price-input {
+    width: 80px;
+  }
+
+  .qty-input {
+    width: 60px;
+  }
+
+  .danger-icon-btn {
+    color: var(--color-error);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .co-selling-panel-styled {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-neutral-200);
+  }
+
+  .co-selling-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .total-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-neutral-200);
+  }
+
+  .total-label {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .total-amount {
+    color: var(--color-primary-600);
+  }
+
+  .footer-cancel-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--color-neutral-300);
+    background: var(--color-white);
+    cursor: pointer;
   }
 </style>

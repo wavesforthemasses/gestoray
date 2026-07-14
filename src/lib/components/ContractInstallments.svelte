@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Card, Button, FormField, StatusBadge } from '$lib';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { DollarSign, CheckCircle } from 'lucide-svelte';
 
   interface Props {
@@ -43,7 +44,7 @@
 
     <div class="vertical-layout-stack" style="gap: 16px;">
       {#if installmentsList.length === 0}
-        <div class="empty-panel" style="padding: 20px; text-align: center; color: var(--color-neutral-400); background: var(--color-neutral-50); border-radius: var(--radius-md);">Nessuna rata o piano di rientro pianificato per questo contratto.</div>
+        <div class="empty-panel">Nessuna rata o piano di rientro pianificato per questo contratto.</div>
       {:else}
         <div class="table-wrapper">
           <table class="widescreen-table">
@@ -62,13 +63,13 @@
             <tbody>
               {#each installmentsList as inst}
                 {@const isOverdue = inst.status === 'pending' && new Date(inst.dueDate) < new Date()}
-                <tr style={isOverdue ? 'background-color: hsla(0, 100%, 98%, 1); border-left: 4px solid var(--color-error);' : ''}>
+                <tr class:is-overdue={isOverdue}>
                   <td>
-                    <span style="font-weight: 600; color: {isOverdue ? 'var(--color-error-text)' : 'var(--color-neutral-800)'};">
+                    <span class="due-date-text" class:overdue-text={isOverdue}>
                       {formatDate(inst.dueDate)}
                     </span>
                     {#if isOverdue}
-                      <span style="display: block; font-size: 10px; font-weight: 700; color: var(--color-error-text); margin-top: 2px;">
+                      <span class="overdue-warning">
                         SOLLECITARE CLIENTE!
                       </span>
                     {/if}
@@ -82,14 +83,13 @@
                   {#if activeRole === 'superadmin' || activeRole === 'amministrazione'}
                     <td>
                       {#if inst.status === 'pending'}
-                        <div style="display: flex; gap: 8px;">
+                        <div class="action-buttons-group">
                           <button 
-                            onclick={() => {
-                              const newDate = prompt("Inserisci la nuova data di scadenza (AAAA-MM-GG):", inst.dueDate);
+                            onclick={async () => {
+                              const newDate = await confirmStore.askInput("Inserisci la nuova data di scadenza (AAAA-MM-GG):", inst.dueDate);
                               if (newDate) handlePostponeInstallment(inst.id, newDate);
                             }}
-                            class="back-link-btn" 
-                            style="padding: 4px 8px; font-size: 11px;"
+                            class="back-link-btn action-btn" 
                           >
                             Posticipa
                           </button>
@@ -100,21 +100,19 @@
                               productAllocations = contract.original?.products?.map((p: any) => ({ productId: p.productId, amount: 0 })) || [];
                               showInstallmentModal = true;
                             }}
-                            class="approve-collect-btn" 
-                            style="padding: 4px 12px; font-size: 11px;"
+                            class="approve-collect-btn action-btn action-btn-wide" 
                           >
                             Segna Incassato
                           </button>
                           <button 
                             onclick={() => handleDeleteInstallment(inst.id)}
-                            class="back-link-btn" 
-                            style="padding: 4px 8px; font-size: 11px; color: var(--color-error);"
+                            class="back-link-btn action-btn danger-btn" 
                           >
                             Elimina
                           </button>
                         </div>
                       {:else}
-                        <span style="color: var(--color-success-text); font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="success-status-label">
                           <CheckCircle size={12} /> Riscossione Completata
                         </span>
                       {/if}
@@ -129,16 +127,16 @@
 
       <!-- Form to add new installment (Admin only) -->
       {#if activeRole === 'superadmin' || activeRole === 'amministrazione'}
-        <div style="margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--color-neutral-200);">
-          <h4 style="font-size: 13.5px; font-weight: 700; color: var(--color-neutral-800); margin-bottom: 8px;">Pianifica Nuova Scadenza Pagamento</h4>
-          <form onsubmit={handleAddInstallment} style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="add-installment-panel">
+          <h4 class="panel-title">Pianifica Nuova Scadenza Pagamento</h4>
+          <form onsubmit={handleAddInstallment} class="add-installment-form">
             <FormField id="inst-due" label="Data Scadenza">
               <input type="date" id="inst-due" bind:value={installmentDueDate} required />
             </FormField>
             <FormField id="inst-amount" label="Importo Dovuto (€)">
               <input type="number" id="inst-amount" bind:value={installmentExpectedAmount} min="1" step="0.01" required placeholder="es. 500" />
             </FormField>
-            <Button type="submit" variant="success" style="height: 46px; padding: 0 16px;">
+            <Button type="submit" variant="success" class="submit-plan-btn">
               Pianifica Scadenza
             </Button>
           </form>
@@ -147,3 +145,87 @@
     </div>
   </Card>
 </div>
+
+<style>
+  .empty-panel {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-neutral-400);
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+  }
+
+  .is-overdue {
+    background-color: hsla(0, 100%, 98%, 1);
+    border-left: 4px solid var(--color-error);
+  }
+
+  .due-date-text {
+    font-weight: 600;
+    color: var(--color-neutral-800);
+  }
+
+  .overdue-text {
+    color: var(--color-error-text);
+  }
+
+  .overdue-warning {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-error-text);
+    margin-top: 2px;
+  }
+
+  .action-buttons-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .action-btn-wide {
+    padding: 4px 12px;
+  }
+
+  .danger-btn {
+    color: var(--color-error);
+  }
+
+  .success-status-label {
+    color: var(--color-success-text);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .add-installment-panel {
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-neutral-200);
+  }
+
+  .panel-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-neutral-800);
+    margin-bottom: 8px;
+  }
+
+  .add-installment-form {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  :global(.submit-plan-btn) {
+    height: 46px;
+    padding: 0 16px;
+  }
+</style>

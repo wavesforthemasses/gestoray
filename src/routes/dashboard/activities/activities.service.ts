@@ -5,7 +5,7 @@ export interface ActivityItem {
   id: string;
   clientId: string;
   clientName: string;
-  type: 'Telefonata' | 'Incontro' | 'Appuntamento' | 'Sollecito Telefonico' | 'Sollecito Email' | 'Sollecito PEC';
+  type: string;
   notes: string;
   date: string;
   loggedBy: string;

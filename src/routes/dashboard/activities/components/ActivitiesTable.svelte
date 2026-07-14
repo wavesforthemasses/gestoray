@@ -3,6 +3,7 @@
   import { ClipboardList, Search } from '@lucide/svelte';
   import type { ActivityItem } from '../activities.service';
   import { formatDateTime } from '$lib/utils/formatters';
+  import { activitiesConfigStore } from '$lib/stores/activities';
 
   interface Props {
     filteredActivities: ActivityItem[];
@@ -65,14 +66,9 @@
       <!-- Type Selector -->
       <div class="type-filter-tabs">
         <button class="tab-btn" class:active={filterType === 'all'} onclick={() => onFilterChange('all')}>Tutte</button>
-        <button class="tab-btn" class:active={filterType === 'Telefonata'} onclick={() => onFilterChange('Telefonata')}>Telefonate</button>
-        <button class="tab-btn" class:active={filterType === 'Incontro'} onclick={() => onFilterChange('Incontro')}>Incontri</button>
-        <button class="tab-btn" class:active={filterType === 'Appuntamento'} onclick={() => onFilterChange('Appuntamento')}>Appuntamenti</button>
-        {#if activeRole === 'amministrazione' || activeRole === 'superadmin' || activeRole === 'direzione'}
-          <button class="tab-btn" class:active={filterType === 'Sollecito Telefonico'} onclick={() => onFilterChange('Sollecito Telefonico')}>Soll. Tel</button>
-          <button class="tab-btn" class:active={filterType === 'Sollecito Email'} onclick={() => onFilterChange('Sollecito Email')}>Soll. Email</button>
-          <button class="tab-btn" class:active={filterType === 'Sollecito PEC'} onclick={() => onFilterChange('Sollecito PEC')}>Soll. PEC</button>
-        {/if}
+        {#each $activitiesConfigStore.filter(kpi => kpi.rolesView.includes(activeRole || '')) as kpi}
+          <button class="tab-btn" class:active={filterType === kpi.id} onclick={() => onFilterChange(kpi.id)}>{kpi.name}</button>
+        {/each}
       </div>
     </div>
   {/snippet}
@@ -83,11 +79,7 @@
     {:else if col.key === 'clientName'}
       <span class="client-name">{row.clientName}</span>
     {:else if col.key === 'type'}
-      <span class="badge" 
-        class:badge-tel={row.type === 'Telefonata' || row.type === 'Sollecito Telefonico'} 
-        class:badge-inc={row.type === 'Incontro' || row.type === 'Sollecito PEC'} 
-        class:badge-app={row.type === 'Appuntamento' || row.type === 'Sollecito Email'}
-      >
+      <span class="badge badge-inc">
         {row.type}
       </span>
     {:else if col.key === 'notes'}

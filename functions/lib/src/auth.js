@@ -4,6 +4,7 @@ exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const email_1 = require("./email");
 const REGION = 'europe-west3';
 /**
  * sendLoginPin
@@ -30,9 +31,32 @@ exports.sendLoginPin = (0, https_1.onCall)({ region: REGION }, async (request) =
             pin,
             expiresAt
         });
-        logger.info(`[LOGIN PIN FOR ${cleanEmail}]: ${pin}`);
-        // If running in local emulator or debug mode, return the PIN directly to the client
         const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+        // Check if API key exists in settings or config
+        let hasApiKey = false;
+        try {
+            const projectSnap = await db.collection('settings').doc('project').get();
+            const resendApiKey = projectSnap.exists ? projectSnap.data()?.resendApiKey : null;
+            hasApiKey = !!resendApiKey || (!!process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_YOUR_KEY_HERE');
+        }
+        catch (e) {
+            logger.error('Error fetching project settings for API Key', e);
+        }
+        if (isEmulator || !hasApiKey) {
+            logger.info(`[LOGIN PIN FOR ${cleanEmail}]: ${pin}`);
+        }
+        if (!isEmulator) {
+            const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Codice di Accesso</h2>
+          <p>Il tuo codice PIN per accedere è:</p>
+          <h1 style="font-size: 32px; letter-spacing: 5px; color: #2563eb;">${pin}</h1>
+          <p>Questo codice scadrà tra 5 minuti.</p>
+        </div>
+      `;
+            await (0, email_1.sendEmailViaResend)(cleanEmail, 'Codice di Accesso', html);
+        }
+        // If running in local emulator or debug mode, return the PIN directly to the client
         return {
             success: true,
             email: cleanEmail,

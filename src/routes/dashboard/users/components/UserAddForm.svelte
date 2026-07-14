@@ -1,23 +1,24 @@
 <script lang="ts">
   import { Card, FormField, RoleSelector } from '$lib';
   import { UserPlus, ArrowLeft } from '@lucide/svelte';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { UsersService, type UserData } from '../users.service';
 
   interface Props {
     usersList: UserData[];
+    qualificationsList: any[];
     creatorUid: string;
     onCancel: () => void;
     onSuccess: () => void;
   }
 
-  let { usersList, creatorUid, onCancel, onSuccess } = $props();
+  let { usersList, qualificationsList, creatorUid, onCancel, onSuccess } = $props();
 
   let newEmail = $state('');
   let nome = $state('');
   let cognome = $state('');
   let selectedRoles = $state<string[]>([]);
-  let qualification = $state('junior');
+  let qualification = $state('');
 
   let creatingUser = $state(false);
 
@@ -44,7 +45,7 @@
       nome = '';
       cognome = '';
       selectedRoles = [];
-      qualification = 'junior';
+      qualification = '';
       
       onSuccess();
     } catch (err: any) {
@@ -107,8 +108,10 @@
 
     <FormField id="new-qualification" label="Qualifica Consulente">
       <select id="new-qualification" bind:value={qualification} disabled={creatingUser}>
-        <option value="junior">Junior (consulente junior)</option>
-        <option value="senior">Senior (consulente senior)</option>
+        <option value="">Nessuna qualifica</option>
+        {#each qualificationsList as q}
+          <option value={q.id}>{q.name} ({q.percentage}% / {q.supervisorPercentage}%)</option>
+        {/each}
       </select>
     </FormField>
 

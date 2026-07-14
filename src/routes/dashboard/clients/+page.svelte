@@ -10,6 +10,8 @@
   import ClientsChart from './components/ClientsChart.svelte';
   import ClientsTable from './components/ClientsTable.svelte';
   import { ClientsService } from './clients.service';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Gestione Clienti CRM');
 
   onMount(() => {
     const unsubscribe = activeRole.subscribe(($activeRole) => {
@@ -81,9 +83,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Gestione Clienti CRM | Gestoray</title>
-</svelte:head>
+
 
 <div class="clients-page animate-fade-in">
   {#if !showAddForm}

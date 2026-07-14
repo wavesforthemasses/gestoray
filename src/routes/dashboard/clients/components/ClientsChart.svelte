@@ -33,18 +33,21 @@
     chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
   });
 
+  let computedChartPoints = $state<number[]>([]);
+
   async function loadChartData() {
     if (!isGraphExpanded || chartPeriods.length === 0) return;
     loadingChart = true;
 
     try {
-      const minDate = chartPeriods[0].start.toISOString();
       const roleToUse = $activeRole || '';
       const uidToUse = $auth?.uid || '';
       
-      chartRawClients = await DashboardService.fetchChartRawData(minDate, roleToUse, uidToUse, activeChartTab);
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
     } catch (e) {
       console.error("Error loading clients chart data:", e);
+      computedChartPoints = chartPeriods.map(() => 0);
     } finally {
       loadingChart = false;
     }
@@ -55,8 +58,6 @@
       loadChartData();
     }
   });
-
-  let computedChartPoints = $derived(DashboardService.computeChartPoints(chartRawClients, chartPeriods, activeChartTab));
 </script>
 
 <div class="subpage-chart-control">

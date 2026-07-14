@@ -14,9 +14,7 @@ export interface DashboardKPIs {
   totalNNCF: number;
   totalContratti: number;
   pendingContratti: number;
-  activityCalls: number;
-  activityMeetings: number;
-  activityAppointments: number;
+  activityCounts: Record<string, number>;
   commTotalNA: number;
   usersList: any[];
 }
@@ -30,11 +28,11 @@ export interface AdminTables {
 }
 
 export class DashboardService {
-  static async fetchGlobalKPIs(role: string, myUid: string): Promise<DashboardKPIs> {
+  static async fetchGlobalKPIs(role: string, myUid: string, activitiesConfig: any[]): Promise<DashboardKPIs> {
     const kpis: DashboardKPIs = {
       commContractsCount: 0, commTotalSold: 0, commApprovedSold: 0, commTotalNNCF: 0, commMaturate: 0, commIncassato: 0,
       totalClienti: 0, totalVenduto: 0, totalIncassato: 0, totalNNCF: 0, totalContratti: 0, pendingContratti: 0,
-      activityCalls: 0, activityMeetings: 0, activityAppointments: 0, commTotalNA: 0, usersList: []
+      activityCounts: {}, commTotalNA: 0, usersList: []
     };
 
     // 1. Fetch current user profile to read derived KPIs
@@ -72,11 +70,11 @@ export class DashboardService {
     // 2. Fetch global directional KPIs if admin/direzione
     if (role !== 'commerciale') {
       const [
-        clientsCountSnap, approvedContractsValSnap, paymentsValSnap,
+        clientsCountSnap, allContractsValSnap, paymentsValSnap,
         nncfCountSnap, contractsCountSnap, pendingContractsSnap
       ] = await Promise.all([
         getCountFromServer(collection(db, 'clients')),
-        getAggregateFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'approved')), { val: sum('original.totalPrice') }),
+        getAggregateFromServer(collection(db, 'contracts'), { val: sum('original.totalPrice') }),
         getAggregateFromServer(collection(db, 'payments'), { val: sum('original.amount') }),
         getCountFromServer(query(collection(db, 'clients'), where('derived.nncfOrderId', '!=', null))),
         getCountFromServer(collection(db, 'contracts')),
@@ -84,7 +82,7 @@ export class DashboardService {
       ]);
 
       kpis.totalClienti = clientsCountSnap.data().count;
-      kpis.totalVenduto = approvedContractsValSnap.data().val || 0;
+      kpis.totalVenduto = allContractsValSnap.data().val || 0;
       kpis.totalIncassato = paymentsValSnap.data().val || 0;
       kpis.totalNNCF = nncfCountSnap.data().count;
       kpis.totalContratti = contractsCountSnap.data().count;
@@ -95,26 +93,25 @@ export class DashboardService {
     }
 
     // 3. Fetch activity counts
+    const allowedActivities = activitiesConfig.filter(a => a.rolesView.includes(role));
     if (role === 'commerciale') {
-      const [callsSnap, meetingsSnap, apptsSnap, naSnap] = await Promise.all([
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Telefonata', 'Sollecito Telefonico']))),
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Incontro', 'Sollecito PEC']))),
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', 'in', ['Appuntamento', 'Sollecito Email']))),
-        getCountFromServer(query(collection(db, 'clients'), where('original.createdBy', '==', myUid)))
-      ]);
-      kpis.activityCalls = callsSnap.data().count;
-      kpis.activityMeetings = meetingsSnap.data().count;
-      kpis.activityAppointments = apptsSnap.data().count;
+      const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', '==', act.id))));
+      queries.push(getCountFromServer(query(collection(db, 'clients'), where('original.createdBy', '==', myUid))));
+      
+      const snaps = await Promise.all(queries);
+      const naSnap = snaps.pop();
       kpis.commTotalNA = naSnap.data().count;
+      
+      allowedActivities.forEach((act, idx) => {
+        kpis.activityCounts[act.id] = snaps[idx].data().count;
+      });
     } else {
-      const [callsSnap, meetingsSnap, apptsSnap] = await Promise.all([
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Telefonata', 'Sollecito Telefonico']))),
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Incontro', 'Sollecito PEC']))),
-        getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', 'in', ['Appuntamento', 'Sollecito Email'])))
-      ]);
-      kpis.activityCalls = callsSnap.data().count;
-      kpis.activityMeetings = meetingsSnap.data().count;
-      kpis.activityAppointments = apptsSnap.data().count;
+      const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', '==', act.id))));
+      const snaps = await Promise.all(queries);
+      
+      allowedActivities.forEach((act, idx) => {
+        kpis.activityCounts[act.id] = snaps[idx].data().count;
+      });
     }
 
     if (role === 'commerciale') {
@@ -226,21 +223,26 @@ export class DashboardService {
     
     let filters: any = {};
     if (isComm) {
-      if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) filters.loggedBy = myUid;
-      else if (activeChartTab === 'nuove_anagrafiche' || activeChartTab === 'nncf') filters.createdBy = myUid;
-      else filters.vendorUid = myUid;
+      if (activeChartTab === 'nuove_anagrafiche' || activeChartTab === 'nncf') {
+        filters.createdBy = myUid;
+      } else if (['vss', 'vsa', 'gi', 'provvigioni_maturate'].includes(activeChartTab)) {
+        filters.vendorUid = myUid;
+      } else {
+        // Tutte le attività dinamiche
+        filters.loggedBy = myUid;
+      }
     }
     
-    if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
-      if (activeChartTab === 'Telefonata') filters.type = 'Telefonata'; // TODO: handle multiple types in CF if needed, for now we will send 'Telefonata' and 'Sollecito Telefonico' separately or update CF.
-      // Wait, let's keep it simple: the cloud function checks `filters.type === filters.type`
+    const isActivity = !['vss', 'vsa', 'nuove_anagrafiche', 'nncf', 'gi', 'provvigioni_maturate'].includes(activeChartTab);
+    
+    if (isActivity) {
       filters.type = activeChartTab; 
     }
 
     // Call Cloud function
     // Map periods for CF
     const payload = {
-      entity: activeChartTab,
+      entity: isActivity ? 'activities' : activeChartTab,
       periods: periods.map(p => ({ start: p.start.toISOString(), end: p.end.toISOString() })),
       filters
     };
@@ -342,23 +344,11 @@ export class DashboardService {
       let q = isComm ? query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())) 
                      : query(collectionGroup(db, 'activities'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()));
                      
-      if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
-        // Unfortunately, Firestore doesn't support inequality with equality on different fields easily if we don't have composite indexes for all permutations.
-        // We will filter type in-memory since we already limited by date.
-      }
-      
       const snap = await getDocs(q);
       snap.forEach((d: any) => {
-        if (['Telefonata', 'Incontro', 'Appuntamento'].includes(activeChartTab)) {
-          const type = d.data().original?.type || '';
-          let match = false;
-          if (activeChartTab === 'Telefonata') match = type === 'Telefonata' || type === 'Sollecito Telefonico';
-          else if (activeChartTab === 'Incontro') match = type === 'Incontro' || type === 'Sollecito PEC';
-          else if (activeChartTab === 'Appuntamento') match = type === 'Appuntamento' || type === 'Sollecito Email';
-          
-          if (match) items.push({ id: d.id, ...d.data() });
-        } else {
-           items.push({ id: d.id, ...d.data() });
+        const type = d.data().original?.type || '';
+        if (type === activeChartTab) {
+          items.push({ id: d.id, ...d.data() });
         }
       });
     }

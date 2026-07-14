@@ -8,6 +8,8 @@
   import { DashboardService } from '../dashboard.service';
 
   import { PaymentsService } from './payments.service';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Gestione Incassi Cassa');
   import PaymentAddForm from './components/PaymentAddForm.svelte';
   import PaymentsChart from './components/PaymentsChart.svelte';
   import PaymentsTable from './components/PaymentsTable.svelte';
@@ -134,9 +136,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Gestione Incassi Cassa | Gestoray</title>
-</svelte:head>
+
 
 <div class="payments-page animate-fade-in">
   {#if successMsg}

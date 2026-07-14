@@ -5,9 +5,11 @@
   import { activeRole, auth } from '$lib/auth';
   import { hasAccess } from '$lib/utils/authCheck';
   import { CommissionsService } from '../../commissions.service';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { ArrowLeft } from '@lucide/svelte';
 
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Dettaglio Provvigioni');
   import CommissionsKPIs from './components/CommissionsKPIs.svelte';
   import VendorBreakdownTable from './components/VendorBreakdownTable.svelte';
   import AllocationsTable from './components/AllocationsTable.svelte';
@@ -70,9 +72,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Dettaglio Provvigioni | Gestoray</title>
-</svelte:head>
+
 
 <div class="version-details-page animate-fade-in">
   <div class="header-actions">

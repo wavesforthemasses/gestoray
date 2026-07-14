@@ -3,6 +3,9 @@
   import { FileText } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
+  import StatusBadge from '$lib/components/StatusBadge.svelte';
+  import { formatCurrency } from '$lib/utils/formatters';
+  import { projectStore } from '$lib/stores/project';
   import { formatDate } from '$lib/utils/formatters';
   import { activeRole } from '$lib/auth';
 
@@ -98,7 +101,7 @@
             { key: 'vendorEmail', header: 'Commerciale' },
             { key: 'totalPrice', header: 'Valore Lordo' },
             { key: 'status', header: 'Stato' }
-          ], 'gestoray_contratti')} class="export-btn" title="Esporta in formato CSV">
+          ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_contratti`)} class="export-btn" title="Esporta in formato CSV">
             CSV
           </button>
           <button onclick={() => exportToExcel(filteredContracts, [
@@ -108,7 +111,7 @@
             { key: 'vendorEmail', header: 'Commerciale' },
             { key: 'totalPrice', header: 'Valore Lordo' },
             { key: 'status', header: 'Stato' }
-          ], 'gestoray_contratti')} class="export-btn" title="Esporta in Excel (XLS)">
+          ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_contratti`)} class="export-btn" title="Esporta in Excel (XLS)">
             Excel
           </button>
           <button onclick={triggerPrint} class="export-btn" title="Stampa l'elenco / Salva PDF">

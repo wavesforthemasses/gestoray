@@ -1,11 +1,13 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
-  import { confirmStore } from '$lib/stores/confirm';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { page } from '$app/stores';
   import { auth, activeRole } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Dettaglio Incasso');
   import { ArrowLeft } from '@lucide/svelte';
   
   import { PaymentDetailService, type PaymentDataPayload } from './payment-detail.service';
@@ -61,7 +63,7 @@
       showDistributionModal = true;
     } catch (e) {
       console.error(e);
-      alert("Errore caricamento contratto.");
+      toast.error("Errore caricamento contratto.");
     } finally {
       loading = false;
     }
@@ -124,9 +126,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Dettaglio Incasso | Gestoray</title>
-</svelte:head>
+
 
 <div class="payment-details-page animate-fade-in">
   <div class="page-top-actions">

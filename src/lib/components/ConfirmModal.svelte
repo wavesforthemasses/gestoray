@@ -1,18 +1,38 @@
 <script lang="ts">
-  import { confirmStore } from '$lib/stores/confirm';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { ShieldAlert, X } from '@lucide/svelte';
   import { fade, scale } from 'svelte/transition';
   import Button from './Button.svelte';
 
+  let inputValue = $state('');
+
+  $effect(() => {
+    if (confirmStore.isOpen) {
+      inputValue = confirmStore.defaultValue || '';
+    }
+  });
+
   function handleKeydown(e: KeyboardEvent) {
-    if (!$confirmStore.isOpen) return;
+    if (!confirmStore.isOpen) return;
     if (e.key === 'Escape') confirmStore.close();
+    if (e.key === 'Enter') handleConfirm();
+  }
+
+  function handleConfirm() {
+    if (confirmStore.inputMode === 'match') {
+      if (inputValue !== confirmStore.expectedText) return;
+      confirmStore.onConfirm();
+    } else if (confirmStore.inputMode === 'text') {
+      confirmStore.onConfirm(inputValue);
+    } else {
+      confirmStore.onConfirm();
+    }
   }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-{#if $confirmStore.isOpen}
+{#if confirmStore.isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="modal-overlay" transition:fade={{ duration: 150 }} onclick={() => confirmStore.close()}>
@@ -28,12 +48,30 @@
       </div>
 
       <div class="modal-body">
-        <p>{$confirmStore.message}</p>
+        <p>{confirmStore.message}</p>
+        
+        {#if confirmStore.inputMode !== 'none'}
+          <div class="input-container">
+            <input 
+              type="text" 
+              bind:value={inputValue} 
+              class="confirm-input"
+              placeholder={confirmStore.inputMode === 'match' ? `Scrivi '${confirmStore.expectedText}'` : ''}
+              autofocus
+            />
+          </div>
+        {/if}
       </div>
 
       <div class="modal-actions">
         <Button variant="secondary" onclick={() => confirmStore.close()}>Annulla</Button>
-        <Button variant="danger" onclick={() => $confirmStore.onConfirm()}>Conferma</Button>
+        <Button 
+          variant="danger" 
+          disabled={confirmStore.inputMode === 'match' && inputValue !== confirmStore.expectedText}
+          onclick={handleConfirm}
+        >
+          Conferma
+        </Button>
       </div>
     </div>
   </div>
@@ -116,5 +154,25 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+  }
+
+  .input-container {
+    margin-top: 16px;
+  }
+
+  .confirm-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .confirm-input:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
   }
 </style>

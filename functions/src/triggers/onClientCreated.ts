@@ -1,0 +1,42 @@
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+
+export const onClientCreated = onDocumentCreated('clients/{clientId}', async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) return;
+
+  const data = snapshot.data();
+  const orig = data.original || {};
+
+  const generateSearchTerms = (text: string) => {
+    if (!text) return [];
+    const tokens = text.toLowerCase().replace(/[^a-z0-9]/g, ' ').split(' ').filter(t => t.trim().length > 0);
+    const result = new Set<string>();
+    tokens.forEach(t => {
+      let current = '';
+      for (const char of t) {
+        current += char;
+        result.add(current);
+      }
+    });
+    return Array.from(result);
+  };
+
+  const strToSearch = `${orig.nome || ''} ${orig.partitaIva || ''} ${orig.codiceFiscale || ''}`.trim();
+  const terms = generateSearchTerms(strToSearch);
+
+  await snapshot.ref.update({
+    derived: {
+      contractsCount: 0,
+      approvedContractsCount: 0,
+      totalContractValue: 0,
+      totalPaid: 0,
+      totalRemaining: 0,
+      activitiesCount: 0,
+      quotesCount: 0,
+      nncfDate: null,
+      nncfOrderId: null,
+      lastActivityDate: null,
+      textSearch: terms
+    }
+  });
+});

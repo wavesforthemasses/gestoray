@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { toast } from '$lib/stores/toast';
+  import { toast } from '$lib/stores/toast.svelte';
   import { activeRole, auth } from '$lib/auth';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';

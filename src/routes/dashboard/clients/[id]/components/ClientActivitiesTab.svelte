@@ -3,12 +3,12 @@
   import { Card, FormField, Button } from "$lib";
   import {
     MessageSquare,
-    Phone,
-    Calendar,
-    Users,
-    FileText,
     Clock,
+    FileText,
+    CheckCircle,
+    ActivitySquare
   } from "@lucide/svelte";
+  import { activitiesConfigStore } from "$lib/stores/activities";
 
   interface Props {
     activitiesList: any[];
@@ -16,23 +16,11 @@
     clientCreatedAt: string;
     newlyCreatedId: string;
 
-    // Bindables
-    activityNotesText: string;
-    appointmentDateTime: string;
-
     // State & actions
     activeRole: string | null;
     submittingActivity: boolean;
-    logActivity: (
-      type:
-        | "Telefonata"
-        | "Incontro"
-        | "Appuntamento"
-        | "Sollecito Telefonico"
-        | "Sollecito Email"
-        | "Sollecito PEC",
-      datetimeVal?: string,
-    ) => void;
+    logActivity: (type: string) => void;
+    updateActivity: (activityId: string, payload: any) => Promise<void>;
     handleAddNote: (e: Event) => void;
     parseNote: (
       noteRaw: string,
@@ -45,15 +33,39 @@
     clientCreatedAt,
     newlyCreatedId,
 
-    activityNotesText = $bindable(),
-    appointmentDateTime = $bindable(),
-
     activeRole,
     submittingActivity,
     logActivity,
+    updateActivity,
     handleAddNote,
     parseNote,
   }: Props = $props();
+
+  let editingId = $state<string | null>(null);
+  let editNotes = $state("");
+  let editDate = $state("");
+
+  function startEdit(item: any) {
+    if (item.source !== 'activity') return;
+    editingId = item.id;
+    editNotes = item.text || "";
+    // format date for datetime-local
+    const d = new Date(item.time);
+    editDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  function cancelEdit() {
+    editingId = null;
+  }
+
+  async function saveEdit(item: any) {
+    if (!editingId) return;
+    await updateActivity(editingId, {
+      notes: editNotes,
+      date: new Date(editDate).toISOString()
+    });
+    editingId = null;
+  }
 </script>
 
 <div class="tab-view animate-fade-in">
@@ -61,94 +73,26 @@
     {#if activeRole !== "direzione"}
       <!-- Activities Logger Form -->
       <Card
-        title="Registrazione Attività Semplificata"
-        description="Aggiungi una nota testuale e clicca sul pulsante dell'attività corrispondente. Le attività di Telefonata e Incontro verranno registrate all'istante, gli Appuntamenti consentono di pianificare data/ora."
+        title="Registrazione Rapida Attività"
+        description="Clicca sul pulsante corrispondente per registrare immediatamente l'attività. Potrai aggiungere note o programmare una data/ora cliccando su 'Modifica' nello storico qui sotto."
       >
         {#snippet icon()}
-          <MessageSquare size={20} class="icon-accent" />
+          <ActivitySquare size={20} class="icon-accent" />
         {/snippet}
 
-        <div class="activity-logger-shell">
-          <FormField
-            id="act-notes"
-            label="Note Attività"
-            helpText="Riassumi brevemente l'esito della telefonata o dell'incontro."
-          >
-            <textarea
-              id="act-notes"
-              bind:value={activityNotesText}
-              placeholder="es. Il cliente ha richiesto una quotazione per 3 licenze..."
-              rows="3"
+        <div class="quick-log-actions">
+          {#each $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')) as kpi}
+            <Button
+              onclick={() => logActivity(kpi.id)}
+              variant="outline"
               disabled={submittingActivity}
-            ></textarea>
-          </FormField>
-
-          <div class="appointment-time-picker">
-            <FormField
-              id="appt-date"
-              label="Data e Ora Appuntamento"
-              helpText="Richiesto solo in caso di registrazione Appuntamento."
             >
-              <input
-                type="datetime-local"
-                id="appt-date"
-                bind:value={appointmentDateTime}
-                disabled={submittingActivity}
-              />
-            </FormField>
-          </div>
-
-          <div class="quick-log-actions">
-            {#if activeRole === "amministrazione"}
-              <Button
-                onclick={() => logActivity("Sollecito Telefonico")}
-                variant="success"
-                disabled={submittingActivity}
-              >
-                <Phone size={14} /> Sollecito Telefonico
-              </Button>
-              <Button
-                onclick={() => logActivity("Sollecito Email")}
-                variant="warning"
-                disabled={submittingActivity}
-              >
-                <MessageSquare size={14} /> Sollecito Email
-              </Button>
-              <Button
-                onclick={() => logActivity("Sollecito PEC")}
-                variant="primary"
-                disabled={submittingActivity}
-              >
-                <Calendar size={14} /> Sollecito PEC
-              </Button>
-            {:else}
-              <Button
-                onclick={() => logActivity("Telefonata")}
-                variant="success"
-                disabled={submittingActivity}
-              >
-                <Phone size={14} /> Registra Telefonata
-              </Button>
-              <Button
-                onclick={() => logActivity("Incontro")}
-                variant="warning"
-                disabled={submittingActivity}
-              >
-                <Users size={14} /> Registra Incontro
-              </Button>
-              <Button
-                onclick={() =>
-                  logActivity(
-                    "Appuntamento",
-                    new Date(appointmentDateTime).toISOString(),
-                  )}
-                variant="primary"
-                disabled={submittingActivity || !appointmentDateTime}
-              >
-                <Calendar size={14} /> Registra Appuntamento
-              </Button>
-            {/if}
-          </div>
+              {kpi.name}
+            </Button>
+          {/each}
+          {#if $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')).length === 0}
+            <p style="color: var(--color-neutral-500); font-size: 13px;">Nessun KPI disponibile per il tuo ruolo.</p>
+          {/if}
         </div>
       </Card>
 
@@ -251,10 +195,29 @@
                     >{formatDateTime(item.time)}</span
                   >
                   <span class="item-author">&bull; {item.author}</span>
+                  {#if item.source === 'activity'}
+                    <button class="btn-edit-inline" onclick={() => startEdit(item)}>Modifica</button>
+                  {/if}
                 </div>
-                <p class="card-text">
-                  {item.text || "Nessuna nota aggiuntiva."}
-                </p>
+                
+                {#if editingId === item.id}
+                  <div class="edit-activity-form">
+                    <FormField id="edit-date-{item.id}" label="Data e Ora">
+                      <input type="datetime-local" bind:value={editDate} disabled={submittingActivity} />
+                    </FormField>
+                    <FormField id="edit-notes-{item.id}" label="Note">
+                      <textarea bind:value={editNotes} rows="3" disabled={submittingActivity}></textarea>
+                    </FormField>
+                    <div class="edit-actions">
+                      <Button variant="outline" onclick={cancelEdit} disabled={submittingActivity}>Annulla</Button>
+                      <Button variant="primary" onclick={() => saveEdit(item)} disabled={submittingActivity}>Salva Modifiche</Button>
+                    </div>
+                  </div>
+                {:else}
+                  <p class="card-text">
+                    {item.text || "Nessuna nota aggiuntiva."}
+                  </p>
+                {/if}
               </div>
             {/each}
           </div>
@@ -318,6 +281,35 @@
   }
   .appt-btn:hover:not(:disabled) {
     background: var(--color-primary-600);
+  }
+  .btn-edit-inline {
+    background: none;
+    border: none;
+    color: var(--color-primary-600);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .btn-edit-inline:hover {
+    background: var(--color-primary-50);
+  }
+  .edit-activity-form {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-neutral-200);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .simple-note-form {
     display: flex;

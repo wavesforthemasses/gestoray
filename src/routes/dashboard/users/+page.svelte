@@ -5,17 +5,26 @@
   import { goto } from '$app/navigation';
   
   import { UsersService, type UserData } from './users.service';
+  import { QualificationsService, type Qualification } from '$lib/services/qualifications';
   import UsersTable from './components/UsersTable.svelte';
   import UserAddForm from './components/UserAddForm.svelte';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Gestione Utenti');
 
   let showAddForm = $state(false);
   let registeredUsers = $state<UserData[]>([]);
+  let qualificationsList = $state<Qualification[]>([]);
 
   async function fetchUsers() {
     try {
-      registeredUsers = await UsersService.getUsers();
+      const [users, quals] = await Promise.all([
+        UsersService.getUsers(),
+        QualificationsService.getAll()
+      ]);
+      registeredUsers = users;
+      qualificationsList = quals;
     } catch (e) {
-      console.error('Error fetching users:', e);
+      console.error('Error fetching users/qualifications:', e);
     }
   }
 
@@ -37,9 +46,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Gestione Utenti | Gestoray</title>
-</svelte:head>
+
 
 <div class="users-container animate-fade-in">
   {#if !showAddForm}
@@ -50,7 +57,8 @@
     />
   {:else}
     <UserAddForm 
-      usersList={registeredUsers} 
+      usersList={registeredUsers}
+      {qualificationsList}
       creatorUid={$auth?.uid || 'system'} 
       onCancel={() => showAddForm = false} 
       onSuccess={handleAddSuccess} 

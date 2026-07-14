@@ -1,6 +1,8 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRole } from '$lib/auth';
+  import { pageTitle } from '$lib/stores/page';
+  pageTitle.set('Gestione Qualifiche');
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { QualificationsService, type Qualification } from '$lib/services/qualifications';
@@ -41,9 +43,7 @@
   }
 </script>
 
-<svelte:head>
-  <title>Gestione Qualifiche | Gestoray</title>
-</svelte:head>
+
 
 <div class="qualifications-page animate-fade-in">
   {#if loading}

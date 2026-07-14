@@ -21,6 +21,7 @@
     usersList: any[];
     activeRole: string;
     formatCurrency: (val: number) => string;
+    activitiesConfig: any[];
   }
 
   let {
@@ -40,8 +41,11 @@
     drillDownItems,
     usersList,
     activeRole,
-    formatCurrency
+    formatCurrency,
+    activitiesConfig
   }: Props = $props();
+
+  const allowedActivities = $derived(activitiesConfig.filter(a => a.rolesView.includes(activeRole || 'superadmin')));
 
   let chartWrapperW = $state(0);
   let chartWrapperH = $state(0);
@@ -67,30 +71,18 @@
         >
           NA
         </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "Telefonata"}
-          onclick={() => { activeChartTab = "Telefonata"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.TF.label} - ${KPI_LEGEND.TF.description}`}
-        >
-          TF
-        </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "Incontro"}
-          onclick={() => { activeChartTab = "Incontro"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.IF.label} - ${KPI_LEGEND.IF.description}`}
-        >
-          IF
-        </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "Appuntamento"}
-          onclick={() => { activeChartTab = "Appuntamento"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.AF.label} - ${KPI_LEGEND.AF.description}`}
-        >
-          AF
-        </button>
+
+        {#each allowedActivities as act}
+          <button
+            class="chart-tab-btn"
+            class:active={activeChartTab === act.id}
+            onclick={() => { activeChartTab = act.id; selectedPointIdx = null; }}
+            title={act.name}
+          >
+            {act.acronym || act.name.substring(0, 3).toUpperCase()}
+          </button>
+        {/each}
+
         <button
           class="chart-tab-btn"
           class:active={activeChartTab === "nncf"}
