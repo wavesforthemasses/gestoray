@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft } from '@lucide/svelte';
@@ -13,19 +13,20 @@
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Gestione Clienti CRM');
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
 
     fetchClients();
-    return () => unsubscribe();
   });
 
   let clientsList = $state<any[]>([]);
@@ -57,7 +58,7 @@
     }
     
     try {
-      const result = await ClientsService.fetchClients(searchVal, $activeRole || '', $auth?.uid, 50, lastVisible);
+      const result = await ClientsService.fetchClients(searchVal, activeRoleState.role || '', authState.user?.uid, 50, lastVisible);
       
       if (reset) {
         clientsList = result.list;
@@ -91,7 +92,7 @@
       bind:isGraphExpanded 
       onToggle={toggleGraph}
       bind:selectedPointIdx
-      onPointSelect={(idx) => selectedPointIdx = idx}
+      onPointSelect={(idx: number | null) => selectedPointIdx = idx}
       bind:chartPeriods
     />
 
@@ -104,7 +105,7 @@
       <ClientsTable 
         {clientsList}
         bind:searchQuery
-        onSearch={(q) => fetchClients(q, true)}
+        onSearch={(q: string) => fetchClients(q, true)}
         onReset={() => { searchQuery = ''; fetchClients(undefined, true); }}
         onAddClick={() => showAddForm = true}
         {selectedPeriod}

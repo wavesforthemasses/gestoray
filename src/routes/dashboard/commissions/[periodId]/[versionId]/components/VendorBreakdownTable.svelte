@@ -37,7 +37,7 @@
   {/snippet}
 
   {#if vendorSummary.length === 0}
-    <div class="empty-txt" style="padding: 24px; text-align: center; color: var(--color-neutral-500);">Nessun commerciale attivo trovato nel database.</div>
+    <div class="empty-txt empty-panel-padding center-text subdued-text">Nessun commerciale attivo trovato nel database.</div>
   {:else}
     <table class="widescreen-table">
       <thead>
@@ -51,10 +51,10 @@
       </thead>
       <tbody>
         {#each vendorSummary as row}
-          <tr style="cursor: pointer;" onclick={() => toggleRow(row.uid)} title="Clicca per mostrare/nascondere il dettaglio delle operazioni">
+          <tr class="pointer-row" onclick={() => toggleRow(row.uid)} title="Clicca per mostrare/nascondere il dettaglio delle operazioni">
             <td>
-              <div class="user-cell" style="display: flex; align-items: center; gap: 8px; flex-direction: row;">
-                <div style="color: var(--color-primary-500); transform: {expandedRows[row.uid] ? 'rotate(90deg)' : 'rotate(0)'}; transition: transform 0.2s;">
+              <div class="user-cell flex-row-center gap-8">
+                <div class="expand-icon" style="transform: {expandedRows[row.uid] ? 'rotate(90deg)' : 'rotate(0)'};">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </div>
                 <span class="u-name">{row.name}</span>
@@ -64,20 +64,20 @@
               <span class="badge qual-badge">{row.qualification.toUpperCase()}</span>
             </td>
             <td><strong>€ {row.sales.toFixed(2)}</strong></td>
-            <td><strong style="color: var(--color-success-text); font-size: 14px;">€ {row.commission.toFixed(2)}</strong></td>
+            <td><strong class="success-text text-md">€ {row.commission.toFixed(2)}</strong></td>
             <td>
               <StatusBadge status={isClosingFinalized ? 'approved' : 'draft'} label={isClosingFinalized ? 'Pronta per Fatturazione' : 'Bozza Salvata'} />
             </td>
           </tr>
           {#if expandedRows[row.uid]}
             <tr class="details-row">
-              <td colspan="5" style="padding: 0; background: var(--color-neutral-50);">
-                <div style="padding: 16px 24px; border-top: 1px solid var(--color-neutral-200);">
-                  <h4 style="margin: 0 0 12px 0; font-size: 13px; color: var(--color-neutral-600); font-weight: 600;">Dettaglio Maturazione Provvigionale</h4>
+              <td colspan="5" class="details-td">
+                <div class="details-container">
+                  <h4 class="details-title">Dettaglio Maturazione Provvigionale</h4>
                   {#if !row.details || row.details.length === 0}
-                    <div style="font-size: 13px; color: var(--color-neutral-500);">Nessun dettaglio disponibile per questo consulente.</div>
+                    <div class="subdued-text text-sm">Nessun dettaglio disponibile per questo consulente.</div>
                   {:else}
-                    <table class="widescreen-table details-inner-table" style="box-shadow: none; border: 1px solid var(--color-neutral-200); background: white;">
+                    <table class="widescreen-table details-inner-table no-shadow white-bg bordered-table">
                       <thead>
                         <tr>
                           <th>ID Incasso</th>
@@ -91,15 +91,15 @@
                         {#each row.details as det}
                           <tr>
                             <td>
-                              <a href="/dashboard/payments/{det.paymentId}" class="link-btn-text" style="font-size: 11px;">Vedi Incasso</a>
+                              <a href="/dashboard/payments/{det.paymentId}" class="link-btn-text text-xs">Vedi Incasso</a>
                             </td>
                             <td>
-                              <div style="font-size: 12px; font-weight: 500;">{det.clientName}</div>
-                              <a href="/dashboard/contracts/{det.contractId}" class="link-btn-text" style="font-size: 11px;">Vedi Contratto</a>
+                              <div class="font-medium text-sm">{det.clientName}</div>
+                              <a href="/dashboard/contracts/{det.contractId}" class="link-btn-text text-xs">Vedi Contratto</a>
                             </td>
-                            <td><span style="font-size: 12px;">{det.productName}</span></td>
-                            <td><strong style="font-size: 12px;">€ {det.allocatedAmount.toFixed(2)}</strong></td>
-                            <td><strong style="color: var(--color-success-text); font-size: 13px;">€ {det.commission.toFixed(2)}</strong></td>
+                            <td><span class="text-sm">{det.productName}</span></td>
+                            <td><strong class="text-sm">€ {det.allocatedAmount.toFixed(2)}</strong></td>
+                            <td><strong class="success-text text-md-sm">€ {det.commission.toFixed(2)}</strong></td>
                           </tr>
                         {/each}
                       </tbody>
@@ -199,4 +199,39 @@
   .link-btn-text:hover {
     text-decoration: underline;
   }
+
+  .empty-panel-padding { padding: 24px; }
+  .center-text { text-align: center; }
+  .subdued-text { color: var(--color-neutral-500); }
+  .pointer-row { cursor: pointer; }
+  .flex-row-center { display: flex; align-items: center; flex-direction: row; }
+  .gap-8 { gap: 8px; }
+  .expand-icon {
+    color: var(--color-primary-500);
+    transition: transform 0.2s;
+  }
+  .success-text { color: var(--color-success-text); }
+  .text-md { font-size: 14px; }
+  .text-sm { font-size: 12px; }
+  .text-xs { font-size: 11px; }
+  .text-md-sm { font-size: 13px; }
+  .font-medium { font-weight: 500; }
+  
+  .details-td {
+    padding: 0;
+    background: var(--color-neutral-50);
+  }
+  .details-container {
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-neutral-200);
+  }
+  .details-title {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: var(--color-neutral-600);
+    font-weight: 600;
+  }
+  .no-shadow { box-shadow: none; }
+  .white-bg { background: white; }
+  .bordered-table { border: 1px solid var(--color-neutral-200); }
 </style>

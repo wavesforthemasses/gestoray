@@ -93,7 +93,7 @@
           cy={pt.y}
           r="12"
           fill="transparent"
-          style="cursor: pointer;"
+          class="cursor-pointer"
           role="button"
           tabindex="0"
           aria-label="Seleziona punto grafico {idx + 1}"
@@ -105,6 +105,8 @@
           }}
         />
         <!-- Visual dot -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
         <circle
           cx={pt.x}
           cy={pt.y}
@@ -208,5 +210,9 @@
 
   .clear-filter-btn:hover {
     background: var(--color-secondary-100);
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
   }
 </style>

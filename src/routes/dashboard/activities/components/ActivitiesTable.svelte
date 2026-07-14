@@ -37,9 +37,31 @@
       list.push({ key: 'loggedEmail', header: 'Eseguito Da' });
     }
 
+    list.push({ key: 'actions', header: 'Azioni' });
+
     return list;
   });
 </script>
+
+{#snippet cell(col: any, row: any)}
+  {#if col.key === 'date'}
+    <span class="date-txt">{formatDateTime(row.date)}</span>
+  {:else if col.key === 'clientName'}
+    <span class="client-name">{row.clientName}</span>
+  {:else if col.key === 'type'}
+    <span class="badge badge-inc">
+      {row.type}
+    </span>
+  {:else if col.key === 'notes'}
+    <p class="notes-txt" title={row.notes}>{row.notes || 'Nessuna nota registrata.'}</p>
+  {:else if col.key === 'loggedEmail'}
+    <span class="logged-txt">{row.loggedEmail}</span>
+  {:else if col.key === 'actions'}
+    <a href={`/dashboard/clients/${row.clientId}?tab=activities`} class="back-link-btn action-link" onclick={(e) => e.stopPropagation()}>
+      Dettaglio
+    </a>
+  {/if}
+{/snippet}
 
 <Card
   title="Registro Attività Commerciali"
@@ -73,28 +95,15 @@
     </div>
   {/snippet}
 
-  {#snippet cell(col: any, row: any)}
-    {#if col.key === 'date'}
-      <span class="date-txt">{formatDateTime(row.date)}</span>
-    {:else if col.key === 'clientName'}
-      <span class="client-name">{row.clientName}</span>
-    {:else if col.key === 'type'}
-      <span class="badge badge-inc">
-        {row.type}
-      </span>
-    {:else if col.key === 'notes'}
-      <p class="notes-txt" title={row.notes}>{row.notes || 'Nessuna nota registrata.'}</p>
-    {:else if col.key === 'loggedEmail'}
-      <span class="logged-txt">{row.loggedEmail}</span>
-    {/if}
-  {/snippet}
+
+
+
 
   <div class="table-wrapper">
     <Table
       {columns}
       data={filteredActivities}
       cellSnippet={cell}
-      onRowClick={onRowClick}
       emptyText="Nessuna attività registrata corrispondente ai filtri impostati."
     />
   </div>
@@ -184,9 +193,7 @@
     display: inline-block;
   }
 
-  .badge-tel { background: var(--color-info-600, #0284c7); }
   .badge-inc { background: var(--color-success-600, #0d9488); }
-  .badge-app { background: var(--color-primary-600, #4f46e5); }
 
   .notes-txt {
     margin: 0;
@@ -210,5 +217,25 @@
 
   :global(.icon-accent) {
     color: var(--color-primary-500);
+  }
+
+  .back-link-btn {
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    color: var(--color-neutral-600);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    padding: 4px 8px;
+    font-size: 11px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .back-link-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
   }
 </style>

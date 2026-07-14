@@ -3,7 +3,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { page } from '$app/stores';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { pageTitle } from '$lib/stores/page';
@@ -70,10 +70,10 @@
   }
 
   async function handleSaveDistribution() {
-    if (!selectedAlloc || !$auth) return;
+    if (!selectedAlloc || !authState.user) return;
     submitting = true;
     try {
-      await PaymentDetailService.saveDistribution(paymentId, selectedAlloc.id, productAllocations, $auth.uid);
+      await PaymentDetailService.saveDistribution(paymentId, selectedAlloc.id, productAllocations, authState.user.uid);
       showDistributionModal = false;
       toast.success('Distribuzione salvata.');
       await fetchPaymentDetails();
@@ -97,15 +97,16 @@
     }
   }
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     fetchPaymentDetails();
-    return () => unsubscribe();
   });
 
   async function handleDeletePayment() {
@@ -130,9 +131,9 @@
 
 <div class="payment-details-page animate-fade-in">
   <div class="page-top-actions">
-    <button onclick={() => goto('/dashboard/payments')} class="back-link-btn">
+    <a href="/dashboard/payments" class="back-link-btn action-link">
       <ArrowLeft size={16} /> Torna al registro incassi
-    </button>
+    </a>
     <h2 class="title-header">Dettaglio Incasso</h2>
   </div>
 
@@ -159,7 +160,7 @@
 
       <!-- Danger Delete Panel -->
       <PaymentAdminActions 
-        activeRole={$activeRole}
+        activeRole={activeRoleState.role}
         {submitting}
         onDeletePayment={handleDeletePayment}
       />
@@ -256,5 +257,9 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  .action-link {
+    text-decoration: none;
   }
 </style>

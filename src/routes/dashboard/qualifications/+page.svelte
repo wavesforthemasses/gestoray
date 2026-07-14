@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Gestione Qualifiche');
   import { onMount } from 'svelte';
@@ -12,15 +12,16 @@
   let qualificationsList = $state<Qualification[]>([]);
   let loading = $state(true);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin'])) {
-        goto('/dashboard');
-      }
-    });
 
     fetchQualifications();
-    return () => unsubscribe();
   });
 
   async function fetchQualifications() {

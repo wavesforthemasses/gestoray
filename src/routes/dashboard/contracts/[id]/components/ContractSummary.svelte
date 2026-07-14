@@ -29,7 +29,7 @@
       <div class="info-item">
         <span class="info-lbl">Consulente Commerciale</span>
         <span class="info-val">{contract.original?.vendorEmail}</span>
-        <span class="info-sub">Livello: <strong style="text-transform: uppercase;">{vendorQual}</strong></span>
+        <span class="info-sub">Livello: <strong class="uppercase-text">{vendorQual}</strong></span>
       </div>
 
       <div class="info-item">
@@ -43,7 +43,7 @@
           <StatusBadge status={contract.original?.status} />
         </div>
         {#if contract.original?.approvedAt}
-          <span class="info-sub" style="margin-top: 4px; display: block;">Approvato il {formatDateTime(contract.original.approvedAt)} da {contract.original.approvedEmail}</span>
+          <span class="info-sub block-mt-4">Approvato il {formatDateTime(contract.original.approvedAt)} da {contract.original.approvedEmail}</span>
         {/if}
       </div>
     </div>
@@ -68,26 +68,26 @@
       </div>
 
       {#if contract.original?.secondVendorUid}
-        <div class="co-selling-split-display" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-neutral-200); width: 100%;">
-          <h4 style="font-size: 13px; font-weight: 600; color: var(--color-neutral-800); margin-bottom: 8px;">Ripartizione Vendita / Co-Selling</h4>
-          <table class="split-table" style="width: 100%; font-size: 12px; border-collapse: collapse;">
+        <div class="co-selling-split-display split-container">
+          <h4 class="split-title">Ripartizione Vendita / Co-Selling</h4>
+          <table class="split-table split-styled-table">
             <thead>
-              <tr style="text-align: left; border-bottom: 1px solid var(--color-neutral-200);">
-                <th style="padding: 4px 0; color: var(--color-neutral-500);">Consulente</th>
-                <th style="padding: 4px 0; text-align: right; color: var(--color-neutral-500);">Quota %</th>
-                <th style="padding: 4px 0; text-align: right; color: var(--color-neutral-500);">Provvigione</th>
+              <tr class="split-header-row">
+                <th class="split-th split-th-left">Consulente</th>
+                <th class="split-th split-th-right">Quota %</th>
+                <th class="split-th split-th-right">Provvigione</th>
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom: 1px solid var(--color-neutral-100);">
-                <td style="padding: 6px 0; font-weight: 500;">{contract.original?.vendorEmail} (Principale)</td>
-                <td style="padding: 6px 0; text-align: right;">{100 - contract.original?.secondVendorShare}%</td>
-                <td style="padding: 6px 0; text-align: right; font-weight: 700; color: var(--color-neutral-800);">€ {(contract.derived?.commissionPrimary || 0).toFixed(2)}</td>
+              <tr class="split-body-row">
+                <td class="split-td split-td-left split-font-medium">{contract.original?.vendorEmail} (Principale)</td>
+                <td class="split-td split-td-right">{100 - contract.original?.secondVendorShare}%</td>
+                <td class="split-td split-td-right split-font-bold split-val-color">€ {(contract.derived?.commissionPrimary || 0).toFixed(2)}</td>
               </tr>
               <tr>
-                <td style="padding: 6px 0; font-weight: 500;">{contract.original?.secondVendorEmail} (Co-selling)</td>
-                <td style="padding: 6px 0; text-align: right;">{contract.original?.secondVendorShare}%</td>
-                <td style="padding: 6px 0; text-align: right; font-weight: 700; color: var(--color-neutral-800);">€ {(contract.derived?.commissionSecondary || 0).toFixed(2)}</td>
+                <td class="split-td split-td-left split-font-medium">{contract.original?.secondVendorEmail} (Co-selling)</td>
+                <td class="split-td split-td-right">{contract.original?.secondVendorShare}%</td>
+                <td class="split-td split-td-right split-font-bold split-val-color">€ {(contract.derived?.commissionSecondary || 0).toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
@@ -188,4 +188,61 @@
     color: var(--color-neutral-400);
     margin-top: 2px;
   }
+
+  .uppercase-text {
+    text-transform: uppercase;
+  }
+
+  .block-mt-4 {
+    margin-top: 4px;
+    display: block;
+  }
+
+  .split-container {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-neutral-200);
+    width: 100%;
+  }
+
+  .split-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-800);
+    margin-bottom: 8px;
+  }
+
+  .split-styled-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+  }
+
+  .split-header-row {
+    text-align: left;
+    border-bottom: 1px solid var(--color-neutral-200);
+  }
+
+  .split-th {
+    padding: 4px 0;
+    color: var(--color-neutral-500);
+  }
+
+  .split-th-left { text-align: left; }
+  .split-th-right { text-align: right; }
+
+  .split-body-row {
+    border-bottom: 1px solid var(--color-neutral-100);
+  }
+
+  .split-td {
+    padding: 6px 0;
+  }
+
+  .split-td-left { text-align: left; }
+  .split-td-right { text-align: right; }
+
+  .split-font-medium { font-weight: 500; }
+  .split-font-bold { font-weight: 700; }
+  .split-val-color { color: var(--color-neutral-800); }
 </style>

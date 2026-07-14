@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Plus } from '@lucide/svelte';
@@ -31,19 +31,20 @@
   let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
   let searchQuery = $state('');
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && currentRole !== 'superadmin' && currentRole !== 'amministrazione' && currentRole !== 'direzione') {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'amministrazione' && $activeRole !== 'direzione') {
-        goto('/dashboard');
-      }
-    });
 
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
 
     loadData(true);
-    return () => unsubscribe();
   });
 
   $effect(() => {
@@ -148,10 +149,10 @@
       {clientsList} 
       onCancel={() => { showAddForm = false; successMsg = ''; }} 
       onSuccess={handleAddSuccess}
-      authUser={$auth}
+      authUser={authState.user}
     />
   {:else}
-    {#if $activeRole !== 'direzione'}
+    {#if activeRoleState.role !== 'direzione'}
       <div class="actions-header">
         <button onclick={() => { showAddForm = true; successMsg = ''; }} class="add-payment-btn">
           <Plus size={16} /> Registra Nuovo Incasso
@@ -168,12 +169,12 @@
       bind:chartPeriods
     />
 
-    <div class="search-bar" style="margin-bottom: 20px;">
+    <div class="search-bar search-bar-spaced">
        <input 
           type="text" 
           placeholder="Cerca incassi (es. nome cliente)..." 
           bind:value={searchQuery}
-          style="padding: 10px; width: 100%; max-width: 400px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-sm);"
+          class="search-input"
        />
     </div>
 
@@ -306,5 +307,17 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  .search-bar-spaced {
+    margin-bottom: 20px;
+  }
+
+  .search-input {
+    padding: 10px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-sm);
   }
 </style>

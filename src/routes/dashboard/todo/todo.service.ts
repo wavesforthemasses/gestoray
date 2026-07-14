@@ -39,14 +39,14 @@ export class TodoService {
       qClients = query(qClients, where('original.createdBy', '==', myUid));
     }
     queries.push(getDocs(qClients).then(snap => {
-      snap.forEach(doc => payload.clientsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
+      snap.forEach((doc: any) => payload.clientsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
     }));
 
     // 2. Contracts: Only pending approval (Only for admins)
     if (isAdmin) {
       const qContracts = query(collection(db, 'contracts'), where('original.status', '==', 'pending'));
       queries.push(getDocs(qContracts).then(snap => {
-        snap.forEach(doc => payload.contractsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
+        snap.forEach((doc: any) => payload.contractsList.push({ id: doc.id, ...doc.data()?.original, derived: doc.data()?.derived, edits: doc.data()?.edits }));
       }));
     }
 
@@ -56,7 +56,7 @@ export class TodoService {
       qInst = query(qInst, or(where('original.vendorUid', '==', myUid), where('original.secondVendorUid', '==', myUid)));
     }
     queries.push(getDocs(qInst).then(snap => {
-      snap.forEach(doc => payload.installmentsList.push({ id: doc.id, ...doc.data()?.original, edits: doc.data()?.edits }));
+      snap.forEach((doc: any) => payload.installmentsList.push({ id: doc.id, ...doc.data()?.original, edits: doc.data()?.edits }));
     }));
 
     await Promise.all(queries);

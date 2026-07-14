@@ -39,7 +39,7 @@
     'Mail': Mail
   };
 
-  const allowedActivities = $derived(activitiesConfig.filter(a => a.rolesView.includes('commerciale')));
+  const allowedActivities = $derived(activitiesConfig.filter((a: any) => a.rolesView.includes('commerciale')));
 </script>
 
 <section class="kpi-deck">

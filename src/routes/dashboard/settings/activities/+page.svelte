@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { db, doc, setDoc } from '$lib/firebase';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
+  import { goto } from '$app/navigation';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -41,13 +41,11 @@
     rolesView: ['superadmin', 'direzione', 'commerciale', 'amministrazione']
   });
 
-  onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
-    return () => unsubscribe();
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
   });
 
   function startCreate() {
@@ -170,7 +168,7 @@
 
 <div class="settings-page animate-fade-in">
   <div class="page-top-actions">
-    <Button variant="outline" onclick={() => goto('/dashboard/settings')}>
+    <Button variant="secondary" href="/dashboard/settings">
       <ArrowLeft size={16} /> Torna indietro
     </Button>
     <div class="title-header">
@@ -195,9 +193,9 @@
           </FormField>
         </div>
 
-        <div class="form-grid" style="margin-top: 16px;">
+        <div class="form-grid form-grid-spaced">
           <FormField id="kpi-acronym" label="Acronimo" helpText="Max 4 caratteri (es. TF, IF, AF).">
-            <input type="text" id="kpi-acronym" bind:value={formData.acronym} maxlength="4" style="text-transform: uppercase;" disabled={submitting} />
+            <input type="text" id="kpi-acronym" bind:value={formData.acronym} maxlength="4" class="uppercase-text" disabled={submitting} />
           </FormField>
           
           <FormField id="kpi-icon" label="Icona" helpText="Icona da mostrare nel riquadro della dashboard.">
@@ -215,7 +213,7 @@
           </FormField>
         </div>
 
-        <div class="form-grid" style="margin-top: 16px;">
+        <div class="form-grid form-grid-spaced">
           <label class="custom-checkbox flex-checkbox">
             <input type="checkbox" bind:checked={formData.hasNotes} disabled={submitting} />
             <span class="checkmark"></span>
@@ -228,7 +226,7 @@
           </label>
         </div>
 
-        <div class="roles-selection" style="margin-top: 32px;">
+        <div class="roles-selection roles-selection-spaced">
           <div class="roles-box">
             <h4>Chi può INSERIRE questa attività?</h4>
             <div class="roles-list">
@@ -236,7 +234,7 @@
                 <label class="custom-checkbox flex-checkbox">
                   <input type="checkbox" checked={formData.rolesInsert.includes(role)} onchange={() => toggleRole('rolesInsert', role)} disabled={submitting} />
                   <span class="checkmark"></span>
-                  <span class="lbl" style="text-transform: capitalize;">{role}</span>
+                  <span class="lbl capitalize-text">{role}</span>
                 </label>
               {/each}
             </div>
@@ -248,7 +246,7 @@
                 <label class="custom-checkbox flex-checkbox">
                   <input type="checkbox" checked={formData.rolesView.includes(role)} onchange={() => toggleRole('rolesView', role)} disabled={submitting} />
                   <span class="checkmark"></span>
-                  <span class="lbl" style="text-transform: capitalize;">{role}</span>
+                  <span class="lbl capitalize-text">{role}</span>
                 </label>
               {/each}
             </div>
@@ -257,7 +255,7 @@
       </div>
       <div class="card-footer">
         <div class="form-actions">
-          <Button variant="outline" onclick={cancelEdit} disabled={submitting}>Annulla</Button>
+          <Button variant="secondary" onclick={cancelEdit} disabled={submitting}>Annulla</Button>
           <Button variant="primary" onclick={saveItem} disabled={submitting}>
             {#if submitting}<div class="spinner-small"></div>{/if}
             Salva KPI
@@ -267,14 +265,14 @@
     </div>
   {:else}
     <div class="settings-card card">
-      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="card-header card-header-flex">
         <div class="header-text">
           <h3>KPI Attuali</h3>
           <p class="subtitle">Personalizza le tipologie di interazioni per le anagrafiche.</p>
         </div>
-        <div class="header-actions" style="display: flex; gap: 8px;">
+        <div class="header-actions">
           {#if $activitiesConfigStore.length === 0}
-            <Button variant="outline" onclick={loadDefaults} disabled={submitting}>Carica Default</Button>
+            <Button variant="secondary" onclick={loadDefaults} disabled={submitting}>Carica Default</Button>
           {/if}
           <Button variant="primary" onclick={startCreate} disabled={submitting}>
             <Plus size={16} /> Crea KPI
@@ -306,7 +304,7 @@
                     <span class="item-id">({kpi.id})</span>
                   </td>
                   <td>
-                    <span class="mini-tag" style="text-transform: uppercase;">{kpi.acronym || '-'}</span>
+                    <span class="mini-tag uppercase-text">{kpi.acronym || '-'}</span>
                   </td>
                   <td>
                     <span class="mini-tag">{kpi.icon || 'N/A'}</span>
@@ -622,5 +620,32 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .form-grid-spaced {
+    margin-top: 16px;
+  }
+
+  .roles-selection-spaced {
+    margin-top: 32px;
+  }
+
+  .uppercase-text {
+    text-transform: uppercase;
+  }
+
+  .capitalize-text {
+    text-transform: capitalize;
+  }
+
+  .card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
   }
 </style>

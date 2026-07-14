@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Card } from '$lib';
   import { DollarSign, FileText } from '@lucide/svelte';
-  import { goto } from '$app/navigation';
 
   interface Props {
     allocationsList: any[];
@@ -31,13 +30,13 @@
         <tbody>
           {#each allocationsList as alloc}
             <tr>
-              <td><span style="font-weight: 600; color: var(--color-neutral-800);">Contratto #{alloc.contractId.slice(-6).toUpperCase()}</span></td>
+              <td><span class="contract-id-text">Contratto #{alloc.contractId.slice(-6).toUpperCase()}</span></td>
               <td><strong>€ {alloc.amount?.toFixed(2)}</strong></td>
               <td>
                 <div class="actions-cell">
-                  <button onclick={() => goto(`/dashboard/contracts/${alloc.contractId}`)} class="back-link-btn outline-btn">
+                  <a href={`/dashboard/contracts/${alloc.contractId}`} class="back-link-btn outline-btn action-link">
                     <FileText size={12} /> Vedi Contratto
-                  </button>
+                  </a>
                   <button onclick={() => onOpenDistributionModal(alloc)} class="back-link-btn primary-outline-btn">
                     Distribuisci sui Servizi
                   </button>
@@ -122,5 +121,14 @@
 
   .primary-outline-btn:hover {
     background: var(--color-primary-50);
+  }
+
+  .contract-id-text {
+    font-weight: 600;
+    color: var(--color-neutral-800);
+  }
+
+  .action-link {
+    text-decoration: none;
   }
 </style>

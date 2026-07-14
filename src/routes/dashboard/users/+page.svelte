@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   
@@ -28,16 +28,16 @@
     }
   }
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin'])) {
-        goto('/dashboard');
-      }
-    });
 
     fetchUsers();
-
-    return () => unsubscribe();
   });
 
   async function handleAddSuccess() {
@@ -52,14 +52,14 @@
   {#if !showAddForm}
     <UsersTable 
       users={registeredUsers} 
-      activeRole={$activeRole} 
+      activeRole={activeRoleState.role} 
       onAddClick={() => showAddForm = true} 
     />
   {:else}
     <UserAddForm 
       usersList={registeredUsers}
       {qualificationsList}
-      creatorUid={$auth?.uid || 'system'} 
+      creatorUid={authState.user?.uid || 'system'} 
       onCancel={() => showAddForm = false} 
       onSuccess={handleAddSuccess} 
     />

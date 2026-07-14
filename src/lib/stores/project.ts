@@ -13,7 +13,7 @@ let unsubscribe: (() => void) | null = null;
 export function initProjectStore() {
   if (unsubscribe) return;
   const docRef = doc(db, 'settings', 'project');
-  unsubscribe = onSnapshot(docRef, (snap) => {
+  unsubscribe = onSnapshot(docRef, (snap: any) => {
     if (snap.exists()) {
       const data = snap.data();
       projectStore.set({
@@ -23,7 +23,7 @@ export function initProjectStore() {
     } else {
       projectStore.set({ projectName: '', projectEmail: '' });
     }
-  }, (err) => {
+  }, (err: any) => {
     console.error('Error fetching project settings:', err);
   });
 }

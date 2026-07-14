@@ -27,7 +27,7 @@ let unsubscribe: (() => void) | null = null;
 export function initMenuStore() {
   if (unsubscribe) return;
   const docRef = doc(db, 'settings', 'menu');
-  unsubscribe = onSnapshot(docRef, (snap) => {
+  unsubscribe = onSnapshot(docRef, (snap: any) => {
     if (snap.exists()) {
       const data = snap.data();
       menuConfigStore.set(data.list || DEFAULT_MENU_CONFIG);

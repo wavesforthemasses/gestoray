@@ -36,8 +36,8 @@
         <div class="pane-instruction">
           <p>Questo contratto è <strong>in attesa di validazione</strong>. Scegli come procedere con l'approvazione:</p>
         </div>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; justify-content: space-between; align-items: center; width: 100%;">
-          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div class="actions-row">
+          <div class="actions-group">
             <Button 
               onclick={onApproveOnly} 
               variant="primary"
@@ -47,7 +47,7 @@
             </Button>
             <Button 
               onclick={onApproveAndPlan} 
-              style="background: var(--color-primary-600);"
+              class="btn-primary-dark"
               disabled={submitting}
             >
               <Calendar size={16} /> Approva e Pianifica Rate
@@ -71,8 +71,8 @@
           {/if}
         </div>
       {:else}
-        <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
-          <div class="pane-success-msg" style="margin: 0; width: 100%;">
+        <div class="success-layout">
+          <div class="pane-success-msg pane-success-full">
             <CheckCircle size={24} class="success-icon" />
             <div>
               <h4>Contratto Approvato</h4>
@@ -80,7 +80,7 @@
             </div>
           </div>
           {#if (activeRole === 'superadmin' || activeRole === 'amministrazione')}
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; width: 100%; border-top: 1px solid var(--color-neutral-200); padding-top: 16px;">
+            <div class="danger-actions-row">
               <Button 
                 onclick={onReopenContract} 
                 variant="secondary"
@@ -146,5 +146,47 @@
     margin: 4px 0 0 0;
     font-size: 13px;
     color: var(--color-neutral-500);
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  :global(.btn-primary-dark) {
+    background: var(--color-primary-600) !important;
+  }
+
+  .success-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .pane-success-full {
+    margin: 0;
+    width: 100%;
+  }
+
+  .danger-actions-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    width: 100%;
+    border-top: 1px solid var(--color-neutral-200);
+    padding-top: 16px;
   }
 </style>

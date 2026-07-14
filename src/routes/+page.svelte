@@ -1,18 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { auth } from '$lib/auth';
+  import { authState } from '$lib/auth.svelte';
   import { projectStore } from '$lib/stores/project';
 
-  onMount(() => {
-    const unsubscribe = auth.subscribe(($auth) => {
-      if ($auth) {
-        goto('/dashboard');
-      } else {
-        goto('/login');
-      }
-    });
-    return () => unsubscribe();
+  $effect(() => {
+    if (authState.user) {
+      goto('/dashboard');
+    } else if (authState.user === null) {
+      goto('/login');
+    }
   });
 </script>
 

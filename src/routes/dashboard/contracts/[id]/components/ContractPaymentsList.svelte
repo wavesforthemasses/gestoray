@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Card } from '$lib';
   import { Wallet } from '@lucide/svelte';
-  import { goto } from '$app/navigation';
   import { formatDate } from '$lib/utils/formatters';
 
   interface Props {
@@ -35,19 +34,19 @@
           {#each paymentsList as pay}
             <tr>
               <td>
-                <span style="font-weight: 600;">
+                <span class="strong-date">
                   {pay.edits?.createdAt ? formatDate(pay.edits.createdAt) : 'N/D'}
                 </span>
               </td>
               <td><code>{pay.paymentId}</code></td>
               <td><strong>€ {pay.amount?.toFixed(2)}</strong></td>
               <td>
-                <button 
-                  onclick={() => goto(`/dashboard/payments/${pay.paymentId}`)} 
-                  class="back-link-btn" 
+                <a 
+                  href={`/dashboard/payments/${pay.paymentId}`} 
+                  class="back-link-btn action-link" 
                 >
                   <Wallet size={12} /> Dettaglio Incasso
-                </button>
+                </a>
               </td>
             </tr>
           {/each}
@@ -114,5 +113,13 @@
   .back-link-btn:hover {
     background: var(--color-neutral-100);
     color: var(--color-neutral-800);
+  }
+
+  .action-link {
+    text-decoration: none;
+  }
+
+  .strong-date {
+    font-weight: 600;
   }
 </style>

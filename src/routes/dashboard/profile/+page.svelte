@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { auth } from '$lib/auth';
+  import { authState } from '$lib/auth.svelte';
   import ProfileSettings from './components/ProfileSettings.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Il Mio Profilo');
 
   function handleUpdateSuccess(updatedAuth: any) {
-    auth.set(updatedAuth);
+    authState.user = updatedAuth;
   }
 </script>
 
 
 
 <div class="profile-container animate-fade-in">
-  {#if $auth}
+  {#if authState.user}
     <ProfileSettings 
-      authStore={$auth} 
+      authStore={authState.user} 
       onUpdateSuccess={handleUpdateSuccess} 
     />
   {/if}

@@ -204,7 +204,7 @@
         theme="info" 
         icon={CreditCard} 
         title="Incassi da Distribuire" 
-        value={'€ ' + adminUndistributedPayments.reduce((acc, p) => acc + (p.remainingToDistribute || 0), 0).toFixed(2)} 
+        value={'€ ' + adminUndistributedPayments.reduce((acc: any, p: any) => acc + (p.remainingToDistribute || 0), 0).toFixed(2)} 
         subtitle={`${adminUndistributedPayments.length} incassi in sospeso`} 
       />
 

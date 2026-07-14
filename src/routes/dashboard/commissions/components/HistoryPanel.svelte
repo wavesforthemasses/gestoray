@@ -28,22 +28,21 @@
           onclick={() => onSelectVersion(v)}
         >
           <div class="v-header-top">
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div class="v-header-title">
               <span class="v-num">Versione {versions.length - i}</span>
               {#if v.status === 'finalized'}
                 <CheckCircle2 size={14} class="v-icon-success" />
               {/if}
             </div>
             <button 
-              class="del-v-btn" 
+              class="del-v-btn btn-transparent-error" 
               title="Elimina Versione" 
               onclick={(e) => onDeleteVersion(e, v)}
-              style="background: transparent; border: none; color: var(--color-error); cursor: pointer; padding: 4px; display: flex; align-items: center; border-radius: 4px;"
             >
               <Trash2 size={14} />
             </button>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div class="v-details-row">
             <div>
               <div class="v-date">{formatDateTime(v.generatedAt)}</div>
               <div class="v-mode">Metodo: {v.calculationMode === 'historical' ? 'Storico' : 'Attuale'}</div>
@@ -113,9 +112,7 @@
     font-weight: 600;
   }
 
-  .v-icon-success {
-    color: var(--color-success);
-  }
+
 
   .v-date {
     font-size: 12px;
@@ -134,5 +131,28 @@
   
   .del-v-btn:hover {
     background: var(--color-error-light) !important;
+  }
+
+  .v-header-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-transparent-error {
+    background: transparent;
+    border: none;
+    color: var(--color-error);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+  }
+
+  .v-details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
   }
 </style>

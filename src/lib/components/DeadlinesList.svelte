@@ -58,10 +58,6 @@
 </Card>
 
 <style>
-  .deadline-icon {
-    color: var(--color-error);
-  }
-
   .overdue-row {
     background-color: var(--color-error-light);
   }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, Table, Button } from '$lib';
-  import { goto } from '$app/navigation';
+
 
   interface Props {
     myAllocations: any[];
@@ -35,11 +35,11 @@
       {:else if col.key === 'commission'}
         <span class="money-txt success">€ {row.commission.toFixed(2)}</span>
       {:else if col.key === 'actions'}
-        <div style="display: flex; gap: 8px;">
-          <Button size="sm" variant="secondary" onclick={() => goto(`/dashboard/payments/${row.paymentId}`)}>
+        <div class="actions-group">
+          <Button size="sm" variant="secondary" href={`/dashboard/payments/${row.paymentId}`}>
              Incasso
           </Button>
-          <Button size="sm" variant="secondary" onclick={() => goto(`/dashboard/contracts/${row.contractId}`)}>
+          <Button size="sm" variant="secondary" href={`/dashboard/contracts/${row.contractId}`}>
              Contratto
           </Button>
         </div>
@@ -84,5 +84,9 @@
   .money-txt.success {
     color: var(--color-success-500);
     font-size: 15px;
+  }
+  .actions-group {
+    display: flex;
+    gap: 8px;
   }
 </style>

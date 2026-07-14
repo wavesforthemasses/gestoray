@@ -7,7 +7,7 @@
     value: string | number;
     subtitle?: string;
     theme?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'teal' | 'indigo';
-    icon?: ComponentType<Icon>;
+    icon?: any;
     onclick?: () => void;
     titleAttr?: string;
     isActive?: boolean;
@@ -27,6 +27,7 @@
   }: Props = $props();
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div 
   class="kpi-tile border-{theme}" 
   class:clickable={!!onclick}

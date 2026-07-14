@@ -2,7 +2,7 @@
   import { Card, LineChart } from '$lib';
   import { TrendingUp, ChevronUp, ChevronDown } from '@lucide/svelte';
   import { DashboardService } from '../../dashboard.service';
-  import { activeRole, auth } from '$lib/auth';
+
 
   interface Props {
     chartData: number[];
@@ -55,24 +55,24 @@
         <TrendingUp size={20} class="icon-accent" />
       {/snippet}
 
-      <div class="chart-controls-box" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 16px;">
-        <div class="chart-granularity-picker" style="display: flex; gap: 16px; align-items: center;">
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Dettaglio</span>
+      <div class="chart-controls-box controls-layout">
+        <div class="chart-granularity-picker flex-row-gap16-align">
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Dettaglio</span>
             <select bind:value={granularity} class="sub-chart-select">
               <option value="settimanale">Settimanale</option>
               <option value="mensile">Mensile</option>
               <option value="annuale">Annuale</option>
             </select>
           </div>
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Fino al</span>
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Fino al</span>
             <input type="date" bind:value={endDateString} class="sub-chart-date-picker" />
           </div>
         </div>
       </div>
 
-      <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} style="flex: 1; min-height: 250px; width: 100%; display: flex; flex-direction: column;">
+      <div class="chart-flex-wrapper chart-container-layout" bind:clientWidth={chartWrapperW}>
         {#if chartWrapperW > 0}
           <LineChart
             data={computedChartPoints}
@@ -131,5 +131,38 @@
     background: var(--color-white);
     color: var(--color-neutral-800);
     transition: border-color 0.2s;
+  }
+  .controls-layout {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+
+  .flex-row-gap16-align {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .flex-row-gap8-align {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .label-style {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-neutral-500);
+  }
+
+  .chart-container-layout {
+    flex: 1;
+    min-height: 250px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 </style>

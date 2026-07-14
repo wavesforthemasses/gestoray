@@ -3,7 +3,6 @@
   import { Button } from '$lib';
   import { Calendar, Clock, AlertTriangle, CheckCircle, Check, Play, User } from '@lucide/svelte';
   import type { TodoItem } from '../todo.service';
-  import { goto } from '$app/navigation';
 
   interface Props {
     item: TodoItem;
@@ -59,7 +58,7 @@
           </Button>
         {:else}
           <Button 
-            onclick={() => goto(`/dashboard/clients/${item.meta.clientId}?tab=profile`)} 
+            href={`/dashboard/clients/${item.meta.clientId}?tab=profile`} 
             variant="secondary"
           >
             Visualizza Anagrafica
@@ -74,20 +73,20 @@
           </Button>
         {/if}
         <Button 
-          onclick={() => goto(`/dashboard/contracts/${item.meta.contractId}`)} 
+          href={`/dashboard/contracts/${item.meta.contractId}`} 
           variant="secondary"
         >
           Dettaglio Contratto
         </Button>
       {:else if item.type === 'prospect_followup'}
         <Button 
-          onclick={() => goto(`/dashboard/clients/${item.meta.clientId}`)} 
+          href={`/dashboard/clients/${item.meta.clientId}`} 
         >
           <Play size={12} /> Avvia Contratto / Log Attività
         </Button>
       {:else if item.type === 'quote_followup'}
         <Button 
-          onclick={() => goto(`/dashboard/clients/${item.meta.clientId}`)} 
+          href={`/dashboard/clients/${item.meta.clientId}`} 
         >
           <User size={12} /> Gestisci Preventivi
         </Button>

@@ -3,7 +3,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { page } from '$app/stores';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft, User, MessageSquare, FileText } from '@lucide/svelte';
@@ -110,12 +110,14 @@
     }
   }
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -126,12 +128,11 @@
     }
 
     loadAllData();
-    return () => unsubscribe();
   });
 
   async function handleUpdateProfile(e: Event) {
     e.preventDefault();
-    if (!$auth || !$activeRole) return;
+    if (!authState.user || !activeRoleState.role) return;
 
     if (!clientName.trim()) {
       toast.error("Il Nome Azienda è obbligatorio.");
@@ -163,10 +164,10 @@
 
       const newOriginal = await ClientDetailService.updateProfile(
         clientId, 
-        $activeRole, 
+        activeRoleState.role, 
         originalProfile, 
         newProfile, 
-        { uid: $auth.uid, email: $auth.email! }
+        { uid: authState.user.uid, email: authState.user.email! }
       );
 
       toast.success('Profilo cliente aggiornato con successo!');
@@ -180,7 +181,7 @@
   }
 
   async function handleDeleteClient() {
-    if ($activeRole !== 'superadmin') {
+    if (activeRoleState.role !== 'superadmin') {
       toast.error("Solo il Superadmin può eliminare un cliente.");
       return;
     }
@@ -213,10 +214,10 @@
   async function handleAddNote(e: Event) {
     e.preventDefault();
     const noteText = (e.target as any).noteText.value.trim();
-    if (!noteText || !$auth) return;
+    if (!noteText || !authState.user) return;
 
     try {
-      await ClientDetailService.addNote(clientId, clientNotes, noteText, { uid: $auth.uid, email: $auth.email! });
+      await ClientDetailService.addNote(clientId, clientNotes, noteText, { uid: authState.user.uid, email: authState.user.email! });
       (e.target as any).noteText.value = '';
       toast.success('Nota aggiunta con successo!');
       await loadAllData();
@@ -226,7 +227,7 @@
   }
 
   async function logActivity(type: string) {
-    if (!$auth) return;
+    if (!authState.user) return;
     submittingActivity = true;
 
     try {
@@ -238,7 +239,7 @@
         type, 
         '', // Empty note initially
         undefined, // Empty datetime initially
-        { uid: $auth.uid, email: $auth.email! }
+        { uid: authState.user.uid, email: authState.user.email! }
       );
 
       toast.success(`Attività registrata! Ora puoi modificarla se serve aggiungere note o date.`);
@@ -305,7 +306,7 @@
   );
 
   async function handleSaveQuote() {
-    if (quoteItems.length === 0 || !$auth) return;
+    if (quoteItems.length === 0 || !authState.user) return;
     submittingQuote = true;
     quoteErrorMsg = '';
     quoteSuccessMsg = '';
@@ -328,7 +329,7 @@
         secondVendorUid, 
         secondVendorEmail, 
         secondVendorShare, 
-        { uid: $auth.uid, email: $auth.email! }
+        { uid: authState.user.uid, email: authState.user.email! }
       );
       
       quoteItems = [];
@@ -344,7 +345,7 @@
   }
 
   async function convertToContract(items: typeof quoteItems, quoteId?: string) {
-    if (items.length === 0 || !$auth) return;
+    if (items.length === 0 || !authState.user) return;
     submittingQuote = true;
     quoteErrorMsg = '';
     quoteSuccessMsg = '';
@@ -366,7 +367,7 @@
         secondVendorUid, 
         secondVendorEmail, 
         secondVendorShare, 
-        { uid: $auth.uid, email: $auth.email! },
+        { uid: authState.user.uid, email: authState.user.email! },
         quoteId
       );
 
@@ -411,9 +412,9 @@
 <div class="client-details-page animate-fade-in">
   <Card class="header-card">
     <div class="page-top-actions">
-      <button onclick={() => goto('/dashboard/clients')} class="back-link-btn">
+      <a href="/dashboard/clients" class="back-link-btn action-link">
         <ArrowLeft size={16} /> Torna a elenco clienti
-      </button>
+      </a>
       <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
     </div>
 
@@ -464,7 +465,7 @@
           usersList={usersList}
           historyList={historyList}
           submittingProfile={submittingProfile}
-          activeRole={$activeRole}
+          activeRole={activeRoleState.role}
           originalProfile={originalProfile}
           contractsCount={clientDerived.contractsCount || 0}
           onUpdateProfile={handleUpdateProfile}
@@ -478,9 +479,8 @@
           clientNotes={clientNotes}
           clientCreatedAt={clientCreatedAt}
           newlyCreatedId={newlyCreatedId}
-          bind:activityNotesText
-          bind:appointmentDateTime
-          activeRole={$activeRole}
+
+          activeRole={activeRoleState.role}
           submittingActivity={submittingActivity}
           logActivity={logActivity}
           updateActivity={updateActivity}
@@ -495,14 +495,14 @@
           quotesList={quotesList}
           contractsList={contractsList}
           usersList={usersList}
-          auth={$auth}
+          auth={authState.user}
           bind:selectedProductId
           bind:itemPriceSold
           bind:itemQuantity
           bind:quoteItems
           bind:secondVendorUid
           bind:secondVendorShare
-          activeRole={$activeRole}
+          activeRole={activeRoleState.role}
           submittingQuote={submittingQuote}
           bind:quoteSuccessMsg
           bind:quoteErrorMsg
@@ -557,22 +557,6 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--color-neutral-800);
-  }
-
-  .status-alert-box {
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    margin-bottom: 20px;
-    background: var(--color-success-light);
-    border: 1px solid var(--color-success-border);
-    color: var(--color-success-text);
-  }
-
-  .status-alert-box.error {
-    background: var(--color-error-light);
-    border: 1px solid var(--color-error-border);
-    color: var(--color-error-text);
   }
 
   .loading-box {
@@ -640,5 +624,9 @@
   }
   .tab-content-panel {
     margin-top: 24px;
+  }
+
+  .action-link {
+    text-decoration: none;
   }
 </style>

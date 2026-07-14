@@ -1,4 +1,4 @@
-import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy, functions, httpsCallable } from "$lib/firebase";
+import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy, functions, httpsCallable, updateDoc } from "$lib/firebase";
 import { formatDate } from "$lib/utils/formatters";
 
 export interface DashboardKPIs {
@@ -100,7 +100,7 @@ export class DashboardService {
       
       const snaps = await Promise.all(queries);
       const naSnap = snaps.pop();
-      kpis.commTotalNA = naSnap.data().count;
+      kpis.commTotalNA = naSnap?.data()?.count || 0;
       
       allowedActivities.forEach((act, idx) => {
         kpis.activityCounts[act.id] = snaps[idx].data().count;
@@ -129,7 +129,7 @@ export class DashboardService {
         for (let i = 0; i < idsArray.length; i += 10) {
           const chunk = idsArray.slice(i, i + 10);
           const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk)));
-          chunkSnap.forEach(d => commIncassato += (d.data()?.original?.amount || 0));
+          chunkSnap.forEach((d: any) => commIncassato += (d.data()?.original?.amount || 0));
         }
       } catch (e) {
         console.error("Error GI comm", e);
@@ -302,7 +302,7 @@ export class DashboardService {
         for (let i = 0; i < idsArray.length; i += 30) {
           const chunk = idsArray.slice(i, i + 30);
           const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
-          chunkSnap.forEach(d => allocSnapDocs.push(d));
+          chunkSnap.forEach((d: any) => allocSnapDocs.push(d));
         }
         
         const validPaymentIds = new Set(allocSnapDocs.map((doc: any) => doc.data()?.original?.paymentId));

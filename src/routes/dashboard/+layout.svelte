@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { auth as clientAuth } from '$lib/firebase';
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
@@ -36,7 +36,7 @@
 
   async function handleLogout() {
     await clientSignOut(clientAuth);
-    auth.set(null);
+    authState.user = null;
     goto('/login');
   }
 </script>
@@ -67,39 +67,39 @@
       {/if}
     </div>
 
-    {#if $auth}
+    {#if authState.user}
       <div class="user-card" class:hidden-collapsed={isCollapsed}>
-        <div class="user-avatar" title={$auth.email}>
-          {($auth.email || 'U').substring(0, 1).toUpperCase()}
+        <div class="user-avatar" title={authState.user.email}>
+          {(authState.user.email || 'U').substring(0, 1).toUpperCase()}
         </div>
         <div class="user-info">
-          <span class="user-name">{$auth.email}</span>
-          {#if $auth.roles.length > 1}
+          <span class="user-name">{authState.user.email}</span>
+          {#if authState.user.roles.length > 1}
             <div class="role-selector">
               <span class="role-label">Ruolo Attivo</span>
-              <select bind:value={$activeRole} class="role-select">
-                {#each $auth.roles as r}
+              <select bind:value={activeRoleState.role} class="role-select">
+                {#each authState.user.roles as r}
                   <option value={r}>{r}</option>
                 {/each}
               </select>
             </div>
           {:else}
-            <span class="role-badge">{$auth.roles[0] || 'nessun ruolo'}</span>
+            <span class="role-badge">{authState.user.roles[0] || 'nessun ruolo'}</span>
           {/if}
         </div>
       </div>
       {#if isCollapsed}
-        <div class="user-card-collapsed" title="{$auth.email} - {$activeRole || $auth.roles[0]}">
+        <div class="user-card-collapsed" title="{authState.user.email} - {activeRoleState.role || authState.user.roles[0]}">
           <div class="user-avatar">
-            {($auth.email || 'U').substring(0, 1).toUpperCase()}
+            {(authState.user.email || 'U').substring(0, 1).toUpperCase()}
           </div>
         </div>
       {/if}
     {/if}
 
     <nav class="nav-menu">
-      {#if $activeRole}
-        {@const menuConf = $menuConfigStore.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.rolesView.includes($activeRole || '') }), {})}
+      {#if activeRoleState.role}
+        {@const menuConf = $menuConfigStore.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.rolesView.includes(activeRoleState.role || '') }), {} as Record<string, boolean>)}
 
         <a href="/dashboard" class="nav-item" class:active={$page.url.pathname === '/dashboard'} title="Dashboard">
           <span class="nav-icon"><LayoutDashboard size={18} /></span>
@@ -214,8 +214,12 @@
 
     <!-- KPI Legend Modal -->
     {#if showLegend}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div class="legend-modal-overlay" onclick={() => showLegend = false} role="presentation">
-        <div class="legend-modal" onclick={(e) => e.stopPropagation()} role="dialog">
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div class="legend-modal" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
           <div class="legend-header">
             <h3>Legenda KPI</h3>
             <button class="close-btn" onclick={() => showLegend = false} aria-label="Chiudi">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { Card, FormField } from '$lib';
   import { Plus, ArrowLeft } from '@lucide/svelte';
   import { ProductsService, type ProductData } from '../products.service';
@@ -12,9 +13,13 @@
 
   let { editingProduct, onCancel, onSuccess, onError } = $props();
 
-  let name = $state(editingProduct?.name || '');
-  let listPrice = $state<number | null>(editingProduct?.listPrice ?? null);
-  let minPrice = $state<number | null>(editingProduct?.minPrice ?? null);
+  let initialName = untrack(() => editingProduct?.name || '');
+  let initialListPrice = untrack(() => editingProduct?.listPrice ?? null);
+  let initialMinPrice = untrack(() => editingProduct?.minPrice ?? null);
+  
+  let name = $state(initialName);
+  let listPrice = $state<number | null>(initialListPrice);
+  let minPrice = $state<number | null>(initialMinPrice);
   let submitting = $state(false);
 
   $effect(() => {

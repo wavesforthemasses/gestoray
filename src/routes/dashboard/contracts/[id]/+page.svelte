@@ -4,7 +4,7 @@
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { formatDate } from '$lib/utils/formatters';
   import { page } from '$app/stores';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ContractProductsList, ContractSignatures, ContractInstallments } from "$lib";
@@ -113,7 +113,7 @@
   }
 
   async function saveEditedProducts() {
-    if (editQuoteItems.length === 0 || !$auth || !payload) return;
+    if (editQuoteItems.length === 0 || !authState.user || !payload) return;
     submitting = true;
     try {
       await ContractDetailService.saveEditedProducts(
@@ -123,7 +123,7 @@
         editSecondVendorUid,
         payload.usersList,
         editSecondVendorShare,
-        $auth.uid
+        authState.user.uid
       );
       toast.success('Prodotti e configurazione salvati con successo!');
       isEditingProducts = false;
@@ -148,22 +148,23 @@
     }
   }
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'commerciale', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'commerciale', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     fetchContractData();
-    return () => unsubscribe();
   });
 
   async function handleApproveOnly() {
-    if (!payload?.contract || !$auth) return;
+    if (!payload?.contract || !authState.user) return;
     submitting = true;
     try {
-      await ContractDetailService.approveOnly(contractId, $auth.uid, $auth.email!);
+      await ContractDetailService.approveOnly(contractId, authState.user.uid, authState.user.email!);
       toast.success('Contratto approvato con successo!');
       await fetchContractData();
     } catch (err: any) {
@@ -180,10 +181,10 @@
   }
 
   async function handleApproveAndCollect() {
-    if (!payload?.contract || !$auth) return;
+    if (!payload?.contract || !authState.user) return;
     submitting = true;
     try {
-      await ContractDetailService.approveAndCollectFull(contractId, $auth.uid, $auth.email!);
+      await ContractDetailService.approveAndCollectFull(contractId, authState.user.uid, authState.user.email!);
       toast.success('Contratto approvato ed incasso registrato correttamente!');
       await fetchContractData();
     } catch (err: any) {
@@ -215,12 +216,12 @@
   }
 
   async function handleReopenContract() {
-    if (!$auth) return;
+    if (!authState.user) return;
     const ok = await confirmStore.prompt("Sei sicuro di voler riaprire questo contratto e riportarlo in stato di attesa (pending)?");
     if (!ok) return;
     submitting = true;
     try {
-      await ContractDetailService.reopenContract(contractId, $auth.uid);
+      await ContractDetailService.reopenContract(contractId, authState.user.uid);
       toast.success('Contratto riportato in stato di BOZZA con successo!');
       await fetchContractData();
     } catch (err: any) {
@@ -277,11 +278,11 @@
   }
 
   async function saveSignature() {
-    if (!sigCanvas || !$auth) return;
+    if (!sigCanvas || !authState.user) return;
     submitting = true;
     try {
       const signatureDataUrl = sigCanvas.toDataURL('image/png');
-      await ContractDetailService.saveSignature(contractId, signatureDataUrl, $auth.uid);
+      await ContractDetailService.saveSignature(contractId, signatureDataUrl, authState.user.uid);
       toast.success('Firma del cliente salvata con successo!');
       await fetchContractData();
     } catch (err: any) {
@@ -293,12 +294,12 @@
   }
 
   async function handleClearSignatureDb() {
-    if (!$auth) return;
+    if (!authState.user) return;
     const ok = await confirmStore.prompt("Sei sicuro di voler rimuovere la firma esistente?");
     if (!ok) return;
     submitting = true;
     try {
-      await ContractDetailService.clearSignature(contractId, $auth.uid);
+      await ContractDetailService.clearSignature(contractId, authState.user.uid);
       toast.success('Firma rimossa.');
       await fetchContractData();
     } catch (err: any) {
@@ -318,7 +319,7 @@
 
   async function handleAddInstallment(e: Event) {
     e.preventDefault();
-    if (!payload?.contract || !installmentExpectedAmount || !$auth) return;
+    if (!payload?.contract || !installmentExpectedAmount || !authState.user) return;
     submitting = true;
     try {
       await ContractDetailService.addInstallment(
@@ -326,8 +327,8 @@
         contractId,
         installmentDueDate,
         installmentExpectedAmount,
-        $auth.uid,
-        $auth.email!
+        authState.user.uid,
+        authState.user.email!
       );
       toast.success('Nuova scadenza di pagamento inserita con successo!');
       installmentExpectedAmount = null;
@@ -342,7 +343,7 @@
   }
 
   async function handlePostponeInstallment(id: string, newDate: string) {
-    if (!payload?.contract || !$auth) return;
+    if (!payload?.contract || !authState.user) return;
     submitting = true;
     try {
       await ContractDetailService.postponeInstallment(
@@ -350,8 +351,8 @@
         contractId,
         id,
         newDate,
-        $auth.uid,
-        $auth.email!
+        authState.user.uid,
+        authState.user.email!
       );
       toast.success('Scadenza di pagamento posticipata con successo!');
       await fetchContractData();
@@ -387,15 +388,15 @@
   }
 
   async function handleCollectInstallment() {
-    if (!payload?.contract || !$auth || !selectedInstallmentId || installmentActualAmount === null) return;
+    if (!payload?.contract || !authState.user || !selectedInstallmentId || installmentActualAmount === null) return;
     submitting = true;
     try {
       await ContractDetailService.collectInstallment(
         contractId, 
         selectedInstallmentId, 
         installmentActualAmount, 
-        $auth.uid, 
-        $auth.email!,
+        authState.user.uid, 
+        authState.user.email!,
         productAllocations.filter(a => a.amount > 0)
       );
       toast.success(`Rata registrata come incassata per €${installmentActualAmount.toFixed(2)}!`);
@@ -415,9 +416,9 @@
 
 <div class="contract-details-page animate-fade-in">
   <div class="page-top-actions">
-    <button onclick={() => goto('/dashboard/contracts')} class="back-link-btn">
+    <a href="/dashboard/contracts" class="back-link-btn">
       <ArrowLeft size={16} /> Torna all'elenco contratti
-    </button>
+    </a>
     <h2 class="title-header">Gestione Contratto: <code>{contractId}</code></h2>
   </div>
 
@@ -485,7 +486,7 @@
       <!-- Signature Card -->
       <ContractSignatures
         contract={payload.contract}
-        activeRole={$activeRole}
+        activeRole={activeRoleState.role}
         bind:sigCanvas
         {startDrawing}
         {draw}
@@ -498,7 +499,7 @@
       <!-- Admin Actions Card -->
       <ContractAdminActions
         contract={payload.contract}
-        activeRole={$activeRole}
+        activeRole={activeRoleState.role}
         {submitting}
         onApproveOnly={handleApproveOnly}
         onApproveAndPlan={handleApproveAndPlanInstallments}
@@ -511,7 +512,7 @@
       <ContractInstallments
         installmentsList={payload.installmentsList}
         contract={payload.contract}
-        activeRole={$activeRole}
+        activeRole={activeRoleState.role}
         {formatDate}
         bind:selectedInstallmentId
         bind:installmentActualAmount

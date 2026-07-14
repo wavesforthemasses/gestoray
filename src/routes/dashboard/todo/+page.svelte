@@ -1,9 +1,10 @@
 <script lang="ts">
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { ContractService } from '$lib/services/ContractService';
   import { CheckCircle, RefreshCw } from '@lucide/svelte';
   import { TodoService, type TodoItem } from './todo.service';
   import { pageTitle } from '$lib/stores/page';
@@ -11,15 +12,16 @@
   import TodoItemCard from './components/TodoItemCard.svelte';
   import TodoInstallmentModal from './components/TodoInstallmentModal.svelte';
 
-  onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if (!$activeRole) {
-        goto('/login');
-      }
-    });
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole === null) return; // Still loading
+    if (!currentRole) {
+      goto('/login');
+    }
+  });
 
+  onMount(() => {
     fetchData();
-    return () => unsubscribe();
   });
 
   // Database lists
@@ -38,7 +40,7 @@
   async function fetchData() {
     loading = true;
     try {
-      const payload = await TodoService.fetchTodoData();
+      const payload = await TodoService.fetchTodoData(activeRoleState.role, authState.user?.uid);
       clientsList = payload.clientsList;
       contractsList = payload.contractsList;
       installmentsList = payload.installmentsList;
@@ -51,7 +53,7 @@
 
   // Derive Checklist items based on active role
   let todoItems = $derived(
-    TodoService.buildTodoItems(clientsList, contractsList, installmentsList, $activeRole, $auth?.uid)
+    TodoService.buildTodoItems(clientsList, contractsList, installmentsList, activeRoleState.role, authState.user?.uid)
   );
 
   // Action: Postpone Installment
@@ -61,7 +63,7 @@
 
     try {
       submitting = true;
-      await TodoService.postponeInstallment(contractId, installmentId, newDate, clientId, clientName, { uid: $auth!.uid, email: $auth!.email! });
+      await TodoService.postponeInstallment(contractId, installmentId, newDate, clientId, clientName, { uid: authState.user!.uid, email: authState.user!.email! });
       toast.success("Scadenza posticipata con successo!");
       await fetchData();
     } catch (e: any) {
@@ -74,10 +76,10 @@
 
   // Action: Collect Installment
   async function handleCollectInstallment(contractId: string, installmentId: string, actualAmount: number) {
-    if (!$auth) return;
+    if (!authState.user) return;
     try {
       submitting = true;
-      await TodoService.collectInstallment(contractId, installmentId, actualAmount, { uid: $auth.uid, email: $auth.email! });
+      await ContractService.collectInstallment(contractId, installmentId, actualAmount, authState.user.uid, authState.user.email!, []);
       toast.success("Rata incassata registrata correttamente!");
       showInstallmentModal = false;
       installmentActualAmount = null;
@@ -92,10 +94,10 @@
 
   // Action: Approve Contract
   async function handleApproveContract(contractId: string) {
-    if (!$auth) return;
+    if (!authState.user) return;
     try {
       submitting = true;
-      await TodoService.approveContract(contractId, { uid: $auth.uid, email: $auth.email! });
+      await ContractService.approveContract(contractId, authState.user.uid, authState.user.email!);
       toast.success("Contratto validato e approvato con successo!");
       await fetchData();
     } catch (e: any) {
@@ -113,7 +115,7 @@
 
   <div class="todo-header-banner">
     <h2>Mio Scadenziario To-Do</h2>
-    <p>Ecco l'elenco delle attività, dei solleciti di pagamento e delle approvazioni pronte per il ruolo di <strong>{$activeRole || ''}</strong>.</p>
+    <p>Ecco l'elenco delle attività, dei solleciti di pagamento e delle approvazioni pronte per il ruolo di <strong>{activeRoleState.role || ''}</strong>.</p>
     <button class="refresh-btn" onclick={fetchData} disabled={loading} title="Ricarica i dati">
       <RefreshCw size={14} class={loading ? 'spin-icon' : ''} /> Aggiorna Lista
     </button>
@@ -127,8 +129,8 @@
   {:else}
     <div class="todo-container">
       {#if todoItems.length === 0}
-        <div class="empty-panel" style="padding: 40px;">
-          <CheckCircle size={32} style="color: var(--color-success); margin-bottom: 12px;" />
+        <div class="empty-panel empty-panel-padding">
+          <CheckCircle size={32} class="empty-icon" />
           <h3>Tutto Svolto!</h3>
           <p>Non ci sono rate insolute, contratti da approvare o lead in attesa per il tuo ruolo.</p>
         </div>
@@ -137,7 +139,7 @@
           {#each todoItems as item}
             <TodoItemCard
               {item}
-              activeRole={$activeRole}
+              activeRole={activeRoleState.role}
               onPostpone={handlePostponeInstallment}
               onCollect={(cId, iId, amount) => {
                 selectedContractId = cId;
@@ -213,13 +215,7 @@
     color: var(--color-neutral-800);
   }
 
-  .spin-icon {
-    animation: spin 1s linear infinite;
-  }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 
   .todo-container {
     width: 100%;
@@ -261,6 +257,15 @@
     background: var(--color-white);
     border: 1px solid var(--color-neutral-200);
     border-radius: var(--radius-md);
+  }
+
+  .empty-panel-padding {
+    padding: 40px;
+  }
+
+  :global(.empty-icon) {
+    color: var(--color-success);
+    margin-bottom: 12px;
   }
 
   .empty-panel h3 {

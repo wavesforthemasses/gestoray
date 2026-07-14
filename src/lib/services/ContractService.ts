@@ -183,9 +183,11 @@ export class ContractService {
         });
         
         // Fix rounding issues
-        const sum = finalAllocations.reduce((acc, curr) => acc + curr.amount, 0);
-        if (Math.abs(sum - actualAmount) > 0.001 && finalAllocations.length > 0) {
-          finalAllocations[0].amount += Number((actualAmount - sum).toFixed(2));
+        if (finalAllocations) {
+          const sum = finalAllocations.reduce((acc: any, curr: any) => acc + curr.amount, 0);
+          if (Math.abs(sum - actualAmount) > 0.001 && finalAllocations.length > 0) {
+            finalAllocations[0].amount += Number((actualAmount - sum).toFixed(2));
+          }
         }
       } else {
         finalAllocations = [];
@@ -193,7 +195,7 @@ export class ContractService {
     }
 
     // Filter out 0 amounts
-    finalAllocations = finalAllocations.filter((a: any) => a.amount > 0);
+    if (finalAllocations) finalAllocations = finalAllocations.filter((a: any) => a.amount > 0);
 
     // 3. Update installment status in subcollection
     await updateDoc(doc(db, 'contracts', contractId, 'installments', installmentId), {

@@ -11,7 +11,7 @@
   let { totalIncassi, totalAllocated, totalCommissionsToLiquidate, isClosingFinalized } = $props();
 </script>
 
-<div class="kpi-grid" style="margin-bottom: 24px;">
+<div class="kpi-grid mb-24">
   <div class="kpi-card">
     <div class="kpi-icon"><Wallet size={20} /></div>
     <div class="kpi-info">
@@ -90,5 +90,9 @@
   .kpi-lbl {
     font-size: 12px;
     color: var(--color-neutral-500);
+  }
+
+  .mb-24 {
+    margin-bottom: 24px;
   }
 </style>

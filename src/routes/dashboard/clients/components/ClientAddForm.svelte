@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { auth } from '$lib/auth';
+  import { authState } from '$lib/auth.svelte';
   import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
   import { generateId } from '$lib/utils/helpers';
   import { generateSearchTerms } from '$lib';
@@ -20,7 +20,7 @@
 
   async function handleCreateClient(e: Event) {
     e.preventDefault();
-    if (!$auth) return;
+    if (!authState.user) return;
     if (!nome.trim()) {
       toast.error("Il Nome Azienda è obbligatorio.");
       return;
@@ -58,11 +58,11 @@
           codiceFiscale: codiceFiscale.trim(),
           status: 'prospect',
           notes: [],
-          createdBy: $auth.uid
+          createdBy: authState.user.uid
         },
         edits: {
           createdAt: now,
-          createdBy: $auth.uid
+          createdBy: authState.user.uid
         }
       };
 
@@ -72,8 +72,8 @@
       await setDoc(doc(db, 'clients', clientId, 'history', historyId), {
         original: {
           clientId,
-          updatedBy: $auth.uid,
-          updatedEmail: $auth.email,
+          updatedBy: authState.user.uid,
+          updatedEmail: authState.user.email,
           changes: {
             creation: { oldVal: null, newVal: 'created' }
           }
@@ -101,7 +101,7 @@
   }
 </script>
 
-<form onsubmit={handleCreateClient} class="client-form" style="display: grid; gap: 16px;">
+<form onsubmit={handleCreateClient} class="client-form form-grid-layout">
   <FormField id="client-name" label="Nome Azienda *" helpText="Ragione sociale o nome dell'attività.">
     <input
       type="text"
@@ -124,7 +124,7 @@
     />
   </FormField>
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+  <div class="form-grid-columns">
     <FormField id="client-cognome" label="Referente / Cognome" helpText="Cognome della persona di contatto.">
       <input
         type="text"
@@ -156,7 +156,7 @@
     />
   </FormField>
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+  <div class="form-grid-columns">
     <FormField id="client-piva" label="Partita IVA (Opzionale)">
       <input
         type="text"
@@ -178,7 +178,7 @@
     </FormField>
   </div>
 
-  <button type="submit" class="submit-btn" disabled={submitting} style="margin-top: 10px;">
+  <button type="submit" class="submit-btn mt-10" disabled={submitting}>
     {#if submitting}
       Salvataggio in corso...
     {:else}
@@ -207,5 +207,26 @@
   .submit-btn:disabled {
     background: var(--color-primary-400);
     cursor: not-allowed;
+  }
+
+  .form-grid-layout {
+    display: grid;
+    gap: 16px;
+  }
+
+  .form-grid-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .mt-10 {
+    margin-top: 10px;
   }
 </style>

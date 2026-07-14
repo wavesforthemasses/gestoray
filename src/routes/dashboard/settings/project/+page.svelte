@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { db, doc, getDoc, setDoc } from '$lib/firebase';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import { Card, FormField, Button } from '$lib';
@@ -16,16 +16,16 @@
   let loading = $state(true);
   let submitting = $state(false);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard/settings');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard/settings');
-      }
-    });
 
     loadSettings();
-
-    return () => unsubscribe();
   });
 
   async function loadSettings() {
@@ -70,9 +70,9 @@
 
 <div class="project-settings-page animate-fade-in">
   <div class="page-top-actions">
-    <button onclick={() => goto('/dashboard/settings')} class="back-link-btn">
+    <a href="/dashboard/settings" class="back-link-btn action-link">
       <ArrowLeft size={16} /> Torna a Impostazioni
-    </button>
+    </a>
     <h2 class="title-header">Configurazione Progetto</h2>
   </div>
 
@@ -111,7 +111,7 @@
         />
 
         {#if !resendApiKey}
-          <div class="alert warning" style="margin-top: -8px; font-size: 13px; color: #b45309; background: #fef3c7; padding: 8px 12px; border-radius: 6px;">
+          <div class="alert warning warning-box">
             ⚠️ <strong>Nessuna API Key inserita.</strong> L'invio reale delle email (ad es. i PIN d'accesso) è disattivato. I codici PIN verranno salvati solo nei log.
           </div>
         {/if}
@@ -151,5 +151,31 @@
     margin-top: 16px;
     display: flex;
     justify-content: flex-end;
+  }
+  .action-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-neutral-500);
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .action-link:hover {
+    color: var(--color-neutral-800);
+  }
+  .warning-box {
+    margin-top: -8px;
+    font-size: 13px;
+    color: #b45309;
+    background: #fef3c7;
+    padding: 8px 12px;
+    border-radius: 6px;
   }
 </style>

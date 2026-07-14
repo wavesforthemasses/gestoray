@@ -9,14 +9,14 @@
   let { allocationsList } = $props();
 </script>
 
-<div style="margin-top: 24px;">
+<div class="mt-24">
   <Card title="Dettaglio Distribuzione Incassi del Mese" description="Elenco di tutti i singoli incassi inclusi in questo calcolo salvato.">
     {#snippet icon()}
       <Clock size={20} class="icon-accent" />
     {/snippet}
 
     {#if allocationsList.length === 0}
-      <div class="empty-txt" style="padding: 24px; text-align: center; color: var(--color-neutral-500);">Nessuna transazione incassata in questo periodo.</div>
+      <div class="empty-txt empty-panel-padding center-text subdued-text">Nessuna transazione incassata in questo periodo.</div>
     {:else}
       <table class="widescreen-table">
         <thead>
@@ -33,10 +33,10 @@
           {#each allocationsList as alloc}
             <tr>
               <td>
-                <a href="/dashboard/payments/{alloc.paymentId}" class="link-btn-text" style="font-size: 11px;">Vedi Incasso</a>
+                <a href="/dashboard/payments/{alloc.paymentId}" class="link-btn-text text-sm">Vedi Incasso</a>
               </td>
               <td>
-                <a href="/dashboard/contracts/{alloc.contractId}" class="link-btn-text" style="font-size: 11px;">Vedi Contratto</a>
+                <a href="/dashboard/contracts/{alloc.contractId}" class="link-btn-text text-sm">Vedi Contratto</a>
               </td>
               <td>{alloc.clientName}</td>
               <td><strong>€ {alloc.amount.toFixed(2)}</strong></td>
@@ -105,5 +105,25 @@
   .no-co-seller {
     color: var(--color-neutral-400);
     font-size: 11.5px;
+  }
+
+  .mt-24 {
+    margin-top: 24px;
+  }
+
+  .empty-panel-padding {
+    padding: 24px;
+  }
+
+  .center-text {
+    text-align: center;
+  }
+
+  .subdued-text {
+    color: var(--color-neutral-500);
+  }
+
+  .text-sm {
+    font-size: 11px;
   }
 </style>

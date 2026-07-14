@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { confirmStore } from '$lib/stores/confirm.svelte';
@@ -16,15 +16,16 @@
   let showAddForm = $state(false);
   let editingProduct = $state<ProductData & { id: string } | null>(null);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && currentRole !== 'superadmin' && currentRole !== 'amministrazione') {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && $activeRole !== 'superadmin' && $activeRole !== 'amministrazione') {
-        goto('/dashboard');
-      }
-    });
 
     loadData();
-    return () => unsubscribe();
   });
 
   async function loadData() {

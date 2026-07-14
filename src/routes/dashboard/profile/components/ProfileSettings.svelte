@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Card, FormField } from '$lib';
+  import { untrack } from 'svelte';
   import { UserCog } from '@lucide/svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { ProfileService } from '../profile.service';
@@ -11,9 +12,13 @@
 
   let { authStore, onUpdateSuccess } = $props();
 
-  let newEmail = $state(authStore.email || '');
-  let nome = $state(authStore.nome || '');
-  let cognome = $state(authStore.cognome || '');
+  let initialEmail = untrack(() => authStore.email || '');
+  let initialNome = untrack(() => authStore.nome || '');
+  let initialCognome = untrack(() => authStore.cognome || '');
+
+  let newEmail = $state(initialEmail);
+  let nome = $state(initialNome);
+  let cognome = $state(initialCognome);
   let loading = $state(false);
 
   async function handleUpdateProfile(e: Event) {

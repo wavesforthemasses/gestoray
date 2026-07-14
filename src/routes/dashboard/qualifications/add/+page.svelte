@@ -1,7 +1,7 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card } from '$lib';
@@ -17,13 +17,14 @@
 
   let submitting = $state(false);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin'])) {
-        goto('/dashboard');
-      }
-    });
-    return () => unsubscribe();
   });
 
   async function handleCreate(e: Event) {
@@ -62,9 +63,9 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <button onclick={() => goto('/dashboard/qualifications')} class="back-link">
+      <a href="/dashboard/qualifications" class="back-link">
         <ArrowLeft size={14} /> Annulla
-      </button>
+      </a>
     {/snippet}
 
     <QualificationForm 

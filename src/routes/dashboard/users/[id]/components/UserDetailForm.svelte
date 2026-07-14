@@ -1,7 +1,6 @@
 <script lang="ts">
   import { FormField, RoleSelector } from '$lib';
   import { formatDateTime } from '$lib/utils/formatters';
-  import { goto } from '$app/navigation';
 
   interface Props {
     uid: string;
@@ -107,9 +106,9 @@
         Salva Modifiche
       {/if}
     </button>
-    <button type="button" onclick={() => goto('/dashboard/users')} class="cancel-btn" disabled={saving}>
+    <a href="/dashboard/users" class="cancel-btn {saving ? 'disabled' : ''}" onclick={(e) => { if (saving) e.preventDefault(); }} style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
       Annulla
-    </button>
+    </a>
   </div>
 </form>
 
@@ -189,5 +188,11 @@
   .cancel-btn:hover {
     background: var(--color-neutral-100);
     color: var(--color-neutral-800);
+  }
+
+  .cancel-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 </style>

@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import { page } from '$app/stores';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Dettagli Utente');
   import { UserDetailService } from './user-detail.service';
@@ -56,17 +56,17 @@
     }
   }
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin'])) {
-        goto('/dashboard');
-      }
-    });
 
     fetchUserDetails();
     fetchQualificationsAndSupervisors();
-
-    return () => unsubscribe();
   });
 
   async function handleUpdateUser(e: Event) {
@@ -109,9 +109,9 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <button onclick={() => goto('/dashboard/users')} class="back-link">
+      <a href="/dashboard/users" class="back-link">
         <ArrowLeft size={14} /> Torna all'elenco
-      </button>
+      </a>
     {/snippet}
 
     {#if loadingDetails}

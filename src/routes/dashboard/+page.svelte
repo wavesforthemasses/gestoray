@@ -1,7 +1,7 @@
 <script lang="ts">
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { auth, activeRole } from "$lib/auth";
+  import { authState, activeRoleState } from "$lib/auth.svelte";
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Dashboard');
   import { auth as clientAuth } from "$lib/firebase";
@@ -75,7 +75,7 @@
   async function loadKPIs() {
     loadingData = true;
     try {
-      const kpis = await DashboardService.fetchGlobalKPIs($activeRole || '', $auth?.uid || '', $activitiesConfigStore);
+      const kpis = await DashboardService.fetchGlobalKPIs(activeRoleState.role || '', authState.user?.uid || '', $activitiesConfigStore);
       commContractsCount = kpis.commContractsCount;
       commTotalSold = kpis.commTotalSold;
       commApprovedSold = kpis.commApprovedSold;
@@ -92,7 +92,7 @@
       commTotalNA = kpis.commTotalNA;
       usersList = kpis.usersList;
 
-      if ($activeRole === 'amministrazione' || $activeRole === 'superadmin') {
+      if (activeRoleState.role === 'amministrazione' || activeRoleState.role === 'superadmin') {
         loadingAdminTables = true;
         const tables = await DashboardService.fetchAdminTables(new Date().toISOString());
         adminPendingContracts = tables.adminPendingContracts;
@@ -115,8 +115,8 @@
     try {
       computedChartPoints = await DashboardService.fetchChartAggregations(
         chartPeriods, 
-        $activeRole || '', 
-        $auth?.uid || '', 
+        activeRoleState.role || '', 
+        authState.user?.uid || '', 
         activeChartTab
       );
     } finally {
@@ -135,8 +135,8 @@
       drillDownItems = await DashboardService.fetchDrillDownItems(
         chartPeriods[selectedPointIdx], 
         activeChartTab, 
-        $activeRole || '', 
-        $auth?.uid || '', 
+        activeRoleState.role || '', 
+        authState.user?.uid || '', 
         clientFilter, 
         vendorFilter, 
         productFilter
@@ -146,27 +146,24 @@
     }
   }
 
-  onMount(() => {
-    const unsubscribe = auth.subscribe(($auth) => {
-      if (!$auth) {
-        setTimeout(() => {
-          if (!$auth) goto("/login");
-        }, 800);
-      }
-    });
-    return () => unsubscribe();
+  $effect(() => {
+    if (authState.user === null) {
+      setTimeout(() => {
+        if (authState.user === null) goto("/login");
+      }, 800);
+    }
   });
 
   // Reactively fetch KPIs whenever auth or role changes
   $effect(() => {
-    if ($auth && $activeRole) {
+    if (authState.user && activeRoleState.role) {
       loadKPIs();
     }
   });
 
   // Reactively fetch new chart points whenever filters or tabs change
   $effect(() => {
-    if (activeChartTab || granularity || endDateString || $activeRole) {
+    if (activeChartTab || granularity || endDateString || activeRoleState.role) {
       loadChartData();
       selectedPointIdx = null; // reset selection on tab change
     }
@@ -180,11 +177,11 @@
   });
 
   async function handleApproveContract(contractId: string) {
-    const role = $activeRole;
+    const role = activeRoleState.role;
     if (role !== 'superadmin' && role !== 'amministrazione') return;
 
     try {
-      await ContractService.approveContract(contractId, $auth?.uid || 'system', $auth?.email || 'system');
+      await ContractService.approveContract(contractId, authState.user?.uid || 'system', authState.user?.email || 'system');
       toast.success('Contratto approvato con successo!');
       await loadKPIs();
     } catch (e: any) {
@@ -196,7 +193,7 @@
     const ok = await confirmStore.prompt('Sei sicuro di voler contrassegnare questo mese provvigionale come pagato? Scomparirà dalla dashboard e non sarà più considerato in attesa.');
     if (!ok) return;
     try {
-      await DashboardService.markCommissionPaid(periodId, $auth?.uid || 'system');
+      await DashboardService.markCommissionPaid(periodId, authState.user?.uid || 'system');
       toast.success('Provvigione segnata come pagata!');
       await loadKPIs();
     } catch (e: any) {
@@ -207,9 +204,9 @@
 
 
 
-{#if $auth}
+{#if authState.user}
   <div class="dashboard-viewport">
-    {#if $activeRole === 'amministrazione'}
+    {#if activeRoleState.role === 'amministrazione'}
       <!-- 1. Alternative dashboard layout for amministrazione role -->
       <div class="dashboard-panoramica admin-layout animate-fade-in">
         <Card
@@ -275,7 +272,7 @@
                 {chartPeriods}
                 {drillDownItems}
                 {usersList}
-                activeRole={$activeRole || ''}
+                activeRole={activeRoleState.role || ''}
                 {formatCurrency}
                 activitiesConfig={$activitiesConfigStore}
               />
@@ -283,7 +280,7 @@
 
             <div class="dashboard-right-col">
               <!-- Financial KPIs Block -->
-              {#if $activeRole === "commerciale"}
+              {#if activeRoleState.role === "commerciale"}
                 <CommercialKPIs 
                   {commTotalNA}
                   {commContractsCount}

@@ -38,7 +38,7 @@
   {/snippet}
 
   {#snippet headerSnippet()}
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <div class="header-actions">
       <button onclick={onAddNew} class="add-btn">
         <Plus size={16} /> Nuova Qualifica
       </button>
@@ -90,5 +90,12 @@
   .qual-name {
     font-weight: 600;
     color: var(--color-neutral-800);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
   }
 </style>

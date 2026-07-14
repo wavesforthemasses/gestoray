@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Table, Card } from '$lib';
   import { Users, Search } from '@lucide/svelte';
-  import { goto } from '$app/navigation';
+
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
   import StatusBadge from '$lib/components/StatusBadge.svelte';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { projectStore } from '$lib/stores/project';
 
   interface Props {
@@ -29,7 +29,7 @@
     let list = clientsList;
 
     if (selectedPeriod) {
-      list = list.filter(c => {
+      list = list.filter((c: any) => {
         const creationDate = new Date(c.createdAt);
         return creationDate >= selectedPeriod.start && creationDate <= selectedPeriod.end;
       });
@@ -48,10 +48,40 @@
     { key: 'actions', header: 'Azioni' }
   ];
 
-  function handleSelectClient(item: any) {
-    goto(`/dashboard/clients/${item.id}`);
-  }
 </script>
+
+{#snippet cell(col: any, row: any)}
+  {#if col.key === 'nome'}
+    <span class="name-cell">{row.nome}</span>
+  {:else if col.key === 'cognome'}
+    <span>{row.cognome || 'N/D'}</span>
+  {:else if col.key === 'email'}
+    <span class="mail-cell">{row.email || 'N/D'}</span>
+  {:else if col.key === 'status'}
+    <StatusBadge status={row.status || 'prospect'} />
+  {:else if col.key === 'notesCount'}
+    <span class="count-badge">{row.notes?.length || 0}</span>
+  {:else if col.key === 'activitiesCount'}
+    <span class="count-badge active">{row.derived?.activitiesCount || 0}</span>
+  {:else if col.key === 'actions'}
+    <div class="row-actions" role="presentation" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
+      <a 
+        href={`/dashboard/clients/${row.id}`} 
+        class="quick-action-btn action-link outline-action"
+        title="Dettaglio Cliente"
+      >
+        Dettagli
+      </a>
+      <a 
+        href={`/dashboard/clients/${row.id}?tab=quotes`} 
+        class="quick-action-btn action-link"
+        title="Nuovo Preventivo per questo cliente"
+      >
+        Nuovo Preventivo
+      </a>
+    </div>
+  {/if}
+{/snippet}
 
 <Card
   title="Anagrafica Clienti CRM"
@@ -63,7 +93,7 @@
   {/snippet}
 
   {#snippet headerSnippet()}
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <div class="header-actions-group">
       <button onclick={() => exportToCSV(filteredClients, [
         { key: 'nome', header: 'Nome Azienda' },
         { key: 'cognome', header: 'Referente' },
@@ -85,39 +115,15 @@
       <button onclick={triggerPrint} class="export-btn" title="Stampa l'elenco / Salva PDF">
         Stampa / PDF
       </button>
-      {#if $activeRole !== 'direzione'}
-        <button onclick={onAddClick} class="add-client-btn" style="height: 34px;">
+      {#if activeRoleState.role !== 'direzione'}
+        <button onclick={onAddClick} class="add-client-btn fixed-height-btn">
           Aggiungi Cliente
         </button>
       {/if}
     </div>
   {/snippet}
 
-  {#snippet cell(col: any, row: any)}
-    {#if col.key === 'nome'}
-      <span class="name-cell">{row.nome}</span>
-    {:else if col.key === 'cognome'}
-      <span>{row.cognome || 'N/D'}</span>
-    {:else if col.key === 'email'}
-      <span class="mail-cell">{row.email || 'N/D'}</span>
-    {:else if col.key === 'status'}
-      <StatusBadge status={row.status || 'prospect'} />
-    {:else if col.key === 'notesCount'}
-      <span class="count-badge">{row.notes?.length || 0}</span>
-    {:else if col.key === 'activitiesCount'}
-      <span class="count-badge active">{row.derived?.activitiesCount || 0}</span>
-    {:else if col.key === 'actions'}
-      <div class="row-actions" role="presentation" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
-        <button 
-          onclick={() => goto(`/dashboard/clients/${row.id}?tab=quotes`)} 
-          class="quick-action-btn"
-          title="Nuovo Preventivo per questo cliente"
-        >
-          Nuovo Preventivo
-        </button>
-      </div>
-    {/if}
-  {/snippet}
+
 
   <div class="search-bar-row">
     <input 
@@ -138,7 +144,6 @@
       {columns}
       data={filteredClients}
       cellSnippet={cell}
-      onRowClick={handleSelectClient}
       emptyText="Nessun cliente registrato nel database vendite."
     />
   </div>
@@ -275,6 +280,7 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: 8px;
   }
 
   .quick-action-btn {
@@ -293,5 +299,33 @@
   .quick-action-btn:hover, .quick-action-btn:focus {
     background: var(--color-primary-600);
     outline: none;
+  }
+
+  .action-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .outline-action {
+    background: var(--color-white);
+    color: var(--color-primary-600);
+    border: 1px solid var(--color-primary-600);
+  }
+
+  .outline-action:hover, .outline-action:focus {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+  }
+
+  .header-actions-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .fixed-height-btn {
+    height: 34px;
   }
 </style>

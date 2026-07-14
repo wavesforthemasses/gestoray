@@ -2,7 +2,7 @@
   import { Table, Card } from '$lib';
   import { Wallet } from '@lucide/svelte';
   import { goto } from '$app/navigation';
-  import { activeRole } from '$lib/auth';
+
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
   import { projectStore } from '$lib/stores/project';
 
@@ -52,9 +52,9 @@
   {:else if col.key === 'recordedEmail'}
     <span class="recorded-cell">{row.recordedEmail}</span>
   {:else if col.key === 'actions'}
-    <button onclick={(e) => { e.stopPropagation(); handleSelectPayment(row); }} class="back-link-btn" style="padding: 4px 8px; font-size: 11px;">
+    <a href={`/dashboard/payments/${row.id}`} onclick={(e) => e.stopPropagation()} class="back-link-btn detail-btn">
       Dettagli
-    </button>
+    </a>
   {/if}
 {/snippet}
 
@@ -68,26 +68,26 @@
   {/snippet}
 
   {#snippet headerSnippet()}
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-      <button onclick={() => exportToCSV(filteredPayments, [
+    <div class="header-actions">
+      <button type="button" onclick={(e) => { e.preventDefault(); exportToCSV(filteredPayments, [
         { key: 'date', header: 'Data Incasso' },
         { key: 'clientName', header: 'Cliente' },
         { key: 'contractId', header: 'ID Contratto' },
         { key: 'amount', header: 'Importo Netto' },
         { key: 'recordedEmail', header: 'Registrato Da' }
-      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`)} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in formato CSV">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`); }} class="back-link export-btn" title="Esporta in formato CSV">
         CSV
       </button>
-      <button onclick={() => exportToExcel(filteredPayments, [
+      <button type="button" onclick={(e) => { e.preventDefault(); exportToExcel(filteredPayments, [
         { key: 'date', header: 'Data Incasso' },
         { key: 'clientName', header: 'Cliente' },
         { key: 'contractId', header: 'ID Contratto' },
         { key: 'amount', header: 'Importo Netto' },
         { key: 'recordedEmail', header: 'Registrato Da' }
-      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`)} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Esporta in Excel (XLS)">
+      ], `${$projectStore?.projectName.toLowerCase().replace(/\s+/g, '_') || 'crm'}_incassi`); }} class="back-link export-btn" title="Esporta in Excel (XLS)">
         Excel
       </button>
-      <button onclick={triggerPrint} class="back-link" style="padding: 6px 10px; font-size: 12px; height: 34px;" title="Stampa l'elenco / Salva PDF">
+      <button type="button" onclick={(e) => { e.preventDefault(); triggerPrint(); }} class="back-link export-btn" title="Stampa l'elenco / Salva PDF">
         Stampa / PDF
       </button>
   </div>
@@ -177,5 +177,26 @@
   .table-wrapper {
     width: 100%;
     overflow-x: auto;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .export-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    height: 34px;
+  }
+
+  .detail-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
   }
 </style>

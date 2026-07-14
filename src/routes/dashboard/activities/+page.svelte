@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { ActivitiesService, type ActivityItem } from './activities.service';
   import { DashboardService } from '../dashboard.service';
   import { onMount } from 'svelte';
@@ -12,12 +12,14 @@
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Registro Attività');
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'commerciale', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
@@ -25,8 +27,6 @@
 
     // Initial load
     fetchActivitiesData(true);
-    
-    return () => unsubscribe();
   });
 
   let activitiesList = $state<ActivityItem[]>([]);
@@ -72,7 +72,7 @@
     }
     
     try {
-      const myUid = $activeRole === 'commerciale' ? $auth?.uid : undefined;
+      const myUid = activeRoleState.role === 'commerciale' ? authState.user?.uid : undefined;
       const result = await ActivitiesService.fetchActivities(
         50, 
         lastVisible, 
@@ -100,7 +100,7 @@
   async function fetchChartData() {
     try {
       const getChartAggregations = httpsCallable(functions, 'getChartAggregations');
-      const myUid = $activeRole === 'commerciale' ? $auth?.uid : undefined;
+      const myUid = activeRoleState.role === 'commerciale' ? authState.user?.uid : undefined;
       
       const periods = DashboardService.generateChartPeriods(endDateString, granularity);
       const reqData = {
@@ -145,9 +145,6 @@
     return result;
   });
 
-  function handleSelectRow(row: any) {
-    goto(`/dashboard/clients/${row.clientId}?tab=activities`);
-  }
 </script>
 
 
@@ -155,8 +152,8 @@
 <div class="activities-page animate-fade-in">
   <ActivitiesChart
     {chartData}
-    activeRole={$activeRole}
-    myUid={$auth?.uid}
+    activeRole={activeRoleState.role}
+    myUid={authState.user?.uid}
     {filterType}
     {granularity}
     {endDateString}
@@ -172,12 +169,12 @@
 
   <ActivitiesTable
     {filteredActivities}
-    activeRole={$activeRole}
+    activeRole={activeRoleState.role}
     {searchQuery}
     {filterType}
     onSearchChange={(q) => { searchQuery = q; selectedPointIdx = null; }}
     onFilterChange={(t) => { filterType = t as any; selectedPointIdx = null; }}
-    onRowClick={handleSelectRow}
+    onRowClick={() => {}}
   />
   
   {#if loading}

@@ -51,9 +51,9 @@
       </span>
     </div>
 
-    <div class="info-item" style="grid-column: 1 / -1; margin-top: 8px;">
+    <div class="info-item full-width mt-8">
       <span class="info-lbl">Stato Distribuzione (sui Servizi)</span>
-      <span class="info-val" style="margin-top: 8px;">
+      <span class="info-val mt-8">
         {#if payment.original?.amount - totalDistributedOnProducts > 0}
           <span class="distribution-warning">
             Mancano € {(payment.original?.amount - totalDistributedOnProducts).toFixed(2)} da allocare
@@ -129,5 +129,13 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .mt-8 {
+    margin-top: 8px;
   }
 </style>

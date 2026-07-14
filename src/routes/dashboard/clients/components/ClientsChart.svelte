@@ -2,7 +2,7 @@
   import { Card, LineChart } from '$lib';
   import { TrendingUp, ChevronUp, ChevronDown } from '@lucide/svelte';
   import { DashboardService } from '../../dashboard.service';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
 
   interface Props {
     isGraphExpanded: boolean;
@@ -17,7 +17,7 @@
     onToggle,
     selectedPointIdx = $bindable(null),
     onPointSelect,
-    chartPeriods
+    chartPeriods = $bindable([])
   } = $props();
 
   let activeChartTab = $state<'nuove_anagrafiche' | 'nncf' | 'vss' | 'gi'>('nuove_anagrafiche');
@@ -40,8 +40,8 @@
     loadingChart = true;
 
     try {
-      const roleToUse = $activeRole || '';
-      const uidToUse = $auth?.uid || '';
+      const roleToUse = activeRoleState.role || '';
+      const uidToUse = authState.user?.uid || '';
       
       const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
       computedChartPoints = results || chartPeriods.map(() => 0);
@@ -79,41 +79,41 @@
         <TrendingUp size={20} class="icon-accent" />
       {/snippet}
 
-      <div class="chart-controls-box" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;">
-        <div class="chart-tab-switcher" style="display: flex; flex-wrap: wrap; gap: 4px; background: var(--color-neutral-100); padding: 4px; border-radius: var(--radius-md);">
-          <button class="chart-tab-btn" class:active={activeChartTab === 'nuove_anagrafiche'} onclick={() => { activeChartTab = 'nuove_anagrafiche'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'nuove_anagrafiche' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'nuove_anagrafiche' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'nuove_anagrafiche' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Nuove Anagrafiche">NA</button>
-          <button class="chart-tab-btn" class:active={activeChartTab === 'nncf'} onclick={() => { activeChartTab = 'nncf'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'nncf' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'nncf' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'nncf' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="NNCF (Primi Ordini)">NNCF</button>
-          <button class="chart-tab-btn" class:active={activeChartTab === 'vss'} onclick={() => { activeChartTab = 'vss'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'vss' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'vss' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'vss' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Valore Venduto">VSS</button>
-          <button class="chart-tab-btn" class:active={activeChartTab === 'gi'} onclick={() => { activeChartTab = 'gi'; onPointSelect(null); }} style="border: none; background: {activeChartTab === 'gi' ? 'var(--color-white)' : 'transparent'}; box-shadow: {activeChartTab === 'gi' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {activeChartTab === 'gi' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s;" title="Incassato">GI</button>
+      <div class="chart-controls-box controls-layout">
+        <div class="chart-tab-switcher tab-switcher-bg">
+          <button class="chart-tab-btn tab-btn-style" class:active={activeChartTab === 'nuove_anagrafiche'} onclick={() => { activeChartTab = 'nuove_anagrafiche'; onPointSelect(null); }} title="Nuove Anagrafiche">NA</button>
+          <button class="chart-tab-btn tab-btn-style" class:active={activeChartTab === 'nncf'} onclick={() => { activeChartTab = 'nncf'; onPointSelect(null); }} title="NNCF (Primi Ordini)">NNCF</button>
+          <button class="chart-tab-btn tab-btn-style" class:active={activeChartTab === 'vss'} onclick={() => { activeChartTab = 'vss'; onPointSelect(null); }} title="Valore Venduto">VSS</button>
+          <button class="chart-tab-btn tab-btn-style" class:active={activeChartTab === 'gi'} onclick={() => { activeChartTab = 'gi'; onPointSelect(null); }} title="Incassato">GI</button>
         </div>
 
-        <div class="chart-granularity-picker" style="display: flex; gap: 16px; align-items: center;">
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Dettaglio</span>
+        <div class="chart-granularity-picker flex-row-gap16-align">
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Dettaglio</span>
             <select bind:value={granularity} class="sub-chart-select">
               <option value="settimanale">Settimanale</option>
               <option value="mensile">Mensile</option>
               <option value="annuale">Annuale</option>
             </select>
           </div>
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Fino al</span>
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Fino al</span>
             <input type="date" bind:value={endDateString} class="sub-chart-date-picker" />
           </div>
         </div>
       </div>
 
       {#if loadingChart}
-        <div class="loader-box" style="border: none; padding: 20px;">
+        <div class="loader-box no-border-padded">
           <span class="spinner"></span>
           Caricamento andamento...
         </div>
       {:else}
-        <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} style="flex: 1; min-height: 250px; width: 100%; display: flex; flex-direction: column;">
+        <div class="chart-flex-wrapper chart-container-layout" bind:clientWidth={chartWrapperW}>
           {#if chartWrapperW > 0}
             <LineChart
               data={computedChartPoints}
-              labels={chartPeriods.map(p => p.label)}
+              labels={chartPeriods.map((p: any) => p.label)}
               selectedIdx={selectedPointIdx}
               onSelect={onPointSelect}
               width={Math.max(chartWrapperW - 34, 300)}
@@ -170,5 +170,72 @@
     background: var(--color-white);
     color: var(--color-neutral-800);
     transition: border-color 0.2s;
+  }
+
+  .controls-layout {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .tab-switcher-bg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: var(--color-neutral-100);
+    padding: 4px;
+    border-radius: var(--radius-md);
+  }
+
+  .tab-btn-style {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 6px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn-style.active {
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-primary-600);
+  }
+
+  .flex-row-gap16-align {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .flex-row-gap8-align {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .label-style {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-neutral-500);
+  }
+
+  .no-border-padded {
+    border: none;
+    padding: 20px;
+  }
+
+  .chart-container-layout {
+    flex: 1;
+    min-height: 250px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 </style>

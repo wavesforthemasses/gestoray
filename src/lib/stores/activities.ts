@@ -28,7 +28,7 @@ let unsubscribe: (() => void) | null = null;
 export function initActivitiesStore() {
   if (unsubscribe) return;
   const docRef = doc(db, 'settings', 'activities');
-  unsubscribe = onSnapshot(docRef, (snap) => {
+  unsubscribe = onSnapshot(docRef, (snap: any) => {
     if (snap.exists()) {
       const data = snap.data();
       activitiesConfigStore.set(data.list || []);

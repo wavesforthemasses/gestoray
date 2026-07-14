@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Card, FormField, LineChart, StatusBadge } from '$lib';
   import { TrendingUp, Minimize2, Maximize2, Search, Eye } from 'lucide-svelte';
-  import { goto } from '$app/navigation';
 
   interface Props {
     isChartFullscreen: boolean;
@@ -134,9 +133,9 @@
         <div class="picker-item">
           <button onclick={() => isChartFullscreen = !isChartFullscreen} class="fs-btn">
             {#if isChartFullscreen}
-              <Minimize2 size={16} /> <span style="margin-left: 6px; font-size: 13px; font-weight: 600;">Chiudi</span>
+              <Minimize2 size={16} /> <span class="fs-btn-text">Chiudi</span>
             {:else}
-              <Maximize2 size={16} /> <span style="margin-left: 6px; font-size: 13px; font-weight: 600;">Espandi</span>
+              <Maximize2 size={16} /> <span class="fs-btn-text">Espandi</span>
             {/if}
           </button>
         </div>
@@ -150,13 +149,13 @@
         Caricamento andamento grafico...
       </div>
     {:else}
-      <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} bind:clientHeight={chartWrapperH} style="flex: 1; min-height: {isChartFullscreen ? '0' : '250px'}; width: 100%; display: flex; flex-direction: column;">
+      <div class="chart-flex-wrapper" class:fs-mode={isChartFullscreen} bind:clientWidth={chartWrapperW} bind:clientHeight={chartWrapperH}>
         {#if chartWrapperW > 0}
           <LineChart
             data={computedChartPoints}
             labels={chartPeriods.map((p: any) => p.label)}
             selectedIdx={selectedPointIdx}
-            onSelect={(idx: number) => selectedPointIdx = idx}
+            onSelect={(idx: number | null) => selectedPointIdx = idx}
             width={Math.max(chartWrapperW - 34, 300)}
             height={isChartFullscreen ? Math.max(chartWrapperH - 46, 200) : 250}
             xPadding={50}
@@ -171,7 +170,7 @@
 
 <!-- Drill-Down detailed section -->
 {#if selectedPointIdx !== null}
-  <div class="drilldown-wrapper animate-fade-in" style="margin-top: 24px;">
+  <div class="drilldown-wrapper animate-fade-in drilldown-margin">
     <Card title="Dettaglio Analitico Periodo" description="Dettaglio delle transazioni, lead o attività registrate nel periodo selezionato ({chartPeriods[selectedPointIdx].label}).">
       {#snippet icon()}
         <Search size={20} class="icon-accent" />
@@ -185,7 +184,7 @@
 
         {#if activeRole !== 'commerciale'}
           <FormField id="dd-vendor-filter" label="Filtra per Consulente">
-            <select id="dd-vendor-filter" bind:value={vendorFilter} class="sub-chart-select" style="width: 100%;">
+            <select id="dd-vendor-filter" bind:value={vendorFilter} class="sub-chart-select vendor-select">
               <option value="">Tutti i consulenti</option>
               {#each usersList as u}
                 <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
@@ -208,7 +207,7 @@
       {:else if drillDownItems.length === 0}
         <div class="empty-panel">Nessun dato registrato corrisponde ai filtri impostati per questo periodo.</div>
       {:else}
-        <div class="table-wrapper" style="margin-top: 16px;">
+        <div class="table-wrapper dd-table-margin">
           <table class="widescreen-table drilldown-table">
             <thead>
               <tr>
@@ -238,11 +237,11 @@
                   {#if activeChartTab === 'vss' || activeChartTab === 'gi'}
                     <td><strong>{formatCurrency(item.valore)}</strong></td>
                   {/if}
-                  <td><span style="font-size: 12px; color: var(--color-neutral-600);">{item.dettaglio}</span></td>
+                  <td><span class="detail-text">{item.dettaglio}</span></td>
                   <td>
-                    <button onclick={() => goto(item.link)} class="back-link-btn" style="padding: 4px 8px; font-size: 11px;">
-                      <Eye size={12} style="margin-right: 4px;" /> Vedi
-                    </button>
+                    <a href={item.link} class="back-link-btn action-btn">
+                      <Eye size={12} class="action-icon" /> Vedi
+                    </a>
                   </td>
                 </tr>
               {/each}
@@ -415,5 +414,52 @@
   }
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .fs-btn-text {
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .chart-flex-wrapper {
+    flex: 1;
+    min-height: 250px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chart-flex-wrapper.fs-mode {
+    min-height: 0;
+  }
+
+  .drilldown-margin {
+    margin-top: 24px;
+  }
+
+  .vendor-select {
+    width: 100%;
+  }
+
+  .dd-table-margin {
+    margin-top: 16px;
+  }
+
+  .detail-text {
+    font-size: 12px;
+    color: var(--color-neutral-600);
+  }
+
+  .action-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  :global(.action-icon) {
+    margin-right: 4px;
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
 
@@ -23,19 +23,20 @@
   let selectedPointIdx = $state<number | null>(null);
   let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'commerciale', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'commerciale', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
 
     loadData();
-    return () => unsubscribe();
   });
 
   async function loadData(reset = true) {
@@ -51,7 +52,7 @@
       if (usersList.length === 0) {
         usersList = await ContractsService.fetchUsers();
       }
-      const result = await ContractsService.fetchContracts($activeRole || '', activeTab, $auth?.uid, 50, lastVisible);
+      const result = await ContractsService.fetchContracts(activeRoleState.role || '', activeTab, authState.user?.uid, 50, lastVisible);
       
       if (reset) {
         contractsList = result.list;
@@ -77,7 +78,7 @@
       : null
   );
 
-  let commercialStats = $derived(ContractsService.computeCommercialStats(usersList, $auth?.uid));
+  let commercialStats = $derived(ContractsService.computeCommercialStats(usersList, authState.user?.uid));
 
   function toggleGraph() {
     isGraphExpanded = !isGraphExpanded;
@@ -96,7 +97,7 @@
     bind:isGraphExpanded 
     onToggle={toggleGraph}
     bind:selectedPointIdx
-    onPointSelect={(idx) => selectedPointIdx = idx}
+    onPointSelect={(idx: number | null) => selectedPointIdx = idx}
     bind:chartPeriods
   />
 
@@ -112,7 +113,7 @@
       {activeTab} 
       onTabChange={(t: string) => {
         activeTab = t as any;
-        if ($activeRole !== 'commerciale') {
+        if (activeRoleState.role !== 'commerciale') {
           loadData();
         }
       }}

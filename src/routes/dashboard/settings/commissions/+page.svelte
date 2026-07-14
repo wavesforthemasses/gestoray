@@ -1,7 +1,7 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
-  import { auth, activeRole } from '$lib/auth';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   
@@ -18,12 +18,14 @@
     discountPenalty: 'linear'
   });
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     async function load() {
       try {
@@ -37,7 +39,6 @@
     }
 
     load();
-    return () => unsubscribe();
   });
 
   async function handleSave(e: Event) {
@@ -45,7 +46,7 @@
     submitting = true;
 
     try {
-      await CommissionsSettingsService.saveSettings(settings, $auth?.uid);
+      await CommissionsSettingsService.saveSettings(settings, authState.user?.uid);
       toast.success('Impostazioni salvate con successo!');
     } catch (e: any) {
       console.error(e);

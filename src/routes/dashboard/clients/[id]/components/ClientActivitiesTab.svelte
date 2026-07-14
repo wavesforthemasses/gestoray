@@ -84,14 +84,14 @@
           {#each $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')) as kpi}
             <Button
               onclick={() => logActivity(kpi.id)}
-              variant="outline"
+              variant="secondary"
               disabled={submittingActivity}
             >
               {kpi.name}
             </Button>
           {/each}
           {#if $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')).length === 0}
-            <p style="color: var(--color-neutral-500); font-size: 13px;">Nessun KPI disponibile per il tuo ruolo.</p>
+            <p class="empty-kpi-msg">Nessun KPI disponibile per il tuo ruolo.</p>
           {/if}
         </div>
       </Card>
@@ -121,7 +121,7 @@
               />
               <Button
                 type="submit"
-                style="background: var(--color-neutral-800); border: none;"
+                class="btn-dark"
                 >Scrivi Nota</Button
               >
             </div>
@@ -209,7 +209,7 @@
                       <textarea bind:value={editNotes} rows="3" disabled={submittingActivity}></textarea>
                     </FormField>
                     <div class="edit-actions">
-                      <Button variant="outline" onclick={cancelEdit} disabled={submittingActivity}>Annulla</Button>
+                      <Button variant="secondary" onclick={cancelEdit} disabled={submittingActivity}>Annulla</Button>
                       <Button variant="primary" onclick={() => saveEdit(item)} disabled={submittingActivity}>Salva Modifiche</Button>
                     </div>
                   </div>
@@ -236,51 +236,11 @@
     flex-direction: column;
     gap: 20px;
   }
-  .activity-logger-shell {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
   .quick-log-actions {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
     margin-top: 8px;
-  }
-  .log-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    color: var(--color-white);
-    transition: all var(--transition-fast);
-  }
-  .log-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .phone-btn {
-    background: var(--color-success);
-  }
-  .phone-btn:hover:not(:disabled) {
-    background: hsl(142, 76%, 30%);
-  }
-  .meeting-btn {
-    background: var(--color-warning);
-  }
-  .meeting-btn:hover:not(:disabled) {
-    background: hsl(38, 92%, 40%);
-  }
-  .appt-btn {
-    background: var(--color-primary-500);
-  }
-  .appt-btn:hover:not(:disabled) {
-    background: var(--color-primary-600);
   }
   .btn-edit-inline {
     background: none;
@@ -321,19 +281,6 @@
   }
   .note-input-row input {
     flex: 1;
-  }
-  .add-note-btn {
-    background: var(--color-neutral-800);
-    color: var(--color-white);
-    border: none;
-    padding: 0 20px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--transition-fast);
-  }
-  .add-note-btn:hover {
-    background: var(--color-neutral-900);
   }
   .timeline-container {
     padding-top: 10px;
@@ -463,5 +410,15 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .empty-kpi-msg {
+    color: var(--color-neutral-500);
+    font-size: 13px;
+  }
+
+  :global(.btn-dark) {
+    background: var(--color-neutral-800) !important;
+    border: none !important;
   }
 </style>

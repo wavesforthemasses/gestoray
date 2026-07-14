@@ -42,7 +42,7 @@
       <DollarSign size={20} class="icon-accent" />
     {/snippet}
 
-    <div class="vertical-layout-stack" style="gap: 16px;">
+    <div class="vertical-layout-stack gap-16">
       {#if installmentsList.length === 0}
         <div class="empty-panel">Nessuna rata o piano di rientro pianificato per questo contratto.</div>
       {:else}
@@ -227,5 +227,14 @@
   :global(.submit-plan-btn) {
     height: 46px;
     padding: 0 16px;
+  }
+
+  .vertical-layout-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gap-16 {
+    gap: 16px;
   }
 </style>

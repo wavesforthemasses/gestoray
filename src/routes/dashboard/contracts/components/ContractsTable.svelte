@@ -7,7 +7,7 @@
   import { formatCurrency } from '$lib/utils/formatters';
   import { projectStore } from '$lib/stores/project';
   import { formatDate } from '$lib/utils/formatters';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
 
   interface Props {
     contractsList: any[];
@@ -29,13 +29,13 @@
     let result = contractsList;
 
     if (selectedPeriod) {
-      result = result.filter(c => {
+      result = result.filter((c: any) => {
         const d = new Date(c.edits?.createdAt || c.original?.createdAt);
         return d >= selectedPeriod.start && d <= selectedPeriod.end;
       });
     }
 
-    return result.map(c => ({
+    return result.map((c: any) => ({
       id: c.id,
       createdAt: c.edits?.createdAt || c.original?.createdAt,
       clientName: c.original?.clientName,
@@ -60,7 +60,7 @@
       { key: 'status', header: 'Stato' }
     ];
     
-    if ($activeRole !== 'commerciale') {
+    if (activeRoleState.role !== 'commerciale') {
       list.splice(2, 0, { key: 'vendorEmail', header: 'Consulente' });
     }
     
@@ -69,7 +69,7 @@
 
   function getConsultantName(uid: string, fallback: string) {
     if (!uid) return fallback || 'N/D';
-    const u = usersList.find(x => x.uid === uid);
+    const u = usersList.find((x: any) => x.uid === uid);
     if (!u) return fallback || 'N/D';
     return `${u.nome || ''} ${u.cognome || ''}`.trim() || fallback || 'N/D';
   }
@@ -79,6 +79,41 @@
   }
 </script>
 
+{#snippet cell(col: any, row: any)}
+  {#if col.key === 'createdAt'}
+    <span class="date-cell">{formatDate(row.createdAt)}</span>
+  {:else if col.key === 'clientName'}
+    <div class="cell-col-layout">
+      <span class="strong-cell">{row.clientName || 'N/D'}</span>
+      {#if row.clientEmail}
+        <span class="sub-cell">{row.clientEmail}</span>
+      {/if}
+    </div>
+  {:else if col.key === 'vendorEmail'}
+    <div class="cell-col-layout">
+      <span class="strong-cell vendor-name">{getConsultantName(row.vendorUid, row.vendorEmail)}</span>
+      {#if row.secondVendorUid}
+        <span class="sub-cell vendor-share">
+          + {getConsultantName(row.secondVendorUid, row.secondVendorEmail)} ({row.secondVendorShare}%)
+        </span>
+      {/if}
+    </div>
+  {:else if col.key === 'totalPrice'}
+    <span class="currency-cell">€ {(row.totalPrice || 0).toFixed(2)}</span>
+  {:else if col.key === 'status'}
+    <div class="status-cell-wrapper">
+      {#if row.status === 'approved'}
+        <span class="status-badge-lbl status-approved">Approvato</span>
+      {:else}
+        <span class="status-badge-lbl status-pending">In Revisione</span>
+      {/if}
+      {#if row.hasWarning}
+        <span class="warning-dot" title="Richiede Attenzione"></span>
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
 <div class="contracts-shell">
   <Card title="Database Contratti Commerciali" description="Fai clic su un contratto per vederne i dettagli o approvare la transazione.">
     {#snippet icon()}
@@ -86,14 +121,14 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
-        <div class="filter-tabs" style="margin: 0;">
+      <div class="header-tools-wrapper">
+        <div class="filter-tabs no-margin">
           <button class="tab-btn" class:active={activeTab === 'all'} onclick={() => onTabChange('all')}>Tutti</button>
           <button class="tab-btn" class:active={activeTab === 'pending'} onclick={() => onTabChange('pending')}>In Attesa</button>
           <button class="tab-btn" class:active={activeTab === 'approved'} onclick={() => onTabChange('approved')}>Approvati</button>
         </div>
 
-        <div style="display: flex; gap: 8px;">
+        <div class="export-actions">
           <button onclick={() => exportToCSV(filteredContracts, [
             { key: 'id', header: 'ID Contratto' },
             { key: 'createdAt', header: 'Data Creazione' },
@@ -121,40 +156,7 @@
       </div>
     {/snippet}
 
-    {#snippet cell(col: any, row: any)}
-      {#if col.key === 'createdAt'}
-        <span class="date-cell">{formatDate(row.createdAt)}</span>
-      {:else if col.key === 'clientName'}
-        <div style="display: flex; flex-direction: column;">
-          <span class="strong-cell">{row.clientName || 'N/D'}</span>
-          {#if row.clientEmail}
-            <span class="sub-cell">{row.clientEmail}</span>
-          {/if}
-        </div>
-      {:else if col.key === 'vendorEmail'}
-        <div style="display: flex; flex-direction: column;">
-          <span class="strong-cell" style="color: var(--color-primary-700);">{getConsultantName(row.vendorUid, row.vendorEmail)}</span>
-          {#if row.secondVendorUid}
-            <span class="sub-cell" style="color: var(--color-neutral-600); font-weight: 500;">
-              + {getConsultantName(row.secondVendorUid, row.secondVendorEmail)} ({row.secondVendorShare}%)
-            </span>
-          {/if}
-        </div>
-      {:else if col.key === 'totalPrice'}
-        <span class="currency-cell">€ {(row.totalPrice || 0).toFixed(2)}</span>
-      {:else if col.key === 'status'}
-        <div style="display: flex; align-items: center; gap: 6px;">
-          {#if row.status === 'approved'}
-            <span class="status-badge-lbl status-approved">Approvato</span>
-          {:else}
-            <span class="status-badge-lbl status-pending">In Revisione</span>
-          {/if}
-          {#if row.hasWarning}
-            <span class="warning-dot" title="Richiede Attenzione"></span>
-          {/if}
-        </div>
-      {/if}
-    {/snippet}
+
 
     <div class="table-wrapper">
       <Table
@@ -220,9 +222,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .accent-tab.active {
-    color: var(--color-primary-600);
-  }
+
 
   .date-cell {
     font-size: 12px;
@@ -246,9 +246,7 @@
     font-weight: 600;
   }
 
-  .commission-text {
-    color: var(--color-success-600);
-  }
+
 
   .status-badge-lbl {
     display: inline-flex;
@@ -280,5 +278,43 @@
   .table-wrapper {
     width: 100%;
     overflow-x: auto;
+  }
+
+  .header-tools-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .no-margin {
+    margin: 0;
+  }
+
+  .export-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .cell-col-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vendor-name {
+    color: var(--color-primary-700);
+  }
+
+  .vendor-share {
+    color: var(--color-neutral-600);
+    font-weight: 500;
+  }
+
+  .status-cell-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 </style>

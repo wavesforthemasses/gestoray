@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import { CommissionsService } from '../../commissions.service';
   import { toast } from '$lib/stores/toast.svelte';
@@ -28,21 +28,22 @@
   let vendorSummary = $derived(activeVersion?.breakdown || []);
   let allocationsList = $derived(activeVersion?.allocations || []);
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     loadData();
-    return () => unsubscribe();
   });
 
   async function loadData() {
     loading = true;
     try {
-      activeVersion = await CommissionsService.getVersion(periodId, versionId);
+      activeVersion = await CommissionsService.getVersion(periodId!, versionId!);
       if (!activeVersion) {
         toast.error('Versione non trovata.');
         goto('/dashboard/commissions');
@@ -55,14 +56,14 @@
   }
 
   async function handleFinalizeCommissions() {
-    if (!$auth || !activeVersion || activeVersion.status === 'finalized') return;
+    if (!authState.user || !activeVersion || activeVersion.status === 'finalized') return;
     submitting = true;
 
     try {
-      const now = await CommissionsService.finalizeVersion(periodId, versionId, $auth.uid, $auth.email!);
+      const now = await CommissionsService.finalizeVersion(periodId!, versionId!, authState.user.uid, authState.user.email!);
       activeVersion.status = 'finalized';
       activeVersion.finalizedAt = now;
-      activeVersion.finalizedEmail = $auth.email;
+      activeVersion.finalizedEmail = authState.user.email;
       toast.success('Versione provvigionale resa DEFINITIVA con successo!');
     } catch (e: any) {
       toast.error('Errore durante la chiusura delle provvigioni: ' + e.message);
@@ -76,9 +77,9 @@
 
 <div class="version-details-page animate-fade-in">
   <div class="header-actions">
-    <button onclick={() => goto('/dashboard/commissions')} class="back-link">
+    <a href="/dashboard/commissions" class="back-link action-link">
       <ArrowLeft size={16} /> Torna allo Storico Provvigioni
-    </button>
+    </a>
   </div>
 
   {#if loading}
@@ -100,7 +101,7 @@
         {isClosingFinalized}
         calculationMode={activeVersion.calculationMode}
         onFinalize={handleFinalizeCommissions}
-        canFinalize={!isClosingFinalized && $activeRole !== 'direzione'}
+        canFinalize={!isClosingFinalized && activeRoleState.role !== 'direzione'}
         {submitting}
       />
 
@@ -172,5 +173,9 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  .action-link {
+    text-decoration: none;
   }
 </style>

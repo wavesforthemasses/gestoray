@@ -4,7 +4,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { FileText } from '@lucide/svelte';
@@ -27,15 +27,16 @@
   let hasVersions = $derived(versions.length > 0);
   let hasAnyFinalized = $derived(versions.some(v => v.status === 'finalized'));
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     loadVersions();
-    return () => unsubscribe();
   });
 
   async function loadVersions() {
@@ -80,7 +81,7 @@
     generating = true;
     try {
       const periodId = `${selectedYear}_${String(selectedMonth).padStart(2, '0')}`;
-      const newVersion = await CommissionsService.generateCalculation(periodId, selectedMonth, selectedYear, $auth!.uid, $auth!.email!, hasAnyFinalized);
+      const newVersion = await CommissionsService.generateCalculation(periodId, selectedMonth, selectedYear, authState.user!.uid, authState.user!.email!, hasAnyFinalized);
       
       versions = [newVersion, ...versions];
       toast.success('Nuova bozza del prospetto provvigionale generata e salvata con successo!');

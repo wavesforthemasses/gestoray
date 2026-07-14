@@ -77,7 +77,7 @@
           </FormField>
         </div>
 
-        <div class="form-grid-columns" style="margin-top: 10px;">
+        <div class="form-grid-columns mt-10">
           <FormField id="c-fiscal" label="Identificativo Fiscale *">
             <input type="text" id="c-fiscal" bind:value={clientFiscalId} required disabled={submittingProfile || activeRole === 'direzione'} />
           </FormField>
@@ -93,7 +93,7 @@
           </FormField>
         </div>
 
-        <div class="form-grid-columns" style="margin-top: 10px;">
+        <div class="form-grid-columns mt-10">
           <FormField id="c-piva" label="Partita IVA (Opzionale)">
             <input type="text" id="c-piva" bind:value={clientPartitaIva} disabled={submittingProfile || activeRole === 'direzione'} />
           </FormField>
@@ -103,7 +103,7 @@
           </FormField>
         </div>
 
-        <div class="form-grid-columns" style="margin-top: 10px;">
+        <div class="form-grid-columns mt-10">
           {#if activeRole === 'superadmin' || activeRole === 'amministrazione' || activeRole === 'direzione'}
             <FormField id="c-owner" label="Consulente Proprietario (Assegnazione)" helpText="Modifica l'assegnazione di questo cliente ad un altro commerciale.">
               <select id="c-owner" bind:value={clientCreatedBy} disabled={submittingProfile}>
@@ -168,15 +168,14 @@
           <Trash2 size={20} style="color: var(--color-error);" />
         {/snippet}
 
-        <div class="vertical-layout-stack" style="gap: 12px; align-items: flex-start;">
-          <p style="font-size: 13px; color: var(--color-neutral-500); margin: 0;">
+        <div class="vertical-layout-stack danger-stack">
+          <p class="danger-message">
             Puoi eliminare questa anagrafica solo se non possiede contratti associati.
             Se possiede contratti, dovrai prima eliminarli o stornarli singolarmente.
           </p>
           <Button 
             onclick={onDeleteClient} 
             variant="danger"
-            style="margin-top: 8px; width: fit-content;"
             disabled={submittingProfile}
           >
             <Trash2 size={16} /> Elimina questa Anagrafica Cliente
@@ -210,25 +209,6 @@
     .form-grid-columns {
       grid-template-columns: 1fr;
     }
-  }
-  .submit-profile-btn {
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-    color: var(--color-white);
-    border: none;
-    padding: 12px 20px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 10px;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all var(--transition-fast);
-  }
-  .submit-profile-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
   .empty-panel {
     padding: 30px;
@@ -284,5 +264,17 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  .mt-10 {
+    margin-top: 10px;
+  }
+  .danger-stack {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .danger-message {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: 0;
   }
 </style>

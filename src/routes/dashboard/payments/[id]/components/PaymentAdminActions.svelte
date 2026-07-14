@@ -14,7 +14,7 @@
 {#if activeRole === 'superadmin' || activeRole === 'amministrazione'}
   <Card title="Zona Pericolo: Storno / Eliminazione" description="L'eliminazione di questo incasso è irreversibile e comporterà lo storno dei relativi crediti dai contratti.">
     {#snippet icon()}
-      <ShieldAlert size={20} style="color: var(--color-error);" />
+      <ShieldAlert size={20} class="icon-error" />
     {/snippet}
 
     <div class="vertical-layout-stack">
@@ -75,5 +75,9 @@
   .danger-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  :global(.icon-error) {
+    color: var(--color-error);
   }
 </style>

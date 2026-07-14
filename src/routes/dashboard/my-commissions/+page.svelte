@@ -1,7 +1,7 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
-  import { activeRole, auth } from '$lib/auth';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card } from '$lib';
@@ -25,27 +25,27 @@
     totalSales: 0
   });
 
-  onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['commerciale'])) {
-        goto('/dashboard');
-      }
-    });
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['commerciale'])) {
+      goto('/dashboard');
+    }
+  });
 
-    if ($auth) {
+  onMount(() => {
+
+    if (authState.user) {
       loadData();
     }
-
-    return () => unsubscribe();
   });
 
   async function loadData() {
-    if (!$auth) return;
+    if (!authState.user) return;
     loading = true;
 
     try {
       const periodId = `${selectedYear}_${String(selectedMonth).padStart(2, '0')}`;
-      data = await MyCommissionsService.getMyCommissions(periodId, $auth.uid);
+      data = await MyCommissionsService.getMyCommissions(periodId, authState.user.uid);
     } catch (e: any) {
       console.error(e);
       toast.error('Errore nel caricamento delle tue provvigioni: ' + e.message);
@@ -124,7 +124,7 @@
     gap: 10px;
     margin: 0;
   }
-  .title-icon {
+  :global(.title-icon) {
     color: var(--color-primary-500);
   }
   .page-subtitle {
@@ -163,7 +163,7 @@
     text-align: center;
     color: var(--color-neutral-500);
   }
-  .empty-icon {
+  :global(.empty-icon) {
     margin-bottom: 16px;
     opacity: 0.5;
   }

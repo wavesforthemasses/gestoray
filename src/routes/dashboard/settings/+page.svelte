@@ -1,6 +1,6 @@
 <script lang="ts">
   import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { Settings, Percent, Building, Menu, ActivitySquare } from '@lucide/svelte';
@@ -8,13 +8,11 @@
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Impostazioni');
 
-  onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
-    return () => unsubscribe();
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
   });
 </script>
 

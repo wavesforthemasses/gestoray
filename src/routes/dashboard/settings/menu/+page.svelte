@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { db, doc, getDoc, setDoc } from '$lib/firebase';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -33,16 +33,16 @@
     'settings': 'Impostazioni'
   };
 
+  $effect(() => {
+    const currentRole = activeRoleState.role;
+    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
+      goto('/dashboard');
+    }
+  });
+
   onMount(() => {
-    const unsubscribe = activeRole.subscribe(($activeRole) => {
-      if ($activeRole && !hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione'])) {
-        goto('/dashboard');
-      }
-    });
 
     loadSettings();
-
-    return () => unsubscribe();
   });
 
   async function loadSettings() {
@@ -95,7 +95,7 @@
 
 <div class="settings-page animate-fade-in">
   <div class="page-top-actions">
-    <Button variant="outline" onclick={() => goto('/dashboard/settings')}>
+    <Button variant="secondary" href="/dashboard/settings">
       <ArrowLeft size={16} /> Torna indietro
     </Button>
     <div class="title-header">
@@ -105,7 +105,7 @@
   </div>
 
   {#if loading}
-    <div class="skeleton-loader" style="height: 400px;"></div>
+    <div class="skeleton-loader skeleton-tall"></div>
   {:else}
     <div class="settings-card card">
       <div class="card-header">
@@ -120,7 +120,7 @@
             <tr>
               <th>Voce di Menu</th>
               {#each ALL_ROLES as role}
-                <th class="text-center" style="text-transform: capitalize;">{role}</th>
+                <th class="text-center capitalize-text">{role}</th>
               {/each}
             </tr>
           </thead>
@@ -353,5 +353,13 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .skeleton-tall {
+    height: 400px;
+  }
+
+  .capitalize-text {
+    text-transform: capitalize;
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Award, Clock } from '@lucide/svelte';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
 
   interface Props {
     commercialStats: {
@@ -13,7 +13,7 @@
   let { commercialStats } = $props();
 </script>
 
-{#if $activeRole === 'commerciale'}
+{#if activeRoleState.role === 'commerciale'}
   <div class="stats-row animate-fade-in">
     <div class="stat-card border-success">
       <div class="stat-icon success">

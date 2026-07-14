@@ -52,6 +52,7 @@
         
         {#if confirmStore.inputMode !== 'none'}
           <div class="input-container">
+            <!-- svelte-ignore a11y_autofocus -->
             <input 
               type="text" 
               bind:value={inputValue} 
@@ -117,10 +118,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .warning-icon {
-    color: var(--color-warning);
   }
 
   .close-btn {

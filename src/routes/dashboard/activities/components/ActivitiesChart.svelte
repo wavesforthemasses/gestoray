@@ -66,17 +66,16 @@
         <TrendingUp size={20} class="icon-accent" />
       {/snippet}
 
-      <div class="chart-controls-box" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;">
+      <div class="chart-controls-box controls-layout">
         <!-- Metrics Switcher -->
-        <div class="chart-tab-switcher" style="display: flex; gap: 4px; background: var(--color-neutral-100); padding: 4px; border-radius: var(--radius-md); overflow-x: auto; max-width: 100%;">
-          <button class="chart-tab-btn" class:active={filterType === 'all'} onclick={() => onFilterChange('all')} style="border: none; background: {filterType === 'all' ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === 'all' ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === 'all' ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s; white-space: nowrap;" title="Tutte le Attività">Tutte</button>
+        <div class="chart-tab-switcher tab-switcher-bg">
+          <button class="chart-tab-btn tab-btn-style" class:active={filterType === 'all'} onclick={() => onFilterChange('all')} title="Tutte le Attività">Tutte</button>
           
           {#each $activitiesConfigStore.filter(kpi => kpi.rolesView.includes(activeRole || '')) as kpi}
             <button 
-              class="chart-tab-btn" 
+              class="chart-tab-btn tab-btn-style" 
               class:active={filterType === kpi.id} 
               onclick={() => onFilterChange(kpi.id)} 
-              style="border: none; background: {filterType === kpi.id ? 'var(--color-white)' : 'transparent'}; box-shadow: {filterType === kpi.id ? 'var(--shadow-sm)' : 'none'}; padding: 6px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: {filterType === kpi.id ? 'var(--color-primary-600)' : 'var(--color-neutral-500)'}; cursor: pointer; transition: all 0.2s; white-space: nowrap;" 
               title={kpi.name}
             >
               {kpi.name.substring(0, 3).toUpperCase()}
@@ -84,23 +83,23 @@
           {/each}
         </div>
 
-        <div class="chart-granularity-picker" style="display: flex; gap: 16px; align-items: center;">
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Dettaglio</span>
+        <div class="chart-granularity-picker flex-row-gap16-align">
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Dettaglio</span>
             <select value={granularity} onchange={(e) => onGranularityChange(e.currentTarget.value as any)} class="sub-chart-select">
               <option value="settimanale">Settimanale</option>
               <option value="mensile">Mensile</option>
               <option value="annuale">Annuale</option>
             </select>
           </div>
-          <div class="picker-item" style="display: flex; align-items: center; gap: 8px;">
-            <span class="picker-lbl" style="font-size: 12px; font-weight: 600; color: var(--color-neutral-500);">Fino al</span>
+          <div class="picker-item flex-row-gap8-align">
+            <span class="picker-lbl label-style">Fino al</span>
             <input type="date" value={endDateString} onchange={(e) => onEndDateChange(e.currentTarget.value)} class="sub-chart-date-picker" />
           </div>
         </div>
       </div>
 
-      <div class="chart-flex-wrapper" bind:clientWidth={chartWrapperW} bind:clientHeight={chartWrapperH} style="flex: 1; min-height: 250px; width: 100%; display: flex; flex-direction: column;">
+      <div class="chart-flex-wrapper chart-container-layout" bind:clientWidth={chartWrapperW} bind:clientHeight={chartWrapperH}>
         {#if chartWrapperW > 0}
           <LineChart
             data={computedChartPoints}
@@ -177,5 +176,69 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  .controls-layout {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .tab-switcher-bg {
+    display: flex;
+    gap: 4px;
+    background: var(--color-neutral-100);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .tab-btn-style {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 6px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab-btn-style.active {
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-primary-600);
+  }
+
+  .flex-row-gap16-align {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .flex-row-gap8-align {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .label-style {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-neutral-500);
+  }
+
+  .chart-container-layout {
+    flex: 1;
+    min-height: 250px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 </style>

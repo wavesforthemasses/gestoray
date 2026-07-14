@@ -41,8 +41,8 @@
     'Mail': Mail
   };
 
-  import { activeRole } from "$lib/auth";
-  const allowedActivities = $derived(activitiesConfig.filter(a => a.rolesView.includes($activeRole || 'superadmin')));
+  import { activeRoleState } from "$lib/auth.svelte";
+  const allowedActivities = $derived(activitiesConfig.filter((a: any) => a.rolesView.includes(activeRoleState.role || 'superadmin')));
 </script>
 
 <section class="kpi-deck">

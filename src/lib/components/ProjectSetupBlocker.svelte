@@ -1,7 +1,7 @@
 <script lang="ts">
   import { db, doc, setDoc } from '$lib/firebase';
   import { projectStore } from '$lib/stores/project';
-  import { activeRole } from '$lib/auth';
+  import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import Button from '$lib/components/Button.svelte';
 
@@ -13,7 +13,7 @@
   // Block only if missing name AND the user is an admin.
   // Wait, if projectEmail is missing, we block too.
   let needsSetup = $derived($projectStore && (!$projectStore.projectName || !$projectStore.projectEmail));
-  let isAdmin = $derived($activeRole && hasAccess($activeRole, ['superadmin', 'amministrazione', 'direzione']));
+  let isAdmin = $derived(activeRoleState.role && hasAccess(activeRoleState.role, ['superadmin', 'amministrazione', 'direzione']));
 
   let showBlocker = $derived(needsSetup && isAdmin);
 
