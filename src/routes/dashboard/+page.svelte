@@ -104,6 +104,7 @@
       }
     } finally {
       loadingData = false;
+      loadingAdminTables = false;
     }
   }
 

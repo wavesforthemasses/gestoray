@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getChartAggregations = void 0;
 const admin = require("firebase-admin");
+const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cors: true }, async (request) => {
     if (!request.auth) {
@@ -34,7 +35,7 @@ exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cor
                 }
                 q = q.where('edits.createdAt', '>=', period.start).where('edits.createdAt', '<=', period.end);
                 // @ts-ignore
-                const snapshot = await q.aggregate({ total: admin.firestore.AggregateField.sum('original.totalPrice') }).get();
+                const snapshot = await q.aggregate({ total: firestore_1.AggregateField.sum('original.totalPrice') }).get();
                 let total = snapshot.data().total || 0;
                 if (filters?.vendorUid) {
                     // Add secondVendor contracts
@@ -43,7 +44,7 @@ exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cor
                         .where('edits.createdAt', '>=', period.start)
                         .where('edits.createdAt', '<=', period.end);
                     // @ts-ignore
-                    const snap2 = await q2.aggregate({ total: admin.firestore.AggregateField.sum('original.totalPrice') }).get();
+                    const snap2 = await q2.aggregate({ total: firestore_1.AggregateField.sum('original.totalPrice') }).get();
                     total += snap2.data().total || 0;
                 }
                 results.push(total);
@@ -75,7 +76,7 @@ exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cor
                 }
                 else {
                     // @ts-ignore
-                    const snapshot = await payQuery.aggregate({ total: admin.firestore.AggregateField.sum('original.amount') }).get();
+                    const snapshot = await payQuery.aggregate({ total: firestore_1.AggregateField.sum('original.amount') }).get();
                     results.push(snapshot.data().total || 0);
                 }
             }

@@ -13,13 +13,16 @@
 
   async function handleSendPin(e: Event) {
     e.preventDefault();
+    console.log("--- handleSendPin TRIGGERED ---", email);
     loading = true;
     errorMessage = "";
     localPinNotification = "";
     
     try {
+      console.log("Calling sendLoginPin...");
       const sendPinFn = httpsCallable(functions, 'sendLoginPin');
       const result = await sendPinFn({ email });
+      console.log("sendLoginPin Result:", result.data);
       
       if (result.data.success) {
         currentStep = 2;
