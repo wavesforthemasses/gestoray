@@ -40,7 +40,7 @@
       // Uniqueness check for fiscalId
       if (fiscalId.trim()) {
         let checkQuery;
-        if (['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role)) {
+        if (['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '')) {
           checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()));
         } else {
           checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()), where('original.createdBy', '==', authState.user.uid));

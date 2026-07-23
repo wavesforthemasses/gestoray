@@ -3,7 +3,7 @@
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { Settings, Percent, Building, Menu, ActivitySquare } from '@lucide/svelte';
+  import { Settings, Percent, Building, Menu, ActivitySquare, Palette } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Impostazioni');
@@ -51,6 +51,12 @@
       title="Gestione Menu"
       description="Configura la visibilità delle voci di menu laterale per i vari ruoli."
       icon={Menu}
+    />
+    <SettingsNavCard 
+      href="/dashboard/settings/theme"
+      title="Tema e Branding"
+      description="Personalizza i colori principali dell'applicazione in tempo reale."
+      icon={Palette}
     />
   </div>
 </div>

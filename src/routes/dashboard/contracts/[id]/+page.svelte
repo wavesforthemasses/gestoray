@@ -7,7 +7,9 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ContractProductsList, ContractSignatures, ContractInstallments } from "$lib";
+  import ContractProductsList from '$lib/components/ContractProductsList.svelte';
+  import ContractSignatures from '$lib/components/ContractSignatures.svelte';
+  import ContractInstallments from '$lib/components/ContractInstallments.svelte';
   import { ArrowLeft, AlertTriangle } from '@lucide/svelte';
   
   import { ContractDetailService, type ContractDataPayload } from './contract-detail.service';

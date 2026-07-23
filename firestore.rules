@@ -145,5 +145,11 @@ service cloud.firestore {
       allow create, update: if isAuth() && isAdmin();
       allow delete: if hasRole('superadmin');
     }
+
+    // TICKETS
+    match /tickets/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
   }
 }

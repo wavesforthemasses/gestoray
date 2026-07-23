@@ -1,42 +1,206 @@
-# sv
+# 🚀 Gestoray - Universal SaaS & CRM Boilerplate
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**Gestoray** è un framework/boilerplate universale pronto all'uso per realizzare gestionale web, CRM e applicazioni SaaS avanzate. È sviluppato con la modernissima architettura di **Svelte 5 (Runes)**, **SvelteKit**, **Firebase (Auth & Firestore)** e **Playwright**.
 
-## Creating a project
+Include un sistema di **Branding Dinamico (White-Labeling in tempo reale)** e un potente **Generatore CLI di moduli CRUD** automatico.
 
-If you're seeing this, you've probably already done this step. Congrats!
+---
 
-```sh
-# create a new project
-npx sv create my-app
+## 📋 Indice
+1. [Prerequisiti](#-prerequisiti)
+2. [Installazione da Zero](#-installazione-da-zero)
+3. [Avvio in Ambiente Locale](#-avvio-in-ambiente-locale)
+4. [Come Funziona il Login Locale](#-come-funziona-il-login-locale)
+5. [Generatore di Moduli (Scaffolder CLI)](#-generatore-di-moduli-scaffolder-cli)
+6. [Branding Dinamico e Personalizzazione Tema](#-branding-dinamico-e-personalizzazione-tema)
+7. [Esecuzione dei Test E2E](#-esecuzione-dei-test-e2e)
+8. [Riepilogo Comandi Utili](#-riepilogo-comandi-utili)
+9. [Struttura del Progetto](#-struttura-del-progetto)
+
+---
+
+## 🛠️ Prerequisiti
+
+Prima di iniziare, assicurati di avere installato sul tuo computer:
+
+1. **Node.js** (versione 18 o superiore, **v20 consigliata**):
+   - Verifica con: `node -v`
+2. **Java Development Kit (JDK 11+)**:
+   - Necessario per far girare la suite di **Firebase Emulators** sul tuo computer.
+   - Verifica con: `java -version`
+3. **Firebase CLI**:
+   - Installa globalmente sul tuo sistema eseguendo:
+     ```bash
+     npm install -g firebase-tools
+     ```
+
+---
+
+## 📥 Installazione da Zero
+
+Segui questi passaggi nell'ordine per configurare il progetto per la prima volta:
+
+### 1. Clona la repository o entra nella cartella
+```bash
+cd gestoray
 ```
 
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.16.1 create --template minimal --types ts --install npm ./
+### 2. Installa le dipendenze Node
+```bash
+npm install
 ```
 
-## Developing
+### 3. Installa i browser per i test E2E (Playwright)
+```bash
+npx playwright install --with-deps chromium
+```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+---
 
-```sh
+## ⚡ Avvio in Ambiente Locale
+
+Il progetto è configurato per lavorare localmente in sicurezza tramite **Firebase Emulators** (senza toccare database o credenziali di produzione).
+
+### Opzione A: Comando Unico (Consigliato 🚀)
+Puoi avviare **contemporaneamente** sia gli emulatori Firebase che il server di sviluppo in un unico terminale con:
+```bash
+npm run dev:all
+# oppure: npm run dev:emulators
+```
+
+### Opzione B: 2 Terminali Separati
+
+#### Terminale 1: Avvia gli Emulatori Firebase
+```bash
+npm run emulators
+```
+*Questo avvierà l'emulatore Auth (porta 9099) e Firestore (porta 8080). Risponderà anche la UI di controllo su `http://127.0.0.1:4000`.*
+
+#### Terminale 2: Avvia il Server di Sviluppo SvelteKit
+```bash
 npm run dev
+```
+*Questo avvierà il server SvelteKit in locale.*
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+👉 Apri il tuo browser e vai all'indirizzo: **`http://localhost:5173`**
+
+---
+
+## 🔑 Come Funziona il Login Locale
+
+Nella modalità con emulatore, all'avvio con `npm run dev:emulators` vengono **popolati automaticamente gli utenti di test** ed è attivo il sistema di **PIN di login sicuro di debug**:
+
+### Utenti di Test Pre-configurati:
+- **Amministrazione**: `test-admin@gestoray.local`
+- **Superadmin**: `test-super@gestoray.local`
+- **Commerciale**: `test-comm@gestoray.local`
+- **Direzione**: `test-direzione@gestoray.local`
+
+### Procedura di Login:
+1. Vai su `http://localhost:5173/login`.
+2. Inserisci una delle email di test di sopra (es. `test-admin@gestoray.local`).
+3. Clicca su **"Invia PIN"**.
+4. Guarda i log nel terminale o apri la console del browser (F12 -> Console): troverai il PIN di debug stampato (es: `Debug PIN: 123456`).
+5. Inserisci il PIN per accedere alla Dashboard con il ruolo corrispondente!
+
+---
+
+## 🏗️ Generatore di Moduli (Scaffolder CLI)
+
+Vuoi aggiungere una nuova sezione completa al tuo gestionale (es. *Ordini*, *Ticket*, *Fornitori*)? Puoi farlo con **un solo comando**!
+
+### Esempio: Creare il modulo "Tickets"
+```bash
+npm run generate -- --name Tickets --collection tickets
 ```
 
-## Building
+### Cosa fa lo script in automatico?
+1. Crea l'intera struttura in `src/routes/dashboard/tickets/`:
+   - `+page.svelte` (Pagina Elenco)
+   - `add/+page.svelte` (Pagina Creazione)
+   - `[id]/+page.svelte` (Pagina Dettaglio & Modifica)
+   - `tickets.service.ts` (Servizio CRUD Firebase)
+   - `tickets.spec.ts` (Test E2E completi per Playwright)
+   - `components/TicketsTable.svelte` (Componente Tabella)
+   - `components/TicketsForm.svelte` (Componente Form)
+2. Aggiunge automaticamente la voce nel menu di navigazione (`src/lib/stores/menu.ts`).
+3. Aggiunge le regole di sicurezza nel file `firestore.rules`.
 
-To create a production version of your app:
+Dopodiché non ti resta che personalizzare i campi specifici nel form e nella tabella generati!
 
-```sh
-npm run build
+---
+
+## 🎨 Branding Dinamico e Personalizzazione Tema
+
+La piattaforma è predisposta per il **White-Labeling**. Puoi personalizzare l'aspetto visivo e i colori dell'applicazione direttamente dall'interfaccia:
+
+1. Accedi alla Dashboard come **Superadmin**.
+2. Vai su **Impostazioni** (`/dashboard/settings`).
+3. Clicca sulla card **Tema e Branding** (`/dashboard/settings/theme`).
+4. Utilizza gli slider per regolare:
+   - **Colore Primario**: Tonalità (Hue), Saturazione e Luminosità.
+   - **Colore Secondario**: Per gli accenti e i dettagli risaltati.
+   - **Neutral Chroma**: Per dare un tocco di colore ai grigi di sfondo.
+5. L'applicazione aggiornerà i colori **in tempo reale nell'interfaccia**. Clicca su **"Salva Tema"** per renderlo permanente per tutti gli utenti nel database.
+
+---
+
+## 🧪 Esecuzione dei Test E2E
+
+Il progetto possiede una suite di test end-to-end completa scritta in **Playwright**.
+
+Assicurati che gli emulatori Firebase siano in funzione o lancia il comando:
+```bash
+npm run test:e2e
+```
+Playwright avvierà i test headless controllando che tutte le rotte, le autorizzazioni dei ruoli, le operazioni CRUD e le esportazioni CSV/Excel funzionino perfettamente.
+
+---
+
+## 📜 Riepilogo Comandi Utili
+
+| Comando | Descrizione |
+| :--- | :--- |
+| `npm run dev:all` (o `dev:emulators`) | **Comando unico**: avvia sia gli emulatori Firebase che SvelteKit contemporaneamente |
+| `npm run dev` | Avvia il solo server di sviluppo SvelteKit su `http://localhost:5173` |
+| `npm run emulators` | Avvia i soli emulatori locali di Firebase (Auth e Firestore) |
+| `npm run generate -- --name <Nome> --collection <collezione>` | Genera un nuovo modulo CRUD completo da CLI |
+| `npm run check` | Controlla la validità dei tipi TypeScript e i componenti Svelte |
+| `npm run test:e2e` | Esegue la suite completa di test Playwright |
+| `npm run build` | Compila l'applicazione per la produzione |
+| `npm run preview` | Anteprima della build di produzione compilata |
+
+---
+
+## 📁 Struttura del Progetto
+
+```text
+gestoray/
+├── .github/workflows/       # Workflow di CI/CD (GitHub Actions)
+├── firestore.rules           # Regole di sicurezza Firestore
+├── firebase.json             # Configurazione emulatori Firebase
+├── scripts/                  # Script CLI (Scaffolder & Template)
+│   ├── scaffold.js
+│   └── templates/module/    # Template di generazione per i moduli
+├── src/
+│   ├── lib/                  # Librerie, componenti condivisi e store
+│   │   ├── components/       # Card, Table, FormField, KPITile, Modals
+│   │   ├── stores/           # Menu, Project, Toast, Activities, Page
+│   │   └── utils/            # IconMap, AuthCheck, Search-utils
+│   └── routes/               # Pagine dell'applicazione (SvelteKit)
+│       ├── login/            # Flusso di autenticazione con PIN
+│       └── dashboard/        # Area riservata della piattaforma
+│           ├── activities/   # Gestione Attività
+│           ├── clients/      # Anagrafica Clienti
+│           ├── contracts/    # Gestione Contratti
+│           ├── payments/     # Gestione Incassi e Rate
+│           ├── products/     # Catalogo Prodotti
+│           ├── settings/     # Impostazioni generali e Tema
+│           ├── users/        # Gestione Utenti e Ruoli
+│           └── ...
+└── tests/                    # Script e setup di supporto per Playwright
 ```
 
-You can preview the production build with `npm run preview`.
+---
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+*Progetto creato con ❤️ per la massima modularità, pulizia del codice e velocità di sviluppo.*

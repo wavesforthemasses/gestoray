@@ -4,6 +4,14 @@ import { db, doc, onSnapshot } from '$lib/firebase';
 export interface ProjectSettings {
   projectName: string;
   projectEmail: string;
+  // Theme
+  brandHue?: number;
+  brandSaturation?: number;
+  brandLightness?: number;
+  secondaryHue?: number;
+  secondarySaturation?: number;
+  secondaryLightness?: number;
+  neutralChroma?: number;
 }
 
 export const projectStore = writable<ProjectSettings | null>(null);
@@ -18,7 +26,14 @@ export function initProjectStore() {
       const data = snap.data();
       projectStore.set({
         projectName: data.projectName || '',
-        projectEmail: data.projectEmail || ''
+        projectEmail: data.projectEmail || '',
+        brandHue: data.brandHue,
+        brandSaturation: data.brandSaturation,
+        brandLightness: data.brandLightness,
+        secondaryHue: data.secondaryHue,
+        secondarySaturation: data.secondarySaturation,
+        secondaryLightness: data.secondaryLightness,
+        neutralChroma: data.neutralChroma
       });
     } else {
       projectStore.set({ projectName: '', projectEmail: '' });

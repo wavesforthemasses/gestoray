@@ -11,7 +11,7 @@
     getDoc,
   } from "$lib/firebase";
   import { authState, activeRoleState } from "$lib/auth.svelte";
-  import { initProjectStore, destroyProjectStore } from "$lib/stores/project";
+  import { initProjectStore, destroyProjectStore, projectStore } from "$lib/stores/project";
   import { initActivitiesStore, destroyActivitiesStore } from "$lib/stores/activities";
   import { initMenuStore, destroyMenuStore } from "$lib/stores/menu";
 
@@ -19,6 +19,18 @@
   let { children } = $props();
 
   onMount(() => {
+    const unsubTheme = projectStore.subscribe(settings => {
+      if (typeof document === 'undefined' || !settings) return;
+      const root = document.documentElement.style;
+      if (settings.brandHue !== undefined) root.setProperty('--brand-h', String(settings.brandHue));
+      if (settings.brandSaturation !== undefined) root.setProperty('--brand-s', settings.brandSaturation + '%');
+      if (settings.brandLightness !== undefined) root.setProperty('--brand-l-num', String(settings.brandLightness));
+      if (settings.secondaryHue !== undefined) root.setProperty('--sec-h', String(settings.secondaryHue));
+      if (settings.secondarySaturation !== undefined) root.setProperty('--sec-s', settings.secondarySaturation + '%');
+      if (settings.secondaryLightness !== undefined) root.setProperty('--sec-l-num', String(settings.secondaryLightness));
+      if (settings.neutralChroma !== undefined) root.setProperty('--neutral-s', settings.neutralChroma + '%');
+    });
+
     const unsubscribe = onAuthStateChanged(
       clientAuth,
       async (firebaseUser: any) => {
@@ -79,6 +91,7 @@
 
     return () => {
       unsubscribe();
+      unsubTheme();
       destroyProjectStore();
       destroyActivitiesStore();
       destroyMenuStore();
