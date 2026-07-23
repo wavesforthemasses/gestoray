@@ -16,7 +16,9 @@
 		"emulators": "firebase emulators:start",
 		"push": "git pull && git add . && git commit -m 'update' && git push -u origin main",
 		"test:e2e": "playwright test",
-		"generate": "node scripts/scaffold.js"
+		"generate": "node scripts/scaffold.js",
+		"module:install": "node scripts/install-module.js",
+		"module:uninstall": "node scripts/uninstall-module.js"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.61.1",

@@ -8,9 +8,7 @@
   import StatusBadge from "$lib/components/StatusBadge.svelte";
   import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
   import AdminKPIs from '$lib/components/Dashboard/AdminKPIs.svelte';
-  import { activitiesConfigStore } from '$lib/stores/activities';
   import AdminTasks from "$lib/components/Dashboard/AdminTasks.svelte";
-  import { ContractService } from "$lib/services/ContractService";
   import { DashboardService } from "./dashboard.service";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
@@ -72,10 +70,21 @@
 
   let loadingAdminTables = $state(true);
 
+  import { menuConfigStore } from '$lib/stores/menu';
+  import { Users, Briefcase, CheckSquare, Settings, ArrowRight } from '@lucide/svelte';
+
+  // Active module flags derived from menuConfigStore
+  let activeModuleIds = $derived($menuConfigStore.map(m => m.id));
+  let hasContracts = $derived(activeModuleIds.includes('contracts'));
+  let hasPayments = $derived(activeModuleIds.includes('payments'));
+  let hasCommissions = $derived(activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions'));
+  let hasActivities = $derived(activeModuleIds.includes('activities'));
+  let hasFinancialChart = $derived(hasContracts || hasPayments || hasCommissions || hasActivities);
+
   async function loadKPIs() {
     loadingData = true;
     try {
-      const kpis = await DashboardService.fetchGlobalKPIs(activeRoleState.role || '', authState.user?.uid || '', $activitiesConfigStore);
+      const kpis = await DashboardService.fetchGlobalKPIs(activeRoleState.role || '', authState.user?.uid || '', [], activeModuleIds);
       commContractsCount = kpis.commContractsCount;
       commTotalSold = kpis.commTotalSold;
       commApprovedSold = kpis.commApprovedSold;
@@ -94,7 +103,7 @@
 
       if (activeRoleState.role === 'amministrazione' || activeRoleState.role === 'superadmin') {
         loadingAdminTables = true;
-        const tables = await DashboardService.fetchAdminTables(new Date().toISOString());
+        const tables = await DashboardService.fetchAdminTables(new Date().toISOString(), activeModuleIds);
         adminPendingContracts = tables.adminPendingContracts;
         adminOverdueInstallments = tables.adminOverdueInstallments;
         adminPendingCommissions = tables.adminPendingCommissions;
@@ -111,7 +120,7 @@
   let chartPeriods = $derived(DashboardService.generateChartPeriods(endDateString, granularity));
 
   async function loadChartData() {
-    if (chartPeriods.length === 0) return;
+    if (!hasFinancialChart || chartPeriods.length === 0) return;
     loadingChart = true;
     try {
       computedChartPoints = await DashboardService.fetchChartAggregations(
@@ -127,7 +136,7 @@
 
   let loadingDrillDown = $state(false);
   async function loadDrillDown() {
-    if (selectedPointIdx === null || !chartPeriods[selectedPointIdx]) {
+    if (!hasFinancialChart || selectedPointIdx === null || !chartPeriods[selectedPointIdx]) {
       drillDownItems = [];
       return;
     }
@@ -147,7 +156,6 @@
     }
   }
 
-  // The global layout now handles redirects to /login for unauthenticated users
   // Reactively fetch KPIs whenever auth or role changes
   $effect(() => {
     if (authState.user && activeRoleState.role) {
@@ -157,7 +165,7 @@
 
   // Reactively fetch new chart points whenever filters or tabs change
   $effect(() => {
-    if (activeChartTab || granularity || endDateString || activeRoleState.role) {
+    if (hasFinancialChart && (activeChartTab || granularity || endDateString || activeRoleState.role)) {
       loadChartData();
       selectedPointIdx = null; // reset selection on tab change
     }
@@ -165,7 +173,7 @@
 
   // Reactively fetch drilldown items
   $effect(() => {
-    if (selectedPointIdx !== null || clientFilter !== undefined || vendorFilter !== undefined || productFilter !== undefined) {
+    if (hasFinancialChart && (selectedPointIdx !== null || clientFilter !== undefined || vendorFilter !== undefined || productFilter !== undefined)) {
       loadDrillDown();
     }
   });
@@ -175,8 +183,7 @@
     if (role !== 'superadmin' && role !== 'amministrazione') return;
 
     try {
-      await ContractService.approveContract(contractId, authState.user?.uid || 'system', authState.user?.email || 'system');
-      toast.success('Contratto approvato con successo!');
+      toast.success('Azione gestita nel modulo contratti.');
       await loadKPIs();
     } catch (e: any) {
       toast.error('Errore durante l\'approvazione: ' + e.message);
@@ -196,16 +203,14 @@
   }
 </script>
 
-
-
 {#if authState.user}
   <div class="dashboard-viewport">
-    {#if activeRoleState.role === 'amministrazione'}
-      <!-- 1. Alternative dashboard layout for amministrazione role -->
+    {#if activeRoleState.role === 'amministrazione' && (hasContracts || hasPayments || hasCommissions)}
+      <!-- 1. Admin layout for active admin modules -->
       <div class="dashboard-panoramica admin-layout animate-fade-in">
         <Card
-          title="Pannello di Amministrazione & Recupero Crediti"
-          description="Monitora l'approvazione delle transazioni commerciali e gestisci le rate insolute."
+          title="Pannello di Amministrazione & Operatività"
+          description="Monitora l'approvazione delle transazioni commerciali e gestisci le operazioni di sistema."
           variant="glass"
           class="welcome-banner"
           style="--card-padding: 30px 40px;"
@@ -217,7 +222,6 @@
             Caricamento dati amministrativi...
           </div>
         {:else}
-          <!-- Main Content split -->
           <AdminTasks 
             {adminPendingContracts}
             {adminOverdueInstallments}
@@ -225,16 +229,19 @@
             {adminPendingCommissions}
             {adminFinalizedCommissions}
             onMarkCommissionPaid={handleMarkCommissionPaid}
+            {hasContracts}
+            {hasPayments}
+            {hasCommissions}
           />
         {/if}
       </div>
     {:else}
-      <!-- 2. Commercial / Management (Direzione / Superadmin) Dashboard -->
+      <!-- 2. Clean Core / Commercial / Management Dashboard -->
       <div class="dashboard-panoramica animate-fade-in">
         <!-- Top Welcome Banner -->
         <Card
-          title="Benvenuto nel tuo pannello di controllo"
-          description="Qui puoi visualizzare le informazioni e i trend grafici abilitati per i tuoi ruoli aziendali."
+          title={`Benvenuto, ${authState.user.nome || 'Utente'}`}
+          description="Qui puoi accedere rapidamente alle funzionalità e alle panoramiche abilitate per il tuo profilo."
           variant="glass"
           class="welcome-banner"
           style="--card-padding: 30px 40px;"
@@ -243,70 +250,154 @@
         {#if loadingData}
           <div class="loader-box">
             <span class="spinner"></span>
-            Aggiornamento dati analitici...
+            Caricamento pannello di controllo...
           </div>
         {:else}
-          <div class="dashboard-main-split">
-            <div class="dashboard-left-col">
-              <!-- Unified Interactive Trend Graph Card -->
-              <!-- Unified Interactive Trend Graph Card -->
-              <TrendChart
-                bind:isChartFullscreen
-                bind:activeChartTab
-                bind:selectedPointIdx
-                bind:granularity
-                bind:endDateString
-                bind:clientFilter
-                bind:vendorFilter
-                bind:productFilter
-                {KPI_LEGEND}
-                {loadingChart}
-                {loadingDrillDown}
-                {computedChartPoints}
-                {chartPeriods}
-                {drillDownItems}
-                {usersList}
-                activeRole={activeRoleState.role || ''}
-                {formatCurrency}
-                activitiesConfig={$activitiesConfigStore}
-              />
-            </div>
-
-            <div class="dashboard-right-col">
-              <!-- Financial KPIs Block -->
-              {#if activeRoleState.role === "commerciale"}
-                <CommercialKPIs 
-                  {commTotalNA}
-                  {commContractsCount}
-                  {commTotalSold}
-                  {commMaturate}
-                  {commTotalNNCF}
-                  {commIncassato}
-                  {activityCounts}
-                  activitiesConfig={$activitiesConfigStore}
-                  onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
+          {#if hasFinancialChart}
+            <div class="dashboard-main-split">
+              <div class="dashboard-left-col">
+                <TrendChart
+                  bind:isChartFullscreen
+                  bind:activeChartTab
+                  bind:selectedPointIdx
+                  bind:granularity
+                  bind:endDateString
+                  bind:clientFilter
+                  bind:vendorFilter
+                  bind:productFilter
+                  {KPI_LEGEND}
+                  {loadingChart}
+                  {loadingDrillDown}
+                  {computedChartPoints}
+                  {chartPeriods}
+                  {drillDownItems}
+                  {usersList}
+                  activeRole={activeRoleState.role || ''}
+                  {formatCurrency}
+                  activitiesConfig={[]}
+                  {hasContracts}
+                  {hasPayments}
+                  {hasCommissions}
+                  {hasActivities}
                 />
-              {:else}
-                <!-- superadmin & direzione global stats view -->
-                <AdminKPIs 
-                  {totalClienti}
-                  {totalVenduto}
-                  {totalContratti}
-                  {pendingContratti}
-                  {totalIncassato}
-                  {totalNNCF}
-                  {commMaturate}
-                  {activityCounts}
-                  activitiesConfig={$activitiesConfigStore}
-                  onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
-                />
-              {/if}
+              </div>
+
+              <div class="dashboard-right-col">
+                {#if activeRoleState.role === "commerciale"}
+                  <CommercialKPIs 
+                    {commTotalNA}
+                    {commContractsCount}
+                    {commTotalSold}
+                    {commMaturate}
+                    {commTotalNNCF}
+                    {commIncassato}
+                    {activityCounts}
+                    activitiesConfig={[]}
+                    onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
+                    {hasContracts}
+                    {hasPayments}
+                    {hasCommissions}
+                    {hasActivities}
+                  />
+                {:else}
+                  <AdminKPIs 
+                    {totalClienti}
+                    {totalVenduto}
+                    {totalContratti}
+                    {pendingContratti}
+                    {totalIncassato}
+                    {totalNNCF}
+                    {commMaturate}
+                    {activityCounts}
+                    activitiesConfig={[]}
+                    onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
+                    {hasContracts}
+                    {hasPayments}
+                    {hasCommissions}
+                    {hasActivities}
+                  />
+                {/if}
+              </div>
             </div>
-          </div>
+          {:else}
+            <!-- CLEAN CORE DASHBOARD UI (No financial/contract modules installed) -->
+            <div class="clean-core-grid">
+              <div class="core-kpis-row">
+                <div class="kpi-card">
+                  <div class="kpi-icon-box info">
+                    <Briefcase size={24} />
+                  </div>
+                  <div class="kpi-info">
+                    <span class="kpi-num">{totalClienti}</span>
+                    <span class="kpi-label">Clienti in Anagrafica</span>
+                  </div>
+                </div>
 
+                <div class="kpi-card">
+                  <div class="kpi-icon-box success">
+                    <Users size={24} />
+                  </div>
+                  <div class="kpi-info">
+                    <span class="kpi-num">{usersList.length || 1}</span>
+                    <span class="kpi-label">Utenti Registrati</span>
+                  </div>
+                </div>
 
+                <div class="kpi-card">
+                  <div class="kpi-icon-box warning">
+                    <CheckSquare size={24} />
+                  </div>
+                  <div class="kpi-info">
+                    <span class="kpi-num">0</span>
+                    <span class="kpi-label">Task da Completare</span>
+                  </div>
+                </div>
+              </div>
 
+              <div class="quick-nav-section">
+                <h3>Navigazione Rapida</h3>
+                <div class="nav-cards-grid">
+                  <a href="/dashboard/clients" class="quick-card">
+                    <div class="qc-header">
+                      <Briefcase size={20} class="qc-icon" />
+                      <span>Anagrafica Clienti</span>
+                    </div>
+                    <p>Gestisci l'elenco e le schede dei clienti registrati.</p>
+                    <div class="qc-arrow"><ArrowRight size={16} /></div>
+                  </a>
 
+                  {#if activeRoleState.role === 'superadmin'}
+                    <a href="/dashboard/users" class="quick-card">
+                      <div class="qc-header">
+                        <Users size={20} class="qc-icon" />
+                        <span>Gestione Utenti</span>
+                      </div>
+                      <p>Gestisci gli account aziendali ed i relativi permessi.</p>
+                      <div class="qc-arrow"><ArrowRight size={16} /></div>
+                    </a>
+
+                    <a href="/dashboard/settings/theme" class="quick-card">
+                      <div class="qc-header">
+                        <Settings size={20} class="qc-icon" />
+                        <span>Personalizza Tema</span>
+                      </div>
+                      <p>Modifica la palette ed i colori della piattaforma in tempo reale.</p>
+                      <div class="qc-arrow"><ArrowRight size={16} /></div>
+                    </a>
+                  {/if}
+
+                  <a href="/dashboard/todo" class="quick-card">
+                    <div class="qc-header">
+                      <CheckSquare size={20} class="qc-icon" />
+                      <span>Cose da Fare</span>
+                    </div>
+                    <p>Visualizza la lista dei task e dei promemoria personali.</p>
+                    <div class="qc-arrow"><ArrowRight size={16} /></div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          {/if}
         {/if}
       </div>
     {/if}
@@ -360,5 +451,139 @@
     }
   }
 
+  /* Clean Core Dashboard Styles */
+  .clean-core-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+  }
 
+  .core-kpis-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+
+  .kpi-card {
+    background: var(--color-white);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-neutral-200);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+
+  .kpi-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .kpi-icon-box.info {
+    background: var(--color-info-light);
+    color: var(--color-primary-500);
+  }
+
+  .kpi-icon-box.success {
+    background: var(--color-success-light);
+    color: var(--color-success-text);
+  }
+
+  .kpi-icon-box.warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning-text);
+  }
+
+  .kpi-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kpi-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--color-neutral-900);
+    line-height: 1.2;
+  }
+
+  .kpi-label {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    font-weight: 500;
+  }
+
+  .quick-nav-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-neutral-800);
+    margin: 0 0 16px 0;
+  }
+
+  .nav-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+
+  .quick-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-200);
+    padding: 22px;
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .quick-card:hover {
+    border-color: var(--color-primary-400);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.12);
+  }
+
+  .qc-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-neutral-900);
+    margin-bottom: 8px;
+  }
+
+  :global(.qc-icon) {
+    color: var(--color-primary-500);
+  }
+
+  .quick-card p {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+  }
+
+  .qc-arrow {
+    align-self: flex-end;
+    color: var(--color-primary-500);
+    transition: transform 0.2s;
+  }
+
+  .quick-card:hover .qc-arrow {
+    transform: translateX(4px);
+  }
 </style>

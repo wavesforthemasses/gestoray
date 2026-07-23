@@ -1,0 +1,5 @@
+// COMMISSIONS
+match /commissions/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}

@@ -9,9 +9,7 @@ import ToastContainer from './components/ToastContainer.svelte';
 import ConfirmModal from './components/ConfirmModal.svelte';
 import StatusBadge from './components/StatusBadge.svelte';
 import KPITile from './components/KPITile.svelte';
-import DeadlinesList from './components/DeadlinesList.svelte';
 import TrendChart from './components/TrendChart.svelte';
-
 
 export {
   Card,
@@ -25,7 +23,6 @@ export {
   ConfirmModal,
   StatusBadge,
   KPITile,
-  DeadlinesList,
   TrendChart
 };
 export { generateSearchTerms } from './search-utils';

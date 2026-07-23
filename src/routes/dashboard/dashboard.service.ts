@@ -28,93 +28,123 @@ export interface AdminTables {
 }
 
 export class DashboardService {
-  static async fetchGlobalKPIs(role: string, myUid: string, activitiesConfig: any[]): Promise<DashboardKPIs> {
+  static async fetchGlobalKPIs(role: string, myUid: string, activitiesConfig: any[], activeModuleIds: string[] = []): Promise<DashboardKPIs> {
     const kpis: DashboardKPIs = {
       commContractsCount: 0, commTotalSold: 0, commApprovedSold: 0, commTotalNNCF: 0, commMaturate: 0, commIncassato: 0,
       totalClienti: 0, totalVenduto: 0, totalIncassato: 0, totalNNCF: 0, totalContratti: 0, pendingContratti: 0,
       activityCounts: {}, commTotalNA: 0, usersList: []
     };
 
+    const hasContracts = activeModuleIds.includes('contracts');
+    const hasPayments = activeModuleIds.includes('payments');
+    const hasCommissions = activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions');
+    const hasActivities = activeModuleIds.includes('activities');
+
     // 1. Fetch current user profile to read derived KPIs
-    const userSnap = await getDoc(doc(db, 'users', myUid));
-    if (userSnap.exists()) {
-      const uData = userSnap.data() || {};
-      const uDerived = uData.derived || {};
-      kpis.commContractsCount = uDerived.totalContractsCount || 0;
-      kpis.commTotalSold = (uDerived.totalPendingSales || 0) + (uDerived.totalApprovedSales || 0);
-      kpis.commApprovedSold = uDerived.totalApprovedSales || 0;
-      kpis.commTotalNNCF = uDerived.totalNNCF || 0;
+    try {
+      const userSnap = await getDoc(doc(db, 'users', myUid));
+      if (userSnap.exists()) {
+        const uData = userSnap.data() || {};
+        const uDerived = uData.derived || {};
+        if (hasContracts) {
+          kpis.commContractsCount = uDerived.totalContractsCount || 0;
+          kpis.commTotalSold = (uDerived.totalPendingSales || 0) + (uDerived.totalApprovedSales || 0);
+          kpis.commApprovedSold = uDerived.totalApprovedSales || 0;
+          kpis.commTotalNNCF = uDerived.totalNNCF || 0;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching user profile", err);
     }
 
-    // Fetch commMaturate from finalized closings
-    try {
-      const closingsSnap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized')));
-      let totalMaturate = 0;
-      await Promise.all(closingsSnap.docs.map(async (cDoc: any) => {
-        const vSnap = await getDocs(query(collection(db, 'commissions_closings', cDoc.id, 'versions'), where('status', '==', 'finalized')));
-        if (!vSnap.empty) {
-          const version = vSnap.docs[0].data();
-          if (role === 'commerciale') {
-            const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
-            if (myBreakdown) totalMaturate += (myBreakdown.commission || 0);
-          } else {
-            totalMaturate += (version.totalCommissions || 0);
+    // Fetch commMaturate from finalized closings if commissions module is active
+    if (hasCommissions) {
+      try {
+        const closingsSnap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized')));
+        let totalMaturate = 0;
+        await Promise.all(closingsSnap.docs.map(async (cDoc: any) => {
+          const vSnap = await getDocs(query(collection(db, 'commissions_closings', cDoc.id, 'versions'), where('status', '==', 'finalized')));
+          if (!vSnap.empty) {
+            const version = vSnap.docs[0].data();
+            if (role === 'commerciale') {
+              const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
+              if (myBreakdown) totalMaturate += (myBreakdown.commission || 0);
+            } else {
+              totalMaturate += (version.totalCommissions || 0);
+            }
           }
-        }
-      }));
-      kpis.commMaturate = totalMaturate;
-    } catch (err) {
-      console.error("Error fetching finalized commissions", err);
+        }));
+        kpis.commMaturate = totalMaturate;
+      } catch (err) {
+        console.error("Error fetching finalized commissions", err);
+      }
     }
 
     // 2. Fetch global directional KPIs if admin/direzione
     if (role !== 'commerciale') {
-      const [
-        clientsCountSnap, allContractsValSnap, paymentsValSnap,
-        nncfCountSnap, contractsCountSnap, pendingContractsSnap
-      ] = await Promise.all([
-        getCountFromServer(collection(db, 'clients')),
-        getAggregateFromServer(collection(db, 'contracts'), { val: sum('original.totalPrice') }),
-        getAggregateFromServer(collection(db, 'payments'), { val: sum('original.amount') }),
-        getCountFromServer(query(collection(db, 'clients'), where('derived.nncfOrderId', '!=', null))),
-        getCountFromServer(collection(db, 'contracts')),
-        getCountFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'pending')))
-      ]);
+      try {
+        const clientsCountSnap = await getCountFromServer(collection(db, 'clients'));
+        kpis.totalClienti = clientsCountSnap.data().count;
+      } catch (e) { console.error("Error clients count", e); }
 
-      kpis.totalClienti = clientsCountSnap.data().count;
-      kpis.totalVenduto = allContractsValSnap.data().val || 0;
-      kpis.totalIncassato = paymentsValSnap.data().val || 0;
-      kpis.totalNNCF = nncfCountSnap.data().count;
-      kpis.totalContratti = contractsCountSnap.data().count;
-      kpis.pendingContratti = pendingContractsSnap.data().count;
+      if (hasContracts) {
+        try {
+          const [allContractsValSnap, contractsCountSnap, pendingContractsSnap] = await Promise.all([
+            getAggregateFromServer(collection(db, 'contracts'), { val: sum('original.totalPrice') }),
+            getCountFromServer(collection(db, 'contracts')),
+            getCountFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'pending')))
+          ]);
+          kpis.totalVenduto = allContractsValSnap.data().val || 0;
+          kpis.totalContratti = contractsCountSnap.data().count;
+          kpis.pendingContratti = pendingContractsSnap.data().count;
+        } catch (e) { console.error("Error contracts KPIs", e); }
+      }
 
-      const usersSnap = await getDocs(query(collection(db, 'users'), where('original.roles', 'array-contains', 'commerciale')));
-      usersSnap.forEach((d: any) => kpis.usersList.push({ uid: d.id, ...d.data()?.original }));
+      if (hasPayments) {
+        try {
+          const paymentsValSnap = await getAggregateFromServer(collection(db, 'payments'), { val: sum('original.amount') });
+          kpis.totalIncassato = paymentsValSnap.data().val || 0;
+        } catch (e) { console.error("Error payments KPIs", e); }
+      }
+
+      try {
+        const nncfCountSnap = await getCountFromServer(query(collection(db, 'clients'), where('derived.nncfOrderId', '!=', null)));
+        kpis.totalNNCF = nncfCountSnap.data().count;
+      } catch (e) { console.error("Error NNCF count", e); }
+
+      try {
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('original.roles', 'array-contains', 'commerciale')));
+        usersSnap.forEach((d: any) => kpis.usersList.push({ uid: d.id, ...d.data()?.original }));
+      } catch (e) { console.error("Error users list", e); }
     }
 
-    // 3. Fetch activity counts
-    const allowedActivities = activitiesConfig.filter(a => a.rolesView.includes(role));
-    if (role === 'commerciale') {
-      const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', '==', act.id))));
-      queries.push(getCountFromServer(query(collection(db, 'clients'), where('original.createdBy', '==', myUid))));
-      
-      const snaps = await Promise.all(queries);
-      const naSnap = snaps.pop();
-      kpis.commTotalNA = naSnap?.data()?.count || 0;
-      
-      allowedActivities.forEach((act, idx) => {
-        kpis.activityCounts[act.id] = snaps[idx].data().count;
-      });
-    } else {
-      const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', '==', act.id))));
-      const snaps = await Promise.all(queries);
-      
-      allowedActivities.forEach((act, idx) => {
-        kpis.activityCounts[act.id] = snaps[idx].data().count;
-      });
+    // 3. Fetch activity counts if activities module is active
+    if (hasActivities && activitiesConfig.length > 0) {
+      try {
+        const allowedActivities = activitiesConfig.filter(a => a.rolesView.includes(role));
+        if (role === 'commerciale') {
+          const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', '==', act.id))));
+          queries.push(getCountFromServer(query(collection(db, 'clients'), where('original.createdBy', '==', myUid))));
+          
+          const snaps = await Promise.all(queries);
+          const naSnap = snaps.pop();
+          kpis.commTotalNA = naSnap?.data()?.count || 0;
+          
+          allowedActivities.forEach((act, idx) => {
+            kpis.activityCounts[act.id] = snaps[idx].data().count;
+          });
+        } else {
+          const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', '==', act.id))));
+          const snaps = await Promise.all(queries);
+          
+          allowedActivities.forEach((act, idx) => {
+            kpis.activityCounts[act.id] = snaps[idx].data().count;
+          });
+        }
+      } catch (e) { console.error("Error activities count", e); }
     }
 
-    if (role === 'commerciale') {
+    if (role === 'commerciale' && hasPayments && hasContracts) {
       let commIncassato = 0;
       try {
         const [pSnap, sSnap] = await Promise.all([
@@ -140,42 +170,52 @@ export class DashboardService {
     return kpis;
   }
 
-  static async fetchAdminTables(todayStr: string): Promise<AdminTables> {
+  static async fetchAdminTables(todayStr: string, activeModuleIds: string[] = []): Promise<AdminTables> {
     const res: AdminTables = {
       adminPendingContracts: [], adminOverdueInstallments: [], adminPendingCommissions: [],
       adminFinalizedCommissions: [], adminUndistributedPayments: []
     };
 
-    try {
-      const pendingContrSnap = await getDocs(query(collection(db, 'contracts'), where('original.status', '==', 'pending'), orderBy('edits.createdAt', 'desc')));
-      pendingContrSnap.forEach((d: any) => res.adminPendingContracts.push({ id: d.id, ...d.data().original, ...d.data().edits }));
-    } catch (e) { console.error("Error pending contracts", e); }
+    const hasContracts = activeModuleIds.includes('contracts');
+    const hasPayments = activeModuleIds.includes('payments');
+    const hasCommissions = activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions');
 
-    try {
-      const overdueInstSnap = await getDocs(query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending'), where('original.dueDate', '<', todayStr.split('T')[0])));
-      overdueInstSnap.forEach((d: any) => res.adminOverdueInstallments.push({ id: d.id, ...d.data()?.original }));
-      res.adminOverdueInstallments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    } catch (e) { console.error("Error overdue installments", e); }
+    if (hasContracts) {
+      try {
+        const pendingContrSnap = await getDocs(query(collection(db, 'contracts'), where('original.status', '==', 'pending'), orderBy('edits.createdAt', 'desc')));
+        pendingContrSnap.forEach((d: any) => res.adminPendingContracts.push({ id: d.id, ...d.data().original, ...d.data().edits }));
+      } catch (e) { console.error("Error pending contracts", e); }
+    }
 
-    try {
-      const allCommSnap = await getDocs(collection(db, 'commissions_closings'));
-      allCommSnap.forEach((d: any) => {
-        const data = d.data();
-        const status = data.latestStatus || 'draft';
-        if (status === 'finalized') {
-          if (!data.isPaid) res.adminFinalizedCommissions.push({ id: d.id, ...data });
-        } else {
-          res.adminPendingCommissions.push({ id: d.id, ...data });
-        }
-      });
-      res.adminPendingCommissions.sort((a, b) => b.id.localeCompare(a.id));
-      res.adminFinalizedCommissions.sort((a, b) => b.id.localeCompare(a.id));
-    } catch (e) { console.error("Error commissions", e); }
+    if (hasPayments) {
+      try {
+        const overdueInstSnap = await getDocs(query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending'), where('original.dueDate', '<', todayStr.split('T')[0])));
+        overdueInstSnap.forEach((d: any) => res.adminOverdueInstallments.push({ id: d.id, ...d.data()?.original }));
+        res.adminOverdueInstallments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      } catch (e) { console.error("Error overdue installments", e); }
 
-    try {
-      const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('derived.remainingToDistribute', '>', 0)));
-      paymentsSnap.forEach((d: any) => res.adminUndistributedPayments.push({ id: d.id, ...d.data()?.original, ...d.data()?.derived }));
-    } catch (e) { console.error("Error undistributed payments", e); }
+      try {
+        const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('derived.remainingToDistribute', '>', 0)));
+        paymentsSnap.forEach((d: any) => res.adminUndistributedPayments.push({ id: d.id, ...d.data()?.original, ...d.data()?.derived }));
+      } catch (e) { console.error("Error undistributed payments", e); }
+    }
+
+    if (hasCommissions) {
+      try {
+        const allCommSnap = await getDocs(collection(db, 'commissions_closings'));
+        allCommSnap.forEach((d: any) => {
+          const data = d.data();
+          const status = data.latestStatus || 'draft';
+          if (status === 'finalized') {
+            if (!data.isPaid) res.adminFinalizedCommissions.push({ id: d.id, ...data });
+          } else {
+            res.adminPendingCommissions.push({ id: d.id, ...data });
+          }
+        });
+        res.adminPendingCommissions.sort((a, b) => b.id.localeCompare(a.id));
+        res.adminFinalizedCommissions.sort((a, b) => b.id.localeCompare(a.id));
+      } catch (e) { console.error("Error commissions", e); }
+    }
 
     return res;
   }

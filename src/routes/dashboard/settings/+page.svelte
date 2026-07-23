@@ -3,7 +3,7 @@
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { Settings, Percent, Building, Menu, ActivitySquare, Palette } from '@lucide/svelte';
+  import { Settings, Percent, Building, Menu, ActivitySquare, Palette, Shield } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Impostazioni');
@@ -29,22 +29,16 @@
 
   <div class="settings-grid">
     <SettingsNavCard 
+      href="/dashboard/settings/roles"
+      title="Gestione Ruoli e Permessi"
+      description="Crea e gestisci ruoli aziendali (es. Amministrazione, Commerciale, Operaio, Tecnico) e imposta i permessi della Dashboard."
+      icon={Shield}
+    />
+    <SettingsNavCard 
       href="/dashboard/settings/project"
       title="Configurazione Progetto"
       description="Imposta il nome della piattaforma, l'email di sistema per le notifiche e altri parametri di base."
       icon={Building}
-    />
-    <SettingsNavCard 
-      href="/dashboard/settings/commissions"
-      title="Regole Provvigionali"
-      description="Configura i metodi di calcolo, le penalizzazioni sugli sconti e le logiche matematiche globali."
-      icon={Percent}
-    />
-    <SettingsNavCard 
-      href="/dashboard/settings/activities"
-      title="KPI e Attività"
-      description="Configura i tipi di attività e interazioni (Telefonate, Appuntamenti) e i relativi permessi."
-      icon={ActivitySquare}
     />
     <SettingsNavCard 
       href="/dashboard/settings/menu"

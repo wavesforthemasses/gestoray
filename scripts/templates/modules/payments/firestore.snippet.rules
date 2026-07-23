@@ -1,0 +1,5 @@
+// PAYMENTS
+match /payments/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}

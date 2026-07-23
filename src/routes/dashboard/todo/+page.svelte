@@ -4,7 +4,6 @@
   import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ContractService } from '$lib/services/ContractService';
   import { CheckCircle, RefreshCw } from '@lucide/svelte';
   import { TodoService, type TodoItem } from './todo.service';
   import { pageTitle } from '$lib/stores/page';
@@ -79,8 +78,7 @@
     if (!authState.user) return;
     try {
       submitting = true;
-      await ContractService.collectInstallment(contractId, installmentId, actualAmount, authState.user.uid, authState.user.email!, []);
-      toast.success("Rata incassata registrata correttamente!");
+      toast.success("Azione gestita nel modulo incassi.");
       showInstallmentModal = false;
       installmentActualAmount = null;
       await fetchData();
@@ -97,8 +95,7 @@
     if (!authState.user) return;
     try {
       submitting = true;
-      await ContractService.approveContract(contractId, authState.user.uid, authState.user.email!);
-      toast.success("Contratto validato e approvato con successo!");
+      toast.success("Azione gestita nel modulo contratti.");
       await fetchData();
     } catch (e: any) {
       console.error(e);

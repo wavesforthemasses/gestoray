@@ -8,13 +8,13 @@
     CheckCircle,
     ActivitySquare
   } from "@lucide/svelte";
-  import { activitiesConfigStore } from "$lib/stores/activities";
-
+  // Remove activitiesConfigStore import
   interface Props {
     activitiesList: any[];
     clientNotes: string[];
     clientCreatedAt: string;
     newlyCreatedId: string;
+    activitiesConfig?: any[];
 
     // State & actions
     activeRole: string | null;
@@ -32,6 +32,7 @@
     clientNotes,
     clientCreatedAt,
     newlyCreatedId,
+    activitiesConfig = [],
 
     activeRole,
     submittingActivity,
@@ -81,7 +82,7 @@
         {/snippet}
 
         <div class="quick-log-actions">
-          {#each $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')) as kpi}
+          {#each (activitiesConfig || []).filter((kpi: any) => kpi.rolesInsert.includes(activeRole || '')) as kpi}
             <Button
               onclick={() => logActivity(kpi.id)}
               variant="secondary"
@@ -90,7 +91,7 @@
               {kpi.name}
             </Button>
           {/each}
-          {#if $activitiesConfigStore.filter(kpi => kpi.rolesInsert.includes(activeRole || '')).length === 0}
+          {#if (activitiesConfig || []).filter((kpi: any) => kpi.rolesInsert.includes(activeRole || '')).length === 0}
             <p class="empty-kpi-msg">Nessun KPI disponibile per il tuo ruolo.</p>
           {/if}
         </div>

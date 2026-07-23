@@ -13,7 +13,11 @@
     commMaturate,
     activityCounts,
     activitiesConfig,
-    onTabSelect
+    onTabSelect,
+    hasContracts = false,
+    hasPayments = false,
+    hasCommissions = false,
+    hasActivities = false
   } = $props<{
     totalClienti: number;
     totalVenduto: number;
@@ -25,6 +29,10 @@
     activityCounts: Record<string, number>;
     activitiesConfig: any[];
     onTabSelect: (tab: string) => void;
+    hasContracts?: boolean;
+    hasPayments?: boolean;
+    hasCommissions?: boolean;
+    hasActivities?: boolean;
   }>();
 
   import { MessageSquare, ActivitySquare, CheckCircle, Mail, Briefcase } from "@lucide/svelte";
@@ -57,61 +65,69 @@
     inlineSubtitle={true}
   />
 
-  {#each allowedActivities as act}
+  {#if hasActivities}
+    {#each allowedActivities as act}
+      <KPITile 
+        theme="info" 
+        icon={iconMap[act.icon] || ActivitySquare} 
+        title={act.acronym || act.name.substring(0, 3).toUpperCase()} 
+        value={activityCounts[act.id] || 0} 
+        subtitle={act.name} 
+        titleAttr={act.name} 
+        onclick={() => onTabSelect(act.id)} 
+        inlineSubtitle={true}
+      />
+    {/each}
+  {/if}
+
+  {#if hasContracts}
     <KPITile 
       theme="info" 
-      icon={iconMap[act.icon] || ActivitySquare} 
-      title={act.acronym || act.name.substring(0, 3).toUpperCase()} 
-      value={activityCounts[act.id] || 0} 
-      subtitle={act.name} 
-      titleAttr={act.name} 
-      onclick={() => onTabSelect(act.id)} 
+      icon={FileText} 
+      title="NNCF" 
+      value={totalNNCF} 
+      subtitle="Conversioni" 
+      titleAttr={`${KPI_LEGEND.NNCF.label} - ${KPI_LEGEND.NNCF.description}`} 
+      onclick={() => onTabSelect("nncf")} 
       inlineSubtitle={true}
     />
-  {/each}
 
-  <KPITile 
-    theme="info" 
-    icon={FileText} 
-    title="NNCF" 
-    value={totalNNCF} 
-    subtitle="Conversioni" 
-    titleAttr={`${KPI_LEGEND.NNCF.label} - ${KPI_LEGEND.NNCF.description}`} 
-    onclick={() => onTabSelect("nncf")} 
-    inlineSubtitle={true}
-  />
+    <KPITile 
+      theme="info" 
+      icon={DollarSign} 
+      title="VSS" 
+      value={`€ ${totalVenduto.toFixed(2)}`} 
+      subtitle={`Approvati: ${totalContratti - pendingContratti}`} 
+      titleAttr={`${KPI_LEGEND.VSS.label} - ${KPI_LEGEND.VSS.description}`} 
+      onclick={() => onTabSelect("vss")} 
+      inlineSubtitle={true}
+    />
+  {/if}
 
-  <KPITile 
-    theme="info" 
-    icon={DollarSign} 
-    title="VSS" 
-    value={`€ ${totalVenduto.toFixed(2)}`} 
-    subtitle={`Approvati: ${totalContratti - pendingContratti}`} 
-    titleAttr={`${KPI_LEGEND.VSS.label} - ${KPI_LEGEND.VSS.description}`} 
-    onclick={() => onTabSelect("vss")} 
-    inlineSubtitle={true}
-  />
+  {#if hasPayments}
+    <KPITile 
+      theme="info" 
+      icon={Wallet} 
+      title="GI" 
+      value={`€ ${totalIncassato.toFixed(2)}`} 
+      subtitle={`Attesa: ${pendingContratti}`} 
+      titleAttr={`${KPI_LEGEND.GI.label} - ${KPI_LEGEND.GI.description}`} 
+      onclick={() => onTabSelect("gi")} 
+      inlineSubtitle={true}
+    />
+  {/if}
 
-  <KPITile 
-    theme="info" 
-    icon={Wallet} 
-    title="GI" 
-    value={`€ ${totalIncassato.toFixed(2)}`} 
-    subtitle={`Attesa: ${pendingContratti}`} 
-    titleAttr={`${KPI_LEGEND.GI.label} - ${KPI_LEGEND.GI.description}`} 
-    onclick={() => onTabSelect("gi")} 
-    inlineSubtitle={true}
-  />
-
-  <KPITile 
-    theme="info" 
-    icon={DollarSign} 
-    title="Provvigioni Maturate" 
-    value={`€ ${commMaturate.toFixed(2)}`} 
-    subtitle="Generiche (Rete)" 
-    onclick={() => onTabSelect("provvigioni_maturate")}
-    inlineSubtitle={true}
-  />
+  {#if hasCommissions}
+    <KPITile 
+      theme="info" 
+      icon={DollarSign} 
+      title="Provvigioni Maturate" 
+      value={`€ ${commMaturate.toFixed(2)}`} 
+      subtitle="Generiche (Rete)" 
+      onclick={() => onTabSelect("provvigioni_maturate")}
+      inlineSubtitle={true}
+    />
+  {/if}
 </section>
 
 <style>

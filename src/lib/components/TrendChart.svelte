@@ -41,13 +41,32 @@
     usersList,
     activeRole,
     formatCurrency,
-    activitiesConfig
-  }: Props = $props();
+    activitiesConfig = [],
+    hasContracts = true,
+    hasPayments = true,
+    hasCommissions = true,
+    hasActivities = true
+  }: Props & {
+    hasContracts?: boolean;
+    hasPayments?: boolean;
+    hasCommissions?: boolean;
+    hasActivities?: boolean;
+  } = $props();
 
-  const allowedActivities = $derived(activitiesConfig.filter(a => a.rolesView.includes(activeRole || 'superadmin')));
+  const allowedActivities = $derived(hasActivities && activitiesConfig ? activitiesConfig.filter((a: any) => a.rolesView.includes(activeRole || 'superadmin')) : []);
 
   let chartWrapperW = $state(0);
   let chartWrapperH = $state(0);
+
+  $effect(() => {
+    if (activeChartTab === 'gi' && !hasPayments) {
+      activeChartTab = 'nuove_anagrafiche';
+    } else if (activeChartTab === 'provvigioni_maturate' && !hasCommissions) {
+      activeChartTab = 'nuove_anagrafiche';
+    } else if ((activeChartTab === 'nncf' || activeChartTab === 'vss') && !hasContracts) {
+      activeChartTab = 'nuove_anagrafiche';
+    }
+  });
 </script>
 
 <div class="unified-chart-wrapper" class:fullscreen={isChartFullscreen}>
@@ -71,49 +90,59 @@
           NA
         </button>
 
-        {#each allowedActivities as act}
+        {#if hasActivities}
+          {#each allowedActivities as act}
+            <button
+              class="chart-tab-btn"
+              class:active={activeChartTab === act.id}
+              onclick={() => { activeChartTab = act.id; selectedPointIdx = null; }}
+              title={act.name}
+            >
+              {act.acronym || act.name.substring(0, 3).toUpperCase()}
+            </button>
+          {/each}
+        {/if}
+
+        {#if hasContracts}
           <button
             class="chart-tab-btn"
-            class:active={activeChartTab === act.id}
-            onclick={() => { activeChartTab = act.id; selectedPointIdx = null; }}
-            title={act.name}
+            class:active={activeChartTab === "nncf"}
+            onclick={() => { activeChartTab = "nncf"; selectedPointIdx = null; }}
+            title={`${KPI_LEGEND.NNCF.label} - ${KPI_LEGEND.NNCF.description}`}
           >
-            {act.acronym || act.name.substring(0, 3).toUpperCase()}
+            NNCF
           </button>
-        {/each}
+          <button
+            class="chart-tab-btn"
+            class:active={activeChartTab === "vss"}
+            onclick={() => { activeChartTab = "vss"; selectedPointIdx = null; }}
+            title={`${KPI_LEGEND.VSS.label} - ${KPI_LEGEND.VSS.description}`}
+          >
+            VSS
+          </button>
+        {/if}
 
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "nncf"}
-          onclick={() => { activeChartTab = "nncf"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.NNCF.label} - ${KPI_LEGEND.NNCF.description}`}
-        >
-          NNCF
-        </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "vss"}
-          onclick={() => { activeChartTab = "vss"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.VSS.label} - ${KPI_LEGEND.VSS.description}`}
-        >
-          VSS
-        </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "gi"}
-          onclick={() => { activeChartTab = "gi"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.GI.label} - ${KPI_LEGEND.GI.description}`}
-        >
-          GI
-        </button>
-        <button
-          class="chart-tab-btn"
-          class:active={activeChartTab === "provvigioni_maturate"}
-          onclick={() => { activeChartTab = "provvigioni_maturate"; selectedPointIdx = null; }}
-          title={`${KPI_LEGEND.PM.label} - ${KPI_LEGEND.PM.description}`}
-        >
-          PM
-        </button>
+        {#if hasPayments}
+          <button
+            class="chart-tab-btn"
+            class:active={activeChartTab === "gi"}
+            onclick={() => { activeChartTab = "gi"; selectedPointIdx = null; }}
+            title={`${KPI_LEGEND.GI.label} - ${KPI_LEGEND.GI.description}`}
+          >
+            GI
+          </button>
+        {/if}
+
+        {#if hasCommissions}
+          <button
+            class="chart-tab-btn"
+            class:active={activeChartTab === "provvigioni_maturate"}
+            onclick={() => { activeChartTab = "provvigioni_maturate"; selectedPointIdx = null; }}
+            title={`${KPI_LEGEND.PM.label} - ${KPI_LEGEND.PM.description}`}
+          >
+            PM
+          </button>
+        {/if}
       </div>
 
       <!-- Granularity & Period picker -->

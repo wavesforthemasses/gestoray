@@ -1,0 +1,5 @@
+// PRODUCTS
+match /products/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}

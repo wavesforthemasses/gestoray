@@ -32,7 +32,7 @@ service cloud.firestore {
     
     // USERS
     match /users/{uid} {
-      allow read: if isAuth(); // Permesso a tutti per vedere le anagrafiche venditori nei dropdown
+      allow read: if isAuth();
       allow create: if isAdmin();
       allow update: if isAuth() && (request.auth.uid == uid || isAdmin());
       allow delete: if hasRole('superadmin');
@@ -45,13 +45,6 @@ service cloud.firestore {
       allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.createdBy == request.auth.uid);
       allow delete: if hasRole('superadmin');
       
-      match /activities/{actId} {
-        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
-        allow create: if isAuth();
-        allow update: if isAuth() && (isAdmin() || resource.data.original.loggedBy == request.auth.uid);
-        allow delete: if hasRole('superadmin') || isAdmin();
-      }
-      
       match /history/{histId} {
         allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
         allow create: if isAuth();
@@ -60,96 +53,21 @@ service cloud.firestore {
       }
     }
     
-    // CONTRACTS
-    match /contracts/{contractId} {
-      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
-      allow create: if isAuth() && notWritingDerived();
-      allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
-      allow delete: if isAdmin();
-      
-      match /installments/{instId} {
-        allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.vendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.secondVendorUid == request.auth.uid);
-        allow create, update: if isAuth() && (isAdmin() || isDirezione() || request.auth.uid != null); // Actually we update it when postponing
-        allow delete: if isAdmin();
-      }
-    }
-    
-    // PAYMENTS
-    match /payments/{payId} {
-      // Allow read to all for now since frontend fetches all payments to filter in memory.
-      // A more robust solution requires changing the frontend query schema.
-      allow read: if isAuth(); 
-      allow create: if isAuth() && isAdmin();
-      allow update: if false;  // immutabile dopo creazione (solo derived via CF)
-      allow delete: if hasRole('superadmin');
-      
-      match /contractsPaid/{contractId} {
-        allow read: if isAuth();
-        allow create, update: if isAuth() && isAdmin();
-        allow delete: if hasRole('superadmin');
-      }
-    }
-    
-    // PRODUCTS
-    match /products/{productId} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
-    }
-    
     // QUALIFICATIONS
     match /qualifications/{qualId} {
       allow read: if isAuth();
       allow create, update, delete: if hasRole('superadmin');
     }
 
-
-
     // SETTINGS
     match /settings/{settingId} {
       allow read: if isAuth();
       allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
     }
-    
-    // COMMISSIONS CLOSINGS
-    match /commissions_closings/{periodId} {
-      allow read: if isAuth() && (isAdmin() || isDirezione());
-      allow write: if isAdmin();
-      
-      match /versions/{versionId} {
-        allow read: if isAuth() && (isAdmin() || isDirezione());
-        allow write: if isAdmin();
-      }
-    }
-    
+
     // LOGIN PINS — solo server-side
     match /login_pins/{email} {
       allow read, write: if false;
-    }
-    
-    // COLLECTION GROUPS
-    match /{path=**}/installments/{instId} {
-      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
-      allow create, update: if isAuth() && isAdmin();
-      allow delete: if hasRole('superadmin');
-    }
-    
-    match /{path=**}/activities/{actId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth() && (isAdmin() || resource.data.original.loggedBy == request.auth.uid);
-      allow delete: if isAdmin();
-    }
-    
-    match /{path=**}/contractsPaid/{contractId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth() && isAdmin();
-      allow delete: if hasRole('superadmin');
-    }
-
-    // TICKETS
-    match /tickets/{docId} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
     }
   }
 }

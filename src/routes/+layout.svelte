@@ -12,7 +12,6 @@
   } from "$lib/firebase";
   import { authState, activeRoleState } from "$lib/auth.svelte";
   import { initProjectStore, destroyProjectStore, projectStore } from "$lib/stores/project";
-  import { initActivitiesStore, destroyActivitiesStore } from "$lib/stores/activities";
   import { initMenuStore, destroyMenuStore } from "$lib/stores/menu";
 
 
@@ -56,7 +55,6 @@
               
               // Inizializza gli store globali solo DOPO aver confermato l'autenticazione
               initProjectStore();
-              initActivitiesStore();
               initMenuStore();
               
             } else {
@@ -70,7 +68,6 @@
               };
               activeRoleState.role = null;
               destroyProjectStore();
-              destroyActivitiesStore();
               destroyMenuStore();
             }
             } catch (e) {
@@ -83,7 +80,6 @@
           activeRoleState.role = null;
           authState.initialized = true;
           destroyProjectStore();
-          destroyActivitiesStore();
           destroyMenuStore();
         }
       },
@@ -93,7 +89,6 @@
       unsubscribe();
       unsubTheme();
       destroyProjectStore();
-      destroyActivitiesStore();
       destroyMenuStore();
     };
   });

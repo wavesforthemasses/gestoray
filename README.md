@@ -105,28 +105,45 @@ Nella modalità con emulatore, all'avvio con `npm run dev:emulators` vengono **p
 
 ---
 
-## 🏗️ Generatore di Moduli (Scaffolder CLI)
+---
 
-Vuoi aggiungere una nuova sezione completa al tuo gestionale (es. *Ordini*, *Ticket*, *Fornitori*)? Puoi farlo con **un solo comando**!
+## 📦 Registro Moduli Portabili & Installazione On-Demand
 
-### Esempio: Creare il modulo "Tickets"
+La codebase di partenza (Clean Base Core) include solo le funzionalità universali per tutti i progetti (*Dashboard, Utenti, Profilo, Clienti, Qualifiche, To-Do, Impostazioni*).
+
+I moduli avanzati pronti all'uso (*Contratti, Incassi, Provvigioni, Attività, Prodotti*) risiedono nel **Registro Moduli (`scripts/templates/modules/`)** come pacchetti indipendenti.
+
+### Opzione A: Installazione Automatica via CLI (1-Click)
+Per installare qualsiasi modulo dal registro nella tua applicazione:
 ```bash
-npm run generate -- --name Tickets --collection tickets
+npm run module:install -- --name contracts
+# Moduli disponibili: contracts, payments, commissions, activities, products
+```
+
+### Opzione B: Installazione Manuale Copy-Paste su Altre Codebase
+Ogni cartella in `scripts/templates/modules/[modulo]/` contiene un file **`HOW_TO_INSTALL.md`** che fornisce le istruzioni passo-passo per prelevare manualmente i file ed incollarli in qualsiasi altra codebase custom (file fisici, voce in `menu.ts` e snippet in `firestore.rules`).
+
+---
+
+## 🏗️ Generatore di Moduli Custom (Scaffolder CLI)
+
+Se vuoi creare un nuovo modulo **completamente nuovo da zero** (es. *Ordini*, *Fornitori*, *Magazzino*):
+
+```bash
+npm run generate -- --name Orders --collection orders
 ```
 
 ### Cosa fa lo script in automatico?
-1. Crea l'intera struttura in `src/routes/dashboard/tickets/`:
+1. Crea l'intera struttura in `src/routes/dashboard/orders/`:
    - `+page.svelte` (Pagina Elenco)
    - `add/+page.svelte` (Pagina Creazione)
    - `[id]/+page.svelte` (Pagina Dettaglio & Modifica)
-   - `tickets.service.ts` (Servizio CRUD Firebase)
-   - `tickets.spec.ts` (Test E2E completi per Playwright)
-   - `components/TicketsTable.svelte` (Componente Tabella)
-   - `components/TicketsForm.svelte` (Componente Form)
+   - `orders.service.ts` (Servizio CRUD Firebase)
+   - `orders.spec.ts` (Test E2E completi per Playwright)
+   - `components/OrdersTable.svelte` (Componente Tabella)
+   - `components/OrdersForm.svelte` (Componente Form)
 2. Aggiunge automaticamente la voce nel menu di navigazione (`src/lib/stores/menu.ts`).
 3. Aggiunge le regole di sicurezza nel file `firestore.rules`.
-
-Dopodiché non ti resta che personalizzare i campi specifici nel form e nella tabella generati!
 
 ---
 

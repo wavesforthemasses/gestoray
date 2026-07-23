@@ -1,0 +1,9 @@
+// ACTIVITIES
+match /activities/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+match /activity_types/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
