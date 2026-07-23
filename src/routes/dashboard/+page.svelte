@@ -147,14 +147,7 @@
     }
   }
 
-  $effect(() => {
-    if (authState.user === null) {
-      setTimeout(() => {
-        if (authState.user === null) goto("/login");
-      }, 800);
-    }
-  });
-
+  // The global layout now handles redirects to /login for unauthenticated users
   // Reactively fetch KPIs whenever auth or role changes
   $effect(() => {
     if (authState.user && activeRoleState.role) {

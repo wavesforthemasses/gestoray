@@ -20,11 +20,14 @@ service cloud.firestore {
       return hasRole('direzione');
     }
     
-    // Blocca scrittura frontend su derived
+    // Blocca scrittura frontend su derived, ad eccezione di textSearch che viene aggiornato dal frontend
     function notWritingDerived() {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
-             (resource != null && request.resource.data.derived == resource.data.derived);
+             (resource != null && (
+                request.resource.data.derived == resource.data.derived ||
+                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch'])
+             ));
     }
     
     // USERS
@@ -62,12 +65,12 @@ service cloud.firestore {
       allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
       allow create: if isAuth() && notWritingDerived();
       allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid);
-      allow delete: if hasRole('superadmin');
+      allow delete: if isAdmin();
       
       match /installments/{instId} {
         allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.vendorUid == request.auth.uid || resource.data.original.secondVendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.vendorUid == request.auth.uid || get(/databases/$(database)/documents/contracts/$(contractId)).data.original.secondVendorUid == request.auth.uid);
         allow create, update: if isAuth() && (isAdmin() || isDirezione() || request.auth.uid != null); // Actually we update it when postponing
-        allow delete: if hasRole('superadmin');
+        allow delete: if isAdmin();
       }
     }
     
@@ -82,8 +85,8 @@ service cloud.firestore {
       
       match /contractsPaid/{contractId} {
         allow read: if isAuth();
-        allow create: if isAuth() && isAdmin();
-        allow update, delete: if hasRole('superadmin');
+        allow create, update: if isAuth() && isAdmin();
+        allow delete: if hasRole('superadmin');
       }
     }
     
@@ -139,8 +142,8 @@ service cloud.firestore {
     
     match /{path=**}/contractsPaid/{contractId} {
       allow read: if isAuth();
-      allow create: if isAuth() && isAdmin();
-      allow update, delete: if hasRole('superadmin');
+      allow create, update: if isAuth() && isAdmin();
+      allow delete: if hasRole('superadmin');
     }
   }
 }

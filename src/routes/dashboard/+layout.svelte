@@ -39,6 +39,13 @@
     authState.user = null;
     goto('/login');
   }
+
+  $effect(() => {
+    // Se l'autenticazione è stata controllata ma l'utente non c'è, redirect a login
+    if (authState.initialized && !authState.user) {
+      goto('/login');
+    }
+  });
 </script>
 
 <svelte:head>

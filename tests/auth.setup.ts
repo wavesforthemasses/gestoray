@@ -1,5 +1,6 @@
 import { test as setup, expect } from '@playwright/test';
 import * as fs from 'fs';
+import { seedFirestoreDoc } from './utils';
 
 const authEmulatorUrl = 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-key';
 const firestoreEmulatorUrl = 'http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents/users';
@@ -82,8 +83,15 @@ async function seedUser(email: string, role: string) {
 setup('warmup vite server', async ({ page }) => {
   setup.setTimeout(120000);
   await page.goto('/login');
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForTimeout(2000);
+  await seedUser('test-admin@gestoray.local', 'amministrazione');
+  await seedUser('test-comm@gestoray.local', 'commerciale');
+  await seedUser('test-super@gestoray.local', 'superadmin');
+
+  // Configura i settings di progetto per evitare che ProjectSetupBlocker blocchi la UI agli admin
+  await seedFirestoreDoc('settings', 'project', {
+    projectName: { stringValue: 'Test CRM' },
+    projectEmail: { stringValue: 'test@gestoray.local' }
+  });
 });
 
 
@@ -189,4 +197,48 @@ setup('authenticate as commerciale', async ({ page }) => {
   await expect(page.locator('.loader-box')).toBeHidden();
   
   await page.context().storageState({ path: 'playwright/.auth/comm.json' });
+});
+
+setup('authenticate as superadmin', async ({ page }) => {
+  setup.setTimeout(120000);
+
+  const email = 'test-super@gestoray.local';
+  await seedUser(email, 'superadmin');
+  
+  await page.goto('/login');
+  
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1500);
+  
+  await page.fill('input[type="email"]', email);
+  const pinDocUrl = `http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents/login_pins/${email}`;
+  
+  await fetch(pinDocUrl, { method: 'DELETE', headers: { 'Authorization': 'Bearer owner' } });
+
+  await page.click('button[type="submit"]');
+  
+  let pin = '';
+  for (let i = 0; i < 30; i++) {
+    const res = await fetch(pinDocUrl, { headers: { 'Authorization': 'Bearer owner' } });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.fields?.pin?.stringValue) {
+        pin = data.fields.pin.stringValue;
+        break;
+      }
+    }
+    await page.waitForTimeout(500);
+  }
+  
+  if (!pin) throw new Error("PIN non trovato nel Firestore Emulator!");
+
+  await expect(page.locator('input[name="pin"]')).toBeVisible({ timeout: 5000 });
+  
+  await page.fill('input[name="pin"]', pin);
+  await page.click('button[type="submit"]');
+  
+  await page.waitForURL('/dashboard');
+  await expect(page.locator('.loader-box')).toBeHidden();
+  
+  await page.context().storageState({ path: 'playwright/.auth/super.json' });
 });

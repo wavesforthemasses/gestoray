@@ -100,14 +100,22 @@ export class PaymentsService {
       throw new Error("Dati mancanti per registrare l'incasso.");
     }
 
-    const client = clientsList.find(c => c.id === selectedClientId);
-    const clientFullName = client ? `${client.nome} ${client.cognome || ''}`.trim() : 'Sconosciuto';
+    const c = clientsList.find((c: any) => c.id === selectedClientId);
+    if (!c) throw new Error("Cliente non trovato in anagrafica.");
+
+    // Check if contract exists and fetch its details
+    const { getDoc } = await import('firebase/firestore');
+    const contractDocRef = doc(db, 'contracts', selectedContractId);
+    const contractDoc = await getDoc(contractDocRef);
+    if (!contractDoc.exists()) {
+      throw new Error("Contratto associato non trovato.");
+    }
+    
+    const clientFullName = c ? `${c.nome} ${c.cognome || ''}`.trim() : 'Sconosciuto';
     const now = new Date().toISOString();
     const paymentId = 'pay_' + Math.random().toString(36).substring(2, 11);
     
     const terms = generateSearchTerms(clientFullName + ' ' + selectedContractId + ' ' + authUser.email);
-
-    // 1. Create top-level payment document
     const newPayment = {
       original: {
         clientId: selectedClientId,

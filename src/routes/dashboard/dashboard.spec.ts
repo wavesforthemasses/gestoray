@@ -99,3 +99,53 @@ test.describe('Dashboard Page - Ruolo: Commerciale / Direzione', () => {
     await expect(page.locator('.loader-box')).toBeHidden();
   });
 });
+
+test.describe('Dashboard Page - Ruolo: Superadmin', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, 'test-super@gestoray.local');
+  });
+
+  test('mostra il layout commerciale/direzione per superadmin', async ({ page }) => {
+    // Superadmin vede la stessa dashboard di direzione (non quella admin)
+    await expect(page.locator('text=Benvenuto nel tuo pannello di controllo')).toBeVisible();
+  });
+
+  test('mostra il Trend Chart per superadmin', async ({ page }) => {
+    const chartContainer = page.locator('.unified-chart-wrapper');
+    await expect(chartContainer).toBeVisible();
+  });
+});
+
+test.describe('Dashboard - Sidebar Navigation', () => {
+  test('la sidebar mostra le voci corrette per amministrazione', async ({ page }) => {
+    await loginAs(page, 'test-admin@gestoray.local');
+    // Verifica che la sidebar contenga i link principali
+    await expect(page.locator('.nav-item', { hasText: 'Dashboard' })).toBeVisible();
+  });
+
+  test('la sidebar mostra le voci corrette per commerciale', async ({ page }) => {
+    await loginAs(page, 'test-comm@gestoray.local');
+    await expect(page.locator('.nav-item', { hasText: 'Dashboard' })).toBeVisible();
+  });
+
+  test('il bottone Disconnetti è visibile e funzionante', async ({ page }) => {
+    await loginAs(page, 'test-admin@gestoray.local');
+    const logoutBtn = page.locator('.logout-btn');
+    await expect(logoutBtn).toBeVisible();
+    await logoutBtn.click();
+    await expect(page).toHaveURL(/.*\/login/, { timeout: 10000 });
+  });
+
+  test('espansione e contrazione del pannello grafici (Action 80)', async ({ page }) => {
+    await loginAs(page, 'test-comm@gestoray.local');
+    await page.goto('/dashboard/contracts');
+    await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
+
+    const expandBtn = page.getByRole('button', { name: /Espandi|Comprimi/i }).first();
+    if (await expandBtn.isVisible()) {
+      await expandBtn.click();
+      await expect(page.locator('.unified-chart-wrapper, .chart-wrapper')).toBeVisible();
+      await expandBtn.click();
+    }
+  });
+});

@@ -19,9 +19,6 @@
   let { children } = $props();
 
   onMount(() => {
-    initProjectStore();
-    initActivitiesStore();
-    initMenuStore();
     const unsubscribe = onAuthStateChanged(
       clientAuth,
       async (firebaseUser: any) => {
@@ -44,6 +41,12 @@
               if (!currentActive || !roles.includes(currentActive)) {
                 activeRoleState.role = roles[0] || null;
               }
+              
+              // Inizializza gli store globali solo DOPO aver confermato l'autenticazione
+              initProjectStore();
+              initActivitiesStore();
+              initMenuStore();
+              
             } else {
               console.warn(
                 `User document not found in Firestore for UID: ${firebaseUser.uid}`,
@@ -54,13 +57,22 @@
                 roles: [],
               };
               activeRoleState.role = null;
+              destroyProjectStore();
+              destroyActivitiesStore();
+              destroyMenuStore();
             }
-          } catch (e) {
+            } catch (e) {
             console.error("Error fetching user profile:", e);
+          } finally {
+            authState.initialized = true;
           }
         } else {
           authState.user = null;
           activeRoleState.role = null;
+          authState.initialized = true;
+          destroyProjectStore();
+          destroyActivitiesStore();
+          destroyMenuStore();
         }
       },
     );
@@ -78,6 +90,8 @@
   <link rel="icon" href={`/favicon.png`} />
 </svelte:head>
 
-{@render children()}
+{#if authState.initialized}
+  {@render children()}
+{/if}
 <ToastContainer />
 <ConfirmModal />

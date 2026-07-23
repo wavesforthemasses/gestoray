@@ -1,0 +1,155 @@
+
+--- src/routes/dashboard/activities/activities.spec.ts ---
+test.describe('Activities Page', () => {
+test('carica la pagina attività', async ({ page }) => {
+test.describe('Activities Page - Ruolo: Amministrazione', () => {
+test('carica la pagina attività per admin', async ({ page }) => {
+test.describe('Nuova Attività e Submit', () => {
+test('registra una nuova attività rapida dal cliente', async ({ page }) => {
+
+--- src/routes/dashboard/clients/[id]/client-detail.spec.ts ---
+test.describe('Client Detail Page - Ruolo: Amministrazione', () => {
+test('carica il dettaglio del cliente con i dati corretti', async ({ page }) => {
+test('modifica e salva le informazioni del cliente', async ({ page }) => {
+test('compila e salva un preventivo nella scheda preventivatore', async ({ page }) => {
+
+--- src/routes/dashboard/clients/clients.spec.ts ---
+test.describe('Clients Page - Ruolo: Commerciale', () => {
+test('carica la pagina clienti', async ({ page }) => {
+test('mostra il bottone per aggiungere un nuovo cliente', async ({ page }) => {
+test('apre il form di aggiunta cliente', async ({ page }) => {
+test('mostra errore di validazione se i campi obbligatori sono vuoti', async ({ page }) => {
+test('compila e salva un nuovo cliente con successo', async ({ page }) => {
+test.describe('Clients Page - Ruolo: Amministrazione', () => {
+test('carica la pagina clienti per admin', async ({ page }) => {
+
+--- src/routes/dashboard/commissions/commissions-liquidated.spec.ts ---
+test.describe('Commissions Liquidated Page', () => {
+test('carica il dettaglio della versione e la rende definitiva', async ({ page }) => {
+
+--- src/routes/dashboard/commissions/commissions.spec.ts ---
+test.describe('Commissions Page', () => {
+test('carica la pagina storico provvigioni', async ({ page }) => {
+test('mostra il selettore del periodo', async ({ page }) => {
+
+--- src/routes/dashboard/contracts/[id]/contract-detail.spec.ts ---
+test.describe('Contract Detail Page - Ruolo: Amministrazione', () => {
+test('visualizza il dettaglio del contratto e approva', async ({ page }) => {
+
+--- src/routes/dashboard/contracts/contracts.spec.ts ---
+test.describe('Contracts Page - Ruolo: Commerciale', () => {
+test('carica la pagina contratti', async ({ page }) => {
+test('cambia tab filtro tra In Attesa e Approvati', async ({ page }) => {
+test.describe('Contracts Page - Ruolo: Amministrazione', () => {
+test('carica la pagina contratti per admin', async ({ page }) => {
+
+--- src/routes/dashboard/dashboard.spec.ts ---
+test.describe('Dashboard Page - Accesso e Sicurezza', () => {
+test('reindirizza a /login se l\'utente non è autenticato', async ({ page }) => {
+test.describe('Dashboard Page - Ruolo: Amministrazione', () => {
+test('mostra il layout corretto per l\'amministrazione', async ({ page }) => {
+test('visualizza le tabelle dei task amministrativi', async ({ page }) => {
+test('permette di approvare un contratto', async ({ page }) => {
+test('permette di segnare una provvigione come pagata', async ({ page }) => {
+test.describe('Dashboard Page - Ruolo: Commerciale / Direzione', () => {
+test('mostra il layout corretto per commerciale/direzione', async ({ page }) => {
+test('interazione con il Trend Chart (Cambio Tab)', async ({ page }) => {
+test('interazione con la KPI Board', async ({ page }) => {
+test('verifica caricamento dati', async ({ page }) => {
+test.describe('Dashboard Page - Ruolo: Superadmin', () => {
+test('mostra il layout commerciale/direzione per superadmin', async ({ page }) => {
+test('mostra il Trend Chart per superadmin', async ({ page }) => {
+test.describe('Dashboard - Sidebar Navigation', () => {
+test('la sidebar mostra le voci corrette per amministrazione', async ({ page }) => {
+test('la sidebar mostra le voci corrette per commerciale', async ({ page }) => {
+test('il bottone Disconnetti è visibile e funzionante', async ({ page }) => {
+
+--- src/routes/dashboard/my-commissions/my-commissions.spec.ts ---
+test.describe('My Commissions Page', () => {
+test('carica la pagina le mie provvigioni', async ({ page }) => {
+test('mostra il selettore del periodo', async ({ page }) => {
+
+--- src/routes/dashboard/payments/[id]/payment-detail.spec.ts ---
+test.describe('Payment Detail Page', () => {
+test('distribuisce importo sui prodotti', async ({ page }) => {
+
+--- src/routes/dashboard/payments/payments.spec.ts ---
+test.describe('Payments Page', () => {
+test('carica la pagina incassi', async ({ page }) => {
+test('mostra il bottone per registrare un nuovo incasso', async ({ page }) => {
+test('compila e salva un nuovo incasso', async ({ page }) => {
+
+--- src/routes/dashboard/products/products.spec.ts ---
+test.describe('Products Page', () => {
+test('carica la pagina catalogo prodotti', async ({ page }) => {
+test('aggiunge un nuovo prodotto', async ({ page }) => {
+
+--- src/routes/dashboard/profile/profile.spec.ts ---
+test.describe('Profile Page', () => {
+test('carica la pagina profilo con il titolo corretto', async ({ page }) => {
+test('mostra i dati dell\'utente corrente', async ({ page }) => {
+test('mostra i campi nome, cognome e email', async ({ page }) => {
+test('il form ha un bottone di salvataggio', async ({ page }) => {
+
+--- src/routes/dashboard/qualifications/qualifications.spec.ts ---
+test.describe('Qualifications Page', () => {
+test('carica la pagina gestione qualifiche', async ({ page }) => {
+test('aggiunge una nuova qualifica', async ({ page }) => {
+
+--- src/routes/dashboard/settings/activities/activities-settings.spec.ts ---
+test.describe('Activities Settings Page', () => {
+test('carica la configurazione tipi attività', async ({ page }) => {
+
+--- src/routes/dashboard/settings/commissions/commissions-settings.spec.ts ---
+test.describe('Commissions Settings Page', () => {
+test('carica i parametri provvigionali', async ({ page }) => {
+
+--- src/routes/dashboard/settings/menu/menu-settings.spec.ts ---
+test.describe('Menu Settings Page', () => {
+test('carica la configurazione del menu', async ({ page }) => {
+
+--- src/routes/dashboard/settings/project/project-settings.spec.ts ---
+test.describe('Project Settings Page', () => {
+test('carica il form delle impostazioni di progetto', async ({ page }) => {
+
+--- src/routes/dashboard/settings/settings.spec.ts ---
+test.describe('Settings Hub Page', () => {
+test('carica la pagina hub impostazioni', async ({ page }) => {
+test('mostra le card di navigazione verso le sotto-pagine', async ({ page }) => {
+test('naviga alla pagina regole provvigionali cliccando sulla card', async ({ page }) => {
+
+--- src/routes/dashboard/todo/todo.spec.ts ---
+test.describe('Todo Page', () => {
+test('verifica rendering task card', async ({ page }) => {
+
+--- src/routes/dashboard/users/[id]/user-detail.spec.ts ---
+test.describe('User Detail Page', () => {
+test('dettaglio utente e modifica ruolo', async ({ page }) => {
+
+--- src/routes/dashboard/users/users.spec.ts ---
+test.describe('Users Page', () => {
+test('carica la pagina utenti per superadmin', async ({ page }) => {
+test('crea un nuovo utente', async ({ page }) => {
+test.describe('Users Page - Accesso Negato', () => {
+test('impedisce accesso a non-superadmin e reindirizza alla dashboard', async ({ page }) => {
+
+--- src/routes/login/login.spec.ts ---
+test.describe('Login Page', () => {
+test('mostra il form di login con campo email e bottone', async ({ page }) => {
+test('il campo email è obbligatorio', async ({ page }) => {
+test('flusso completo: email → PIN → redirect a /dashboard', async ({ page }) => {
+test('il bottone "Indietro" torna allo step email', async ({ page }) => {
+test.describe('Login Page - Protezione Accesso', () => {
+test('redirect a /login se si accede a /dashboard senza autenticazione', async ({ page }) => {
+
+--- tests/access-control.spec.ts ---
+test.describe('Access Control - Commerciale non può accedere a pagine admin', () => {
+test('commerciale su /dashboard/users → redirect a /dashboard', async ({ page }) => {
+test('commerciale su /dashboard/settings → redirect a /dashboard', async ({ page }) => {
+test('commerciale su /dashboard/qualifications → redirect a /dashboard', async ({ page }) => {
+test('commerciale su /dashboard/commissions → redirect a /dashboard', async ({ page }) => {
+test.describe('Access Control - Admin non può accedere a pagine commerciale', () => {
+test('admin su /dashboard/my-commissions → redirect a /dashboard', async ({ page }) => {
+test.describe('Access Control - Utente non autenticato', () => {
+test('non autenticato su /dashboard → redirect a /login', async ({ page }) => {
+test('non autenticato su /dashboard/clients → redirect a /login', async ({ page }) => {

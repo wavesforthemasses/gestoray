@@ -8,7 +8,7 @@ export interface UserProfile {
   supervisorUid?: string;
 }
 
-export const authState = $state<{ user: UserProfile | null }>({ user: null });
+export const authState = $state<{ user: UserProfile | null, initialized: boolean }>({ user: null, initialized: false });
 export const activeRoleState = $state<{ role: string | null }>({ role: null });
 
 export const has = {

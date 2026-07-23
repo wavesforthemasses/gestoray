@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { authState } from '$lib/auth.svelte';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
   import { generateId } from '$lib/utils/helpers';
   import { generateSearchTerms } from '$lib';
@@ -26,7 +26,7 @@
       return;
     }
     if (!fiscalId.trim() && !partitaIva.trim() && !codiceFiscale.trim()) {
-      toast.error("L'Identificativo Fiscale è obbligatorio.");
+      toast.error("Almeno uno tra Identificativo Fiscale, Partita IVA o Codice Fiscale è obbligatorio.");
       return;
     }
     if (!email.trim() && !phone.trim()) {
@@ -38,10 +38,18 @@
 
     try {
       // Uniqueness check for fiscalId
-      const checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()));
-      const checkSnap = await getDocs(checkQuery);
-      if (!checkSnap.empty) {
-        throw new Error("L'Identificativo Fiscale inserito è già associato a un'altra anagrafica.");
+      if (fiscalId.trim()) {
+        let checkQuery;
+        if (['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role)) {
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()));
+        } else {
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()), where('original.createdBy', '==', authState.user.uid));
+        }
+        
+        const checkSnap = await getDocs(checkQuery);
+        if (!checkSnap.empty) {
+          throw new Error("L'Identificativo Fiscale inserito è già associato a un'altra anagrafica.");
+        }
       }
 
       const clientId = generateId('client');

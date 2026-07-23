@@ -34,3 +34,43 @@ export async function loginAs(page: Page, email: string) {
   await page.waitForURL('/dashboard');
   await expect(page.locator('.loader-box')).toBeHidden();
 }
+
+const FIRESTORE_BASE = 'http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents';
+
+/**
+ * Create or update a document in the Firestore emulator.
+ * `fields` must be in Firestore REST format (e.g. { name: { stringValue: 'foo' } }).
+ */
+export async function seedFirestoreDoc(
+  collection: string,
+  docId: string,
+  fields: Record<string, any>
+): Promise<void> {
+  const url = `${FIRESTORE_BASE}/${collection}/${docId}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer owner'
+    },
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`seedFirestoreDoc failed for ${collection}/${docId}: ${errText}`);
+  }
+}
+
+/**
+ * Delete a document from the Firestore emulator.
+ */
+export async function deleteFirestoreDoc(
+  collection: string,
+  docId: string
+): Promise<void> {
+  const url = `${FIRESTORE_BASE}/${collection}/${docId}`;
+  await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer owner' }
+  });
+}

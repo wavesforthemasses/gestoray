@@ -32,11 +32,17 @@
     }
   });
 
-  onMount(() => {
+  let dataLoaded = $state(false);
 
-    if (authState.user) {
+  $effect(() => {
+    if (authState.user && !dataLoaded) {
+      dataLoaded = true;
       loadData();
     }
+  });
+
+  onMount(() => {
+    // Il caricamento è gestito dall'effetto reattivo su authState.user
   });
 
   async function loadData() {
