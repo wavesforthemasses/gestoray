@@ -1,16 +1,21 @@
 import { db, doc, getDoc, setDoc } from '$lib/firebase';
-import type { TeamItem, VehicleItem } from '../../routes/dashboard/interventi/schema';
+import type { TeamItem, VehicleItem, PricingUnit } from '$lib/types/interventi';
 
 export interface InterventionTypeConfig {
   id: string;
   label: string;
   defaultHourlyRate?: number;
+  defaultPricingUnit?: PricingUnit;
 }
 
 export interface InterventionSettingsConfig {
-  locationLabel: string; // 'Luoghi di Intervento' | 'Cantieri' | 'Sedi & Impianti'
+  locationLabel: string;
   defaultHourlyRate: number;
   requireSignatureForBilling: boolean;
+  enableABolla: boolean;
+  enableAdErogazione: boolean;
+  defaultMode: 'a_bolla' | 'ad_erogazione';
+  enabledPricingUnits: PricingUnit[];
   interventionTypes: InterventionTypeConfig[];
   teams: TeamItem[];
   vehicles: VehicleItem[];
@@ -20,12 +25,16 @@ export const DEFAULT_INTERVENTION_SETTINGS: InterventionSettingsConfig = {
   locationLabel: 'Luoghi di Intervento',
   defaultHourlyRate: 45,
   requireSignatureForBilling: false,
+  enableABolla: true,
+  enableAdErogazione: true,
+  defaultMode: 'a_bolla',
+  enabledPricingUnits: ['ora', 'mq', 'mc', 'quantita', 'corpo'],
   interventionTypes: [
-    { id: 'manutenzione', label: 'Manutenzione Ordinaria', defaultHourlyRate: 45 },
-    { id: 'riparazione', label: 'Riparazione Straordinaria', defaultHourlyRate: 55 },
-    { id: 'consulenza', label: 'Consulenza Tecnico/Operativa', defaultHourlyRate: 65 },
-    { id: 'consegna', label: 'Consegna Merci / Attrezzature', defaultHourlyRate: 35 },
-    { id: 'sopralluogo', label: 'Sopralluogo / Preventivazione', defaultHourlyRate: 40 }
+    { id: 'manutenzione', label: 'Manutenzione Ordinaria', defaultHourlyRate: 45, defaultPricingUnit: 'ora' },
+    { id: 'riparazione', label: 'Riparazione Straordinaria', defaultHourlyRate: 55, defaultPricingUnit: 'ora' },
+    { id: 'consulenza', label: 'Consulenza Tecnico/Operativa', defaultHourlyRate: 65, defaultPricingUnit: 'ora' },
+    { id: 'consegna', label: 'Consegna Merci / Attrezzature', defaultHourlyRate: 35, defaultPricingUnit: 'corpo' },
+    { id: 'sopralluogo', label: 'Sopralluogo / Preventivazione', defaultHourlyRate: 40, defaultPricingUnit: 'corpo' }
   ],
   teams: [
     { id: 'team_alpha', name: 'Squadra Alpha (Impianti)', memberUids: [], color: '#3b82f6', active: true },
@@ -49,6 +58,10 @@ export class InterventionSettingsService {
           locationLabel: data.locationLabel || DEFAULT_INTERVENTION_SETTINGS.locationLabel,
           defaultHourlyRate: data.defaultHourlyRate ?? DEFAULT_INTERVENTION_SETTINGS.defaultHourlyRate,
           requireSignatureForBilling: !!data.requireSignatureForBilling,
+          enableABolla: data.enableABolla ?? DEFAULT_INTERVENTION_SETTINGS.enableABolla,
+          enableAdErogazione: data.enableAdErogazione ?? DEFAULT_INTERVENTION_SETTINGS.enableAdErogazione,
+          defaultMode: data.defaultMode || DEFAULT_INTERVENTION_SETTINGS.defaultMode,
+          enabledPricingUnits: data.enabledPricingUnits || DEFAULT_INTERVENTION_SETTINGS.enabledPricingUnits,
           interventionTypes: data.interventionTypes || DEFAULT_INTERVENTION_SETTINGS.interventionTypes,
           teams: data.teams || DEFAULT_INTERVENTION_SETTINGS.teams,
           vehicles: data.vehicles || DEFAULT_INTERVENTION_SETTINGS.vehicles

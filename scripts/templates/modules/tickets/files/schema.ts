@@ -28,6 +28,7 @@ export interface TicketMessage {
 
 export interface TicketItem {
   id?: string;
+  ticketNumber?: string;
   subject: string;
   description: string;
   clientId?: string;
@@ -42,6 +43,7 @@ export interface TicketItem {
   priority: 'bassa' | 'media' | 'alta' | 'urgente';
   category: string;
   status: 'aperto' | 'in_lavorazione' | 'in_attesa_cliente' | 'risolto' | 'chiuso';
+  channel?: string;
   slaDueDate?: string | null;
   customFields?: Record<string, any>;
   messages?: TicketMessage[];

@@ -418,3 +418,1177 @@ INFO: Detected non-HTTP/2 connection.
 [debug] [2026-07-25T19:10:38.268Z] Jul 25, 2026 9:10:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected non-HTTP/2 connection.
  {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:10:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:11:01.881Z] Jul 25, 2026 9:11:01 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:11:01 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:11:24.268Z] Jul 25, 2026 9:11:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:11:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:11:46.894Z] Jul 25, 2026 9:11:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:11:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:10.267Z] Jul 25, 2026 9:12:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:31.906Z] Jul 25, 2026 9:12:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:43.274Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:12:43.280Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:12:43.280Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:12:43.282Z] Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:43.334Z] Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:43.358Z] Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:43.387Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:12:43.387Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:12:43.396Z] Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:43.409Z] Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:44.274Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:12:44.811Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:
+
+ functions/lib/index.js does not exist, can't deploy Cloud Functions {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:\n\n functions/lib/index.js does not exist, can't deploy Cloud Functions"}}
+[debug] [2026-07-25T19:12:46.213Z] Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:46.225Z] Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:46.238Z] Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:46.252Z] Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:12:56.269Z] Jul 25, 2026 9:12:56 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:12:56 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:13:29.472Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:13:29.477Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:13:29.477Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:13:29.479Z] Jul 25, 2026 9:13:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:13:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:13:29.544Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:13:29.544Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:13:29.668Z] Jul 25, 2026 9:13:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:13:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:13:30.472Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:13:30.929Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:13:30.929Z] Building nodejs source
+[debug] [2026-07-25T19:13:30.929Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:13:30.929Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:13:30.930Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8923
+
+[debug] [2026-07-25T19:13:31.116Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:13:35.138Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:13:35.139Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:13:35.141Z] [worker-pool] Shutting down IDLE worker (europe-west3-sendLoginPin) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west3-sendLoginPin)"}}
+[debug] [2026-07-25T19:13:35.142Z] [worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-sendLoginPin"},"extension":{},"message":"[worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: FINISHING"}}
+[debug] [2026-07-25T19:13:35.142Z] [worker-pool] Shutting down IDLE worker (europe-west3-verifyLoginPin) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west3-verifyLoginPin)"}}
+[debug] [2026-07-25T19:13:35.142Z] [worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-verifyLoginPin"},"extension":{},"message":"[worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: FINISHING"}}
+[debug] [2026-07-25T19:13:35.158Z] [worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-sendLoginPin"},"extension":{},"message":"[worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: exited"}}
+[debug] [2026-07-25T19:13:35.158Z] [worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-sendLoginPin"},"extension":{},"message":"[worker-europe-west3-sendLoginPin-c0c05b99-fb54-498c-9127-b5c74959c71a]: FINISHED"}}
+[debug] [2026-07-25T19:13:35.159Z] [worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-verifyLoginPin"},"extension":{},"message":"[worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: exited"}}
+[debug] [2026-07-25T19:13:35.160Z] [worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west3-verifyLoginPin"},"extension":{},"message":"[worker-europe-west3-verifyLoginPin-49838226-fe87-4cc4-96bb-dc27ce3f092f]: FINISHED"}}
+[debug] [2026-07-25T19:13:42.274Z] Jul 25, 2026 9:13:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:13:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:06.778Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:14:06.782Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:14:06.782Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:14:06.784Z] Jul 25, 2026 9:14:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:06.879Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:14:06.879Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:14:07.503Z] Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:07.517Z] Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:07.532Z] Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:07.545Z] Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:07.778Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:14:08.223Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:
+
+ functions/lib/index.js does not exist, can't deploy Cloud Functions {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:\n\n functions/lib/index.js does not exist, can't deploy Cloud Functions"}}
+[debug] [2026-07-25T19:14:09.076Z] File /home/vincenzo/Code/gestoray/functions/lib/src/aggregations.js.map changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/lib/src/aggregations.js.map changed, reloading triggers"}}
+[debug] [2026-07-25T19:14:09.197Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:14:09.202Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:14:09.202Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:14:09.225Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.242Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.269Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:14:09.269Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:14:09.280Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.314Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.702Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.713Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.726Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:09.737Z] Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:10.034Z] Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:10.046Z] Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:10.058Z] Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:10.067Z] Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:10.196Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:14:10.742Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:14:10.742Z] Building nodejs source
+[debug] [2026-07-25T19:14:10.742Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:14:10.742Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:14:10.743Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8249
+
+[debug] [2026-07-25T19:14:10.914Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:14:14.927Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:14:14.927Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:14:28.112Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:14:28.118Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:14:28.118Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:14:28.119Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.143Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.160Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.169Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:14:28.169Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:14:28.184Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.193Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.269Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.507Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.518Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.529Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:28.536Z] Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:29.007Z] Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:29.021Z] Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:29.034Z] Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:29.046Z] Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:14:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:14:29.113Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:14:30.097Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:14:30.098Z] Building nodejs source
+[debug] [2026-07-25T19:14:30.098Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:14:30.098Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:14:30.099Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8280
+
+[debug] [2026-07-25T19:14:30.307Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:14:34.331Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:14:34.333Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:15:14.067Z] Jul 25, 2026 9:15:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:14.267Z] Jul 25, 2026 9:15:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:24.605Z] Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:24.616Z] Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:24.632Z] Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:24.641Z] Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:41.792Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:15:41.797Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:15:41.797Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n\n    // --- MODULE: commissions BEGIN ---\n    // COMMISSIONS\nmatch /commissions/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: commissions END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:15:41.799Z] Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:41.834Z] Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:41.837Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:15:41.837Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:15:41.845Z] Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:41.867Z] Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:41 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:42.378Z] Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:42.389Z] Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:42.401Z] Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:42.408Z] Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:42.792Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:15:47.556Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:15:47.556Z] Building nodejs source
+[debug] [2026-07-25T19:15:47.556Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:15:47.557Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:15:47.557Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[debug] [2026-07-25T19:15:47.568Z] Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:47.579Z] Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:47.593Z] Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:47.611Z] Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:47 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] Serving at port 8980
+
+[debug] [2026-07-25T19:15:47.749Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:15:51.774Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:15:51.775Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:15:57.355Z] Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:57.364Z] Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:57.375Z] Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:15:57.383Z] Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:15:57 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:00.269Z] Jul 25, 2026 9:16:00 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:00 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:03.923Z] Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:03.932Z] Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:03.944Z] Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:03.952Z] Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:16:38.778Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:16:38.778Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n\n    // --- MODULE: commissions BEGIN ---\n    // COMMISSIONS\nmatch /commissions/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: commissions END ---\n\n    // --- MODULE: products BEGIN ---\n    // PRODUCTS\nmatch /products/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: products END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:16:38.780Z] Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:38.812Z] Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:38.830Z] Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:38.836Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:16:38.836Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:16:38.851Z] Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.441Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.457Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.474Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.482Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.705Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.715Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.727Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:39.735Z] Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:16:46.268Z] Jul 25, 2026 9:16:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:16:46 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:06.562Z] Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:06.577Z] Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:06.591Z] Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:06.599Z] Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:20.523Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:17:20.528Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:17:20.528Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n\n    // --- MODULE: commissions BEGIN ---\n    // COMMISSIONS\nmatch /commissions/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: commissions END ---\n\n    // --- MODULE: products BEGIN ---\n    // PRODUCTS\nmatch /products/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: products END ---\n\n    // --- MODULE: activities BEGIN ---\n    // ACTIVITIES\nmatch /activities/{docId} {\n  allow read: if isAuth();\n  allow write: if isAuth();\n}\nmatch /activity_types/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: activities END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:17:20.530Z] Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:20.571Z] Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:20.588Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:17:20.589Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:17:20.595Z] Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:20.614Z] Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:21.523Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:17:21.992Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:17:21.992Z] Building nodejs source
+[debug] [2026-07-25T19:17:21.992Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:17:21.993Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:17:21.993Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[debug] [2026-07-25T19:17:22.008Z] Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:22.024Z] Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:22.041Z] Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:22.050Z] Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] Serving at port 8260
+
+[debug] [2026-07-25T19:17:22.173Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:17:26.190Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:17:26.191Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:17:32.267Z] Jul 25, 2026 9:17:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:39.478Z] Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:39.489Z] Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:39.504Z] Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:39.513Z] Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:39 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:51.750Z] Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:51.765Z] Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:51.781Z] Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:17:51.798Z] Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:17:51 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:18:07.824Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:18:07.824Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n\n    // --- MODULE: commissions BEGIN ---\n    // COMMISSIONS\nmatch /commissions/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: commissions END ---\n\n    // --- MODULE: products BEGIN ---\n    // PRODUCTS\nmatch /products/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: products END ---\n\n    // --- MODULE: activities BEGIN ---\n    // ACTIVITIES\nmatch /activities/{docId} {\n  allow read: if isAuth();\n  allow write: if isAuth();\n}\nmatch /activity_types/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: activities END ---\n\n    // --- MODULE: tickets BEGIN ---\n    // TICKETS\nmatch /tickets/{docId} {\n  allow read: if isAuth() && (\n    isAdmin() || \n    isDirezione() || \n    resource.data.assignedTo == request.auth.uid || \n    resource.data.requesterEmail == request.auth.token.email\n  );\n  allow create: if isAuth();\n  allow update: if isAuth() && (\n    isAdmin() || \n    isDirezione() || \n    resource.data.assignedTo == request.auth.uid\n  );\n  allow delete: if hasRole('superadmin');\n}\n    // --- MODULE: tickets END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:18:07.826Z] Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:07.869Z] Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:07.883Z] Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:07 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:07.890Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:18:07.890Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:18:08.020Z] Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:08.651Z] Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:08.663Z] Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:08.676Z] Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:08.682Z] Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:09.519Z] Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:09.529Z] Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:09.545Z] Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:09.551Z] Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:09 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:33.580Z] Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:33.589Z] Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:33.608Z] Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:33.614Z] Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:18:48.267Z] Jul 25, 2026 9:18:48 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:18:48 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:16.756Z] Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:16.765Z] Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:16.783Z] Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:16.791Z] Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:16 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:17.539Z] Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:17.549Z] Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:17.564Z] Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:17.569Z] Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:19:34.269Z] Jul 25, 2026 9:19:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:19:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:03.281Z] Jul 25, 2026 9:20:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:20.268Z] Jul 25, 2026 9:20:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:32.835Z] Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:32.846Z] Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:32.876Z] Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:20:32.883Z] Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:20:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:06.268Z] Jul 25, 2026 9:21:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:06 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:08.786Z] Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:08.797Z] Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:08.820Z] Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:08.827Z] Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:08 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:40.659Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:21:40.666Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:21:40.666Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n\n    // --- MODULE: contracts BEGIN ---\n    // CONTRACTS\nmatch /contracts/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: contracts END ---\n\n    // --- MODULE: payments BEGIN ---\n    // PAYMENTS\nmatch /payments/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: payments END ---\n\n    // --- MODULE: commissions BEGIN ---\n    // COMMISSIONS\nmatch /commissions/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: commissions END ---\n\n    // --- MODULE: products BEGIN ---\n    // PRODUCTS\nmatch /products/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: products END ---\n\n    // --- MODULE: activities BEGIN ---\n    // ACTIVITIES\nmatch /activities/{docId} {\n  allow read: if isAuth();\n  allow write: if isAuth();\n}\nmatch /activity_types/{docId} {\n  allow read: if isAuth();\n  allow write: if isAdmin();\n}\n    // --- MODULE: activities END ---\n\n    // --- MODULE: tickets BEGIN ---\n    // TICKETS\nmatch /tickets/{docId} {\n  allow read: if isAuth() && (\n    isAdmin() || \n    isDirezione() || \n    resource.data.assignedTo == request.auth.uid || \n    resource.data.requesterEmail == request.auth.token.email\n  );\n  allow create: if isAuth();\n  allow update: if isAuth() && (\n    isAdmin() || \n    isDirezione() || \n    resource.data.assignedTo == request.auth.uid\n  );\n  allow delete: if hasRole('superadmin');\n}\n    // --- MODULE: tickets END ---\n\n    // --- MODULE: interventi BEGIN ---\n    match /interventions/{interventionId} {\n  allow read: if request.auth != null;\n  allow create, update: if request.auth != null;\n  allow delete: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.role == 'direzione');\n}\nmatch /teams/{teamId} {\n  allow read: if request.auth != null;\n  allow create, update, delete: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.role == 'direzione' || request.auth.token.role == 'amministrazione');\n}\nmatch /vehicles/{vehicleId} {\n  allow read: if request.auth != null;\n  allow create, update, delete: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.role == 'direzione' || request.auth.token.role == 'amministrazione');\n}\nmatch /settings/interventi {\n  allow read: if true;\n  allow write: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.role == 'direzione');\n}\n    // --- MODULE: interventi END ---\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:21:40.668Z] Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:40.738Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:21:40.738Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:21:40.746Z] Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:40.758Z] Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:40.793Z] Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:40 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:41.660Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:21:42.206Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:21:42.206Z] Building nodejs source
+[debug] [2026-07-25T19:21:42.206Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:21:42.207Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:21:42.208Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[debug] [2026-07-25T19:21:42.225Z] Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:42.241Z] Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:42.276Z] Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:42.299Z] Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] Serving at port 8097
+
+[debug] [2026-07-25T19:21:42.457Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:21:43.493Z] Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:43.504Z] Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:43.522Z] Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:43.530Z] Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:21:46.474Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:21:46.474Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:21:52.268Z] Jul 25, 2026 9:21:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:21:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:29.282Z] Jul 25, 2026 9:22:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:38.266Z] Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:38.674Z] Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:38.681Z] Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:38.697Z] Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:22:38.702Z] Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:22:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:24.268Z] Jul 25, 2026 9:23:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:24.284Z] Jul 25, 2026 9:23:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:37.704Z] Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:37.714Z] Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:37.733Z] Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:37.741Z] Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:38.509Z] Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:38.523Z] Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:38.538Z] Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:23:38.547Z] Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:23:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:10.267Z] Jul 25, 2026 9:24:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:10 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:23.826Z] Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:23.835Z] Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:23.854Z] Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:23.860Z] Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:56.266Z] Jul 25, 2026 9:24:56 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:56 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:58.068Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:24:58.073Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:24:58.073Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:24:58.075Z] Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:58.131Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:24:58.131Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:24:58.158Z] Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:58.168Z] Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:58.184Z] Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:58 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:59.069Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:24:59.609Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:
+
+ functions/lib/index.js does not exist, can't deploy Cloud Functions {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:\n\n functions/lib/index.js does not exist, can't deploy Cloud Functions"}}
+[debug] [2026-07-25T19:24:59.949Z] Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:59.967Z] Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:24:59.991Z] Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:00.000Z] Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:24:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:00.510Z] File /home/vincenzo/Code/gestoray/functions/lib/src/triggers/onClientCreated.js.map changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/lib/src/triggers/onClientCreated.js.map changed, reloading triggers"}}
+[debug] [2026-07-25T19:25:01.511Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:25:02.217Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:25:02.217Z] Building nodejs source
+[debug] [2026-07-25T19:25:02.217Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:25:02.218Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:25:02.219Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[debug] [2026-07-25T19:25:02.227Z] Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:02.248Z] Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] Serving at port 8091
+
+[debug] [2026-07-25T19:25:02.301Z] Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:02.314Z] Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:02.457Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:25:06.471Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:25:06.471Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:25:20.552Z] Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:20.564Z] Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:20.593Z] Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:20.600Z] Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:26.752Z] File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/index.ts changed, reloading triggers"}}
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2026-07-25T19:25:26.758Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules [none]
+[debug] [2026-07-25T19:25:26.758Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    \n    function getUserData() {\n      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;\n    }\n\n    function hasRole(role) {\n      return request.auth != null && \n             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&\n             (\n               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||\n               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||\n               ('role' in getUserData() && getUserData().role == role)\n             );\n    }\n    \n    function isAuth() {\n      return request.auth != null;\n    }\n    \n    function isAdmin() {\n      return hasRole('superadmin') || hasRole('amministrazione');\n    }\n\n    function isDirezione() {\n      return hasRole('direzione');\n    }\n    \n    function notWritingDerived() {\n      return (request.resource == null) ||\n             !('derived' in request.resource.data) ||\n             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||\n             (resource != null && (\n                request.resource.data.derived == resource.data.derived ||\n                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])\n             ));\n    }\n    \n    // USERS\n    match /users/{uid} {\n      allow read: if isAuth();\n      allow create: if isAdmin();\n      allow update: if isAuth() && (request.auth.uid == uid || isAdmin());\n      allow delete: if hasRole('superadmin');\n    }\n    \n    // CLIENTS\n    match /clients/{clientId} {\n      allow read: if isAuth();\n      allow create: if isAuth() && notWritingDerived();\n      allow update: if isAuth() && notWritingDerived();\n      allow delete: if hasRole('superadmin');\n      \n      match /activities/{activityId} {\n        allow read, write: if isAuth();\n      }\n\n      match /locations/{locationId} {\n        allow read, write: if isAuth();\n      }\n\n      match /history/{histId} {\n        allow read: if isAuth();\n        allow create: if isAuth();\n        allow update: if false;\n        allow delete: if hasRole('superadmin');\n      }\n    }\n    \n    // QUALIFICATIONS\n    match /qualifications/{qualId} {\n      allow read: if isAuth();\n      allow create, update, delete: if hasRole('superadmin');\n    }\n\n    // SETTINGS\n    match /settings/{settingId} {\n      allow read: if isAuth();\n      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());\n    }\n\n    // LOGIN PINS\n    match /login_pins/{email} {\n      allow read, write: if false;\n    }\n\n    // SYSTEM CONFIG & TENANT FEATURES\n    match /system_config/{configId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // SYSTEM CACHE\n    match /system_cache/{cacheId} {\n      allow read, write: if isAuth();\n    }\n\n    // CUSTOM FIELDS\n    match /custom_fields/{fieldId} {\n      allow read: if isAuth();\n      allow write: if isAdmin();\n    }\n\n    // ANALYTICS & MATERIALIZED VIEWS\n    match /analytics_monthly/{monthDoc} {\n      allow read: if isAuth();\n      allow write: if false;\n\n      match /{subcollection=**} {\n        allow read: if isAuth();\n        allow write: if false;\n      }\n    }\n  }\n}\n"}]}}
+[debug] [2026-07-25T19:25:26.762Z] Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:26.797Z] Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:26.808Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules 200
+[debug] [2026-07-25T19:25:26.808Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/gesto-ray:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[debug] [2026-07-25T19:25:26.816Z] Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:26.828Z] Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:26 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:27.753Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:25:28.283Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:
+
+ functions/lib/index.js does not exist, can't deploy Cloud Functions {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: There was an error reading functions/package.json:\n\n functions/lib/index.js does not exist, can't deploy Cloud Functions"}}
+[debug] [2026-07-25T19:25:29.944Z] File /home/vincenzo/Code/gestoray/functions/lib/src/profile.js.map changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /home/vincenzo/Code/gestoray/functions/lib/src/profile.js.map changed, reloading triggers"}}
+[debug] [2026-07-25T19:25:30.945Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-25T19:25:31.790Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-25T19:25:31.790Z] Building nodejs source
+[debug] [2026-07-25T19:25:31.791Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-25T19:25:31.796Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-25T19:25:31.797Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[debug] [2026-07-25T19:25:31.931Z] Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[info] Serving at port 8759
+
+[debug] [2026-07-25T19:25:31.952Z] Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:31.988Z] Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:31 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:32.000Z] Jul 25, 2026 9:25:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:32 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:25:32.179Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-25T19:25:36.197Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-25T19:25:36.197Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[debug] [2026-07-25T19:25:42.266Z] Jul 25, 2026 9:25:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:25:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:17.273Z] Jul 25, 2026 9:26:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:17 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:28.265Z] Jul 25, 2026 9:26:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.854Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.879Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.880Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.899Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.916Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:33.946Z] Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:34.692Z] Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:34.702Z] Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:26:34.714Z] Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:26:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:27:14.265Z] Jul 25, 2026 9:27:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:27:14 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:27:19.272Z] Jul 25, 2026 9:27:19 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:27:19 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:27:20.265Z] Jul 25, 2026 9:27:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:27:20 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:27:33.980Z] Jul 25, 2026 9:27:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:27:33 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-25T19:27:33.989Z] Jul 25, 2026 9:27:33 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 25, 2026 9:27:33 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose\nINFO: channel closed\n"}}

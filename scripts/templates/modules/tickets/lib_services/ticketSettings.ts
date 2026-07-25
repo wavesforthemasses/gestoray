@@ -26,6 +26,7 @@ export interface TicketSettingsConfig {
   allowEmailNotifications: boolean;
   allowInboundEmailTickets: boolean;
   webhookSecret: string;
+  inboundWebhookToken?: string;
   categories: TicketCategoryConfig[];
   slaHours: TicketSlaConfig;
   cannedResponses: CannedResponseConfig[];
@@ -38,6 +39,7 @@ export const DEFAULT_TICKET_SETTINGS: TicketSettingsConfig = {
   allowEmailNotifications: true,
   allowInboundEmailTickets: true,
   webhookSecret: '',
+  inboundWebhookToken: '',
   categories: [
     { id: 'generale', label: 'Generale' },
     { id: 'tecnico', label: 'Supporto Tecnico' },

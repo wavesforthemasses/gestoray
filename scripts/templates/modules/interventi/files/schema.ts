@@ -1,4 +1,6 @@
-export type PricingUnit = 'ora' | 'mq' | 'mc' | 'quantita' | 'corpo';
+import type { PricingUnit as BasePricingUnit } from '$lib/types/interventi';
+
+export type PricingUnit = BasePricingUnit;
 
 export interface TeamItem {
   id?: string;
@@ -32,9 +34,9 @@ export interface LocationItem {
 }
 
 export interface RelatedEntityRef {
-  entityType: string;  // 'invoice' | 'contract' | 'ticket' | 'order' | 'quote'
+  entityType: string;
   entityId: string;
-  relationType?: string; // 'originated_from' | 'billed_in' | 'attached_to'
+  relationType?: string;
   metadata?: Record<string, any>;
 }
 
@@ -51,6 +53,7 @@ export interface InterventionConsuntivoItem {
 
 export interface InterventionItem {
   id?: string;
+  interventionNumber?: string;
   title: string;
   description: string;
   clientId: string;
@@ -62,48 +65,40 @@ export interface InterventionItem {
   ticketId?: string;
   ticketSubject?: string;
 
-  // Assegnazione Risorse Umane & Mezzi
   teamId?: string;
   teamName?: string;
   assignedOperatorUids?: string[];
   vehicleIds?: string[];
 
-  type: string; // es. 'Manutenzione', 'Consegna', 'Consulenza', 'Sopralluogo'
-  pricingUnit: PricingUnit; // 'ora' | 'mq' | 'mc' | 'quantita' | 'corpo'
+  type: string;
+  pricingUnit: PricingUnit;
   unitPriceSnapshot?: number;
   mode: 'a_bolla' | 'ad_erogazione';
   status: 'pianificato' | 'in_lavorazione' | 'completato' | 'inviato_cliente' | 'approvato' | 'fatturato';
 
-  // Date e Tempistiche Temporali (Timestamp ISO / String)
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   executedStartAt?: string;
   executedEndAt?: string;
-  
-  // Stima vs Consuntivo (Ore o Quantità)
+
   estimatedQuantity?: number;
   actualQuantityWorked?: number;
 
-  // Retrocompatibilità
   estimatedHours?: number;
   actualHoursWorked?: number;
 
-  // Righe Consuntivo (Materiali / Prodotti)
   items?: InterventionConsuntivoItem[];
 
-  // Totali Economici
   hourlyRateSnapshot?: number;
   totalAmount?: number;
-  
-  // Firma e Conferma Cliente
+
   clientSignature?: string;
+  signatureName?: string;
+  signatureData?: string;
   signedAt?: string;
   signedByName?: string;
 
-  // Relazioni Astratte Cross-Modulo (Dinamiche / Decoppiate)
   relatedEntities?: RelatedEntityRef[];
-
-  // Dynamic Custom Fields
   customFields?: Record<string, any>;
 
   createdBy?: string;
