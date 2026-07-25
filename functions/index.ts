@@ -3,43 +3,13 @@ import { setGlobalOptions } from 'firebase-functions/v2';
 
 setGlobalOptions({ region: 'europe-west3' });
 
-// Initialize the Firebase Admin SDK once at startup
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
-// Export Core functions
 export { sendLoginPin, verifyLoginPin } from './src/auth';
 export { initSuperAdmin, updateUser } from './src/admin';
 export { updateProfile, updateProfileEmail } from './src/profile';
 export { sendSystemEmail } from './src/email';
 export { getChartAggregations } from './src/aggregations';
-
-// Export Core Firestore triggers
 export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
-export { onInterventionWriteAnalytics, reconcileAnalyticsCron } from './src/analytics';
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-
-// Module Exports
-

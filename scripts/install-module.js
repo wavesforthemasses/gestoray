@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Gestoray Module Installer (Frontend + Backend Micro-Services with Dependency Resolution)
+ * Gestoray Module & Bridge Installer (1-Click CLI Scaffolder)
  * 
- * Usage: npm run module:install -- --name <moduleName>
- * Example: npm run module:install -- --name commissions
+ * Usage:
+ *   npm run module:install -- --name contracts
+ *   npm run bridge:install -- --name contractsInterventiBridge
  */
 
 import fs from 'fs';
@@ -14,33 +15,34 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ─── Module Dependency Map ──────────────────────────────────────────────────
-const MODULE_DEPENDENCIES = {
-  contracts: ['products'],    // Contratti require Prodotti (items sold)
-  commissions: ['contracts'], // Provvigioni require Contratti (sales attribution)
-};
-
-// ─── CLI Args ───────────────────────────────────────────────────────────────
-
 function parseArgs() {
   const args = process.argv.slice(2);
   let name = '';
+  let isBridge = false;
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--name' && args[i + 1]) {
-      name = args[i + 1].toLowerCase();
+    if ((args[i] === '--name' || args[i] === '--module') && args[i + 1]) {
+      name = args[i + 1];
+      i++;
+    } else if (args[i] === '--bridge' && args[i + 1]) {
+      name = args[i + 1];
+      isBridge = true;
       i++;
     }
   }
 
+  if (process.argv[1].includes('install-bridge') || process.argv.includes('--is-bridge')) {
+    isBridge = true;
+  }
+
   if (!name) {
-    console.error('❌ Errore: --name è obbligatorio.');
-    console.error('   Uso: npm run module:install -- --name <moduleName>');
-    console.error('   Moduli disponibili: contracts, payments, commissions, activities, products');
+    console.error('❌ Errore: Specifica il nome del modulo o bridge da installare.');
+    console.error('   Uso: npm run module:install -- --name contracts');
+    console.error('   Uso: npm run bridge:install -- --name contractsInterventiBridge');
     process.exit(1);
   }
 
-  return { name };
+  return { name, isBridge };
 }
 
 function copyDirRecursive(src, dest) {
@@ -59,6 +61,82 @@ function copyDirRecursive(src, dest) {
   }
 }
 
+function installModule(moduleName) {
+  const moduleDir = path.resolve(__dirname, 'templates/modules', moduleName);
+  if (!fs.existsSync(moduleDir)) {
+    console.error(`❌ Errore: Modulo '${moduleName}' non trovato nel Registro Moduli.`);
+    process.exit(1);
+  }
+
+  console.log(`📦 Installazione Modulo Puro '${moduleName}' in corso...`);
+
+  // 1. Copy dashboard routes
+  const srcFilesDir = path.join(moduleDir, 'files');
+  const destRouteDir = path.resolve(__dirname, '../src/routes/dashboard', moduleName);
+  if (fs.existsSync(srcFilesDir)) {
+    copyDirRecursive(srcFilesDir, destRouteDir);
+    console.log(`  ✅ File di rotta copiati in src/routes/dashboard/${moduleName}/`);
+  }
+
+  // 2. Copy lib services if present
+  const srcLibServices = path.join(moduleDir, 'lib_services');
+  const destLibServices = path.resolve(__dirname, '../src/lib/services');
+  if (fs.existsSync(srcLibServices)) {
+    copyDirRecursive(srcLibServices, destLibServices);
+    console.log(`  ✅ Servizi registrati in src/lib/services/`);
+  }
+
+  // 3. Copy extra routes if present
+  const srcExtraRoutes = path.join(moduleDir, 'extra_routes');
+  const destRoutesDir = path.resolve(__dirname, '../src/routes');
+  if (fs.existsSync(srcExtraRoutes)) {
+    copyDirRecursive(srcExtraRoutes, destRoutesDir);
+    console.log(`  ✅ Rotte aggiuntive registrate in src/routes/`);
+  }
+
+  // 4. Update menu.ts if snippet exists
+  const menuSnippetPath = path.join(moduleDir, 'menu.snippet.ts');
+  if (fs.existsSync(menuSnippetPath)) {
+    const snippet = fs.readFileSync(menuSnippetPath, 'utf-8').trim();
+    updateMenuConfig(snippet);
+  }
+
+  // 5. Update firestore.rules if snippet exists
+  const rulesSnippetPath = path.join(moduleDir, 'firestore.snippet.rules');
+  if (fs.existsSync(rulesSnippetPath)) {
+    const snippet = fs.readFileSync(rulesSnippetPath, 'utf-8').trim();
+    updateFirestoreRules(snippet, moduleName);
+  }
+
+  // 6. Update functions/index.ts if functions.snippet.ts exists
+  const functionsSnippetPath = path.join(moduleDir, 'functions.snippet.ts');
+  if (fs.existsSync(functionsSnippetPath)) {
+    const snippet = fs.readFileSync(functionsSnippetPath, 'utf-8').trim();
+    updateFunctionsConfig(snippet, moduleName);
+  }
+
+  console.log(`✨ Modulo '${moduleName}' installato con successo!`);
+}
+
+function installBridge(bridgeName) {
+  const bridgeDir = path.resolve(__dirname, 'templates/bridges', bridgeName);
+  if (!fs.existsSync(bridgeDir)) {
+    console.error(`❌ Errore: Bridge Connector '${bridgeName}' non trovato nel registro.`);
+    process.exit(1);
+  }
+
+  console.log(`🌁 Installazione Bridge Connector '${bridgeName}' in corso...`);
+  const destBridgeDir = path.resolve(__dirname, '../src/lib/services/bridges');
+  fs.mkdirSync(destBridgeDir, { recursive: true });
+
+  const entries = fs.readdirSync(bridgeDir);
+  for (const file of entries) {
+    fs.copyFileSync(path.join(bridgeDir, file), path.join(destBridgeDir, file));
+  }
+
+  console.log(`✨ Bridge '${bridgeName}' installato in src/lib/services/bridges/!`);
+}
+
 function updateMenuConfig(menuSnippet) {
   const menuPath = path.resolve(__dirname, '../src/lib/stores/menu.ts');
   let content = fs.readFileSync(menuPath, 'utf-8');
@@ -70,18 +148,15 @@ function updateMenuConfig(menuSnippet) {
 
   const idMatch = cleanSnippet.match(/id:\s*['"]([^'"]+)['"]/);
   if (idMatch && content.includes(`id: '${idMatch[1]}'`)) {
-    console.log(`ℹ️  La voce di menu '${idMatch[1]}' è già presente in menu.ts.`);
     return false;
   }
 
   const closingBracketIdx = content.lastIndexOf('];');
-  if (closingBracketIdx === -1) {
-    console.warn('⚠️  Non riesco a trovare DEFAULT_MENU_CONFIG in menu.ts.');
-    return false;
-  }
+  if (closingBracketIdx === -1) return false;
 
   content = content.slice(0, closingBracketIdx) + `  ${cleanSnippet}\n` + content.slice(closingBracketIdx);
   fs.writeFileSync(menuPath, content, 'utf-8');
+  console.log(`  ✅ Voce inserita in src/lib/stores/menu.ts`);
   return true;
 }
 
@@ -90,158 +165,35 @@ function updateFirestoreRules(rulesSnippet, moduleName) {
   let content = fs.readFileSync(rulesPath, 'utf-8');
 
   const tagBegin = `// --- MODULE: ${moduleName} BEGIN ---`;
-  const tagEnd = `// --- MODULE: ${moduleName} END ---`;
-
-  if (content.includes(tagBegin)) {
-    console.log(`ℹ️  Le regole Firestore per il modulo '${moduleName}' sono già presenti.`);
-    return false;
-  }
+  if (content.includes(tagBegin)) return false;
 
   const lastClosingIdx = content.lastIndexOf('  }');
-  if (lastClosingIdx === -1) {
-    console.warn('⚠️  Non riesco a modificare firestore.rules.');
-    return false;
-  }
+  if (lastClosingIdx === -1) return false;
 
-  const cleanSnippet = rulesSnippet.trim();
-  const wrappedSnippet = `${tagBegin}\n    ${cleanSnippet.replaceAll('\n', '\n    ')}\n    ${tagEnd}`;
-
-  content = content.slice(0, lastClosingIdx) + `\n    ${wrappedSnippet}\n` + content.slice(lastClosingIdx);
+  const formattedSnippet = `\n    ${tagBegin}\n    ${rulesSnippet}\n    // --- MODULE: ${moduleName} END ---\n`;
+  content = content.slice(0, lastClosingIdx) + formattedSnippet + content.slice(lastClosingIdx);
   fs.writeFileSync(rulesPath, content, 'utf-8');
+  console.log(`  ✅ Regole aggiunte in firestore.rules`);
   return true;
 }
 
-function updateFunctionsExports(functionsSnippet) {
+function updateFunctionsConfig(functionsSnippet, moduleName) {
   const functionsIndexPath = path.resolve(__dirname, '../functions/index.ts');
-  if (!fs.existsSync(functionsIndexPath)) return false;
-
   let content = fs.readFileSync(functionsIndexPath, 'utf-8');
-  const cleanSnippet = functionsSnippet.trim();
-  const firstLine = cleanSnippet.split('\n')[0];
 
-  if (content.includes(firstLine)) {
-    console.log('ℹ️  Gli export delle Cloud Functions per questo modulo sono già presenti in functions/index.ts.');
-    return false;
-  }
+  const tagBegin = `// --- MODULE FUNCTIONS: ${moduleName} BEGIN ---`;
+  if (content.includes(tagBegin)) return false;
 
-  content = content.trimEnd() + `\n\n// Module Exports\n${cleanSnippet}\n`;
+  const formattedSnippet = `\n${tagBegin}\n${functionsSnippet}\n// --- MODULE FUNCTIONS: ${moduleName} END ---\n`;
+  content += formattedSnippet;
   fs.writeFileSync(functionsIndexPath, content, 'utf-8');
+  console.log(`  ✅ Cloud Functions aggiunte in functions/index.ts`);
   return true;
 }
 
-function installSingleModule(moduleName) {
-  const moduleTplDir = path.resolve(__dirname, `templates/modules/${moduleName}`);
-
-  if (!fs.existsSync(moduleTplDir)) {
-    console.error(`❌ Modulo '${moduleName}' non trovato nel Registro Moduli (${moduleTplDir}).`);
-    return false;
-  }
-
-  console.log('');
-  console.log('📦 Gestoray Module Installer (Frontend + Backend Micro-Services)');
-  console.log('─'.repeat(60));
-  console.log(`   Modulo: ${moduleName}`);
-  console.log('─'.repeat(60));
-
-  // Check dependencies first
-  const deps = MODULE_DEPENDENCIES[moduleName] || [];
-  for (const dep of deps) {
-    const depRoute = path.resolve(__dirname, `../src/routes/dashboard/${dep}`);
-    if (!fs.existsSync(depRoute)) {
-      console.log(`⚠️  Il modulo '${moduleName}' richiede l'attribuzione commerciale del modulo '${dep}'.`);
-      console.log(`📦 Installazione automatica della dipendenza '${dep}' in corso...`);
-      installSingleModule(dep);
-    }
-  }
-
-  // 1. Copy Frontend primary files
-  const filesDir = path.join(moduleTplDir, 'files');
-  const destDir = path.resolve(__dirname, `../src/routes/dashboard/${moduleName}`);
-
-  if (fs.existsSync(filesDir)) {
-    copyDirRecursive(filesDir, destDir);
-    console.log(`✅ File Frontend copiati in src/routes/dashboard/${moduleName}/`);
-  }
-
-  // 2. Copy extra routes if present
-  const extraDir = path.join(moduleTplDir, 'extra_routes');
-  if (fs.existsSync(extraDir)) {
-    const extraEntries = fs.readdirSync(extraDir, { withFileTypes: true });
-    for (const entry of extraEntries) {
-      if (entry.isDirectory()) {
-        const extraSrc = path.join(extraDir, entry.name);
-        let extraDest = '';
-
-        if (entry.name.startsWith('settings_')) {
-          const subName = entry.name.replace('settings_', '');
-          extraDest = path.resolve(__dirname, `../src/routes/dashboard/settings/${subName}`);
-        } else if (entry.name.startsWith('public_')) {
-          const subName = entry.name.replace('public_', '').replace(/_/g, '/');
-          extraDest = path.resolve(__dirname, `../src/routes/public/${subName}`);
-        } else if (entry.name.startsWith('api_')) {
-          const subName = entry.name.replace('api_', '').replace(/_/g, '/');
-          extraDest = path.resolve(__dirname, `../src/routes/api/${subName}`);
-        } else {
-          extraDest = path.resolve(__dirname, `../src/routes/dashboard/${entry.name}`);
-        }
-
-        copyDirRecursive(extraSrc, extraDest);
-        console.log(`✅ Rotta extra copiata: ${path.relative(path.resolve(__dirname, '..'), extraDest)}`);
-      }
-    }
-  }
-
-  // 3. Copy Lib Services if present
-  const libDir = path.join(moduleTplDir, 'lib_services');
-  if (fs.existsSync(libDir)) {
-    const destLibDir = path.resolve(__dirname, '../src/lib/services');
-    copyDirRecursive(libDir, destLibDir);
-    console.log(`✅ Servizi Lib del modulo copiati in src/lib/services/`);
-  }
-
-  // 4. Copy Backend Cloud Functions if present
-  const functionsDir = path.join(moduleTplDir, 'functions');
-  if (fs.existsSync(functionsDir)) {
-    const destFunctionsDir = path.resolve(__dirname, '../functions/src');
-    copyDirRecursive(functionsDir, destFunctionsDir);
-    console.log(`✅ Cloud Functions Backend copiate in functions/src/`);
-  }
-
-  // 4. Update Menu snippet
-  const menuSnippetFile = path.join(moduleTplDir, 'menu.snippet.ts');
-  if (fs.existsSync(menuSnippetFile)) {
-    const snippet = fs.readFileSync(menuSnippetFile, 'utf-8');
-    const updated = updateMenuConfig(snippet);
-    if (updated) console.log('✅ Menu di navigazione aggiornato in src/lib/stores/menu.ts');
-  }
-
-  // 5. Update Firestore rules snippet
-  const rulesSnippetFile = path.join(moduleTplDir, 'firestore.snippet.rules');
-  if (fs.existsSync(rulesSnippetFile)) {
-    const snippet = fs.readFileSync(rulesSnippetFile, 'utf-8');
-    const updated = updateFirestoreRules(snippet, moduleName);
-    if (updated) console.log('✅ Regole Firestore aggiornate in firestore.rules');
-  }
-
-  // 6. Update Functions index snippet
-  const functionsSnippetFile = path.join(moduleTplDir, 'functions.snippet.ts');
-  if (fs.existsSync(functionsSnippetFile)) {
-    const snippet = fs.readFileSync(functionsSnippetFile, 'utf-8');
-    const updated = updateFunctionsExports(snippet);
-    if (updated) console.log('✅ Export Cloud Functions aggiunti in functions/index.ts');
-  }
-
-  console.log('');
-  console.log('─'.repeat(60));
-  console.log(`✨ Modulo '${moduleName}' installato con successo!`);
-  console.log('─'.repeat(60));
-  console.log('');
-  return true;
+const { name, isBridge } = parseArgs();
+if (isBridge) {
+  installBridge(name);
+} else {
+  installModule(name);
 }
-
-function main() {
-  const { name } = parseArgs();
-  installSingleModule(name);
-}
-
-main();

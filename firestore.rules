@@ -28,7 +28,6 @@ service cloud.firestore {
       return hasRole('direzione');
     }
     
-    // Blocca scrittura frontend su derived, ad eccezione di textSearch e cacheChunkId che vengono aggiornati dal frontend
     function notWritingDerived() {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
@@ -65,8 +64,8 @@ service cloud.firestore {
       match /history/{histId} {
         allow read: if isAuth();
         allow create: if isAuth();
-        allow update: if false;  // audit trail immutabile per update
-        allow delete: if hasRole('superadmin'); // permesso superadmin per cancellazione cliente
+        allow update: if false;
+        allow delete: if hasRole('superadmin');
       }
     }
     
@@ -82,92 +81,10 @@ service cloud.firestore {
       allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
     }
 
-    // LOGIN PINS — solo server-side
+    // LOGIN PINS
     match /login_pins/{email} {
       allow read, write: if false;
     }
-
-    // --- MODULE: tickets BEGIN ---
-    // TICKETS
-    match /tickets/{docId} {
-      allow read: if isAuth() && (
-        isAdmin() || 
-        isDirezione() || 
-        resource.data.assignedTo == request.auth.uid || 
-        resource.data.requesterEmail == request.auth.token.email
-      );
-      allow create: if isAuth();
-      allow update: if isAuth() && (
-        isAdmin() || 
-        isDirezione() || 
-        resource.data.assignedTo == request.auth.uid
-      );
-      allow delete: if hasRole('superadmin');
-    }
-    // --- MODULE: tickets END ---
-
-    // --- MODULE: interventi BEGIN ---
-    match /interventions/{interventionId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione();
-    }
-    match /teams/{teamId} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
-    }
-    match /vehicles/{vehicleId} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
-    }
-    match /settings/interventi {
-      allow read: if true;
-      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
-    // --- MODULE: interventi END ---
-
-    // --- MODULE: contracts BEGIN ---
-    match /contracts/{contractId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-
-      match /installments/{instId} {
-        allow read, write: if isAuth();
-      }
-    }
-    // --- MODULE: contracts END ---
-
-    // --- MODULE: payments BEGIN ---
-    match /payments/{paymentId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-    }
-    // --- MODULE: payments END ---
-
-    // --- MODULE: commissions BEGIN ---
-    match /commissions/{commId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-    }
-    // --- MODULE: commissions END ---
-
-    // --- MODULE: products BEGIN ---
-    match /products/{prodId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-    }
-    // --- MODULE: products END ---
-
-    // --- MODULE: activities BEGIN ---
-    match /activities/{actId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-    }
-    // --- MODULE: activities END ---
 
     // SYSTEM CONFIG & TENANT FEATURES
     match /system_config/{configId} {
@@ -186,7 +103,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ANALYTICS & MATERIALIZED VIEWS (Cloud Functions server-side writes only)
+    // ANALYTICS & MATERIALIZED VIEWS
     match /analytics_monthly/{monthDoc} {
       allow read: if isAuth();
       allow write: if false;

@@ -21,6 +21,8 @@
 		"generate": "node scripts/scaffold.js",
 		"module:install": "node scripts/install-module.js",
 		"module:uninstall": "node scripts/uninstall-module.js",
+		"bridge:install": "node scripts/install-module.js --is-bridge",
+		"clean-slate": "node scripts/clean-slate.js",
 		"template:sync": "node scripts/sync-templates.js"
 	},
 	"devDependencies": {
