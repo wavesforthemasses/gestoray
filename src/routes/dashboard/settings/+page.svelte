@@ -5,6 +5,8 @@
   import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
+  import { menuConfigStore } from '$lib/stores/menu';
+
   pageTitle.set('Impostazioni');
 
   $effect(() => {
@@ -13,6 +15,9 @@
       goto('/dashboard');
     }
   });
+
+  let hasTicketsModule = $derived($menuConfigStore.some((item) => item.id === 'tickets'));
+  let hasInterventiModule = $derived($menuConfigStore.some((item) => item.id === 'interventi'));
 </script>
 
 <div class="settings-hub animate-fade-in">
@@ -31,6 +36,16 @@
       description="Crea e gestisci ruoli aziendali (es. Amministrazione, Commerciale, Operaio, Tecnico) e imposta i permessi della Dashboard."
       icon={Shield}
     />
+
+    {#if hasTicketsModule}
+      <SettingsNavCard 
+        href="/dashboard/settings/tickets"
+        title="Configurazione Ticket & QR Code"
+        description="Gestisci i permessi di apertura ticket (utenti interni, form pubblica, QR Code dedicati)."
+        icon={Ticket}
+      />
+    {/if}
+
     <SettingsNavCard 
       href="/dashboard/settings/project"
       title="Configurazione Progetto"
@@ -43,6 +58,16 @@
       description="Configura la visibilità delle voci di menu laterale per i vari ruoli."
       icon={Menu}
     />
+
+    {#if hasInterventiModule}
+      <SettingsNavCard 
+        href="/dashboard/settings/interventi"
+        title="Configurazione Interventi & Cantieri"
+        description="Personalizza la denominazione White-Label, le tariffe, le unità di misura e le opzioni di firma del modulo Interventi."
+        icon={Wrench}
+      />
+    {/if}
+
     <SettingsNavCard 
       href="/dashboard/settings/theme"
       title="Tema e Branding"

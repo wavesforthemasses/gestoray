@@ -16,7 +16,6 @@ const __dirname = path.dirname(__filename);
 
 const dashboardDir = path.resolve(__dirname, '../src/routes/dashboard');
 const settingsDir = path.resolve(__dirname, '../src/routes/dashboard/settings');
-const settingsHubPath = path.resolve(__dirname, '../src/routes/dashboard/settings/+page.svelte');
 const publicDir = path.resolve(__dirname, '../src/routes/public');
 const webhooksDir = path.resolve(__dirname, '../src/routes/api/webhooks');
 const servicesDir = path.resolve(__dirname, '../src/lib/services');
@@ -98,97 +97,7 @@ function resetActiveWorkspace() {
     console.log(`  🗑️ Rimossi artefatti compilati JS vecchi: functions/lib/`);
   }
 
-  // 7. Reset settings hub (+page.svelte) to Clean Base Core cards
-  const cleanSettingsHubContent = `<script lang="ts">
-  import { hasAccess } from '$lib/utils/authCheck';
-  import { activeRoleState } from '$lib/auth.svelte';
-  import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench } from '@lucide/svelte';
-  import SettingsNavCard from './components/SettingsNavCard.svelte';
-  import { pageTitle } from '$lib/stores/page';
-  pageTitle.set('Impostazioni');
-
-  $effect(() => {
-    const currentRole = activeRoleState.role;
-    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
-      goto('/dashboard');
-    }
-  });
-</script>
-
-<div class="settings-hub animate-fade-in">
-  <div class="page-top-actions">
-    <h2 class="title-header">
-      <Settings size={28} color="var(--color-neutral-800)" />
-      Impostazioni Generali
-    </h2>
-    <p class="subtitle">Gestisci le configurazioni globali della piattaforma.</p>
-  </div>
-
-  <div class="settings-grid">
-    <SettingsNavCard 
-      href="/dashboard/settings/roles"
-      title="Gestione Ruoli e Permessi"
-      description="Crea e gestisci ruoli aziendali (es. Amministrazione, Commerciale, Operaio, Tecnico) e imposta i permessi della Dashboard."
-      icon={Shield}
-    />
-    <SettingsNavCard 
-      href="/dashboard/settings/project"
-      title="Configurazione Progetto"
-      description="Imposta il nome della piattaforma, l'email di sistema per le notifiche e altri parametri di base."
-      icon={Building}
-    />
-    <SettingsNavCard 
-      href="/dashboard/settings/menu"
-      title="Gestione Menu"
-      description="Configura la visibilità delle voci di menu laterale per i vari ruoli."
-      icon={Menu}
-    />
-    <SettingsNavCard 
-      href="/dashboard/settings/theme"
-      title="Tema e Branding"
-      description="Personalizza i colori principali dell'applicazione in tempo reale."
-      icon={Palette}
-    />
-  </div>
-</div>
-
-<style>
-  .settings-hub {
-    width: 100%;
-    padding: 24px 0;
-    box-sizing: border-box;
-  }
-  .page-top-actions {
-    margin-bottom: 32px;
-  }
-  .title-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--color-neutral-800);
-    margin: 0 0 8px 0;
-  }
-  .subtitle {
-    font-size: 15px;
-    color: var(--color-neutral-500);
-    margin: 0;
-  }
-  
-  .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-  }
-</style>
-`;
-
-  fs.writeFileSync(settingsHubPath, cleanSettingsHubContent, 'utf-8');
-  console.log(`  ✅ Ripristinato src/routes/dashboard/settings/+page.svelte al Base Core.`);
-
-  // 8. Reset menu.ts to Clean Base Core
+  // 7. Reset menu.ts to Clean Base Core
   const cleanMenuContent = `import { writable } from 'svelte/store';
 import { db, doc, onSnapshot } from '$lib/firebase';
 
@@ -237,7 +146,7 @@ export function destroyMenuStore() {
   fs.writeFileSync(menuPath, cleanMenuContent, 'utf-8');
   console.log(`  ✅ Ripristinato src/lib/stores/menu.ts al Base Core.`);
 
-  // 9. Reset firestore.rules to Clean Base Core
+  // 8. Reset firestore.rules to Clean Base Core
   const cleanRulesContent = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -360,7 +269,7 @@ service cloud.firestore {
   fs.writeFileSync(rulesPath, cleanRulesContent, 'utf-8');
   console.log(`  ✅ Ripristinato firestore.rules al Base Core.`);
 
-  // 10. Reset functions/index.ts to Clean Base Core
+  // 9. Reset functions/index.ts to Clean Base Core
   const cleanFunctionsIndex = `import * as admin from 'firebase-admin';
 import { setGlobalOptions } from 'firebase-functions/v2';
 
@@ -381,7 +290,7 @@ export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated
   fs.writeFileSync(functionsIndexPath, cleanFunctionsIndex, 'utf-8');
   console.log(`  ✅ Ripristinato functions/index.ts al Base Core.`);
 
-  // 11. Rebuild Clean Base Core functions into functions/lib/index.js
+  // 10. Rebuild Clean Base Core functions into functions/lib/index.js
   try {
     console.log('⚡ Compilazione Cloud Functions Base Core...');
     execSync('npm --prefix functions run build', { stdio: 'inherit' });

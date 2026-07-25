@@ -115,13 +115,6 @@ function installModule(moduleName) {
     updateFunctionsConfig(snippet, moduleName);
   }
 
-  // 7. Update src/routes/dashboard/settings/+page.svelte if settings_card.snippet.svelte exists
-  const settingsSnippetPath = path.join(moduleDir, 'settings_card.snippet.svelte');
-  if (fs.existsSync(settingsSnippetPath)) {
-    const snippet = fs.readFileSync(settingsSnippetPath, 'utf-8');
-    updateSettingsPage(snippet, moduleName);
-  }
-
   console.log(`✨ Modulo '${moduleName}' installato con successo!`);
 }
 
@@ -195,23 +188,6 @@ function updateFunctionsConfig(functionsSnippet, moduleName) {
   content += formattedSnippet;
   fs.writeFileSync(functionsIndexPath, content, 'utf-8');
   console.log(`  ✅ Cloud Functions aggiunte in functions/index.ts`);
-  return true;
-}
-
-function updateSettingsPage(settingsSnippet, moduleName) {
-  const settingsPath = path.resolve(__dirname, '../src/routes/dashboard/settings/+page.svelte');
-  let content = fs.readFileSync(settingsPath, 'utf-8');
-
-  const tagBegin = `<!-- MODULE SETTINGS CARD: ${moduleName} BEGIN -->`;
-  if (content.includes(tagBegin)) return false;
-
-  const gridClosingIdx = content.indexOf('</div>\n</div>');
-  if (gridClosingIdx === -1) return false;
-
-  const formattedSnippet = `\n  ${tagBegin}\n${settingsSnippet}  <!-- MODULE SETTINGS CARD: ${moduleName} END -->\n`;
-  content = content.slice(0, gridClosingIdx) + formattedSnippet + content.slice(gridClosingIdx);
-  fs.writeFileSync(settingsPath, content, 'utf-8');
-  console.log(`  ✅ Card Impostazioni aggiunta in src/routes/dashboard/settings/+page.svelte`);
   return true;
 }
 
