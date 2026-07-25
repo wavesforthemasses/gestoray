@@ -16,7 +16,12 @@ export { sendSystemEmail } from './src/email';
 export { getChartAggregations } from './src/aggregations';
 
 // Export Core Firestore triggers
-export { onClientCreated } from './src/triggers/onClientCreated';
+export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
+export { onInterventionWriteAnalytics, reconcileAnalyticsCron } from './src/analytics';
+
+// Module Exports
+
+// Module Exports
 
 // Module Exports
 

@@ -15,10 +15,13 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"emulators": "firebase emulators:start",
 		"push": "git pull && git add . && git commit -m 'update' && git push -u origin main",
+		"test:unit": "vitest run",
+		"test:unit:watch": "vitest",
 		"test:e2e": "playwright test",
 		"generate": "node scripts/scaffold.js",
 		"module:install": "node scripts/install-module.js",
-		"module:uninstall": "node scripts/uninstall-module.js"
+		"module:uninstall": "node scripts/uninstall-module.js",
+		"template:sync": "node scripts/sync-templates.js"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.61.1",
@@ -30,6 +33,7 @@
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"vite": "^8.0.16",
+		"vitest": "^4.1.10",
 		"wait-on": "^9.1.0"
 	},
 	"dependencies": {

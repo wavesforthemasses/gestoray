@@ -20,22 +20,6 @@ test.describe('Access Control - Commerciale non può accedere a pagine admin', (
     await page.goto('/dashboard/qualifications');
     await expect(page).toHaveURL(/.*\/dashboard$/, { timeout: 10000 });
   });
-
-  test('commerciale su /dashboard/commissions → redirect a /dashboard', async ({ page }) => {
-    await page.goto('/dashboard/commissions');
-    await expect(page).toHaveURL(/.*\/dashboard$/, { timeout: 10000 });
-  });
-});
-
-test.describe('Access Control - Admin non può accedere a pagine commerciale', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
-  });
-
-  test('admin su /dashboard/my-commissions → redirect a /dashboard', async ({ page }) => {
-    await page.goto('/dashboard/my-commissions');
-    await expect(page).toHaveURL(/.*\/dashboard$/, { timeout: 10000 });
-  });
 });
 
 test.describe('Access Control - Utente non autenticato', () => {

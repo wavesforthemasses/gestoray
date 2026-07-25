@@ -9,8 +9,8 @@ export interface ClientsFetchResult {
 
 export class ClientsService {
   static async fetchClients(
-    searchVal: string | undefined, 
-    activeRole: string, 
+    searchVal: string | undefined,
+    activeRole: string,
     myUid: string | undefined,
     itemsPerPage: number = 50,
     lastVisible: QueryDocumentSnapshot | null = null
@@ -38,7 +38,7 @@ export class ClientsService {
 
     const snap = await getDocs(q);
     const clList: any[] = [];
-    
+
     snap.forEach((doc: any) => {
       const data = doc.data();
       const orig = data.original || {};
@@ -58,7 +58,7 @@ export class ClientsService {
     });
 
     const hasMore = snap.docs.length === itemsPerPage;
-    const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+    const newLastDoc = snap.docs.length > 0 ? (snap.docs[snap.docs.length - 1] as unknown as QueryDocumentSnapshot) : null;
 
     return { list: clList, lastDoc: newLastDoc, hasMore };
   }

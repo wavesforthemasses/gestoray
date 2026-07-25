@@ -1,6 +1,7 @@
 import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib';
+import { CacheLookupService } from '$lib/services/cacheLookupService';
 
 export interface UserData {
   uid: string;
@@ -60,6 +61,8 @@ export class UsersService {
     }
 
     const uid = generateId('uid');
+    const fullUserName = `${cleanNome} ${cleanCognome}`.trim();
+    const chunkId = await CacheLookupService.updateEntityCache('users', uid, fullUserName);
 
     await setDoc(doc(db, 'users', uid), {
       original: {
@@ -77,7 +80,8 @@ export class UsersService {
         totalCommissionPending: 0,
         totalClientsCreated: 0,
         totalNNCF: 0,
-        textSearch: generateSearchTerms(cleanNome + ' ' + cleanCognome + ' ' + cleanEmail)
+        textSearch: generateSearchTerms(cleanNome + ' ' + cleanCognome + ' ' + cleanEmail),
+        ...(chunkId ? { cacheChunkId: chunkId } : {})
       },
       edits: {
         createdAt: new Date().toISOString(),

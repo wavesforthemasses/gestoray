@@ -2,10 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function hasRole(role) {
       return request.auth != null && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.original.roles.hasAny([role]);
+             (
+               ('original' in getUserData() && 'roles' in getUserData().original && getUserData().original.roles.hasAny([role])) ||
+               ('roles' in getUserData() && getUserData().roles.hasAny([role])) ||
+               ('role' in getUserData() && getUserData().role == role)
+             );
     }
     
     function isAuth() {
@@ -20,13 +28,14 @@ service cloud.firestore {
       return hasRole('direzione');
     }
     
-    // Blocca scrittura frontend su derived, ad eccezione di textSearch che viene aggiornato dal frontend
+    // Blocca scrittura frontend su derived, ad eccezione di textSearch e cacheChunkId che vengono aggiornati dal frontend
     function notWritingDerived() {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
+             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||
              (resource != null && (
                 request.resource.data.derived == resource.data.derived ||
-                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch'])
+                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])
              ));
     }
     
@@ -40,13 +49,21 @@ service cloud.firestore {
     
     // CLIENTS
     match /clients/{clientId} {
-      allow read: if isAuth() && (isAdmin() || isDirezione() || resource.data.original.createdBy == request.auth.uid);
+      allow read: if isAuth();
       allow create: if isAuth() && notWritingDerived();
-      allow update: if isAuth() && notWritingDerived() && (isAdmin() || isDirezione() || resource.data.original.createdBy == request.auth.uid);
+      allow update: if isAuth() && notWritingDerived();
       allow delete: if hasRole('superadmin');
       
+      match /activities/{activityId} {
+        allow read, write: if isAuth();
+      }
+
+      match /locations/{locationId} {
+        allow read, write: if isAuth();
+      }
+
       match /history/{histId} {
-        allow read: if isAuth() && (isAdmin() || isDirezione() || get(/databases/$(database)/documents/clients/$(clientId)).data.original.createdBy == request.auth.uid);
+        allow read: if isAuth();
         allow create: if isAuth();
         allow update: if false;  // audit trail immutabile per update
         allow delete: if hasRole('superadmin'); // permesso superadmin per cancellazione cliente
@@ -68,6 +85,116 @@ service cloud.firestore {
     // LOGIN PINS — solo server-side
     match /login_pins/{email} {
       allow read, write: if false;
+    }
+
+    // --- MODULE: tickets BEGIN ---
+    // TICKETS
+    match /tickets/{docId} {
+      allow read: if isAuth() && (
+        isAdmin() || 
+        isDirezione() || 
+        resource.data.assignedTo == request.auth.uid || 
+        resource.data.requesterEmail == request.auth.token.email
+      );
+      allow create: if isAuth();
+      allow update: if isAuth() && (
+        isAdmin() || 
+        isDirezione() || 
+        resource.data.assignedTo == request.auth.uid
+      );
+      allow delete: if hasRole('superadmin');
+    }
+    // --- MODULE: tickets END ---
+
+    // --- MODULE: interventi BEGIN ---
+    match /interventions/{interventionId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione();
+    }
+    match /teams/{teamId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+    }
+    match /vehicles/{vehicleId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+    }
+    match /settings/interventi {
+      allow read: if true;
+      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+    // --- MODULE: interventi END ---
+
+    // --- MODULE: contracts BEGIN ---
+    match /contracts/{contractId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+
+      match /installments/{instId} {
+        allow read, write: if isAuth();
+      }
+    }
+    // --- MODULE: contracts END ---
+
+    // --- MODULE: payments BEGIN ---
+    match /payments/{paymentId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+    }
+    // --- MODULE: payments END ---
+
+    // --- MODULE: commissions BEGIN ---
+    match /commissions/{commId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+    }
+    // --- MODULE: commissions END ---
+
+    // --- MODULE: products BEGIN ---
+    match /products/{prodId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+    }
+    // --- MODULE: products END ---
+
+    // --- MODULE: activities BEGIN ---
+    match /activities/{actId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+    }
+    // --- MODULE: activities END ---
+
+    // SYSTEM CONFIG & TENANT FEATURES
+    match /system_config/{configId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // SYSTEM CACHE
+    match /system_cache/{cacheId} {
+      allow read, write: if isAuth();
+    }
+
+    // CUSTOM FIELDS
+    match /custom_fields/{fieldId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // ANALYTICS & MATERIALIZED VIEWS (Cloud Functions server-side writes only)
+    match /analytics_monthly/{monthDoc} {
+      allow read: if isAuth();
+      allow write: if false;
+
+      match /{subcollection=**} {
+        allow read: if isAuth();
+        allow write: if false;
+      }
     }
   }
 }

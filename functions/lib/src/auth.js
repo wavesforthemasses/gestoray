@@ -89,13 +89,27 @@ exports.verifyLoginPin = (0, https_1.onCall)({ region: REGION }, async (request)
             throw new https_1.HttpsError('failed-precondition', 'Nessun PIN richiesto per questa email.');
         }
         const pinData = pinDoc.data();
-        if (pinData?.pin !== cleanPin) {
-            throw new https_1.HttpsError('invalid-argument', 'Il PIN inserito non è corretto.');
+        const currentAttempts = pinData?.attempts || 0;
+        if (currentAttempts >= 5) {
+            await db.collection('login_pins').doc(cleanEmail).delete();
+            throw new https_1.HttpsError('resource-exhausted', 'Troppi tentativi errati. Il PIN è stato annullato, richiedine uno nuovo.');
         }
         if (Date.now() > pinData?.expiresAt) {
+            await db.collection('login_pins').doc(cleanEmail).delete();
             throw new https_1.HttpsError('deadline-exceeded', 'Il PIN è scaduto. Richiedine uno nuovo.');
         }
-        // Delete the verified PIN
+        if (pinData?.pin !== cleanPin) {
+            const newAttempts = currentAttempts + 1;
+            if (newAttempts >= 5) {
+                await db.collection('login_pins').doc(cleanEmail).delete();
+                throw new https_1.HttpsError('resource-exhausted', 'Troppi tentativi errati. Il PIN è stato annullato, richiedine uno nuovo.');
+            }
+            else {
+                await db.collection('login_pins').doc(cleanEmail).update({ attempts: newAttempts });
+                throw new https_1.HttpsError('invalid-argument', `PIN non corretto. Tentativi rimasti: ${5 - newAttempts}.`);
+            }
+        }
+        // Delete the verified PIN immediately to prevent replay attacks
         await db.collection('login_pins').doc(cleanEmail).delete();
         // Fetch user UID from Firestore
         const usersCollection = db.collection('users');

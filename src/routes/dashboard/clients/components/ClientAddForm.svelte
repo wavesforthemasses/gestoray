@@ -2,7 +2,8 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
   import { generateId } from '$lib/utils/helpers';
-  import { generateSearchTerms } from '$lib';
+  import { generateSearchTerms } from '$lib/search-utils';
+  import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { toast } from '$lib/stores/toast.svelte';
   import { FormField } from '$lib';
   import { createEventDispatcher } from 'svelte';
@@ -54,6 +55,10 @@
 
       const clientId = generateId('client');
       const now = new Date().toISOString();
+      const fullClientName = `${nome.trim()} ${cognome.trim()}`.trim();
+      const terms = generateSearchTerms(fullClientName, partitaIva.trim(), codiceFiscale.trim(), email.trim());
+
+      const chunkId = await CacheLookupService.updateClientCache(clientId, fullClientName);
 
       const newClient = {
         original: {
@@ -71,6 +76,10 @@
         edits: {
           createdAt: now,
           createdBy: authState.user.uid
+        },
+        derived: {
+          textSearch: terms,
+          ...(chunkId ? { cacheChunkId: chunkId } : {})
         }
       };
 

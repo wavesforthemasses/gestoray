@@ -3,7 +3,7 @@
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { Settings, Percent, Building, Menu, ActivitySquare, Palette, Shield } from '@lucide/svelte';
+  import { Settings, Percent, Building, Menu, ActivitySquare, Palette, Shield, Ticket, Wrench } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Impostazioni');
@@ -35,6 +35,12 @@
       icon={Shield}
     />
     <SettingsNavCard 
+      href="/dashboard/settings/tickets"
+      title="Configurazione Ticket & QR Code"
+      description="Gestisci i permessi di apertura ticket (utenti interni, form pubblica, QR Code dedicati)."
+      icon={Ticket}
+    />
+    <SettingsNavCard 
       href="/dashboard/settings/project"
       title="Configurazione Progetto"
       description="Imposta il nome della piattaforma, l'email di sistema per le notifiche e altri parametri di base."
@@ -45,6 +51,12 @@
       title="Gestione Menu"
       description="Configura la visibilità delle voci di menu laterale per i vari ruoli."
       icon={Menu}
+    />
+    <SettingsNavCard 
+      href="/dashboard/settings/interventi"
+      title="Configurazione Interventi & Cantieri"
+      description="Personalizza la denominazione White-Label, le tariffe, le unità di misura e le opzioni di firma del modulo Interventi."
+      icon={Wrench}
     />
     <SettingsNavCard 
       href="/dashboard/settings/theme"

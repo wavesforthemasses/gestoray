@@ -6,8 +6,10 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, User, MessageSquare, FileText } from '@lucide/svelte';
+  import { ArrowLeft, User, MessageSquare, FileText, QrCode } from '@lucide/svelte';
   import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+  import ClientTicketQRCodeModal from '$lib/components/ClientTicketQRCodeModal.svelte';
+  import { can } from '$lib/services/roles.service';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Scheda Cliente CRM');
   import ClientProfileTab from './components/ClientProfileTab.svelte';
@@ -17,6 +19,7 @@
   import { ClientDetailService } from './client-detail.service';
 
   const clientId = $page.params.id as string;
+  let showQRCodeModal = $state(false);
 
   // Tabs
   let activeTab = $state<'profile' | 'activities' | 'quotes'>('profile');
@@ -416,6 +419,9 @@
         <ArrowLeft size={16} /> Torna a elenco clienti
       </a>
       <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
+      <button type="button" onclick={() => (showQRCodeModal = true)} class="btn-qr-modal">
+        <QrCode size={16} /> QR Code Assistenza
+      </button>
     </div>
 
     {#if loadingData}
@@ -431,20 +437,26 @@
         >
           <User size={16} /> Profilo & Audit Log
         </button>
-        <button 
-          class="tab-nav-btn" 
-          class:active={activeTab === 'activities'} 
-          onclick={() => activeTab = 'activities'}
-        >
-          <MessageSquare size={16} /> Attività & Note
-        </button>
-        <button 
-          class="tab-nav-btn" 
-          class:active={activeTab === 'quotes'} 
-          onclick={() => activeTab = 'quotes'}
-        >
-          <FileText size={16} /> Preventivatore ({quotesList.length})
-        </button>
+
+        {#if can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role)}
+          <button 
+            class="tab-nav-btn" 
+            class:active={activeTab === 'activities'} 
+            onclick={() => activeTab = 'activities'}
+          >
+            <MessageSquare size={16} /> Attività & Note
+          </button>
+        {/if}
+
+        {#if can('contracts:read', activeRoleState.role) || can('contracts:list', activeRoleState.role) || can('contracts:create', activeRoleState.role)}
+          <button 
+            class="tab-nav-btn" 
+            class:active={activeTab === 'quotes'} 
+            onclick={() => activeTab = 'quotes'}
+          >
+            <FileText size={16} /> Preventivatore ({quotesList.length})
+          </button>
+        {/if}
       </div>
     {/if}
   </Card>
@@ -471,9 +483,7 @@
           onUpdateProfile={handleUpdateProfile}
           onDeleteClient={handleDeleteClient}
         />
-      {/if}
-
-      {#if activeTab === 'activities'}
+      {:else if activeTab === 'activities' && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
         <ClientActivitiesTab
           activitiesList={activitiesList}
           clientNotes={clientNotes}
@@ -629,4 +639,30 @@
   .action-link {
     text-decoration: none;
   }
+
+  .btn-qr-modal {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    background-color: var(--primary, #3b82f6);
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-qr-modal:hover {
+    background-color: #2563eb;
+  }
 </style>
+
+<ClientTicketQRCodeModal
+  bind:isOpen={showQRCodeModal}
+  clientId={clientId}
+  clientName={`${clientName} ${clientCognome}`.trim()}
+/>

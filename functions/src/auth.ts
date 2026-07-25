@@ -100,16 +100,30 @@ export const verifyLoginPin = onCall({ region: REGION }, async (request) => {
     }
 
     const pinData = pinDoc.data();
+    const currentAttempts = pinData?.attempts || 0;
 
-    if (pinData?.pin !== cleanPin) {
-      throw new HttpsError('invalid-argument', 'Il PIN inserito non è corretto.');
+    if (currentAttempts >= 5) {
+      await db.collection('login_pins').doc(cleanEmail).delete();
+      throw new HttpsError('resource-exhausted', 'Troppi tentativi errati. Il PIN è stato annullato, richiedine uno nuovo.');
     }
 
     if (Date.now() > pinData?.expiresAt) {
+      await db.collection('login_pins').doc(cleanEmail).delete();
       throw new HttpsError('deadline-exceeded', 'Il PIN è scaduto. Richiedine uno nuovo.');
     }
 
-    // Delete the verified PIN
+    if (pinData?.pin !== cleanPin) {
+      const newAttempts = currentAttempts + 1;
+      if (newAttempts >= 5) {
+        await db.collection('login_pins').doc(cleanEmail).delete();
+        throw new HttpsError('resource-exhausted', 'Troppi tentativi errati. Il PIN è stato annullato, richiedine uno nuovo.');
+      } else {
+        await db.collection('login_pins').doc(cleanEmail).update({ attempts: newAttempts });
+        throw new HttpsError('invalid-argument', `PIN non corretto. Tentativi rimasti: ${5 - newAttempts}.`);
+      }
+    }
+
+    // Delete the verified PIN immediately to prevent replay attacks
     await db.collection('login_pins').doc(cleanEmail).delete();
 
     // Fetch user UID from Firestore

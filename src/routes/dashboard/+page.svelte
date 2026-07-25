@@ -8,7 +8,7 @@
   import StatusBadge from "$lib/components/StatusBadge.svelte";
   import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
   import AdminKPIs from '$lib/components/Dashboard/AdminKPIs.svelte';
-  import AdminTasks from "$lib/components/Dashboard/AdminTasks.svelte";
+  import AdminTablesWidget from "./components/AdminTablesWidget.svelte";
   import { DashboardService } from "./dashboard.service";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
@@ -222,7 +222,8 @@
             Caricamento dati amministrativi...
           </div>
         {:else}
-          <AdminTasks 
+          <AdminTablesWidget 
+            loadingAdminTables={loadingAdminTables}
             {adminPendingContracts}
             {adminOverdueInstallments}
             {adminUndistributedPayments}
@@ -397,6 +398,20 @@
                 </div>
               </div>
             </div>
+          {/if}
+
+          {#if activeRoleState.role === "amministrazione" || activeRoleState.role === "superadmin"}
+            <AdminTablesWidget 
+              {loadingAdminTables}
+              {adminPendingContracts}
+              {adminOverdueInstallments}
+              {adminPendingCommissions}
+              {adminFinalizedCommissions}
+              {adminUndistributedPayments}
+              {hasContracts}
+              {hasPayments}
+              {hasCommissions}
+            />
           {/if}
         {/if}
       </div>

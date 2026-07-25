@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import * as admin from 'firebase-admin';
+import { generateSearchTerms } from './search-utils';
 
 const REGION = 'europe-west3';
 
@@ -54,6 +55,8 @@ export const updateProfile = onCall({ region: REGION }, async (request) => {
       await auth.updateUser(uid, { email: cleanEmail });
     }
 
+    const existingDerived = userData.derived || {};
+
     // Save profile update
     await userDocRef.set({
       original: {
@@ -63,14 +66,15 @@ export const updateProfile = onCall({ region: REGION }, async (request) => {
         roles: userOriginal.roles || [],
         qualification: userOriginal.qualification || 'junior'
       },
-      derived: userData.derived || {
-        totalContractsCount: 0,
-        totalApprovedSales: 0,
-        totalPendingSales: 0,
-        totalCommissionEarned: 0,
-        totalCommissionPending: 0,
-        totalClientsCreated: 0,
-        totalNNCF: 0
+      derived: {
+        totalContractsCount: existingDerived.totalContractsCount || 0,
+        totalApprovedSales: existingDerived.totalApprovedSales || 0,
+        totalPendingSales: existingDerived.totalPendingSales || 0,
+        totalCommissionEarned: existingDerived.totalCommissionEarned || 0,
+        totalCommissionPending: existingDerived.totalCommissionPending || 0,
+        totalClientsCreated: existingDerived.totalClientsCreated || 0,
+        totalNNCF: existingDerived.totalNNCF || 0,
+        textSearch: generateSearchTerms(cleanNome, cleanCognome, cleanEmail)
       },
       edits: {
         createdAt: userData.edits?.createdAt || userData.createdAt || new Date().toISOString(),

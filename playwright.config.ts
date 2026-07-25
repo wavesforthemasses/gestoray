@@ -20,6 +20,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testMatch: /.*\.spec\.ts/,
+      testIgnore: ['**/scripts/templates/**'],
       use: { ...devices['Desktop Chrome'] },
       dependencies: ['setup'],
     },

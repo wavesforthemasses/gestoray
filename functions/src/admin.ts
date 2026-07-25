@@ -1,23 +1,9 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import * as admin from 'firebase-admin';
+import { generateSearchTerms } from './search-utils';
 
 const REGION = 'europe-west3';
-
-function generateSearchTerms(str: string): string[] {
-  if (!str) return [];
-  const clean = str.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-  const words = clean.split(/\s+/).filter(w => w.length >= 2);
-  const terms = new Set<string>();
-  words.forEach(word => {
-    for (let i = 0; i < word.length; i++) {
-      for (let j = i + 2; j <= word.length; j++) {
-        terms.add(word.slice(i, j));
-      }
-    }
-  });
-  return Array.from(terms);
-}
 
 /**
  * Helper: checkAdminPermissions

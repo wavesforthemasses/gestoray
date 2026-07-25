@@ -8,17 +8,16 @@ test.describe('Settings Hub Page', () => {
   });
 
   test('carica la pagina hub impostazioni', async ({ page }) => {
-    await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('.settings-hub')).toBeVisible({ timeout: 15000 });
   });
 
   test('mostra le card di navigazione verso le sotto-pagine', async ({ page }) => {
-    // Verifica che almeno una card di navigazione sia visibile
     await expect(page.locator('a[href*="/dashboard/settings/"]').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('naviga alla pagina regole provvigionali cliccando sulla card', async ({ page }) => {
-    await page.getByText(/Regole Provvigionali/i).click();
-    await page.waitForURL('**/dashboard/settings/commissions');
-    expect(page.url()).toContain('/dashboard/settings/commissions');
+  test('naviga alla pagina impostazioni ticket cliccando sulla card', async ({ page }) => {
+    await page.getByText(/Configurazione Ticket/i).click();
+    await page.waitForURL('**/dashboard/settings/tickets');
+    expect(page.url()).toContain('/dashboard/settings/tickets');
   });
 });

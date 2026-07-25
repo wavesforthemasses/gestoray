@@ -175,6 +175,12 @@ function installSingleModule(moduleName) {
         if (entry.name.startsWith('settings_')) {
           const subName = entry.name.replace('settings_', '');
           extraDest = path.resolve(__dirname, `../src/routes/dashboard/settings/${subName}`);
+        } else if (entry.name.startsWith('public_')) {
+          const subName = entry.name.replace('public_', '').replace(/_/g, '/');
+          extraDest = path.resolve(__dirname, `../src/routes/public/${subName}`);
+        } else if (entry.name.startsWith('api_')) {
+          const subName = entry.name.replace('api_', '').replace(/_/g, '/');
+          extraDest = path.resolve(__dirname, `../src/routes/api/${subName}`);
         } else {
           extraDest = path.resolve(__dirname, `../src/routes/dashboard/${entry.name}`);
         }
@@ -185,7 +191,15 @@ function installSingleModule(moduleName) {
     }
   }
 
-  // 3. Copy Backend Cloud Functions if present
+  // 3. Copy Lib Services if present
+  const libDir = path.join(moduleTplDir, 'lib_services');
+  if (fs.existsSync(libDir)) {
+    const destLibDir = path.resolve(__dirname, '../src/lib/services');
+    copyDirRecursive(libDir, destLibDir);
+    console.log(`✅ Servizi Lib del modulo copiati in src/lib/services/`);
+  }
+
+  // 4. Copy Backend Cloud Functions if present
   const functionsDir = path.join(moduleTplDir, 'functions');
   if (fs.existsSync(functionsDir)) {
     const destFunctionsDir = path.resolve(__dirname, '../functions/src');

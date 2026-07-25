@@ -23,15 +23,13 @@
   import { onMount } from 'svelte';
   import { rolesStore, initRolesStore, type RoleConfig } from '$lib/services/roles.service';
 
-  let firestoreRoles = $state<RoleItem[]>([]);
-
-  rolesStore.subscribe(list => {
-    firestoreRoles = list.map(r => ({
+  let firestoreRoles = $derived(
+    $rolesStore.map(r => ({
       value: r.id,
       label: r.label,
       desc: r.description
-    }));
-  });
+    }))
+  );
 
   onMount(() => {
     initRolesStore();

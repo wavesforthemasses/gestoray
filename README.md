@@ -107,17 +107,35 @@ Nella modalità con emulatore, all'avvio con `npm run dev:emulators` vengono **p
 
 ---
 
+## 🏛️ Architettura Modulare 3-Livelli (3-Tier Architecture)
+
+Gestoray adotta un'architettura **completamente disaccoppiata e pura** suddivisa su 3 livelli:
+
+1. **Tier 1 (Base Core Universale):** `clients` (Clienti), `users` (Utenti & Permessi), `custom-fields` (Campi Personalizzati PMI).
+2. **Tier 2 (Moduli Puri Standalone - 100% Autonomi):**
+   - `contracts` — Gestione Contratti, Scadenze e Canoni
+   - `payments` — Incassi e Flussi di Cassa
+   - `commissions` — Provvigioni Commerciali Agenti
+   - `products` — Catalogo Prodotti & Ricambi
+   - `activities` — Task & Attività Operative Interni
+   - `tickets` — Ticket di Assistenza Clienti
+   - `interventi` — Field Service, Squadre, Mezzi e Rapportini
+3. **Tier 3 (Bridge Connectors Opzionali):** Moduli ponte dedicati (es. `bridge_contracts_interventi`, `bridge_contracts_payments`) che collegano due moduli puri **solo quando entrambi sono installati**, garantendo zero debito tecnico.
+
+---
+
 ## 📦 Registro Moduli Portabili & Installazione On-Demand
 
-La codebase di partenza (Clean Base Core) include solo le funzionalità universali per tutti i progetti (*Dashboard, Utenti, Profilo, Clienti, Qualifiche, To-Do, Impostazioni*).
+Tutti i 7 moduli puri pronti all'uso risiedono nel **Registro Moduli (`scripts/templates/modules/`)** e possono essere sincronizzati o installati con un singolo comando:
 
-I moduli avanzati pronti all'uso (*Contratti, Incassi, Provvigioni, Attività, Prodotti*) risiedono nel **Registro Moduli (`scripts/templates/modules/`)** come pacchetti indipendenti.
-
-### Opzione A: Installazione Automatica via CLI (1-Click)
-Per installare qualsiasi modulo dal registro nella tua applicazione:
+### Opzione A: Sincronizzazione ed Installazione Automatica via CLI (1-Click)
 ```bash
+# Sincronizza tutti i modelli CLI con la dashboard attiva
+npm run template:sync
+
+# Installazione di un qualsiasi modulo dal registro:
 npm run module:install -- --name contracts
-# Moduli disponibili: contracts, payments, commissions, activities, products
+# Moduli disponibili: contracts, payments, commissions, products, activities, tickets, interventi
 ```
 
 ### Opzione B: Installazione Manuale Copy-Paste su Altre Codebase

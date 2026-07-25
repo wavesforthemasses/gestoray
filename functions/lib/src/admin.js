@@ -4,22 +4,8 @@ exports.updateUser = exports.initSuperAdmin = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const search_utils_1 = require("./search-utils");
 const REGION = 'europe-west3';
-function generateSearchTerms(str) {
-    if (!str)
-        return [];
-    const clean = str.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-    const words = clean.split(/\s+/).filter(w => w.length >= 2);
-    const terms = new Set();
-    words.forEach(word => {
-        for (let i = 0; i < word.length; i++) {
-            for (let j = i + 2; j <= word.length; j++) {
-                terms.add(word.slice(i, j));
-            }
-        }
-    });
-    return Array.from(terms);
-}
 /**
  * Helper: checkAdminPermissions
  * Verifies if the authenticated caller has administrative rights (superadmin or amministrazione)
@@ -87,7 +73,7 @@ exports.initSuperAdmin = (0, https_1.onCall)({ region: REGION }, async (request)
                 totalCommissionPending: 0,
                 totalClientsCreated: 0,
                 totalNNCF: 0,
-                textSearch: generateSearchTerms('Super Admin wavesforthemasses@gmail.com')
+                textSearch: (0, search_utils_1.generateSearchTerms)('Super Admin wavesforthemasses@gmail.com')
             },
             edits: {
                 createdAt: new Date().toISOString(),
@@ -160,7 +146,7 @@ exports.updateUser = (0, https_1.onCall)({ region: REGION }, async (request) => 
                     totalClientsCreated: 0,
                     totalNNCF: 0
                 }),
-                textSearch: generateSearchTerms(nome.trim() + ' ' + cognome.trim() + ' ' + cleanEmail)
+                textSearch: (0, search_utils_1.generateSearchTerms)(nome.trim() + ' ' + cognome.trim() + ' ' + cleanEmail)
             },
             edits: {
                 createdAt: userData.edits?.createdAt || userData.createdAt || new Date().toISOString(),

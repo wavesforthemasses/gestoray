@@ -10,14 +10,15 @@
     status = "loading";
     message = "";
     try {
-      const initFn = httpsCallable(functions, "initSuperAdmin");
+      const initFn = httpsCallable<any, any>(functions, "initSuperAdmin");
       const result = await initFn();
-      if (result.data && result.data.status === "success") {
+      const data = result.data || {};
+      if (data.status === "success") {
         status = "success";
-        message = result.data.message;
+        message = data.message || "Inizializzazione completata con successo.";
       } else {
         status = "error";
-        message = result.data.message || "Errore sconosciuto durante l'inizializzazione.";
+        message = data.message || "Errore sconosciuto durante l'inizializzazione.";
       }
     } catch (err: any) {
       console.error("Init Error:", err);

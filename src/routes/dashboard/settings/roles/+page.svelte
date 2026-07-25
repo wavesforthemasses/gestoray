@@ -25,7 +25,8 @@
   let newRoleLabel = $state('');
   let newRoleDesc = $state('');
 
-  rolesStore.subscribe((val) => {
+  $effect(() => {
+    const val = $rolesStore;
     rolesList = val;
     if (val.length > 0 && !val.some(r => r.id === selectedRoleTab)) {
       selectedRoleTab = val[0].id;

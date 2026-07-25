@@ -1,6 +1,7 @@
 import { db, doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
-import { generateSearchTerms } from '$lib';
+import { generateSearchTerms } from '$lib/search-utils';
+import { CacheLookupService } from '$lib/services/cacheLookupService';
 
 export interface ClientDataPayload {
   clientDerived: any;
@@ -35,70 +36,88 @@ export class ClientDetailService {
       throw new Error('Il cliente specificato non esiste.');
     }
     const data = clientDoc.data();
-    const orig = data.original || {};
+    const orig = data.original || data || {};
     payload.clientDerived = data.derived || {};
 
     payload.originalProfile = {
-      nome: orig.nome || '',
-      cognome: orig.cognome || '',
-      email: orig.email || '',
-      phone: orig.phone || '',
-      createdBy: orig.createdBy || '',
-      status: orig.status || 'prospect',
-      fiscalId: orig.fiscalId || '',
-      partitaIva: orig.partitaIva || '',
-      codiceFiscale: orig.codiceFiscale || ''
+      nome: orig.nome || orig.companyName || orig.ragioneSociale || orig.name || data.nome || data.companyName || data.ragioneSociale || data.name || '',
+      cognome: orig.cognome || data.cognome || '',
+      email: orig.email || data.email || '',
+      phone: orig.phone || data.phone || '',
+      createdBy: orig.createdBy || data.createdBy || '',
+      status: orig.status || data.status || 'prospect',
+      fiscalId: orig.fiscalId || data.fiscalId || '',
+      partitaIva: orig.partitaIva || data.partitaIva || '',
+      codiceFiscale: orig.codiceFiscale || data.codiceFiscale || ''
     };
 
     payload.clientNotes = orig.notes || [];
     payload.clientCreatedAt = data.edits?.createdAt || orig.createdAt || '';
 
+    // Helper per recupero sicuro ed agnostico dai vari moduli (architettura a micro-servizi pluggabili)
+    const safeGetDocs = async (queryOrCol: any) => {
+      try {
+        return await getDocs(queryOrCol);
+      } catch (err) {
+        // Se un modulo opzionale non è presente o non è abilitato per il ruolo, non blocca l'anagrafica cliente
+        return { docs: [], forEach: () => {} };
+      }
+    };
+
     const [productsSnap, activitiesSnap, historySnap, contractsSnap, usersSnap] = await Promise.all([
-      getDocs(collection(db, 'products')),
-      getDocs(collection(db, 'clients', clientId, 'activities')),
-      getDocs(collection(db, 'clients', clientId, 'history')),
-      getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId))),
-      getDocs(collection(db, 'users'))
+      safeGetDocs(collection(db, 'products')),
+      safeGetDocs(collection(db, 'clients', clientId, 'activities')),
+      safeGetDocs(collection(db, 'clients', clientId, 'history')),
+      safeGetDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId))),
+      safeGetDocs(collection(db, 'users'))
     ]);
 
     const prods: any[] = [];
-    productsSnap.forEach((d: any) => {
-      const p = d.data()?.original || d.data();
-      prods.push({
-        id: d.id,
-        name: p.name,
-        listPrice: p.listPrice,
-        minPrice: p.minPrice
+    if (productsSnap.forEach) {
+      productsSnap.forEach((d: any) => {
+        const p = d.data()?.original || d.data();
+        prods.push({
+          id: d.id,
+          name: p.name,
+          listPrice: p.listPrice,
+          minPrice: p.minPrice
+        });
       });
-    });
+    }
     payload.productsList = prods;
 
     const contracts: any[] = [];
     const quotes: any[] = [];
-    contractsSnap.forEach((d: any) => {
-      const c = d.data();
-      const docData = { id: d.id, ...c.original, edits: c.edits, derived: c.derived };
-      if (c.original?.status === 'draft') {
-        quotes.push(docData);
-      } else {
-        contracts.push(docData);
-      }
-    });
+    if (contractsSnap.forEach) {
+      contractsSnap.forEach((d: any) => {
+        const c = d.data();
+        const docData = { id: d.id, ...c.original, edits: c.edits, derived: c.derived };
+        if (c.original?.status === 'draft') {
+          quotes.push(docData);
+        } else {
+          contracts.push(docData);
+        }
+      });
+    }
     payload.contractsList = contracts.sort((a, b) => new Date(b.edits?.createdAt || 0).getTime() - new Date(a.edits?.createdAt || 0).getTime());
     payload.quotesList = quotes.sort((a, b) => new Date(b.edits?.createdAt || 0).getTime() - new Date(a.edits?.createdAt || 0).getTime());
 
     const acts: any[] = [];
-    activitiesSnap.forEach((d: any) => {
-      const act = d.data();
-      acts.push({ id: d.id, ...act.original, edits: act.edits });
-    });
+    if (activitiesSnap.forEach) {
+      activitiesSnap.forEach((d: any) => {
+        const act = d.data();
+        acts.push({ id: d.id, ...act.original, edits: act.edits });
+      });
+    }
     payload.activitiesList = acts.sort((a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime());
 
     const histories: any[] = [];
-    historySnap.forEach((d: any) => {
-      const h = d.data();
-      histories.push({ id: d.id, ...h.original, edits: h.edits });
-    });
+    if (historySnap.forEach) {
+      historySnap.forEach((d: any) => {
+        const h = d.data();
+        histories.push({ id: d.id, ...h.original, edits: h.edits });
+      });
+    }
     payload.historyList = histories.sort((a, b) => {
       const timeB = new Date(b.edits?.createdAt || b.createdAt || 0).getTime();
       const timeA = new Date(a.edits?.createdAt || a.createdAt || 0).getTime();
@@ -106,10 +125,12 @@ export class ClientDetailService {
     });
 
     const uList: any[] = [];
-    usersSnap.forEach((d: any) => {
-      const u = d.data()?.original || d.data();
-      uList.push({ uid: d.id, ...u });
-    });
+    if (usersSnap.forEach) {
+      usersSnap.forEach((d: any) => {
+        const u = d.data()?.original || d.data();
+        uList.push({ uid: d.id, ...u });
+      });
+    }
     payload.usersList = uList;
 
     return payload;
@@ -135,6 +156,9 @@ export class ClientDetailService {
       newOriginal[f] = isDirezione ? originalProfile[f] : newProfile[f];
     });
 
+    const fullClientName = `${newOriginal.nome || ''} ${newOriginal.cognome || ''}`.trim();
+    const updatedTerms = generateSearchTerms(fullClientName, newOriginal.partitaIva, newOriginal.codiceFiscale, newOriginal.email);
+
     await updateDoc(doc(db, 'clients', clientId), {
       'original.nome': newOriginal.nome,
       'original.cognome': newOriginal.cognome,
@@ -144,11 +168,13 @@ export class ClientDetailService {
       'original.fiscalId': newOriginal.fiscalId,
       'original.partitaIva': newOriginal.partitaIva,
       'original.codiceFiscale': newOriginal.codiceFiscale,
-      'original.createdBy': newProfile.createdBy, // Allow updating owner if admin
-      'derived.textSearch': generateSearchTerms(newOriginal.nome + ' ' + newOriginal.partitaIva + ' ' + newOriginal.codiceFiscale),
+      'original.createdBy': newProfile.createdBy,
+      'derived.textSearch': updatedTerms,
       'edits.modifiedAt': now,
       'edits.modifiedBy': authObj.uid
     });
+
+    await CacheLookupService.updateClientCache(clientId, fullClientName);
 
     const changes: Record<string, { oldVal: any, newVal: any }> = {};
     let hasChanges = false;
@@ -182,29 +208,37 @@ export class ClientDetailService {
 
   static async deleteClient(clientId: string, activitiesList: any[], historyList: any[]) {
     for (const act of activitiesList) {
-      await deleteDoc(doc(db, 'clients', clientId, 'activities', act.id));
+      try {
+        await deleteDoc(doc(db, 'clients', clientId, 'activities', act.id));
+      } catch (e) {}
     }
     for (const hist of historyList) {
-      await deleteDoc(doc(db, 'clients', clientId, 'history', hist.id));
+      try {
+        await deleteDoc(doc(db, 'clients', clientId, 'history', hist.id));
+      } catch (e) {}
     }
     
-    const contractsSnap = await getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId)));
-    for (const cDoc of contractsSnap.docs) {
-      const installmentsSnap = await getDocs(collection(db, 'contracts', cDoc.id, 'installments'));
-      for (const instDoc of installmentsSnap.docs) {
-        await deleteDoc(doc(db, 'contracts', cDoc.id, 'installments', instDoc.id));
+    try {
+      const contractsSnap = await getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId)));
+      for (const cDoc of contractsSnap.docs) {
+        const installmentsSnap = await getDocs(collection(db, 'contracts', cDoc.id, 'installments'));
+        for (const instDoc of installmentsSnap.docs) {
+          await deleteDoc(doc(db, 'contracts', cDoc.id, 'installments', instDoc.id));
+        }
+        await deleteDoc(doc(db, 'contracts', cDoc.id));
       }
-      await deleteDoc(doc(db, 'contracts', cDoc.id));
-    }
+    } catch (e) {}
 
-    const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('original.clientId', '==', clientId)));
-    for (const pDoc of paymentsSnap.docs) {
-      const allocationsSnap = await getDocs(collection(db, 'payments', pDoc.id, 'contractsPaid'));
-      for (const allocDoc of allocationsSnap.docs) {
-        await deleteDoc(doc(db, 'payments', pDoc.id, 'contractsPaid', allocDoc.id));
+    try {
+      const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('original.clientId', '==', clientId)));
+      for (const pDoc of paymentsSnap.docs) {
+        const allocationsSnap = await getDocs(collection(db, 'payments', pDoc.id, 'contractsPaid'));
+        for (const allocDoc of allocationsSnap.docs) {
+          await deleteDoc(doc(db, 'payments', pDoc.id, 'contractsPaid', allocDoc.id));
+        }
+        await deleteDoc(doc(db, 'payments', pDoc.id));
       }
-      await deleteDoc(doc(db, 'payments', pDoc.id));
-    }
+    } catch (e) {}
 
     await deleteDoc(doc(db, 'clients', clientId));
   }

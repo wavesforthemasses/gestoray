@@ -14,6 +14,41 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ─── Module Dependency Map ──────────────────────────────────────────────────
+const MODULE_DEPENDENCIES = {
+  contracts: ['products'],    // Contratti richiedono Prodotti
+  commissions: ['contracts'], // Provvigioni richiedono Contratti
+};
+
+function checkDependents(targetModule) {
+  const installedModules = [];
+  const routesDir = path.resolve(__dirname, '../src/routes/dashboard');
+  if (fs.existsSync(routesDir)) {
+    const entries = fs.readdirSync(routesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        installedModules.push(entry.name);
+      }
+    }
+  }
+
+  const blockingModules = [];
+  for (const [mod, deps] of Object.entries(MODULE_DEPENDENCIES)) {
+    if (deps.includes(targetModule) && installedModules.includes(mod)) {
+      blockingModules.push(mod);
+    }
+  }
+
+  if (blockingModules.length > 0) {
+    console.error('');
+    console.error(`❌ Impossibile disinstallare il modulo '${targetModule}':`);
+    console.error(`   Il modulo '${targetModule}' è richiesto dai seguenti moduli attualmente installati: ${blockingModules.map(m => `'${m}'`).join(', ')}.`);
+    console.error(`   Disinstalla prima i moduli dipendenti e poi riprova.`);
+    console.error('');
+    process.exit(1);
+  }
+}
+
 // ─── CLI Args ───────────────────────────────────────────────────────────────
 
 function parseArgs() {
@@ -86,7 +121,23 @@ function removeFromFirestoreRules(rulesSnippet, moduleName) {
   const firstHeaderLine = cleanSnippet.split('\n')[0].trim();
   if (firstHeaderLine && content.includes(firstHeaderLine)) {
     const blockIdx = content.indexOf(firstHeaderLine);
-    const endBlockIdx = content.indexOf('}', blockIdx);
+    let openBraces = 0;
+    let endBlockIdx = -1;
+    let foundFirstOpen = false;
+
+    for (let i = blockIdx; i < content.length; i++) {
+      if (content[i] === '{') {
+        openBraces++;
+        foundFirstOpen = true;
+      } else if (content[i] === '}') {
+        openBraces--;
+        if (foundFirstOpen && openBraces === 0) {
+          endBlockIdx = i;
+          break;
+        }
+      }
+    }
+
     if (blockIdx !== -1 && endBlockIdx !== -1) {
       content = content.slice(0, blockIdx) + content.slice(endBlockIdx + 1);
       fs.writeFileSync(rulesPath, content, 'utf-8');
@@ -147,6 +198,7 @@ function removeBackendFunctions(moduleTplDir) {
 
 function main() {
   const { name } = parseArgs();
+  checkDependents(name);
   const moduleTplDir = path.resolve(__dirname, `templates/modules/${name}`);
 
   if (!fs.existsSync(moduleTplDir)) {
@@ -177,6 +229,12 @@ function main() {
         if (entry.name.startsWith('settings_')) {
           const subName = entry.name.replace('settings_', '');
           extraDest = path.resolve(__dirname, `../src/routes/dashboard/settings/${subName}`);
+        } else if (entry.name.startsWith('public_')) {
+          const subName = entry.name.replace('public_', '');
+          extraDest = path.resolve(__dirname, `../src/routes/public/${subName}`);
+        } else if (entry.name.startsWith('api_')) {
+          const subName = entry.name.replace('api_', '').replace(/_/g, '/');
+          extraDest = path.resolve(__dirname, `../src/routes/api/${subName}`);
         } else {
           extraDest = path.resolve(__dirname, `../src/routes/dashboard/${entry.name}`);
         }
@@ -184,6 +242,19 @@ function main() {
         if (removeDirRecursive(extraDest)) {
           console.log(`🗑️  Rotta extra rimossa: ${path.relative(path.resolve(__dirname, '..'), extraDest)}`);
         }
+      }
+    }
+  }
+
+  // 3. Remove Lib Services if present
+  const libDir = path.join(moduleTplDir, 'lib_services');
+  if (fs.existsSync(libDir)) {
+    const entries = fs.readdirSync(libDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const destPath = path.resolve(__dirname, `../src/lib/services/${entry.name}`);
+      if (fs.existsSync(destPath)) {
+        fs.unlinkSync(destPath);
+        console.log(`🗑️  Servizio Lib rimosso: src/lib/services/${entry.name}`);
       }
     }
   }

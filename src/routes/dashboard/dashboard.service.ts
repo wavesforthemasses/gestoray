@@ -60,20 +60,17 @@ export class DashboardService {
     // Fetch commMaturate from finalized closings if commissions module is active
     if (hasCommissions) {
       try {
-        const closingsSnap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized')));
+        const versionsSnap = await getDocs(query(collectionGroup(db, 'versions'), where('status', '==', 'finalized')));
         let totalMaturate = 0;
-        await Promise.all(closingsSnap.docs.map(async (cDoc: any) => {
-          const vSnap = await getDocs(query(collection(db, 'commissions_closings', cDoc.id, 'versions'), where('status', '==', 'finalized')));
-          if (!vSnap.empty) {
-            const version = vSnap.docs[0].data();
-            if (role === 'commerciale') {
-              const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
-              if (myBreakdown) totalMaturate += (myBreakdown.commission || 0);
-            } else {
-              totalMaturate += (version.totalCommissions || 0);
-            }
+        versionsSnap.docs.forEach((vDoc: any) => {
+          const version = vDoc.data();
+          if (role === 'commerciale') {
+            const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
+            if (myBreakdown) totalMaturate += (myBreakdown.commission || 0);
+          } else {
+            totalMaturate += (version.totalCommissions || 0);
           }
-        }));
+        });
         kpis.commMaturate = totalMaturate;
       } catch (err) {
         console.error("Error fetching finalized commissions", err);
@@ -113,8 +110,11 @@ export class DashboardService {
       } catch (e) { console.error("Error NNCF count", e); }
 
       try {
-        const usersSnap = await getDocs(query(collection(db, 'users'), where('original.roles', 'array-contains', 'commerciale')));
-        usersSnap.forEach((d: any) => kpis.usersList.push({ uid: d.id, ...d.data()?.original }));
+        const usersSnap = await getDocs(collection(db, 'users'));
+        usersSnap.forEach((d: any) => {
+          const u = d.data()?.original || d.data();
+          kpis.usersList.push({ uid: d.id, ...u });
+        });
       } catch (e) { console.error("Error users list", e); }
     }
 

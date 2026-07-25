@@ -8,7 +8,12 @@ import {
   Wallet, 
   Tag, 
   Users, 
-  Settings 
+  Settings,
+  Ticket,
+  LifeBuoy,
+  Package,
+  Wrench,
+  Truck
 } from '@lucide/svelte';
 
 export const iconMap: Record<string, any> = {
@@ -21,5 +26,11 @@ export const iconMap: Record<string, any> = {
   Wallet, 
   Tag, 
   Users, 
-  Settings
+  Settings,
+  Ticket,
+  LifeBuoy,
+  Package,
+  Tool: Wrench,
+  Wrench,
+  Truck
 };

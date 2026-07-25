@@ -5,19 +5,34 @@
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings } from '@lucide/svelte';
+  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText } from '@lucide/svelte';
   import { iconMap } from '$lib/utils/iconMap';
   import { KPI_LEGEND } from '$lib/kpiLegend';
   import ProjectSetupBlocker from '$lib/components/ProjectSetupBlocker.svelte';
   import { projectStore } from '$lib/stores/project';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
+  import { menuBadgesStore, initTicketsBadgeListener, destroyBadgesListeners } from '$lib/stores/badges';
+  import SidebarNav from './components/SidebarNav.svelte';
+
+  import { isOnlineStore, initNetworkStateListener } from '$lib/stores/networkState';
 
   let { children } = $props();
 
   let isCollapsed = $state(false);
   let isMobileOpen = $state(false);
   let showLegend = $state(false);
+
+  onMount(() => {
+    initNetworkStateListener();
+  });
+
+  $effect(() => {
+    const role = activeRoleState.role;
+    const uid = authState.user?.uid || null;
+    const isExecutive = role === 'superadmin' || role === 'amministrazione' || role === 'direzione';
+    initTicketsBadgeListener(uid, isExecutive);
+  });
 
   onMount(() => {
     if (typeof window !== 'undefined') {
@@ -105,31 +120,11 @@
       {/if}
     {/if}
 
-    <nav class="nav-menu">
-      {#if activeRoleState.role}
-        {@const menuConf = $menuConfigStore.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.rolesView.includes(activeRoleState.role || '') }), {} as Record<string, boolean>)}
-
-        <a href="/dashboard" class="nav-item" class:active={$page.url.pathname === '/dashboard'} title="Dashboard">
-          <span class="nav-icon"><LayoutDashboard size={18} /></span>
-          <span class="nav-label">Dashboard</span>
-        </a>
-
-        {#each $menuConfigStore.filter(item => item.rolesView.includes(activeRoleState.role || '')) as item}
-          {@const Icon = iconMap[item.icon]}
-          <a href={item.path} class="nav-item" 
-             class:active={item.matchExact ? $page.url.pathname === item.path : $page.url.pathname.startsWith(item.path)} 
-             title={item.label}>
-            <span class="nav-icon"><Icon size={18} /></span>
-            <span class="nav-label">{item.label}</span>
-          </a>
-        {/each}
-      {/if}
-
-      <a href="/dashboard/profile" class="nav-item" class:active={$page.url.pathname.startsWith('/dashboard/profile')} title="Profilo">
-        <span class="nav-icon"><Settings size={18} /></span>
-        <span class="nav-label">Profilo</span>
-      </a>
-    </nav>
+    <SidebarNav 
+      activeRole={activeRoleState.role || ''} 
+      menuConfig={$menuConfigStore} 
+      badges={$menuBadgesStore} 
+    />
 
     <div class="sidebar-footer">
       <button onclick={handleLogout} class="logout-btn" title="Disconnetti">
@@ -145,6 +140,11 @@
     </button>
 
     <main class="content-viewport">
+      {#if !$isOnlineStore}
+        <div class="offline-banner">
+          ⚠️ <strong>Sei attualmente offline.</strong> Le modifiche verranno sincronizzate non appena la connessione sarà ripristinata.
+        </div>
+      {/if}
       {@render children()}
     </main>
 
@@ -376,61 +376,6 @@
   .role-select:focus {
     border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
-  }
-
-  .nav-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    color: var(--color-neutral-500);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
-    border: 1px solid transparent;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    white-space: nowrap;
-  }
-
-  .nav-item:hover {
-    background: rgba(255, 255, 255, 0.6);
-    color: var(--color-neutral-900);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-  }
-
-  .nav-item.active {
-    background: var(--color-white);
-    border-color: rgba(255, 255, 255, 0.9);
-    color: var(--color-primary-600);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
-  }
-
-  .nav-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-
-  .nav-label {
-    transition: opacity var(--transition-speed);
-  }
-
-  .collapsed .nav-label {
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    overflow: hidden;
   }
 
   .collapsed .sidebar {
@@ -713,5 +658,15 @@
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px) scale(0.95); }
     to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .offline-banner {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    font-size: 13px;
   }
 </style>

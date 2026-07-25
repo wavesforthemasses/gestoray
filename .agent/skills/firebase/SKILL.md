@@ -1,6 +1,6 @@
 ---
 name: "Firebase & Firestore Best Practices"
-description: "Rules for updating firestore.rules and indexes when adding or modifying collections in Firebase/Firestore."
+description: "Rules for updating firestore.rules, indexes, and document size safeguards (1MB limit) in Firebase/Firestore."
 ---
 
 # Firebase & Firestore Best Practices
@@ -18,5 +18,11 @@ If you introduce a query that filters or sorts on multiple fields (e.g., `where(
 - If you write a new complex query in the frontend or backend, you MUST add the necessary index definition to `firestore.indexes.json`.
 - Do not wait for the application to crash in production to realize an index is missing.
 
-## 3. Verify Security Before Completing the Task
+## 3. Strict 1MB Document Limit Safeguard & Subcollections
+Firestore imposes a hard limit of **1 MB per single document** (1,048,576 bytes).
+- **NEVER store unbound arrays** inside a document (e.g., historical change logs, payment history, activity comments, sub-items).
+- **ALWAYS use Subcollections** for unbound relations (e.g. `clients/{id}/history`, `contracts/{id}/installments`).
+- **ALWAYS use Sharded Chunking (`CacheLookupService`)** for lookup caches (`system_cache/{type}_chunk_{n}` with max 200 items per doc).
+
+## 4. Verify Security Before Completing the Task
 Before concluding your work on any feature involving data modeling, double-check that both `firestore.rules` and `firestore.indexes.json` are up to date. The feature is NOT complete until the security rules are in place.

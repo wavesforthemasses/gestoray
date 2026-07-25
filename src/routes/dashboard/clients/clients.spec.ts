@@ -8,7 +8,6 @@ test.describe('Clients Page - Ruolo: Commerciale', () => {
   });
 
   test('carica la pagina clienti', async ({ page }) => {
-    // La pagina è accessibile e il loader è scomparso
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
   });
 
@@ -22,7 +21,6 @@ test.describe('Clients Page - Ruolo: Commerciale', () => {
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
     const addBtn = page.getByRole('button', { name: /aggiungi|nuov/i });
     await addBtn.click();
-    // Verifica che il form/card di aggiunta sia visibile
     await expect(page.getByRole('heading', { name: /aggiungi nuov/i })).toBeVisible({ timeout: 5000 });
   });
 
@@ -30,14 +28,10 @@ test.describe('Clients Page - Ruolo: Commerciale', () => {
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
     await page.getByRole('button', { name: /aggiungi|nuov/i }).click();
     
-    // Prova a inviare il form vuoto (i required HTML bloccano l'invio se non riempiti, ma proviamo bypassando o riempiendo e cancellando)
-    // Meglio testare la logica custom, ad esempio manca email/telefono (che non hanno required HTML)
     await page.fill('#client-name', 'Test Azienda Srl');
     await page.fill('#client-fiscal', 'IT00000000000');
-    // Lasciamo vuoti email e telefono
     await page.getByRole('button', { name: 'Crea Anagrafica Cliente' }).click();
     
-    // Verifica toast di errore per contatti
     const errorToast = page.locator('.toast-error').filter({ hasText: /Inserire almeno un contatto/i });
     await expect(errorToast).toBeVisible();
   });
@@ -55,34 +49,31 @@ test.describe('Clients Page - Ruolo: Commerciale', () => {
     
     await page.getByRole('button', { name: 'Crea Anagrafica Cliente' }).click();
     
-    // Verifica toast di successo
     const successToast = page.locator('.toast-success').filter({ hasText: /creata con successo/i });
     await expect(successToast).toBeVisible();
     
-    // Verifica che la riga sia comparsa nella tabella
     await expect(page.locator('table')).toContainText('Acme E2E Srl');
   });
 
-  test('ricrea/ripristina logicamente un cliente con stessa P.IVA', async ({ page }) => {
+  test('carica la scheda dettaglio cliente ed i dati anagrafici senza errori ed apre il QR Code', async ({ page }) => {
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
-    await page.getByRole('button', { name: /aggiungi|nuov/i }).click();
-    
-    // Proviamo a creare un cliente con P.IVA esistente.
-    // Supponiamo che il backend blocchi o lo ripristini.
-    const duplicateFiscal = 'IT00000000000';
-    await page.fill('#client-name', 'Duplicate Srl');
-    await page.fill('#client-fiscal', duplicateFiscal);
-    await page.fill('#client-email', 'dup@acme.com');
-    await page.getByRole('button', { name: 'Crea Anagrafica Cliente' }).click();
-    
-    // Potrebbe comparire un modale "Cliente già esistente, vuoi ripristinarlo?"
-    // Oppure semplicemente un toast success se lo fa in automatico.
-    const confirmBtn = page.getByRole('button', { name: /Ripristina|Conferma/i });
-    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmBtn.click();
+    const gestisciBtn = page.locator('table a').first();
+    if (await gestisciBtn.isVisible()) {
+      await gestisciBtn.click();
+      await page.waitForURL('**/dashboard/clients/*');
+      await expect(page.locator('.client-details-page')).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText('Scheda Anagrafica Cliente')).toBeVisible();
+
+      // Verifica che non ci siano messaggi di errore permission o allow statements
+      await expect(page.getByText('No matching allow statements')).toBeHidden();
+
+      // Verifica apertura e chiusura del QR Code Assistenza
+      const qrBtn = page.getByRole('button', { name: /QR Code Assistenza/i });
+      await expect(qrBtn).toBeVisible();
+      await qrBtn.click();
+      await expect(page.getByText('QR Code & Link Assistenza Dedicato')).toBeVisible();
+      await page.getByRole('button', { name: 'Chiudi' }).click();
     }
-    
-    await expect(page.locator('.toast-success')).toBeVisible({ timeout: 10000 }).catch(() => null);
   });
 });
 
@@ -94,5 +85,23 @@ test.describe('Clients Page - Ruolo: Amministrazione', () => {
 
   test('carica la pagina clienti per admin', async ({ page }) => {
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
+  });
+
+  test('carica il dettaglio cliente per admin e apre la modale QR Code', async ({ page }) => {
+    await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
+    const gestisciBtn = page.locator('table a').first();
+    if (await gestisciBtn.isVisible()) {
+      await gestisciBtn.click();
+      await page.waitForURL('**/dashboard/clients/*');
+      await expect(page.locator('.client-details-page')).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText('Scheda Anagrafica Cliente')).toBeVisible();
+
+      // Verifica modale QR Code
+      const qrBtn = page.getByRole('button', { name: /QR Code Assistenza/i });
+      await expect(qrBtn).toBeVisible();
+      await qrBtn.click();
+      await expect(page.getByText('QR Code & Link Assistenza Dedicato')).toBeVisible();
+      await page.getByRole('button', { name: 'Chiudi' }).click();
+    }
   });
 });

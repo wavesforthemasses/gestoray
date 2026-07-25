@@ -86,6 +86,17 @@ export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
       { key: 'update', label: 'Modifica' },
       { key: 'delete', label: 'Eliminazione' },
     ]
+  },
+  {
+    module: 'tickets',
+    label: 'Ticket di Assistenza',
+    actions: [
+      { key: 'list', label: 'Elenco' },
+      { key: 'read', label: 'Dettaglio' },
+      { key: 'create', label: 'Creazione' },
+      { key: 'update', label: 'Modifica' },
+      { key: 'delete', label: 'Eliminazione' },
+    ]
   }
 ];
 

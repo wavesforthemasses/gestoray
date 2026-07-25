@@ -20,7 +20,7 @@
     
     try {
       console.log("Calling sendLoginPin...");
-      const sendPinFn = httpsCallable(functions, 'sendLoginPin');
+      const sendPinFn = httpsCallable<any, any>(functions, 'sendLoginPin');
       const result = await sendPinFn({ email });
       console.log("sendLoginPin Result:", result.data);
       
@@ -44,7 +44,7 @@
     errorMessage = "";
 
     try {
-      const verifyPinFn = httpsCallable(functions, 'verifyLoginPin');
+      const verifyPinFn = httpsCallable<any, any>(functions, 'verifyLoginPin');
       const result = await verifyPinFn({ email, pin });
 
       if (result.data.success && result.data.customToken) {
