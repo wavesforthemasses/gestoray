@@ -103,12 +103,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // UNITS OF MEASURE
-    match /units_of_measure/{unitId} {
-      allow read: if isAuth();
-      allow write: if isAuth() && (isAdmin() || isDirezione());
-    }
-
     // ANALYTICS & MATERIALIZED VIEWS
     match /analytics_monthly/{monthDoc} {
       allow read: if isAuth();
@@ -119,18 +113,6 @@ service cloud.firestore {
         allow write: if false;
       }
     }
-
-    // --- MODULE: activities BEGIN ---
-    // ACTIVITIES
-match /activities/{docId} {
-  allow read: if isAuth();
-  allow write: if isAuth();
-}
-match /activity_types/{docId} {
-  allow read: if isAuth();
-  allow write: if isAdmin();
-}
-    // --- MODULE: activities END ---
 
     // --- MODULE: products BEGIN ---
     // PRODUCTS

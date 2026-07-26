@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList } from '@lucide/svelte';
+  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -18,6 +18,8 @@
 
   let hasTicketsModule = $derived($menuConfigStore.some((item) => item.id === 'tickets'));
   let hasInterventiModule = $derived($menuConfigStore.some((item) => item.id === 'interventi'));
+  let hasActivitiesModule = $derived($menuConfigStore.some((item) => item.id === 'activities'));
+  let hasProductsModule = $derived($menuConfigStore.some((item) => item.id === 'products'));
 </script>
 
 <div class="settings-hub animate-fade-in">
@@ -52,6 +54,7 @@
       description="Imposta il nome della piattaforma, l'email di sistema per le notifiche e altri parametri di base."
       icon={Building}
     />
+
     <SettingsNavCard 
       href="/dashboard/settings/menu"
       title="Gestione Menu"
@@ -75,12 +78,23 @@
       icon={Ruler}
     />
 
-    <SettingsNavCard 
-      href="/dashboard/settings/activities"
-      title="Configurazione Tipi Attività & KPI"
-      description="Personalizza le tipologie di attività (Telefonata, Visita, Email, Intervento), i bottoni rapidi e i permessi di assegnazione."
-      icon={ClipboardList}
-    />
+    {#if hasActivitiesModule}
+      <SettingsNavCard 
+        href="/dashboard/settings/activities"
+        title="Configurazione Tipi Attività & KPI"
+        description="Personalizza le tipologie di attività (Telefonata, Visita, Email, Intervento), i bottoni rapidi e i permessi di assegnazione."
+        icon={ClipboardList}
+      />
+    {/if}
+
+    {#if hasProductsModule}
+      <SettingsNavCard 
+        href="/dashboard/settings/products"
+        title="Configurazione Campi Scheda Prodotto"
+        description="Personalizza la visibilità e l'obbligatorietà dei campi (Codice SKU, Giacenza, Minimo Fatturabile, Categoria, Descrizione) nei form e nelle tabelle."
+        icon={Package}
+      />
+    {/if}
 
     <SettingsNavCard 
       href="/dashboard/settings/theme"

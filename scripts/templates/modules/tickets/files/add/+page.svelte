@@ -104,8 +104,8 @@
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .back-link {

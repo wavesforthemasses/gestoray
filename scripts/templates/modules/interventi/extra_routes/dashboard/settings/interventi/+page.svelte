@@ -98,7 +98,7 @@
 </div>
 
 <style>
-  .interventi-settings-page { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .interventi-settings-page { width: 100%; box-sizing: border-box; }
   .page-top { margin-bottom: 20px; }
   .back-link { color: var(--color-neutral-600); text-decoration: none; font-size: 13px; font-weight: 600; }
   .page-top h2 { margin: 6px 0 0 0; font-size: 22px; font-weight: 700; color: var(--color-neutral-900); }

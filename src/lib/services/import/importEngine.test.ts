@@ -3,7 +3,7 @@ import { CsvParser } from './csvParser';
 import { ImportRegistry } from './importRegistry';
 import { EntityResolutionService } from './entityResolutionService';
 import { ImportEngineService } from './importEngineService';
-import { normalizeUnitOfMeasure, productsImportSpec } from './specs/productsImportSpec';
+import { normalizeUnitOfMeasure, parseMinimoFatturabile, productsImportSpec } from './specs/productsImportSpec';
 import type { ImportModuleSpec } from '$lib/types/importTypes';
 
 describe('Universal Import Engine Unit Tests', () => {
@@ -36,7 +36,6 @@ describe('Universal Import Engine Unit Tests', () => {
 
   describe('ImportRegistry', () => {
     beforeEach(() => {
-      // Clean up specs
       ImportRegistry.unregister('test_module');
       ImportRegistry.unregister('test_parent');
     });
@@ -78,12 +77,10 @@ describe('Universal Import Engine Unit Tests', () => {
       ImportRegistry.register(parentSpec);
       ImportRegistry.register(childSpec);
 
-      // 0 parent records -> checkPrerequisites returns ok: false
       const checkEmpty = ImportRegistry.checkPrerequisites('test_child', { test_parent: 0 });
       expect(checkEmpty.ok).toBe(false);
       expect(checkEmpty.missing).toContain('Parent Module');
 
-      // >0 parent records -> checkPrerequisites returns ok: true
       const checkValid = ImportRegistry.checkPrerequisites('test_child', { test_parent: 10 });
       expect(checkValid.ok).toBe(true);
       expect(checkValid.missing.length).toBe(0);
@@ -107,7 +104,7 @@ describe('Universal Import Engine Unit Tests', () => {
     });
   });
 
-  describe('ImportEngineService Currency & Number Parsing', () => {
+  describe('ImportEngineService Currency, Units & Minimo Fatturabile Parsing', () => {
     it('should correctly parse Italian and international currency formats', () => {
       expect(ImportEngineService.parseNumberValue('€350,00')).toBe(350);
       expect(ImportEngineService.parseNumberValue('€ 270,00')).toBe(270);
@@ -124,7 +121,22 @@ describe('Universal Import Engine Unit Tests', () => {
       expect(normalizeUnitOfMeasure('Ore')).toBe('ora');
     });
 
-    it('should correctly parse and validate user product CSV into 25 valid new records', () => {
+    it('should parse Minimo Fatturabile strings into structured minQuantity and flatPrice', () => {
+      const parsed1 = parseMinimoFatturabile('Sotto i 20 mc 7000€');
+      expect(parsed1?.enabled).toBe(true);
+      expect(parsed1?.minQuantity).toBe(20);
+      expect(parsed1?.flatPrice).toBe(7000);
+      expect(parsed1?.displayText).toBe('Sotto i 20 mc 7000€');
+
+      const parsed2 = parseMinimoFatturabile('Sotto i 20 mc 5400€');
+      expect(parsed2?.minQuantity).toBe(20);
+      expect(parsed2?.flatPrice).toBe(5400);
+
+      const parsed3 = parseMinimoFatturabile('500 €');
+      expect(parsed3?.flatPrice).toBe(500);
+    });
+
+    it('should correctly parse and validate user product CSV with Minimo Fatturabile', () => {
       const csvText = `"Descrizione","Descrizione Lunga","Prezzo","Tassa 1","Tassa 2","Unità","Gruppo prodotto","Minimo Fatturabile"
 "Alleggerito Gmix 43 EVO","Sottofondo...","€350,00","0,00%","0,00%","mc","Alleggeriti","Sotto i 20 mc 7000€"
 "Alleggerito Gmix 54","Sottofondo...","€270,00","0,00%","0,00%","mc","Alleggeriti","Sotto i 20 mc 5400€"`;
@@ -138,7 +150,8 @@ describe('Universal Import Engine Unit Tests', () => {
         category: 'Gruppo prodotto',
         price: 'Prezzo',
         unit: 'Unità',
-        description: 'Descrizione Lunga'
+        description: 'Descrizione Lunga',
+        minimoFatturabile: 'Minimo Fatturabile'
       };
 
       const states = ImportEngineService.validateRows(parsed.rows, productsImportSpec, mapping);

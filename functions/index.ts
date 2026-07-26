@@ -13,7 +13,3 @@ export { updateProfile, updateProfileEmail } from './src/profile';
 export { sendSystemEmail } from './src/email';
 export { getChartAggregations } from './src/aggregations';
 export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
-
-// --- MODULE FUNCTIONS: activities BEGIN ---
-export { onActivityCreated } from './src/triggers/onActivityCreated';
-// --- MODULE FUNCTIONS: activities END ---

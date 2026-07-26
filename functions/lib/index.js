@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onActivityCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.onInstallmentWrite = exports.onContractUpdated = exports.onContractCreated = exports.onActivityCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
 const v2_1 = require("firebase-functions/v2");
 (0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
@@ -27,4 +27,12 @@ Object.defineProperty(exports, "onClientUpdated", { enumerable: true, get: funct
 var onActivityCreated_1 = require("./src/triggers/onActivityCreated");
 Object.defineProperty(exports, "onActivityCreated", { enumerable: true, get: function () { return onActivityCreated_1.onActivityCreated; } });
 // --- MODULE FUNCTIONS: activities END ---
+// --- MODULE FUNCTIONS: contracts BEGIN ---
+var onContractCreated_1 = require("./src/triggers/onContractCreated");
+Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: function () { return onContractCreated_1.onContractCreated; } });
+var onContractUpdated_1 = require("./src/triggers/onContractUpdated");
+Object.defineProperty(exports, "onContractUpdated", { enumerable: true, get: function () { return onContractUpdated_1.onContractUpdated; } });
+var onInstallmentWrite_1 = require("./src/triggers/onInstallmentWrite");
+Object.defineProperty(exports, "onInstallmentWrite", { enumerable: true, get: function () { return onInstallmentWrite_1.onInstallmentWrite; } });
+// --- MODULE FUNCTIONS: contracts END ---
 //# sourceMappingURL=index.js.map

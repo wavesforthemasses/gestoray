@@ -5,23 +5,27 @@
   import type { ProductItem } from '../schema';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
+  import { ProductSettingsService, type ProductFieldsSettings, DEFAULT_PRODUCT_FIELDS_SETTINGS } from '$lib/services/productSettingsService';
   import type { CustomFieldDefinition } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
-  import { ArrowLeft, Printer, Pencil, Info, SlidersHorizontal, AlertCircle } from '@lucide/svelte';
+  import { ArrowLeft, Printer, Pencil, Info, SlidersHorizontal, AlertCircle, Zap } from '@lucide/svelte';
 
   const productId = $page.params.id as string;
   let product = $state<ProductItem | null>(null);
   let loading = $state(true);
   let customFieldsList = $state<CustomFieldDefinition[]>([]);
+  let fieldSettings = $state<ProductFieldsSettings>({ ...DEFAULT_PRODUCT_FIELDS_SETTINGS });
 
   onMount(async () => {
     try {
-      const [prod, cFields] = await Promise.all([
+      const [prod, cFields, loadedSettings] = await Promise.all([
         ProductsService.getProductById(productId),
-        CustomFieldsService.getFieldsForModule('products')
+        CustomFieldsService.getFieldsForModule('products'),
+        ProductSettingsService.getSettings()
       ]);
       product = prod;
       customFieldsList = cFields;
+      fieldSettings = loadedSettings;
     } catch (e) {
       console.error('Errore caricamento scheda prodotto:', e);
     } finally {
@@ -56,9 +60,13 @@
     <!-- HEADER -->
     <header class="detail-header card">
       <div>
-        <div class="header-tag">SKU: {product.sku}</div>
+        {#if fieldSettings.sku.visible && product.sku}
+          <div class="header-tag">SKU: {product.sku}</div>
+        {/if}
         <h1 class="page-title">{product.name}</h1>
-        <p class="page-subtitle">Categoria: <strong>{product.category}</strong></p>
+        {#if fieldSettings.category.visible && product.category}
+          <p class="page-subtitle">Categoria: <strong>{product.category}</strong></p>
+        {/if}
       </div>
 
       <div class="header-actions">
@@ -74,7 +82,7 @@
     <!-- INFO CARD -->
     <div class="card info-card">
       <h3 class="card-title">
-        <Info size={18} /> Prezzo & Giacenza Magazzino
+        <Info size={18} /> Prezzo & Dettagli
       </h3>
       
       <div class="info-row">
@@ -82,19 +90,36 @@
         <span class="info-val font-bold text-primary">€ {(product.price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })} / {product.unit}</span>
       </div>
 
-      <div class="info-row">
-        <span class="info-label">Giacenza Attuale</span>
-        <span class="stock-badge {product.stockQty > 0 ? 'stock-ok' : 'stock-zero'}">
-          {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit}
-        </span>
-      </div>
+      {#if fieldSettings.minimoFatturabile.visible && product.minimoFatturabile && (product.minimoFatturabile.enabled || product.minimoFatturabile.displayText)}
+        <div class="info-row highlight-minimo">
+          <span class="info-label flex-align-gap">
+            <Zap size={15} class="icon-amber" /> Minimo Fatturabile
+          </span>
+          <span class="info-val text-amber font-bold">
+            {#if product.minimoFatturabile.displayText}
+              {product.minimoFatturabile.displayText}
+            {:else if product.minimoFatturabile.minQuantity && product.minimoFatturabile.flatPrice}
+              Sotto i {product.minimoFatturabile.minQuantity} {product.unit} ➔ € {product.minimoFatturabile.flatPrice.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+            {/if}
+          </span>
+        </div>
+      {/if}
+
+      {#if fieldSettings.stockQty.visible}
+        <div class="info-row">
+          <span class="info-label">Giacenza Attuale</span>
+          <span class="stock-badge {product.stockQty > 0 ? 'stock-ok' : 'stock-zero'}">
+            {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit}
+          </span>
+        </div>
+      {/if}
 
       <div class="info-row">
         <span class="info-label">Unità di Misura</span>
         <span class="info-val uppercase">{product.unit}</span>
       </div>
 
-      {#if product.description}
+      {#if fieldSettings.description.visible && product.description}
         <div class="notes-box">
           <strong>Descrizione & Specifiche Tecniche:</strong>
           <p>{product.description}</p>
@@ -115,7 +140,7 @@
 </div>
 
 <style>
-  .product-detail-page { max-width: 800px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .product-detail-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
   .back-link { color: var(--color-neutral-600); text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
   .back-link:hover { color: var(--color-primary-600); }
 
@@ -129,6 +154,11 @@
   .card-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 1.2rem 0; color: var(--color-neutral-900); border-bottom: 1px solid var(--color-neutral-100); padding-bottom: 0.8rem; display: flex; align-items: center; gap: 8px; }
 
   .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px dashed var(--color-neutral-200); }
+  .highlight-minimo { background: #fffbeb; padding: 0.6rem 0.8rem; border-radius: var(--radius-md); border: 1px solid #fef3c7; }
+  .flex-align-gap { display: flex; align-items: center; gap: 6px; }
+  .icon-amber { color: #d97706; }
+  .text-amber { color: #b45309; }
+
   .info-label { font-size: 0.88rem; color: var(--color-neutral-500); font-weight: 600; }
   .info-val { font-size: 0.92rem; font-weight: 600; color: var(--color-neutral-800); }
 

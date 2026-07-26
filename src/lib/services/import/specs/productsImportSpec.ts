@@ -1,5 +1,6 @@
 import { db, collection, writeBatch, doc } from '$lib/firebase';
 import type { ImportModuleSpec, ConflictStrategy } from '$lib/types/importTypes';
+import type { MinimoFatturabileConfig } from '../../../../routes/dashboard/products/schema';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
 import { uuidv7 } from 'uuidv7';
@@ -7,6 +8,39 @@ import { uuidv7 } from 'uuidv7';
 export function normalizeUnitOfMeasure(rawUnit: string): string {
   const res = UnitsOfMeasureService.resolveUnitSync(rawUnit);
   return res.canonicalCode;
+}
+
+export function parseMinimoFatturabile(raw: any): MinimoFatturabileConfig | undefined {
+  if (!raw) return undefined;
+  
+  if (typeof raw === 'object' && raw.enabled !== undefined) {
+    return raw as MinimoFatturabileConfig;
+  }
+
+  const str = String(raw).trim();
+  if (!str) return undefined;
+
+  let minQuantity: number | null = null;
+  let flatPrice: number | null = null;
+
+  const numMatches = str.match(/\d+(?:[.,]\d+)?/g);
+  if (numMatches && numMatches.length >= 2) {
+    minQuantity = parseFloat(numMatches[0].replace(',', '.'));
+    flatPrice = parseFloat(numMatches[1].replace(',', '.'));
+  } else if (numMatches && numMatches.length === 1) {
+    if (str.includes('€') || str.toLowerCase().includes('eur')) {
+      flatPrice = parseFloat(numMatches[0].replace(',', '.'));
+    } else {
+      minQuantity = parseFloat(numMatches[0].replace(',', '.'));
+    }
+  }
+
+  return {
+    enabled: true,
+    minQuantity,
+    flatPrice,
+    displayText: str
+  };
 }
 
 export const productsImportSpec: ImportModuleSpec = {
@@ -73,6 +107,14 @@ export const productsImportSpec: ImportModuleSpec = {
       defaultValue: 0
     },
     {
+      key: 'minimoFatturabile',
+      label: 'Minimo Fatturabile',
+      type: 'string',
+      required: false,
+      defaultValue: '',
+      description: 'Condizione o testo minimo fatturabile (es. "Sotto i 20 mc 7000€" oppure "20 mc = 7000€")'
+    },
+    {
       key: 'description',
       label: 'Descrizione / Note',
       type: 'string',
@@ -109,7 +151,9 @@ export const productsImportSpec: ImportModuleSpec = {
         const rawPrice = typeof row.price === 'number' ? row.price : parseFloat(String(row.price || 0).replace(',', '.'));
         const cleanPrice = isNaN(rawPrice) ? 0 : UnitsOfMeasureService.roundQuantity(rawPrice, 'eur');
 
-        const productDoc = {
+        const parsedMinimo = parseMinimoFatturabile(row.minimoFatturabile || row.minimo_fatturabile);
+
+        const productDoc: Record<string, any> = {
           sku,
           name,
           category: row.category || 'Generale',
@@ -123,6 +167,10 @@ export const productsImportSpec: ImportModuleSpec = {
             textSearch: [name.toLowerCase(), sku.toLowerCase(), (row.category || '').toLowerCase()].filter(Boolean)
           }
         };
+
+        if (parsedMinimo) {
+          productDoc.minimoFatturabile = parsedMinimo;
+        }
 
         batch.set(docRef, productDoc, { merge: conflictStrategy === 'upsert' });
         succeeded++;

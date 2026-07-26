@@ -211,7 +211,7 @@
 </div>
 
 <style>
-  .add-activity-page { max-width: 900px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 1.5rem; }
+  .add-activity-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
   .page-top { display: flex; flex-direction: column; gap: 0.4rem; }
   .back-link { color: var(--color-neutral-500); font-size: 0.85rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
   .back-link:hover { color: var(--color-primary-600); }

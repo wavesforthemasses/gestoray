@@ -45,4 +45,25 @@ describe('ContractsService Unit Tests', () => {
     const list = await ContractsService.getContracts();
     expect(list).toEqual([]);
   });
+
+  it('correctly calculates price with Minimo Fatturabile rule when quantity is below threshold', () => {
+    const resUnder = ContractsService.calculateMinimoFatturabilePrice(
+      15, // 15 mc < 20 mc
+      350,
+      { enabled: true, minQuantity: 20, flatPrice: 7000, displayText: 'Sotto i 20 mc 7000€' }
+    );
+
+    expect(resUnder.isMinimoApplied).toBe(true);
+    expect(resUnder.totalAmount).toBe(7000);
+    expect(resUnder.note).toBe('Sotto i 20 mc 7000€');
+
+    const resOver = ContractsService.calculateMinimoFatturabilePrice(
+      25, // 25 mc >= 20 mc
+      350,
+      { enabled: true, minQuantity: 20, flatPrice: 7000, displayText: 'Sotto i 20 mc 7000€' }
+    );
+
+    expect(resOver.isMinimoApplied).toBe(false);
+    expect(resOver.totalAmount).toBe(25 * 350); // 8750
+  });
 });

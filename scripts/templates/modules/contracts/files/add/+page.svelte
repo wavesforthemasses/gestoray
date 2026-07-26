@@ -222,9 +222,8 @@
 
 <style>
   .add-contract-page {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 24px 16px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .page-top {

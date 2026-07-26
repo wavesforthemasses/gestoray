@@ -28,7 +28,7 @@ const functionsIndexPath = path.resolve(__dirname, '../functions/index.ts');
 const autoGenDir = path.resolve(__dirname, '../src/lib/config/auto_generated');
 
 const OPTIONAL_MODULES = ['contracts', 'payments', 'commissions', 'products', 'activities', 'tickets', 'interventi'];
-const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities'];
+const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities', 'products'];
 
 function removeFileSync(filePath) {
   if (fs.existsSync(filePath)) {
@@ -85,9 +85,7 @@ function resetActiveWorkspace() {
   // 4. Remove optional services from src/lib/services/
   removeFileSync(path.join(servicesDir, 'interventionSettings.ts'));
   removeFileSync(path.join(servicesDir, 'ticketSettings.ts'));
-  removeFileSync(path.join(servicesDir, 'activityTypesService.ts'));
-  removeFileSync(path.join(servicesDir, 'activityTypesService.test.ts'));
-  console.log(`  🗑️ Rimosse impostazioni servizi opzionali (interventionSettings, ticketSettings, activityTypesService)`);
+  console.log(`  🗑️ Rimosse impostazioni servizi opzionali (interventionSettings, ticketSettings)`);
 
   // 5. Remove bridge services from src/lib/services/bridges/
   if (fs.existsSync(bridgesDir)) {

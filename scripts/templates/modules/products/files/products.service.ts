@@ -10,7 +10,7 @@ import {
   query, 
   orderBy 
 } from '$lib/firebase';
-import type { ProductItem } from './schema';
+import type { ProductItem, MinimoFatturabileConfig } from './schema';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { generateSearchTerms } from '$lib/search-utils';
 
@@ -31,6 +31,37 @@ export class ProductsService {
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as ProductItem;
+  }
+
+  static parseMinimoFatturabile(raw: any): MinimoFatturabileConfig | undefined {
+    if (!raw) return undefined;
+    if (typeof raw === 'object' && raw.enabled !== undefined) {
+      return raw as MinimoFatturabileConfig;
+    }
+    const str = String(raw).trim();
+    if (!str) return undefined;
+
+    let minQuantity: number | null = null;
+    let flatPrice: number | null = null;
+
+    const numMatches = str.match(/\d+(?:[.,]\d+)?/g);
+    if (numMatches && numMatches.length >= 2) {
+      minQuantity = parseFloat(numMatches[0].replace(',', '.'));
+      flatPrice = parseFloat(numMatches[1].replace(',', '.'));
+    } else if (numMatches && numMatches.length === 1) {
+      if (str.includes('€') || str.toLowerCase().includes('eur')) {
+        flatPrice = parseFloat(numMatches[0].replace(',', '.'));
+      } else {
+        minQuantity = parseFloat(numMatches[0].replace(',', '.'));
+      }
+    }
+
+    return {
+      enabled: true,
+      minQuantity,
+      flatPrice,
+      displayText: str
+    };
   }
 
   static async createProduct(data: Omit<ProductItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {

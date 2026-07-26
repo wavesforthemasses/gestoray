@@ -528,8 +528,8 @@
 
 <style>
   .add-intervention-page {
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
   .page-top {
     margin-bottom: 20px;

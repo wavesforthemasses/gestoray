@@ -227,9 +227,8 @@
 
 <style>
   .contract-detail-page {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;

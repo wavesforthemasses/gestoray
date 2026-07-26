@@ -206,7 +206,7 @@
 </div>
 
 <style>
-  .add-commission-page { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .add-commission-page { width: 100%; box-sizing: border-box; }
   .page-top { margin-bottom: 20px; }
   .back-link { color: var(--color-neutral-600); text-decoration: none; font-size: 13px; font-weight: 600; }
   .back-link:hover { color: var(--color-primary-600); }

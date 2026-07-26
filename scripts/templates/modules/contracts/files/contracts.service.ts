@@ -50,7 +50,6 @@ export class ContractsService {
 
     const docRef = await addDoc(collection(db, this.COLLECTION_NAME), payload);
 
-    // Update Sharded Lookup Cache
     try {
       const chunkId = await CacheLookupService.updateEntityCache('contracts', docRef.id, data.title);
       if (chunkId) {
@@ -93,6 +92,32 @@ export class ContractsService {
     await deleteDoc(doc(db, this.COLLECTION_NAME, id));
   }
 
+  /**
+   * Calcola l'importo effettivo per un prodotto tenendo conto del Minimo Fatturabile
+   */
+  static calculateMinimoFatturabilePrice(
+    quantity: number,
+    unitPrice: number,
+    minimoFatturabile?: { enabled: boolean; minQuantity?: number | null; flatPrice?: number | null; displayText?: string } | null
+  ): { totalAmount: number; isMinimoApplied: boolean; note?: string } {
+    const rawTotal = quantity * unitPrice;
+    if (!minimoFatturabile || !minimoFatturabile.enabled) {
+      return { totalAmount: rawTotal, isMinimoApplied: false };
+    }
+
+    const { minQuantity, flatPrice, displayText } = minimoFatturabile;
+    
+    if (minQuantity != null && flatPrice != null && quantity < minQuantity) {
+      return {
+        totalAmount: flatPrice,
+        isMinimoApplied: true,
+        note: displayText || `Minimo Fatturabile applicato: € ${flatPrice} (sotto i ${minQuantity})`
+      };
+    }
+
+    return { totalAmount: rawTotal, isMinimoApplied: false };
+  }
+
   // Installments Subcollection
   static async getInstallments(contractId: string): Promise<ContractInstallment[]> {
     const subCol = collection(db, this.COLLECTION_NAME, contractId, 'installments');
@@ -101,9 +126,9 @@ export class ContractsService {
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as ContractInstallment));
   }
 
-  static async addInstallment(contractId: string, installment: Omit<ContractInstallment, 'id'>): Promise<string> {
+  static async addInstallment(contractId: string, inst: Omit<ContractInstallment, 'id'>): Promise<string> {
     const subCol = collection(db, this.COLLECTION_NAME, contractId, 'installments');
-    const ref = await addDoc(subCol, installment);
-    return ref.id;
+    const docRef = await addDoc(subCol, inst);
+    return docRef.id;
   }
 }
