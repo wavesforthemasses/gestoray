@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Smartphone, Printer, Copy, Check, X } from '@lucide/svelte';
+
   let {
     isOpen = $bindable(false),
     clientId = '',
@@ -38,8 +40,8 @@
   <div class="modal-backdrop" onclick={() => (isOpen = false)}>
     <div class="modal-card" onclick={(e) => e.stopPropagation()}>
       <header class="modal-header">
-        <h3>📱 QR Code & Link Assistenza Dedicato</h3>
-        <button class="close-btn" onclick={() => (isOpen = false)}>✕</button>
+        <h3 style="display: flex; align-items: center; gap: 8px;"><Smartphone size={18} /> QR Code & Link Assistenza Dedicato</h3>
+        <button class="close-btn" onclick={() => (isOpen = false)}><X size={18} /></button>
       </header>
 
       <div class="modal-body">
@@ -62,15 +64,19 @@
           <label for="ded-link" class="link-label">Link Dedicato Diretto</label>
           <div class="input-group">
             <input id="ded-link" type="text" readonly value={dedicatedLink} class="link-input" />
-            <button onclick={handleCopy} class="btn-copy">
-              {copied ? 'Copaito! ✓' : 'Copia Link'}
+            <button onclick={handleCopy} class="btn-copy" style="display: inline-flex; align-items: center; gap: 4px;">
+              {#if copied}
+                <Check size={14} /> Copiato!
+              {:else}
+                <Copy size={14} /> Copia Link
+              {/if}
             </button>
           </div>
         </div>
       </div>
 
       <footer class="modal-footer">
-        <button onclick={handlePrint} class="btn btn-secondary">🖨️ Stampa QR Code</button>
+        <button onclick={handlePrint} class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;"><Printer size={16} /> Stampa QR Code</button>
         <button onclick={() => (isOpen = false)} class="btn btn-primary">Chiudi</button>
       </footer>
     </div>

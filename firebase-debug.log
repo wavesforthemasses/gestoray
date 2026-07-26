@@ -1,0 +1,225 @@
+[debug] [2026-07-26T09:54:33.040Z] ----------------------------------------------------------------------
+[debug] [2026-07-26T09:54:33.042Z] Command:       /home/vincenzo/.nvm/versions/node/v22.23.1/bin/node /home/vincenzo/.nvm/versions/node/v22.23.1/bin/firebase emulators:start
+[debug] [2026-07-26T09:54:33.042Z] CLI Version:   15.22.4
+[debug] [2026-07-26T09:54:33.042Z] Platform:      linux
+[debug] [2026-07-26T09:54:33.042Z] Node Version:  v22.23.1
+[debug] [2026-07-26T09:54:33.042Z] Detected Agent: unknown
+[debug] [2026-07-26T09:54:33.042Z] Time:          Sun Jul 26 2026 11:54:33 GMT+0200 (Central European Summer Time)
+[debug] [2026-07-26T09:54:33.042Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-07-26T09:54:33.570Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-07-26T09:54:33.570Z] > authorizing via signed-in user (masvaluesrl@gmail.com)
+[debug] [2026-07-26T09:54:33.604Z] openjdk version "21.0.11" 2026-04-21
+OpenJDK Runtime Environment (build 21.0.11+10-1-24.04.2-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.11+10-1-24.04.2-Ubuntu, mixed mode, sharing)
+
+[debug] [2026-07-26T09:54:33.609Z] Parsed Java major version: 21
+[info] i  emulators: Starting emulators: auth, functions, firestore, storage, extensions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: auth, functions, firestore, storage, extensions"}}
+[debug] [2026-07-26T09:54:33.610Z] Checked if tokens are valid: true, expires at: 1785063117391
+[debug] [2026-07-26T09:54:33.610Z] Checked if tokens are valid: true, expires at: 1785063117391
+[debug] [2026-07-26T09:54:33.611Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/gesto-ray [none]
+[debug] [2026-07-26T09:54:34.650Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/gesto-ray 200
+[debug] [2026-07-26T09:54:34.650Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/gesto-ray {"projectNumber":"685413675877","projectId":"gesto-ray","lifecycleState":"ACTIVE","name":"Gesto Ray","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2026-06-26T15:15:39.024Z"}
+[debug] [2026-07-26T09:54:34.654Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.654Z] [auth] Authentication Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.654Z] [firestore] Firestore Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.655Z] [firestore.websocket] websocket server for firestore only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.655Z] [storage] Storage Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.655Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":9099}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}],"storage":[{"address":"127.0.0.1","family":"IPv4","port":9199}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2026-07-26T09:54:34.659Z] Write emulator hub locator at /tmp/hub-gesto-ray.json
+[debug] [2026-07-26T09:54:34.664Z] [Extensions] Started Extensions emulator, this is a noop.
+[debug] [2026-07-26T09:54:34.665Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.665Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.665Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-07-26T09:54:34.665Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":9099}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}],"storage":[{"address":"127.0.0.1","family":"IPv4","port":9199}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, database, hosting, pubsub, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, database, hosting, pubsub, dataconnect\u001b[22m"}}
+[debug] [2026-07-26T09:54:34.691Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-26T09:54:34.693Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[debug] [2026-07-26T09:54:34.694Z] Checked if tokens are valid: true, expires at: 1785063117391
+[debug] [2026-07-26T09:54:34.694Z] Checked if tokens are valid: true, expires at: 1785063117391
+[debug] [2026-07-26T09:54:34.694Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/gesto-ray/adminSdkConfig [none]
+[debug] [2026-07-26T09:54:35.283Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/gesto-ray/adminSdkConfig 200
+[debug] [2026-07-26T09:54:35.283Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/gesto-ray/adminSdkConfig {"projectId":"gesto-ray","storageBucket":"gesto-ray.firebasestorage.app"}
+[debug] [2026-07-26T09:54:35.294Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2026-07-26T09:54:35.294Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2026-07-26T09:54:35.294Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/home/vincenzo/.cache/firebase/emulators/cloud-firestore-emulator-v1.21.0.jar","--host","127.0.0.1","--port",8080,"--websocket_port",9150,"--database-edition","standard","--project_id","gesto-ray","--rules","/home/vincenzo/Code/gestoray/firestore.rules","--single_project_mode",true,"--functions_emulator","127.0.0.1:5001"],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","database-edition","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8080} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/home/vincenzo/.cache/firebase/emulators/cloud-firestore-emulator-v1.21.0.jar\",\"--host\",\"127.0.0.1\",\"--port\",8080,\"--websocket_port\",9150,\"--database-edition\",\"standard\",\"--project_id\",\"gesto-ray\",\"--rules\",\"/home/vincenzo/Code/gestoray/firestore.rules\",\"--single_project_mode\",true,\"--functions_emulator\",\"127.0.0.1:5001\"],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"database-edition\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8080}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to \u001b[1mfirestore-debug.log\u001b[22m"}}
+[debug] [2026-07-26T09:54:36.140Z] Jul 26, 2026 11:54:36 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:36 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
+[debug] [2026-07-26T09:54:36.174Z] 
+API endpoint: http://127.0.0.1:8080
+Database Edition:  {"metadata":{"emulator":{"name":"firestore"},"message":"\nAPI endpoint: http://127.0.0.1:8080\nDatabase Edition: "}}
+[debug] [2026-07-26T09:54:36.174Z] STANDARD
+Database Mode: CLOUD_FIRESTORE
+
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+
+If you are running a Firestore in Datastore Mode project, run:
+ {"metadata":{"emulator":{"name":"firestore"},"message":"STANDARD\nDatabase Mode: CLOUD_FIRESTORE\n\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080\n\nIf you are running a Firestore in Datastore Mode project, run:\n"}}
+[debug] [2026-07-26T09:54:36.174Z] 
+   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"\n   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\nDev App Server is now running.\n\n"}}
+[info] ✔  firestore: Firestore Emulator was started in standard edition. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator was started in standard edition."}}
+[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[debug] [2026-07-26T09:54:41.025Z] Jul 26, 2026 11:54:36 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Jul 26, 2026 11:54:36 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+Jul 26, 2026 11:54:37 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:36 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\nJul 26, 2026 11:54:36 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\nJul 26, 2026 11:54:37 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:41.028Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"storage"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2026-07-26T09:54:41.272Z] >>> [apiv2][query] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast [none]
+[debug] [2026-07-26T09:54:41.272Z] >>> [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"eventId":"8706cb49-776f-4f0b-8a60-4de2cbd0ef6b","eventType":"providers/firebase.auth/eventTypes/user.create","resource":{"name":"projects/gesto-ray","service":"firebaseauth.googleapis.com"},"params":{},"timestamp":"2026-07-26T09:54:41.272Z","data":{"uid":"k3NxqPD0cWOhCwtS00smt400IGvB","email":"test-admin@gestoray.local","emailVerified":false,"metadata":{"creationTime":"2026-07-26T09:54:41.271Z","lastSignInTime":"2026-07-26T09:54:41.271Z"},"customClaims":{},"providerData":[{"rawId":"test-admin@gestoray.local","providerId":"password","email":"test-admin@gestoray.local","federatedId":"test-admin@gestoray.local"}]}}
+[debug] [2026-07-26T09:54:41.279Z] <<< [apiv2][status] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast 200
+[debug] [2026-07-26T09:54:41.280Z] <<< [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"status":"multicast_acknowledged"}
+[debug] [2026-07-26T09:54:41.289Z] Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:41.386Z] Jul 26, 2026 11:54:41 AM io.grpc.netty.TcpMetrics loadEpollInfo
+INFO: Epoll available during static init of TcpMetrics:false
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:41 AM io.grpc.netty.TcpMetrics loadEpollInfo\nINFO: Epoll available during static init of TcpMetrics:false\n"}}
+[debug] [2026-07-26T09:54:41.397Z] Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:41.523Z] >>> [apiv2][query] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast [none]
+[debug] [2026-07-26T09:54:41.523Z] >>> [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"eventId":"47c10c00-3572-4703-86e5-e19da80ecb6f","eventType":"providers/firebase.auth/eventTypes/user.create","resource":{"name":"projects/gesto-ray","service":"firebaseauth.googleapis.com"},"params":{},"timestamp":"2026-07-26T09:54:41.523Z","data":{"uid":"QMND2Sxu2KifxrqNPffV0BOJsZdY","email":"test-super@gestoray.local","emailVerified":false,"metadata":{"creationTime":"2026-07-26T09:54:41.522Z","lastSignInTime":"2026-07-26T09:54:41.522Z"},"customClaims":{},"providerData":[{"rawId":"test-super@gestoray.local","providerId":"password","email":"test-super@gestoray.local","federatedId":"test-super@gestoray.local"}]}}
+[debug] [2026-07-26T09:54:41.526Z] <<< [apiv2][status] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast 200
+[debug] [2026-07-26T09:54:41.526Z] <<< [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"status":"multicast_acknowledged"}
+[debug] [2026-07-26T09:54:41.551Z] >>> [apiv2][query] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast [none]
+[debug] [2026-07-26T09:54:41.552Z] >>> [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"eventId":"167111b5-b982-4030-9459-601e2b1563f6","eventType":"providers/firebase.auth/eventTypes/user.create","resource":{"name":"projects/gesto-ray","service":"firebaseauth.googleapis.com"},"params":{},"timestamp":"2026-07-26T09:54:41.551Z","data":{"uid":"OnXSdPhn6IdamkOxJj56rM33QHAy","email":"test-comm@gestoray.local","emailVerified":false,"metadata":{"creationTime":"2026-07-26T09:54:41.551Z","lastSignInTime":"2026-07-26T09:54:41.551Z"},"customClaims":{},"providerData":[{"rawId":"test-comm@gestoray.local","providerId":"password","email":"test-comm@gestoray.local","federatedId":"test-comm@gestoray.local"}]}}
+[debug] [2026-07-26T09:54:41.554Z] <<< [apiv2][status] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast 200
+[debug] [2026-07-26T09:54:41.554Z] <<< [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"status":"multicast_acknowledged"}
+[debug] [2026-07-26T09:54:41.581Z] >>> [apiv2][query] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast [none]
+[debug] [2026-07-26T09:54:41.581Z] >>> [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"eventId":"863dac7d-adf4-4a32-b195-95dbbd657cca","eventType":"providers/firebase.auth/eventTypes/user.create","resource":{"name":"projects/gesto-ray","service":"firebaseauth.googleapis.com"},"params":{},"timestamp":"2026-07-26T09:54:41.581Z","data":{"uid":"KOwDKHuFHkHOb7WxMBShOdI2JA2U","email":"test-direzione@gestoray.local","emailVerified":false,"metadata":{"creationTime":"2026-07-26T09:54:41.581Z","lastSignInTime":"2026-07-26T09:54:41.581Z"},"customClaims":{},"providerData":[{"rawId":"test-direzione@gestoray.local","providerId":"password","email":"test-direzione@gestoray.local","federatedId":"test-direzione@gestoray.local"}]}}
+[debug] [2026-07-26T09:54:41.583Z] <<< [apiv2][status] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast 200
+[debug] [2026-07-26T09:54:41.583Z] <<< [apiv2][body] POST http://127.0.0.1:5001/functions/projects/gesto-ray/trigger_multicast {"status":"multicast_acknowledged"}
+[debug] [2026-07-26T09:54:41.604Z] Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:41 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:41.768Z] Temp file directory for storage emulator: /tmp/firebase/storage/blobs {"metadata":{"emulator":{"name":"storage"},"message":"Temp file directory for storage emulator: /tmp/firebase/storage/blobs"}}
+[debug] [2026-07-26T09:54:41.773Z] [Extensions] Connecting Extensions emulator, this is a noop.
+[info] i  functions: Watching "/home/vincenzo/Code/gestoray/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/home/vincenzo/Code/gestoray/functions\" for Cloud Functions..."}}
+[debug] [2026-07-26T09:54:41.775Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-07-26T09:54:42.252Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "node -e \"const fs = require('fs'); if(fs.existsSync('lib')) fs.rmSync('lib', {recursive:true, force:true});\" && tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run build && firebase emulators:start",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+[debug] [2026-07-26T09:54:42.252Z] Building nodejs source
+[debug] [2026-07-26T09:54:42.253Z] Failed to find version of module node: reached end of search path /home/vincenzo/Code/gestoray/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-07-26T09:54:42.255Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-07-26T09:54:42.257Z] Found firebase-functions binary at '/home/vincenzo/Code/gestoray/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8778
+
+[debug] [2026-07-26T09:54:42.599Z] Got response from /__/functions.yaml {"endpoints":{"sendLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendLoginPin"},"verifyLoginPin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"verifyLoginPin"},"initSuperAdmin":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"initSuperAdmin"},"updateUser":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateUser"},"updateProfile":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfile"},"updateProfileEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"updateProfileEmail"},"sendSystemEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"sendSystemEmail"},"getChartAggregations":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"callableTrigger":{},"entryPoint":"getChartAggregations"},"onClientCreated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientCreated"},"onClientUpdated":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west3"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"clients/{clientId}"},"retry":false},"entryPoint":"onClientUpdated"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-07-26T09:54:44.318Z] Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:44.716Z] Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:44.730Z] Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:44.762Z] Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:45.499Z] Jul 26, 2026 11:54:45 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:45 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2026-07-26T09:54:46.625Z] defaultcredentials: writing to file /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json
+[debug] [2026-07-26T09:54:46.626Z] Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /home/vincenzo/.config/firebase/masvaluesrl_gmail_com_application_default_credentials.json"}}
+[info] ✔  functions: Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendLoginPin, verifyLoginPin, initSuperAdmin, updateUser, updateProfile, updateProfileEmail, sendSystemEmail, getChartAggregations, onClientCreated, onClientUpdated."}}
+[info] ✔  functions[europe-west3-sendLoginPin]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/sendLoginPin). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/sendLoginPin)."}}
+[info] ✔  functions[europe-west3-verifyLoginPin]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/verifyLoginPin). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/verifyLoginPin)."}}
+[info] ✔  functions[europe-west3-initSuperAdmin]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/initSuperAdmin). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/initSuperAdmin)."}}
+[info] ✔  functions[europe-west3-updateUser]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateUser). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateUser)."}}
+[info] ✔  functions[europe-west3-updateProfile]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateProfile). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateProfile)."}}
+[info] ✔  functions[europe-west3-updateProfileEmail]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateProfileEmail). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/updateProfileEmail)."}}
+[info] ✔  functions[europe-west3-sendSystemEmail]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/sendSystemEmail). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/sendSystemEmail)."}}
+[info] ✔  functions[europe-west3-getChartAggregations]: http function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/getChartAggregations). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/gesto-ray/europe-west3/getChartAggregations)."}}
+[debug] [2026-07-26T09:54:46.635Z] Found a v2 firestore trigger.
+[debug] [2026-07-26T09:54:46.635Z] addFirestoreTrigger "{\"eventType\":\"google.cloud.firestore.document.v1.created\",\"database\":\"(default)\",\"namespace\":\"(default)\",\"document\":{\"value\":\"clients/{clientId}\",\"matchType\":\"PATH_PATTERN\"}}"
+[debug] [2026-07-26T09:54:46.635Z] >>> [apiv2][query] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientCreated-0 [none]
+[debug] [2026-07-26T09:54:46.635Z] >>> [apiv2][body] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientCreated-0 "{\"eventType\":\"google.cloud.firestore.document.v1.created\",\"database\":\"(default)\",\"namespace\":\"(default)\",\"document\":{\"value\":\"clients/{clientId}\",\"matchType\":\"PATH_PATTERN\"}}"
+[debug] [2026-07-26T09:54:46.642Z] Jul 26, 2026 11:54:46 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:46 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:54:46.675Z] <<< [apiv2][status] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientCreated-0 200
+[debug] [2026-07-26T09:54:46.676Z] <<< [apiv2][body] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientCreated-0 {"eventType":"google.cloud.firestore.document.v1.created","database":"(default)","namespace":"(default)","document":{"value":"clients/{clientId}","matchType":"PATH_PATTERN"}}
+[info] ✔  functions[europe-west3-onClientCreated]: firestore function initialized. {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mfirestore\u001b[22m function initialized."}}
+[debug] [2026-07-26T09:54:46.676Z] Found a v2 firestore trigger.
+[debug] [2026-07-26T09:54:46.676Z] addFirestoreTrigger "{\"eventType\":\"google.cloud.firestore.document.v1.updated\",\"database\":\"(default)\",\"namespace\":\"(default)\",\"document\":{\"value\":\"clients/{clientId}\",\"matchType\":\"PATH_PATTERN\"}}"
+[debug] [2026-07-26T09:54:46.676Z] >>> [apiv2][query] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientUpdated-0 [none]
+[debug] [2026-07-26T09:54:46.677Z] >>> [apiv2][body] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientUpdated-0 "{\"eventType\":\"google.cloud.firestore.document.v1.updated\",\"database\":\"(default)\",\"namespace\":\"(default)\",\"document\":{\"value\":\"clients/{clientId}\",\"matchType\":\"PATH_PATTERN\"}}"
+[debug] [2026-07-26T09:54:46.687Z] <<< [apiv2][status] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientUpdated-0 200
+[debug] [2026-07-26T09:54:46.687Z] <<< [apiv2][body] POST http://127.0.0.1:8080/emulator/v1/projects/gesto-ray/eventarcTrigger?eventarcTriggerId=europe-west3-onClientUpdated-0 {"eventType":"google.cloud.firestore.document.v1.updated","database":"(default)","namespace":"(default)","document":{"value":"clients/{clientId}","matchType":"PATH_PATTERN"}}
+[info] ✔  functions[europe-west3-onClientUpdated]: firestore function initialized. {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mfirestore\u001b[22m function initialized."}}
+[debug] [2026-07-26T09:54:46.696Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase SQL Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────┬────────────────┬──────────────────────────────────┐
+│ Emulator       │ Host:Port      │ View in Emulator UI              │
+├────────────────┼────────────────┼──────────────────────────────────┤
+│ Authentication │ 127.0.0.1:9099 │ http://127.0.0.1:4000/auth       │
+├────────────────┼────────────────┼──────────────────────────────────┤
+│ Functions      │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions  │
+├────────────────┼────────────────┼──────────────────────────────────┤
+│ Firestore      │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore  │
+├────────────────┼────────────────┼──────────────────────────────────┤
+│ Storage        │ 127.0.0.1:9199 │ http://127.0.0.1:4000/storage    │
+├────────────────┼────────────────┼──────────────────────────────────┤
+│ Extensions     │ 127.0.0.1:5001 │ http://127.0.0.1:4000/extensions │
+└────────────────┴────────────────┴──────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+┌─────────────────────────┬───────────────┬─────────────────────┐
+│ Extension Instance Name │ Extension Ref │ View in Emulator UI │
+└─────────────────────────┴───────────────┴─────────────────────┘
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2026-07-26T09:54:48.637Z] Jul 26, 2026 11:54:48 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed
+INFO: Websocket client disconnected
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:48 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed\nINFO: Websocket client disconnected\n"}}
+[debug] [2026-07-26T09:54:48.647Z] Jul 26, 2026 11:54:48 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:54:48 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2026-07-26T09:55:12.489Z] Jul 26, 2026 11:55:12 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:55:12 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2026-07-26T09:55:12.494Z] Jul 26, 2026 11:55:12 AM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 26, 2026 11:55:12 AM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\nINFO: channel closed\n"}}
