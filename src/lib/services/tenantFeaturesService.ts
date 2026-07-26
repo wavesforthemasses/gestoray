@@ -1,4 +1,5 @@
-import { db, doc, getDoc, setDoc, updateDoc } from '$lib/firebase';
+import { db, doc, getDoc, setDoc } from '$lib/firebase';
+import { MODULE_FEATURE_SNIPPETS } from '$lib/config/auto_generated/generated_features';
 
 export interface TenantFeatureConfig {
   id: string;
@@ -8,13 +9,15 @@ export interface TenantFeatureConfig {
   moduleKey: string;
 }
 
+export const BASE_TENANT_FEATURES: Record<string, TenantFeatureConfig> = {
+  clients: { id: 'clients', label: 'Gestione Clienti', description: 'Anagrafica clienti e siti', enabled: true, moduleKey: 'clients' },
+  users: { id: 'users', label: 'Gestione Utenti', description: 'Utenti di sistema e ruoli', enabled: true, moduleKey: 'users' },
+  settings: { id: 'settings', label: 'Impostazioni generali', description: 'Configurazioni piattaforma', enabled: true, moduleKey: 'settings' }
+};
+
 export const DEFAULT_TENANT_FEATURES: Record<string, TenantFeatureConfig> = {
-  interventi: { id: 'interventi', label: 'Interventi & Rapportini', description: 'Gestione interventi tecnici sul campo', enabled: true, moduleKey: 'interventi' },
-  tickets: { id: 'tickets', label: 'Ticket Assistenza', description: 'Helpdesk e tracciamento ticket', enabled: true, moduleKey: 'tickets' },
-  contracts: { id: 'contracts', label: 'Contratti di Assistenza', description: 'Gestione contratti e monte ore', enabled: true, moduleKey: 'contracts' },
-  payments: { id: 'payments', label: 'Scadenzario & Incassi', description: 'Gestione rate e pagamenti', enabled: true, moduleKey: 'payments' },
-  commissions: { id: 'commissions', label: 'Provvigioni Commerciali', description: 'Chiusure provvigionali per agenti', enabled: true, moduleKey: 'commissions' },
-  activities: { id: 'activities', label: 'Attività & Task', description: 'Tracciamento attività commerciali e operative', enabled: true, moduleKey: 'activities' }
+  ...BASE_TENANT_FEATURES,
+  ...MODULE_FEATURE_SNIPPETS
 };
 
 export class TenantFeaturesService {

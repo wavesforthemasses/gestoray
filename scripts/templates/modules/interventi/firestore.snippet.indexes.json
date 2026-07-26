@@ -1,0 +1,12 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "interventions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}

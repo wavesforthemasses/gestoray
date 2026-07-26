@@ -16,7 +16,12 @@
   import ClientActivitiesTab from './components/ClientActivitiesTab.svelte';
   import ClientQuotesTab from './components/ClientQuotesTab.svelte';
   import { Card } from '$lib';
+  import { menuConfigStore } from '$lib/stores/menu';
   import { ClientDetailService } from './client-detail.service';
+
+  let hasActivitiesModule = $derived($menuConfigStore.some(i => i.id === 'activities'));
+  let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
+  let hasTicketsModule = $derived($menuConfigStore.some(i => i.id === 'tickets'));
 
   const clientId = $page.params.id as string;
   let showQRCodeModal = $state(false);
@@ -419,9 +424,11 @@
         <ArrowLeft size={16} /> Torna a elenco clienti
       </a>
       <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
-      <button type="button" onclick={() => (showQRCodeModal = true)} class="btn-qr-modal">
-        <QrCode size={16} /> QR Code Assistenza
-      </button>
+      {#if hasTicketsModule}
+        <button type="button" onclick={() => (showQRCodeModal = true)} class="btn-qr-modal">
+          <QrCode size={16} /> QR Code Assistenza
+        </button>
+      {/if}
     </div>
 
     {#if loadingData}
@@ -438,7 +445,7 @@
           <User size={16} /> Profilo & Audit Log
         </button>
 
-        {#if can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role)}
+        {#if hasActivitiesModule && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
           <button 
             class="tab-nav-btn" 
             class:active={activeTab === 'activities'} 
@@ -448,7 +455,7 @@
           </button>
         {/if}
 
-        {#if can('contracts:read', activeRoleState.role) || can('contracts:list', activeRoleState.role) || can('contracts:create', activeRoleState.role)}
+        {#if hasContractsModule && (can('contracts:read', activeRoleState.role) || can('contracts:list', activeRoleState.role) || can('contracts:create', activeRoleState.role))}
           <button 
             class="tab-nav-btn" 
             class:active={activeTab === 'quotes'} 

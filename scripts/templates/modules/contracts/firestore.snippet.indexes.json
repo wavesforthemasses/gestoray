@@ -1,0 +1,28 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "contracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "original.vendorUid", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "contracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "original.secondVendorUid", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "contracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "original.status", "order": "ASCENDING" },
+        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}

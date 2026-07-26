@@ -14,7 +14,7 @@ export interface CustomFieldDefinition {
   defaultValue?: any;
   options?: CustomFieldOption[]; // For select type
   placeholder?: string;
-  module: 'interventi' | 'clients' | 'tickets' | 'contracts' | 'global';
+  module: string;
   active: boolean;
   order?: number;
 }

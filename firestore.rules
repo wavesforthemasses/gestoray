@@ -113,5 +113,25 @@ service cloud.firestore {
         allow write: if false;
       }
     }
+
+    // --- MODULE: activities BEGIN ---
+    // ACTIVITIES
+match /activities/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+match /activity_types/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: activities END ---
+
+    // --- MODULE: products BEGIN ---
+    // PRODUCTS
+match /products/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: products END ---
   }
 }

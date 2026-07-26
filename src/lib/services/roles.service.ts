@@ -1,5 +1,6 @@
 import { db, doc, getDoc, setDoc, onSnapshot } from '$lib/firebase';
 import { writable, get } from 'svelte/store';
+import { MODULE_ROLES_SNIPPETS } from '$lib/config/auto_generated/generated_roles';
 
 export type ActionKey = 'list' | 'read' | 'create' | 'update' | 'delete';
 
@@ -9,7 +10,7 @@ export interface ModulePermissionSpec {
   actions: { key: ActionKey; label: string }[];
 }
 
-export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
+export const BASE_MODULE_PERMISSIONS: ModulePermissionSpec[] = [
   {
     module: 'clients',
     label: 'Anagrafica Clienti',
@@ -33,41 +34,8 @@ export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
     ]
   },
   {
-    module: 'contracts',
-    label: 'Gestione Contratti',
-    actions: [
-      { key: 'list', label: 'Elenco' },
-      { key: 'read', label: 'Dettaglio' },
-      { key: 'create', label: 'Creazione' },
-      { key: 'update', label: 'Modifica' },
-      { key: 'delete', label: 'Eliminazione' },
-    ]
-  },
-  {
-    module: 'payments',
-    label: 'Gestione Incassi',
-    actions: [
-      { key: 'list', label: 'Elenco' },
-      { key: 'read', label: 'Dettaglio' },
-      { key: 'create', label: 'Registrazione' },
-      { key: 'update', label: 'Modifica' },
-      { key: 'delete', label: 'Eliminazione' },
-    ]
-  },
-  {
-    module: 'commissions',
-    label: 'Provvigioni Maturate',
-    actions: [
-      { key: 'list', label: 'Elenco' },
-      { key: 'read', label: 'Dettaglio' },
-      { key: 'create', label: 'Calcolo' },
-      { key: 'update', label: 'Modifica' },
-      { key: 'delete', label: 'Eliminazione' },
-    ]
-  },
-  {
-    module: 'products',
-    label: 'Catalogo Prodotti',
+    module: 'qualifications',
+    label: 'Gestione Qualifiche',
     actions: [
       { key: 'list', label: 'Elenco' },
       { key: 'read', label: 'Dettaglio' },
@@ -88,24 +56,26 @@ export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
     ]
   },
   {
-    module: 'tickets',
-    label: 'Ticket di Assistenza',
+    module: 'settings',
+    label: 'Impostazioni Generali',
     actions: [
-      { key: 'list', label: 'Elenco' },
-      { key: 'read', label: 'Dettaglio' },
-      { key: 'create', label: 'Creazione' },
-      { key: 'update', label: 'Modifica' },
-      { key: 'delete', label: 'Eliminazione' },
+      { key: 'list', label: 'Visualizzazione' },
+      { key: 'update', label: 'Modifica' }
     ]
   }
 ];
 
+export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
+  ...BASE_MODULE_PERMISSIONS,
+  ...MODULE_ROLES_SNIPPETS
+];
+
 export interface RoleConfig {
-  id: string; // e.g. 'superadmin', 'amministrazione', 'commerciale', 'direzione', 'operaio', 'tecnico'
+  id: string;
   label: string;
   description: string;
   isSystem?: boolean;
-  permissions: Record<string, boolean>; // e.g. { 'clients:list': true, 'clients:create': false }
+  permissions: Record<string, boolean>;
 }
 
 function generateDefaultPermissions(isFull: boolean, isCommercial: boolean, isOperaio: boolean): Record<string, boolean> {
@@ -130,90 +100,99 @@ function generateDefaultPermissions(isFull: boolean, isCommercial: boolean, isOp
           perms[permKey] = false;
         }
       } else {
-        if (act.key === 'delete') {
-          perms[permKey] = false;
-        } else {
-          perms[permKey] = true;
-        }
+        perms[permKey] = false;
       }
     }
   }
   return perms;
 }
 
-export const DEFAULT_ROLES: RoleConfig[] = [
+export const DEFAULT_ROLES_CONFIG: RoleConfig[] = [
   {
     id: 'superadmin',
-    label: 'Superadmin',
-    description: 'Accesso completo e illimitato a tutte le azioni CRUD e sezioni di sistema.',
+    label: 'Super Admin',
+    description: 'Accesso completo e illimitato a tutte le sezioni, configurazioni aziendali e permessi.',
+    isSystem: true,
+    permissions: generateDefaultPermissions(true, false, false)
+  },
+  {
+    id: 'direzione',
+    label: 'Direzione / CEO',
+    description: 'Visione completa di dati commerciali, operativi ed economico-finanziari senza gestione utenti di sistema.',
     isSystem: true,
     permissions: generateDefaultPermissions(true, false, false)
   },
   {
     id: 'amministrazione',
     label: 'Amministrazione',
-    description: 'Gestione contabile, incassi, contratti e anagrafiche.',
+    description: 'Gestione incassi, contratti, scadenze e anagrafica clienti con restrizioni su eliminazione utenti.',
     isSystem: true,
-    permissions: generateDefaultPermissions(false, false, false)
+    permissions: generateDefaultPermissions(true, false, false)
   },
   {
     id: 'commerciale',
-    label: 'Commerciale',
-    description: 'Gestione trattative clienti, contratti e consultazione proprie provvigioni.',
+    label: 'Commerciale / Agente',
+    description: 'Accesso all anagrafica clienti assegnata, inserimento contratti e tracciamento proprie provvigioni.',
     isSystem: true,
     permissions: generateDefaultPermissions(false, true, false)
   },
   {
-    id: 'direzione',
-    label: 'Direzione',
-    description: 'Visione strategica e reportistica di vertice.',
-    isSystem: true,
-    permissions: generateDefaultPermissions(false, false, false)
-  },
-  {
-    id: 'operaio',
-    label: 'Operaio / Installatore',
-    description: 'Consultazione lista task assegnati e anagrafica clienti di cantiere.',
-    isSystem: false,
-    permissions: generateDefaultPermissions(false, false, true)
-  },
-  {
     id: 'tecnico',
-    label: 'Tecnico di Assistenza',
-    description: 'Gestione interventi tecnici e manutenzione clienti.',
-    isSystem: false,
+    label: 'Tecnico / Operaio Campo',
+    description: 'Accesso limitato alla consultazione dei clienti e compilazione interventi tecnici o to-do operativi.',
+    isSystem: true,
     permissions: generateDefaultPermissions(false, false, true)
   }
 ];
 
-export const rolesStore = writable<RoleConfig[]>(DEFAULT_ROLES);
+export const rolesConfigStore = writable<RoleConfig[]>(DEFAULT_ROLES_CONFIG);
+export const rolesStore = rolesConfigStore;
 
-let unsubRoles: (() => void) | null = null;
+let rolesUnsubscribe: (() => void) | null = null;
 
 export function initRolesStore() {
-  if (unsubRoles) return;
+  if (rolesUnsubscribe) return;
   const docRef = doc(db, 'settings', 'roles');
-  unsubRoles = onSnapshot(docRef, (snap: any) => {
-    if (snap.exists() && snap.data()?.list) {
-      rolesStore.set(snap.data().list);
+  rolesUnsubscribe = onSnapshot(docRef, (snap: any) => {
+    if (snap.exists() && snap.data().list) {
+      rolesConfigStore.set(snap.data().list);
     } else {
-      rolesStore.set(DEFAULT_ROLES);
+      rolesConfigStore.set(DEFAULT_ROLES_CONFIG);
     }
   });
 }
 
-export async function saveRolesToFirestore(rolesList: RoleConfig[]) {
-  const docRef = doc(db, 'settings', 'roles');
-  await setDoc(docRef, { list: rolesList, updatedAt: new Date().toISOString() }, { merge: true });
+export function destroyRolesStore() {
+  if (rolesUnsubscribe) {
+    rolesUnsubscribe();
+    rolesUnsubscribe = null;
+  }
 }
 
-export function can(actionKey: string, activeRole: string | null): boolean {
-  if (!activeRole) return false;
-  if (activeRole === 'superadmin') return true;
+export async function saveRolesConfig(roles: RoleConfig[]): Promise<void> {
+  const docRef = doc(db, 'settings', 'roles');
+  await setDoc(docRef, { list: roles, updatedAt: new Date().toISOString() }, { merge: true });
+}
 
-  const currentRoles = get(rolesStore);
-  const roleConfig = currentRoles.find(r => r.id === activeRole);
-  if (!roleConfig) return false;
+export const saveRolesToFirestore = saveRolesConfig;
 
-  return !!roleConfig.permissions?.[actionKey];
+export function can(arg1: string, arg2?: string | null): boolean {
+  if (!arg1) return false;
+  let permKey = arg1;
+  let roleId = arg2;
+
+  if (arg1.includes(':')) {
+    permKey = arg1;
+    roleId = arg2 || null;
+  } else if (arg2 && arg2.includes(':')) {
+    permKey = arg2;
+    roleId = arg1;
+  }
+
+  if (!roleId) return false;
+  if (roleId === 'superadmin') return true;
+  const roles = get(rolesConfigStore);
+  const roleObj = roles.find((r) => r.id === roleId);
+  if (!roleObj) return false;
+  return roleObj.permissions[permKey] !== false;
 }

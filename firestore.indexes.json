@@ -4,260 +4,86 @@
       "collectionGroup": "clients",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "original.createdBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" }
+        {
+          "fieldPath": "original.createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "edits.createdAt",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "clients",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "original.createdBy", "order": "ASCENDING" },
-        { "fieldPath": "derived.nncfDate", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.vendorUid", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.secondVendorUid", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
-        { "fieldPath": "original.type", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "installments",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "original.dueDate", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "original.totalPrice", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "installments",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "original.vendorUid", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "installments",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.status", "order": "ASCENDING" },
-        { "fieldPath": "original.secondVendorUid", "order": "ASCENDING" }
+        {
+          "fieldPath": "original.createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "derived.nncfDate",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "clients",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "original.createdBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "original.createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "edits.createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "clients",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "payments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" },
-        { "fieldPath": "original.totalPrice", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.vendorUid", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" },
-        { "fieldPath": "original.totalPrice", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contracts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.secondVendorUid", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" },
-        { "fieldPath": "original.totalPrice", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "payments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "original.date", "order": "ASCENDING" },
-        { "fieldPath": "original.amount", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contractsPaid",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.contractId", "order": "ASCENDING" },
-        { "fieldPath": "original.date", "order": "ASCENDING" }
+        {
+          "fieldPath": "derived.textSearch",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "edits.createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "activities",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "original.type", "order": "ASCENDING" },
-        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" }
+        {
+          "fieldPath": "original.loggedBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "edits.createdAt",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "activities",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "original.type", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.type", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "original.type", "order": "ASCENDING" },
-        { "fieldPath": "original.loggedBy", "order": "ASCENDING" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "interventions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "edits.createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "tickets",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "derived.textSearch", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "original.type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "edits.createdAt",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],
-  "fieldOverrides": [
-    {
-      "collectionGroup": "activities",
-      "fieldPath": "original.type",
-      "indexes": [
-        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "activities",
-      "fieldPath": "edits.createdAt",
-      "indexes": [
-        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
-        { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "contractsPaid",
-      "fieldPath": "original.contractId",
-      "indexes": [
-        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "installments",
-      "fieldPath": "original.status",
-      "indexes": [
-        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
-      ]
-    }
-  ]
+  "fieldOverrides": []
 }
