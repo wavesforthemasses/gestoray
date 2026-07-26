@@ -103,6 +103,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // UNITS OF MEASURE
+    match /units_of_measure/{unitId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
+    }
+
     // ANALYTICS & MATERIALIZED VIEWS
     match /analytics_monthly/{monthDoc} {
       allow read: if isAuth();

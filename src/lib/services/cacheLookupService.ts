@@ -204,7 +204,7 @@ export class CacheLookupService {
   /**
    * Rebuilds cache chunks from scratch for a given collection.
    */
-  private static async rebuildCacheForType(type: string): Promise<CacheLookupItem[]> {
+  public static async rebuildCacheForType(type: string): Promise<CacheLookupItem[]> {
     const snap = await getDocs(collection(db, type));
     const resultList: CacheLookupItem[] = [];
 

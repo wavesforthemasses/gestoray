@@ -44,22 +44,50 @@ export class ClientDetailService {
       cognome: orig.cognome || data.cognome || '',
       email: orig.email || data.email || '',
       phone: orig.phone || data.phone || '',
+      website: orig.website || data.website || '',
       createdBy: orig.createdBy || data.createdBy || '',
+      assignedAdminId: orig.assignedAdminId || data.assignedAdminId || orig.createdBy || data.createdBy || '',
       status: orig.status || data.status || 'prospect',
       fiscalId: orig.fiscalId || data.fiscalId || '',
       partitaIva: orig.partitaIva || data.partitaIva || '',
-      codiceFiscale: orig.codiceFiscale || data.codiceFiscale || ''
+      codiceFiscale: orig.codiceFiscale || data.codiceFiscale || '',
+      
+      // SDI & Bank Data
+      sdiCode: orig.sdiCode || data.sdiCode || orig.sdi_code || '',
+      pec: orig.pec || data.pec || '',
+      iban: orig.iban || data.iban || '',
+      bankName: orig.bankName || data.bankName || '',
+      paymentTerms: orig.paymentTerms || data.paymentTerms || '',
+
+      // Sede Principale
+      address: orig.address || data.address || '',
+      city: orig.city || data.city || '',
+      province: orig.province || data.province || '',
+      postalCode: orig.postalCode || data.postalCode || '',
+      country: orig.country || data.country || 'Italy',
+
+      // Fatturazione
+      billingAddress: orig.billingAddress || data.billingAddress || orig.address || data.address || '',
+      billingCity: orig.billingCity || data.billingCity || orig.city || data.city || '',
+      billingProvince: orig.billingProvince || data.billingProvince || orig.province || data.province || '',
+      billingPostalCode: orig.billingPostalCode || data.billingPostalCode || orig.postalCode || data.postalCode || '',
+      billingCountry: orig.billingCountry || data.billingCountry || orig.country || data.country || 'Italy',
+
+      // Spedizione
+      shippingAddress: orig.shippingAddress || data.shippingAddress || orig.billingAddress || data.billingAddress || orig.address || data.address || '',
+      shippingCity: orig.shippingCity || data.shippingCity || orig.billingCity || data.billingCity || orig.city || data.city || '',
+      shippingProvince: orig.shippingProvince || data.shippingProvince || orig.billingProvince || data.billingProvince || orig.province || data.province || '',
+      shippingPostalCode: orig.shippingPostalCode || data.shippingPostalCode || orig.billingPostalCode || data.billingPostalCode || orig.postalCode || data.postalCode || '',
+      shippingCountry: orig.shippingCountry || data.shippingCountry || orig.billingCountry || data.billingCountry || orig.country || data.country || 'Italy'
     };
 
     payload.clientNotes = orig.notes || [];
     payload.clientCreatedAt = data.edits?.createdAt || orig.createdAt || '';
 
-    // Helper per recupero sicuro ed agnostico dai vari moduli (architettura a micro-servizi pluggabili)
     const safeGetDocs = async (queryOrCol: any) => {
       try {
         return await getDocs(queryOrCol);
       } catch (err) {
-        // Se un modulo opzionale non è presente o non è abilitato per il ruolo, non blocca l'anagrafica cliente
         return { docs: [], forEach: () => {} };
       }
     };
@@ -139,8 +167,8 @@ export class ClientDetailService {
   static async updateProfile(clientId: string, activeRole: string, originalProfile: any, newProfile: any, authObj: { uid: string, email: string }) {
     const isDirezione = activeRole === 'direzione';
 
-    if (!isDirezione) {
-      const checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', newProfile.fiscalId));
+    if (!isDirezione && newProfile.fiscalId && newProfile.fiscalId.trim()) {
+      const checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', newProfile.fiscalId.trim()));
       const checkSnap = await getDocs(checkQuery);
       const otherWithSameId = checkSnap.docs.some((d: any) => d.id !== clientId);
       if (otherWithSameId) {
@@ -150,29 +178,34 @@ export class ClientDetailService {
 
     const now = new Date().toISOString();
     
-    const fields = ['nome', 'cognome', 'email', 'phone', 'status', 'fiscalId', 'partitaIva', 'codiceFiscale'];
+    const fields = [
+      'nome', 'cognome', 'email', 'phone', 'website', 'status', 'fiscalId', 'partitaIva', 'codiceFiscale',
+      'sdiCode', 'pec', 'iban', 'bankName', 'paymentTerms',
+      'address', 'city', 'province', 'postalCode', 'country',
+      'billingAddress', 'billingCity', 'billingProvince', 'billingPostalCode', 'billingCountry',
+      'shippingAddress', 'shippingCity', 'shippingProvince', 'shippingPostalCode', 'shippingCountry',
+      'createdBy', 'assignedAdminId'
+    ];
+
     const newOriginal: any = {};
     fields.forEach(f => {
-      newOriginal[f] = isDirezione ? originalProfile[f] : newProfile[f];
+      newOriginal[f] = isDirezione ? (originalProfile[f] || '') : (newProfile[f] !== undefined ? newProfile[f] : (originalProfile[f] || ''));
     });
 
     const fullClientName = `${newOriginal.nome || ''} ${newOriginal.cognome || ''}`.trim();
-    const updatedTerms = generateSearchTerms(fullClientName, newOriginal.partitaIva, newOriginal.codiceFiscale, newOriginal.email);
+    const updatedTerms = generateSearchTerms(fullClientName, newOriginal.partitaIva || '', newOriginal.codiceFiscale || '', newOriginal.email || '');
 
-    await updateDoc(doc(db, 'clients', clientId), {
-      'original.nome': newOriginal.nome,
-      'original.cognome': newOriginal.cognome,
-      'original.email': newOriginal.email,
-      'original.phone': newOriginal.phone,
-      'original.status': newOriginal.status,
-      'original.fiscalId': newOriginal.fiscalId,
-      'original.partitaIva': newOriginal.partitaIva,
-      'original.codiceFiscale': newOriginal.codiceFiscale,
-      'original.createdBy': newProfile.createdBy,
+    const updatePayload: Record<string, any> = {
       'derived.textSearch': updatedTerms,
       'edits.modifiedAt': now,
       'edits.modifiedBy': authObj.uid
+    };
+
+    fields.forEach(f => {
+      updatePayload[`original.${f}`] = newOriginal[f];
     });
+
+    await updateDoc(doc(db, 'clients', clientId), updatePayload);
 
     await CacheLookupService.updateClientCache(clientId, fullClientName);
 
@@ -206,77 +239,60 @@ export class ClientDetailService {
     return newOriginal;
   }
 
-  static async deleteClient(clientId: string, activitiesList: any[], historyList: any[]) {
-    for (const act of activitiesList) {
-      try {
-        await deleteDoc(doc(db, 'clients', clientId, 'activities', act.id));
-      } catch (e) {}
-    }
-    for (const hist of historyList) {
-      try {
-        await deleteDoc(doc(db, 'clients', clientId, 'history', hist.id));
-      } catch (e) {}
-    }
-    
+  static async deleteClientCascade(clientId: string) {
     try {
-      const contractsSnap = await getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId)));
-      for (const cDoc of contractsSnap.docs) {
-        const installmentsSnap = await getDocs(collection(db, 'contracts', cDoc.id, 'installments'));
-        for (const instDoc of installmentsSnap.docs) {
-          await deleteDoc(doc(db, 'contracts', cDoc.id, 'installments', instDoc.id));
-        }
-        await deleteDoc(doc(db, 'contracts', cDoc.id));
+      const activitiesSnap = await getDocs(collection(db, 'clients', clientId, 'activities'));
+      for (const docItem of activitiesSnap.docs) {
+        await deleteDoc(doc(db, 'clients', clientId, 'activities', docItem.id));
       }
     } catch (e) {}
 
     try {
-      const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('original.clientId', '==', clientId)));
-      for (const pDoc of paymentsSnap.docs) {
-        const allocationsSnap = await getDocs(collection(db, 'payments', pDoc.id, 'contractsPaid'));
-        for (const allocDoc of allocationsSnap.docs) {
-          await deleteDoc(doc(db, 'payments', pDoc.id, 'contractsPaid', allocDoc.id));
-        }
-        await deleteDoc(doc(db, 'payments', pDoc.id));
+      const historySnap = await getDocs(collection(db, 'clients', clientId, 'history'));
+      for (const docItem of historySnap.docs) {
+        await deleteDoc(doc(db, 'clients', clientId, 'history', docItem.id));
       }
     } catch (e) {}
 
     await deleteDoc(doc(db, 'clients', clientId));
   }
 
-  static async addNote(clientId: string, clientNotes: string[], noteText: string, authObj: { uid: string, email: string }) {
+  static async deleteClient(clientId: string, activitiesList: any[], historyList: any[]) {
+    await this.deleteClientCascade(clientId);
+  }
+
+  static async addNote(clientId: string, noteText: string, authorEmail: string) {
     const noteObject = {
       text: noteText,
       createdAt: new Date().toISOString(),
-      createdByEmail: authObj.email
+      createdByEmail: authorEmail
     };
 
-    const updatedNotes = [...clientNotes, JSON.stringify(noteObject)];
+    const clientDoc = await getDoc(doc(db, 'clients', clientId));
+    const currentNotes = clientDoc.data()?.original?.notes || [];
+    const updatedNotes = [...currentNotes, JSON.stringify(noteObject)];
+
     await updateDoc(doc(db, 'clients', clientId), {
       'original.notes': updatedNotes,
-      'edits.modifiedAt': new Date().toISOString(),
-      'edits.modifiedBy': authObj.uid
+      'edits.modifiedAt': new Date().toISOString()
     });
+
+    return updatedNotes;
   }
 
   static async logActivity(
-    clientId: string, 
-    clientNameStr: string, 
-    clientStatus: string, 
-    type: string, 
-    notes: string, 
-    datetimeVal: string | undefined, 
+    clientId: string,
+    notes: string,
+    appointmentDate: string | undefined,
     authObj: { uid: string, email: string }
   ) {
     const activityId = generateId('act');
-    const activityDate = datetimeVal || new Date().toISOString();
-    
-    const terms = generateSearchTerms(clientNameStr + ' ' + type + ' ' + notes + ' ' + authObj.email);
+    const activityDate = appointmentDate || new Date().toISOString();
 
     await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
       original: {
         clientId,
-        clientName: clientNameStr,
-        type,
+        type: 'Nota / Attività',
         notes,
         date: activityDate,
         loggedBy: authObj.uid,
@@ -286,18 +302,9 @@ export class ClientDetailService {
       edits: {
         createdAt: activityDate,
         createdBy: authObj.uid
-      },
-      derived: {
-        textSearch: terms
       }
     });
 
-    if (clientStatus === 'prospect') {
-      await updateDoc(doc(db, 'clients', clientId), {
-        'original.status': 'contacted'
-      });
-    }
-    
     return activityId;
   }
 
@@ -321,15 +328,10 @@ export class ClientDetailService {
   }
 
   static async saveQuote(
-    clientId: string, 
-    clientNameStr: string, 
-    clientEmail: string, 
-    clientStatus: string, 
-    quoteItems: any[], 
-    quoteTotal: number, 
-    secondVendorUid: string, 
-    secondVendorEmail: string, 
-    secondVendorShare: number, 
+    clientId: string,
+    clientNameStr: string,
+    quoteItems: any[],
+    quoteTotal: number,
     authObj: { uid: string, email: string }
   ) {
     const contractId = generateId('contract');
@@ -339,18 +341,12 @@ export class ClientDetailService {
       original: {
         clientId,
         clientName: clientNameStr,
-        clientEmail,
         vendorUid: authObj.uid,
         vendorEmail: authObj.email,
         products: quoteItems,
         totalPrice: quoteTotal,
         status: 'draft',
-        hasWarning: quoteItems.some(item => item.priceSold < item.minPrice),
-        ...(secondVendorUid ? {
-          secondVendorUid,
-          secondVendorEmail,
-          secondVendorShare: Number(secondVendorShare)
-        } : {})
+        hasWarning: quoteItems.some(item => item.priceSold < item.minPrice)
       },
       edits: {
         createdAt: now,
@@ -359,73 +355,24 @@ export class ClientDetailService {
     };
 
     await setDoc(doc(db, 'contracts', contractId), newQuoteDraft);
-    
-    if (clientStatus === 'prospect') {
-      await updateDoc(doc(db, 'clients', clientId), {
-        'original.status': 'proposal_sent'
-      });
-    }
   }
 
-  static async convertToContract(
-    clientId: string, 
-    clientNameStr: string, 
-    clientEmail: string, 
-    clientStatus: string, 
-    quoteItems: any[], 
-    secondVendorUid: string, 
-    secondVendorEmail: string, 
-    secondVendorShare: number, 
-    authObj: { uid: string, email: string },
-    quoteId?: string
+  static async approveQuoteToContract(
+    quoteId: string,
+    clientId: string,
+    coSeller: { uid: string, share: number } | undefined,
+    activeRole: string,
+    authObj: { uid: string, email: string }
   ) {
-    const hasWarning = quoteItems.some(item => item.priceSold < item.minPrice);
-    const totalContractPrice = quoteItems.reduce((sum, item) => sum + item.priceSold * item.quantity, 0);
     const now = new Date().toISOString();
-
-    if (quoteId) {
-      await updateDoc(doc(db, 'contracts', quoteId), {
-        'original.status': 'pending',
-        'original.totalPrice': totalContractPrice,
-        'original.products': quoteItems,
-        'original.hasWarning': hasWarning,
-        'original.secondVendorUid': secondVendorUid || null,
-        'original.secondVendorEmail': secondVendorEmail || null,
-        'original.secondVendorShare': secondVendorUid ? Number(secondVendorShare) : null,
-        'edits.modifiedAt': now,
-        'edits.modifiedBy': authObj.uid
-      });
-    } else {
-      const contractId = generateId('contract');
-      const newContract = {
-        original: {
-          clientId,
-          clientName: clientNameStr,
-          clientEmail,
-          vendorUid: authObj.uid,
-          vendorEmail: authObj.email,
-          totalPrice: totalContractPrice,
-          products: quoteItems,
-          status: 'pending',
-          hasWarning,
-          ...(secondVendorUid ? {
-            secondVendorUid,
-            secondVendorEmail,
-            secondVendorShare: Number(secondVendorShare)
-          } : {})
-        },
-        edits: {
-          createdAt: now,
-          createdBy: authObj.uid
-        }
-      };
-      await setDoc(doc(db, 'contracts', contractId), newContract);
-    }
-
-    if (clientStatus === 'prospect') {
-      await updateDoc(doc(db, 'clients', clientId), {
-        'original.status': 'proposal_sent'
-      });
-    }
+    await updateDoc(doc(db, 'contracts', quoteId), {
+      'original.status': 'pending',
+      ...(coSeller ? {
+        'original.secondVendorUid': coSeller.uid,
+        'original.secondVendorShare': coSeller.share
+      } : {}),
+      'edits.modifiedAt': now,
+      'edits.modifiedBy': authObj.uid
+    });
   }
 }

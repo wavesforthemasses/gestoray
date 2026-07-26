@@ -5,13 +5,17 @@
   import type { ActivityPriority, ActivityStatus } from '../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
+  import { ActivityTypesService, type ActivityType } from '$lib/services/activityTypesService';
+  import { activeRoleState } from '$lib/auth.svelte';
+  import { auth } from '$lib/firebase';
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import Autocomplete from '$lib/components/Autocomplete.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { ArrowLeft, ClipboardList, Info, SlidersHorizontal, Save, AlertCircle } from '@lucide/svelte';
+  import { ArrowLeft, ClipboardList, Info, SlidersHorizontal, Save, AlertCircle, Calendar, Clock, UserCheck } from '@lucide/svelte';
 
   let users = $state<{ id: string; name: string }[]>([]);
+  let activityTypes = $state<ActivityType[]>([]);
   let customFieldsList = $state<CustomFieldDefinition[]>([]);
   let customFieldsValues = $state<CustomFieldValues>({});
 
@@ -20,18 +24,39 @@
   let errorMsg = $state('');
 
   // Form State
+  let selectedTypeId = $state<string>('');
   let activityNumber = $state(`ACT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   let title = $state('');
   let assignedUid = $state('');
-  let dueDate = $state(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  let executionDate = $state(new Date().toISOString().slice(0, 10));
+  let dueDate = $state('');
   let priority = $state<ActivityPriority>('media');
-  let status = $state<ActivityStatus>('da_fare');
+  let status = $state<ActivityStatus>('completata');
   let description = $state('');
+
+  let selectedType = $derived(activityTypes.find(t => t.id === selectedTypeId));
+  let canReassign = $derived(ActivityTypesService.canAssignToOthers(activeRoleState.role, selectedType));
 
   onMount(async () => {
     try {
       customFieldsList = await CustomFieldsService.getFieldsForModule('activities');
       users = await CacheLookupService.getLookup('users');
+      activityTypes = await ActivityTypesService.getActivityTypes();
+
+      // Pre-select first activity type
+      if (activityTypes.length > 0) {
+        selectedTypeId = activityTypes[0].id;
+        applyTypeDefaults(activityTypes[0]);
+      }
+
+      // Auto-assign to logged in user by default
+      const currentUid = auth.currentUser?.uid || '';
+      const matchingUser = users.find(u => u.id === currentUid);
+      if (matchingUser) {
+        assignedUid = matchingUser.id;
+      } else if (users.length > 0) {
+        assignedUid = users[0].id;
+      }
     } catch (e) {
       console.error('Errore caricamento dati creazione attività:', e);
     } finally {
@@ -39,10 +64,33 @@
     }
   });
 
+  function applyTypeDefaults(type: ActivityType) {
+    priority = type.defaultPriority || 'media';
+    status = (type.defaultStatus as ActivityStatus) || 'completata';
+  }
+
+  function handleTypeChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    selectedTypeId = target.value;
+    const found = activityTypes.find(t => t.id === selectedTypeId);
+    if (found) {
+      applyTypeDefaults(found);
+    }
+  }
+
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    if (!title.trim() || !assignedUid) {
-      errorMsg = 'Compila i campi obbligatori (Titolo ed Utente Assegnato).';
+    
+    // Auto-generate title if empty
+    let finalTitle = title.trim();
+    if (!finalTitle && selectedType) {
+      finalTitle = selectedType.name;
+    } else if (!finalTitle) {
+      finalTitle = 'Attività Operativa';
+    }
+
+    if (!assignedUid) {
+      errorMsg = 'Seleziona l\'utente assegnato.';
       return;
     }
 
@@ -53,10 +101,13 @@
       const assignedUser = users.find(u => u.id === assignedUid);
       const actId = await ActivitiesService.createActivity({
         activityNumber: activityNumber.trim(),
-        title: title.trim(),
+        title: finalTitle,
+        activityTypeId: selectedTypeId,
+        activityTypeName: selectedType ? selectedType.name : '',
         assignedUid,
         assignedName: assignedUser ? assignedUser.name : 'Operatore',
-        dueDate,
+        executionDate,
+        dueDate: (selectedType?.isSchedulable && dueDate) ? dueDate : '',
         priority,
         status,
         description: description.trim(),
@@ -105,38 +156,75 @@
       <div class="card form-card">
         <div class="card-header">
           <h3 class="card-title">
-            <Info size={18} /> Informazioni Task
+            <Info size={18} /> Informazioni Attività
           </h3>
-          <p class="card-subtitle">Titolo del task ed utente/operatore assegnato.</p>
+          <p class="card-subtitle">Seleziona il tipo di attività, l'operatore e le note esecutive.</p>
         </div>
 
         <div class="grid-2 mb-16">
           <div class="form-group">
-            <label for="act-num">N° Task *</label>
-            <input id="act-num" type="text" bind:value={activityNumber} required class="form-control" />
+            <label for="act-type">Tipo Attività *</label>
+            <select id="act-type" value={selectedTypeId} onchange={handleTypeChange} class="form-control">
+              {#each activityTypes as typeOpt}
+                <option value={typeOpt.id}>{typeOpt.name}</option>
+              {/each}
+            </select>
           </div>
 
           <div class="form-group">
-            <label for="user-select">Assegnato ad Utente *</label>
-            <Autocomplete 
-              options={users.map(u => ({ id: u.id, label: u.name }))} 
-              bind:value={assignedUid} 
-              placeholder="Cerca operatore/utente..."
-            />
+            <label for="user-select">
+              <UserCheck size={14} /> Assegnato a *
+              {#if !canReassign}
+                <span class="auto-assign-tag">(Auto-Assegnato)</span>
+              {/if}
+            </label>
+            {#if canReassign}
+              <Autocomplete 
+                options={users.map(u => ({ id: u.id, label: u.name }))} 
+                bind:value={assignedUid} 
+                placeholder="Cerca operatore/utente..."
+              />
+            {:else}
+              <input 
+                type="text" 
+                value={users.find(u => u.id === assignedUid)?.name || 'Tu stesso (Operatore)'} 
+                disabled 
+                class="form-control read-only-input"
+              />
+            {/if}
           </div>
         </div>
 
         <div class="form-group mb-16">
-          <label for="act-title">Titolo Attività *</label>
-          <input id="act-title" type="text" bind:value={title} placeholder="es. Manutenzione Preventiva Centralina Termica Sede" required class="form-control" />
+          <label for="act-title">Titolo / Oggetto Attività <span class="optional-label">(Opzionale - predefinito da tipologia)</span></label>
+          <input 
+            id="act-title" 
+            type="text" 
+            bind:value={title} 
+            placeholder={selectedType ? `es. ${selectedType.name}` : 'es. Telefonata commerciale cliente'} 
+            class="form-control" 
+          />
         </div>
 
-        <div class="grid-3 mb-16">
+        <div class="grid-2 mb-16">
           <div class="form-group">
-            <label for="act-due">Data Scadenza *</label>
-            <input id="act-due" type="date" bind:value={dueDate} required class="form-control" />
+            <label for="act-exec">
+              <Clock size={14} /> Data Esecuzione / Svolta Il *
+            </label>
+            <input id="act-exec" type="date" bind:value={executionDate} required class="form-control" />
           </div>
 
+          {#if selectedType?.isSchedulable}
+            <div class="form-group">
+              <label for="act-due">
+                <Calendar size={14} /> Data Scadenza Programmata <span class="optional-label">(Opzionale)</span>
+              </label>
+              <input id="act-due" type="date" bind:value={dueDate} class="form-control" />
+            </div>
+          {/if}
+        </div>
+
+        <div class="grid-2 mb-16">
           <div class="form-group">
             <label for="act-prio">Priorità</label>
             <select id="act-prio" bind:value={priority} class="form-control">
@@ -150,16 +238,16 @@
           <div class="form-group">
             <label for="act-status">Stato Iniziale</label>
             <select id="act-status" bind:value={status} class="form-control">
-              <option value="da_fare">Da Fare</option>
+              <option value="completata">Completata (Già Svolta)</option>
+              <option value="da_fare">Da Fare (Pianificata)</option>
               <option value="in_corso">In Corso</option>
-              <option value="completato">Completato</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
           <label for="act-desc">Descrizione Estesa & Note Operative</label>
-          <textarea id="act-desc" bind:value={description} rows="3" placeholder="Istruzioni per l'assegnatario, note operative..." class="form-control"></textarea>
+          <textarea id="act-desc" bind:value={description} rows="3" placeholder="Note dell'operatore, esito della telefonata, istruzioni..." class="form-control"></textarea>
         </div>
       </div>
 
@@ -201,13 +289,16 @@
   .card-subtitle { font-size: 0.82rem; color: var(--color-neutral-500); margin: 0.2rem 0 0 0; }
 
   .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
-  .form-group label { font-size: 0.82rem; font-weight: 700; color: var(--color-neutral-700); }
+  .form-group label { font-size: 0.82rem; font-weight: 700; color: var(--color-neutral-700); display: flex; align-items: center; gap: 4px; }
+  .optional-label { font-weight: 400; color: var(--color-neutral-500); font-size: 0.78rem; }
+  .auto-assign-tag { font-weight: 500; color: var(--color-primary-600); font-size: 0.75rem; }
+  .read-only-input { background: var(--color-neutral-50); color: var(--color-neutral-600); }
+
   .form-control { padding: 0.65rem 0.9rem; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); font-size: 0.9rem; outline: none; box-sizing: border-box; }
   .form-control:focus { border-color: var(--color-primary-600); box-shadow: 0 0 0 3px var(--color-primary-100); }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-  @media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
 
   .mb-16 { margin-bottom: 1rem; }
 

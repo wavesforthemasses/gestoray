@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatDate, formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from '$lib';
+  import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
 
 
@@ -118,13 +119,19 @@
               {/if}
               
               <FormField id="q-qty" label="QUANTITÀ">
-                <input type="number" id="q-qty" bind:value={itemQuantity} min="1" step="1" />
+                <input
+                  type="number"
+                  id="q-qty"
+                  bind:value={itemQuantity}
+                  min="0"
+                  step={selectedProductId ? UnitsOfMeasureService.getStepForUnit(productsList.find((p) => p.id === selectedProductId)?.unit) : '1'}
+                />
               </FormField>
             </div>
 
             <Button 
               style="margin-top: 16px; margin-bottom: 24px;"
-              disabled={!selectedProductId || itemPriceSold === null || itemQuantity < 1}
+              disabled={!selectedProductId || itemPriceSold === null || itemQuantity <= 0}
               onclick={onAddQuoteItem}
             >
               Inserisci Prodotto
@@ -161,7 +168,8 @@
                           </div>
                         </td>
                         <td>
-                          <input type="number" bind:value={item.quantity} min="1" step="1" class="qty-input" />
+                          <input type="number" bind:value={item.quantity} min="0" step={UnitsOfMeasureService.getStepForUnit(item.unit)} class="qty-input" />
+                          {#if item.unit}<span class="unit-label">{item.unit}</span>{/if}
                         </td>
                         <td><strong>€ {(item.priceSold * item.quantity).toFixed(2)}</strong></td>
                         <td>

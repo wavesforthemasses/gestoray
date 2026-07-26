@@ -8,6 +8,12 @@ export type ConflictStrategy = 'upsert' | 'skip' | 'create_new';
 
 export type MatchStatus = 'EXACT_MATCH' | 'UNMATCHED' | 'AMBIGUOUS_MATCH';
 
+export interface FieldAutoGenerator {
+  key: string;
+  label: string;
+  generate: (rowIndex: number, rowData?: Record<string, string>) => any;
+}
+
 export interface ImportFieldDef {
   key: string;
   label: string;
@@ -16,6 +22,7 @@ export interface ImportFieldDef {
   defaultValue?: any;
   validationRegex?: RegExp;
   description?: string;
+  autoGenerators?: FieldAutoGenerator[];
 }
 
 export interface ImportModuleSpec {
@@ -29,7 +36,12 @@ export interface ImportModuleSpec {
     rows: Record<string, any>[],
     sessionMap: Record<string, string>,
     conflictStrategy: ConflictStrategy
-  ) => Promise<{ succeeded: number; failed: number; errors: { row: number; error: string }[]; createdMap?: Record<string, string> }>;
+  ) => Promise<{
+    succeeded: number;
+    failed: number;
+    errors: { row: number; error: string }[];
+    createdMap?: Record<string, string>;
+  }>;
 }
 
 export interface ImportRowState {

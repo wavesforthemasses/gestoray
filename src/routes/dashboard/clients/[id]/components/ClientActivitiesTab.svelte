@@ -19,7 +19,7 @@
     // State & actions
     activeRole: string | null;
     submittingActivity: boolean;
-    logActivity: (type: string) => void;
+    logActivity: (type: string, date?: string) => void;
     updateActivity: (activityId: string, payload: any) => Promise<void>;
     handleAddNote: (e: Event) => void;
     parseNote: (

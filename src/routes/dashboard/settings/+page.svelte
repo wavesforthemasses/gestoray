@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench } from '@lucide/svelte';
+  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -69,10 +69,31 @@
     {/if}
 
     <SettingsNavCard 
+      href="/dashboard/settings/units"
+      title="Gestione Unità di Misura"
+      description="Configura le unità di misura aziendali (mc, mq, pz, kg, ore) ed i sinonimi per l'importazione automatica CSV."
+      icon={Ruler}
+    />
+
+    <SettingsNavCard 
+      href="/dashboard/settings/activities"
+      title="Configurazione Tipi Attività & KPI"
+      description="Personalizza le tipologie di attività (Telefonata, Visita, Email, Intervento), i bottoni rapidi e i permessi di assegnazione."
+      icon={ClipboardList}
+    />
+
+    <SettingsNavCard 
       href="/dashboard/settings/theme"
       title="Tema e Branding"
       description="Personalizza i colori principali dell'applicazione in tempo reale."
       icon={Palette}
+    />
+
+    <SettingsNavCard 
+      href="/dashboard/settings/import"
+      title="Importazione Dati Centralizzata"
+      description="Carica file CSV/TSV per anagrafiche, prodotti e attività con mappatura dinamica e riconciliazione."
+      icon={FileSpreadsheet}
     />
   </div>
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { InterventionConsuntivoItem } from '../../schema';
   import type { InterventionSettingsConfig } from '$lib/services/interventionSettings';
+  import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
 
   interface Props {
     items: InterventionConsuntivoItem[];
@@ -57,7 +58,7 @@
           </div>
           <div class="form-group">
             <label for="item-qty-{item.id}">Quantità / Ore</label>
-            <input id="item-qty-{item.id}" type="number" step="any" min="0" bind:value={item.quantity} class="form-control" />
+            <input id="item-qty-{item.id}" type="number" step={UnitsOfMeasureService.getStepForUnit(item.pricingUnit)} min="0" bind:value={item.quantity} class="form-control" />
           </div>
           <div class="form-group">
             <label for="item-price-{item.id}">Prezzo Unitario (€)</label>

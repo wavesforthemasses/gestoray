@@ -39,7 +39,7 @@
     activities.filter(a => {
       const matchSearch = !searchQuery.trim() || 
         a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.activityNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a.activityNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.assignedName.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchTab = activeStatusTab === 'tutti' || a.status === activeStatusTab;

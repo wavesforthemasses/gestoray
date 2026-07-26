@@ -1,6 +1,4 @@
-/**
- * Utility per l'esportazione formattata ed intestata in PDF/Stampa dei Rapportini d'Intervento e Documenti Gestoray.
- */
+import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
 
 export interface PrintableDocumentData {
   title: string;
@@ -9,7 +7,7 @@ export interface PrintableDocumentData {
   clientName: string;
   clientAddress?: string;
   locationName?: string;
-  items: { description: string; quantity: number; unitPrice?: number; total?: number }[];
+  items: { description: string; quantity: number; unit?: string; unitPrice?: number; total?: number }[];
   totalAmount?: number;
   signedByName?: string;
   signedAt?: string;
@@ -83,7 +81,7 @@ export class PdfExportService {
             ${data.items.map(item => `
               <tr>
                 <td>${item.description}</td>
-                <td>${item.quantity}</td>
+                <td>${UnitsOfMeasureService.formatQuantity(item.quantity, item.unit || 'pz')} ${item.unit || ''}</td>
                 <td>${item.unitPrice ? '€ ' + item.unitPrice.toFixed(2) : '-'}</td>
                 <td style="text-align: right;">${item.total ? '€ ' + item.total.toFixed(2) : '-'}</td>
               </tr>

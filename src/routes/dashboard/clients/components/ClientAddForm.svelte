@@ -14,6 +14,7 @@
   let cognome = $state('');
   let email = $state('');
   let phone = $state('');
+  let website = $state('');
   let fiscalId = $state('');
   let partitaIva = $state('');
   let codiceFiscale = $state('');
@@ -26,25 +27,19 @@
       toast.error("Il Nome Azienda è obbligatorio.");
       return;
     }
-    if (!fiscalId.trim() && !partitaIva.trim() && !codiceFiscale.trim()) {
-      toast.error("Almeno uno tra Identificativo Fiscale, Partita IVA o Codice Fiscale è obbligatorio.");
-      return;
-    }
-    if (!email.trim() && !phone.trim()) {
-      toast.error("Inserire almeno un contatto tra Email e Telefono.");
-      return;
-    }
 
     submitting = true;
 
     try {
-      // Uniqueness check for fiscalId
-      if (fiscalId.trim()) {
+      const computedFiscalId = fiscalId.trim() || partitaIva.trim() || codiceFiscale.trim();
+
+      // Uniqueness check for fiscalId if provided
+      if (computedFiscalId) {
         let checkQuery;
         if (['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '')) {
-          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()));
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId));
         } else {
-          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', fiscalId.trim()), where('original.createdBy', '==', authState.user.uid));
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId), where('original.createdBy', '==', authState.user.uid));
         }
         
         const checkSnap = await getDocs(checkQuery);
@@ -66,7 +61,8 @@
           cognome: cognome.trim(),
           email: email.trim(),
           phone: phone.trim(),
-          fiscalId: fiscalId.trim(),
+          website: website.trim(),
+          fiscalId: computedFiscalId,
           partitaIva: partitaIva.trim(),
           codiceFiscale: codiceFiscale.trim(),
           status: 'prospect',
@@ -106,6 +102,7 @@
       fiscalId = '';
       email = '';
       phone = '';
+      website = '';
       partitaIva = '';
       codiceFiscale = '';
       
@@ -130,17 +127,6 @@
     />
   </FormField>
 
-  <FormField id="client-fiscal" label="Identificativo Fiscale *" helpText="Codice Fiscale o Partita IVA principale. Deve essere univoco nel sistema.">
-    <input
-      type="text"
-      id="client-fiscal"
-      bind:value={fiscalId}
-      placeholder="es. IT12345678901"
-      required
-      disabled={submitting}
-    />
-  </FormField>
-
   <div class="form-grid-columns">
     <FormField id="client-cognome" label="Referente / Cognome" helpText="Cognome della persona di contatto.">
       <input
@@ -152,7 +138,29 @@
       />
     </FormField>
 
-    <FormField id="client-phone" label="Numero di Telefono" helpText="Obbligatorio se l'email è vuota.">
+    <FormField id="client-website" label="Sito Web (Website)" helpText="Indirizzo web dell'azienda (Opzionale).">
+      <input
+        type="text"
+        id="client-website"
+        bind:value={website}
+        placeholder="es. www.azienda.com"
+        disabled={submitting}
+      />
+    </FormField>
+  </div>
+
+  <FormField id="client-fiscal" label="Identificativo Fiscale (Opzionale)" helpText="Codice Fiscale o Partita IVA principale.">
+    <input
+      type="text"
+      id="client-fiscal"
+      bind:value={fiscalId}
+      placeholder="es. IT12345678901"
+      disabled={submitting}
+    />
+  </FormField>
+
+  <div class="form-grid-columns">
+    <FormField id="client-phone" label="Numero di Telefono (Opzionale)">
       <input
         type="text"
         id="client-phone"
@@ -161,17 +169,17 @@
         disabled={submitting}
       />
     </FormField>
-  </div>
 
-  <FormField id="client-email" label="Indirizzo Email" helpText="Obbligatorio se il telefono è vuota.">
-    <input
-      type="email"
-      id="client-email"
-      bind:value={email}
-      placeholder="es. info@azienda.com"
-      disabled={submitting}
-    />
-  </FormField>
+    <FormField id="client-email" label="Indirizzo Email (Opzionale)">
+      <input
+        type="email"
+        id="client-email"
+        bind:value={email}
+        placeholder="es. info@azienda.com"
+        disabled={submitting}
+      />
+    </FormField>
+  </div>
 
   <div class="form-grid-columns">
     <FormField id="client-piva" label="Partita IVA (Opzionale)">

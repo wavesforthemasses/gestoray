@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Card, Button, FormField } from '$lib';
+  import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { FileText, Trash2, ShieldAlert } from 'lucide-svelte';
 
   interface Props {
@@ -79,7 +80,13 @@
           </div>
           <div class="flex-1">
             <FormField id="e-qty" label="Q.TÀ">
-              <input type="number" id="e-qty" bind:value={editItemQuantity} min="1" step="1" />
+              <input
+                type="number"
+                id="e-qty"
+                bind:value={editItemQuantity}
+                min="0"
+                step={editSelectedProductId ? UnitsOfMeasureService.getStepForUnit(productsList.find((p) => p.id === editSelectedProductId)?.unit) : '1'}
+              />
             </FormField>
           </div>
         </div>
@@ -87,7 +94,7 @@
 
       <Button 
         class="insert-btn"
-        disabled={!editSelectedProductId || editItemPriceSold === null || editItemQuantity < 1}
+        disabled={!editSelectedProductId || editItemPriceSold === null || editItemQuantity <= 0}
         onclick={handleAddEditQuoteItem}
       >
         Inserisci Articolo

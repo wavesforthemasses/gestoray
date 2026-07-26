@@ -101,5 +101,6 @@ export {
   increment,
   or,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';

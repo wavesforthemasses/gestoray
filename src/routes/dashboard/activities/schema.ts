@@ -1,16 +1,21 @@
 export type ActivityPriority = 'bassa' | 'media' | 'alta' | 'urgente';
-export type ActivityStatus = 'da_fare' | 'in_corso' | 'completato' | 'annullato';
+export type ActivityStatus = 'da_fare' | 'in_corso' | 'completata' | 'completato' | 'annullato';
 
 export interface ActivityItem {
   id?: string;
-  activityNumber: string;
+  activityNumber?: string;
   title: string;
+  activityTypeId?: string;
+  activityTypeName?: string;
   assignedUid: string;
   assignedName: string;
-  dueDate: string;
+  executionDate?: string;
+  dueDate?: string;
   priority: ActivityPriority;
   status: ActivityStatus;
   description?: string;
+  clientId?: string;
+  clientName?: string;
   customFields?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;

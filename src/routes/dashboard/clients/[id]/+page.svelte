@@ -18,6 +18,7 @@
   import { Card } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
   import { ClientDetailService } from './client-detail.service';
+  import { ActivityTypesService } from '$lib/services/activityTypesService';
 
   let hasActivitiesModule = $derived($menuConfigStore.some(i => i.id === 'activities'));
   let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
@@ -35,19 +36,51 @@
   let submittingActivity = $state(false);
   let submittingQuote = $state(false);
   let newlyCreatedId = $state('');
+  let activitiesConfig = $state<any[]>([]);
 
-  // Client profile fields (bind to original namespace)
+  // Client profile fields
   let clientName = $state('');
   let clientCognome = $state('');
   let clientEmail = $state('');
   let clientPhone = $state('');
+  let clientWebsite = $state('');
   let clientCreatedBy = $state('');
+  let clientAssignedAdminId = $state('');
   let clientCreatedAt = $state('');
   let clientNotes = $state<string[]>([]);
   let clientStatus = $state('prospect');
   let clientFiscalId = $state('');
   let clientPartitaIva = $state('');
   let clientCodiceFiscale = $state('');
+
+  // SDI & Bank Data
+  let clientSdiCode = $state('');
+  let clientPec = $state('');
+  let clientIban = $state('');
+  let clientBankName = $state('');
+  let clientPaymentTerms = $state('');
+
+  // Sede Principale
+  let clientAddress = $state('');
+  let clientCity = $state('');
+  let clientProvince = $state('');
+  let clientPostalCode = $state('');
+  let clientCountry = $state('Italy');
+
+  // Fatturazione
+  let clientBillingAddress = $state('');
+  let clientBillingCity = $state('');
+  let clientBillingProvince = $state('');
+  let clientBillingPostalCode = $state('');
+  let clientBillingCountry = $state('Italy');
+
+  // Spedizione
+  let clientShippingAddress = $state('');
+  let clientShippingCity = $state('');
+  let clientShippingProvince = $state('');
+  let clientShippingPostalCode = $state('');
+  let clientShippingCountry = $state('Italy');
+
   let clientDerived = $state<any>({});
 
   // Original profile state for history tracking
@@ -89,6 +122,7 @@
     loadingData = true;
     try {
       const payload = await ClientDetailService.fetchClientData(clientId);
+      activitiesConfig = await ActivityTypesService.getActivityTypes();
       
       clientDerived = payload.clientDerived;
       originalProfile = payload.originalProfile;
@@ -105,11 +139,37 @@
       clientCognome = originalProfile.cognome || '';
       clientEmail = originalProfile.email || '';
       clientPhone = originalProfile.phone || '';
+      clientWebsite = originalProfile.website || '';
       clientStatus = originalProfile.status || 'prospect';
       clientFiscalId = originalProfile.fiscalId || '';
       clientPartitaIva = originalProfile.partitaIva || '';
       clientCodiceFiscale = originalProfile.codiceFiscale || '';
       clientCreatedBy = originalProfile.createdBy || '';
+      clientAssignedAdminId = originalProfile.assignedAdminId || originalProfile.createdBy || '';
+
+      clientSdiCode = originalProfile.sdiCode || '';
+      clientPec = originalProfile.pec || '';
+      clientIban = originalProfile.iban || '';
+      clientBankName = originalProfile.bankName || '';
+      clientPaymentTerms = originalProfile.paymentTerms || '';
+
+      clientAddress = originalProfile.address || '';
+      clientCity = originalProfile.city || '';
+      clientProvince = originalProfile.province || '';
+      clientPostalCode = originalProfile.postalCode || '';
+      clientCountry = originalProfile.country || 'Italy';
+
+      clientBillingAddress = originalProfile.billingAddress || clientAddress;
+      clientBillingCity = originalProfile.billingCity || clientCity;
+      clientBillingProvince = originalProfile.billingProvince || clientProvince;
+      clientBillingPostalCode = originalProfile.billingPostalCode || clientPostalCode;
+      clientBillingCountry = originalProfile.billingCountry || clientCountry;
+
+      clientShippingAddress = originalProfile.shippingAddress || clientBillingAddress;
+      clientShippingCity = originalProfile.shippingCity || clientBillingCity;
+      clientShippingProvince = originalProfile.shippingProvince || clientBillingProvince;
+      clientShippingPostalCode = originalProfile.shippingPostalCode || clientBillingPostalCode;
+      clientShippingCountry = originalProfile.shippingCountry || clientBillingCountry;
     } catch (e: any) {
       console.error(e);
       toast.error('Errore durante il caricamento dei dati: ' + e.message);
@@ -146,14 +206,6 @@
       toast.error("Il Nome Azienda è obbligatorio.");
       return;
     }
-    if (!clientFiscalId.trim() && !clientCodiceFiscale.trim() && !clientPartitaIva.trim()) {
-      toast.error("L'Identificativo Fiscale è obbligatorio.");
-      return;
-    }
-    if (!clientEmail.trim() && !clientPhone.trim()) {
-      toast.error("Inserire almeno un contatto tra Email e Telefono.");
-      return;
-    }
 
     submittingProfile = true;
 
@@ -163,11 +215,33 @@
         cognome: clientCognome.trim(),
         email: clientEmail.trim(),
         phone: clientPhone.trim(),
+        website: clientWebsite.trim(),
         status: clientStatus,
         fiscalId: clientFiscalId.trim(),
         partitaIva: clientPartitaIva.trim(),
         codiceFiscale: clientCodiceFiscale.trim(),
-        createdBy: clientCreatedBy
+        sdiCode: clientSdiCode.trim(),
+        pec: clientPec.trim(),
+        iban: clientIban.trim(),
+        bankName: clientBankName.trim(),
+        paymentTerms: clientPaymentTerms.trim(),
+        address: clientAddress.trim(),
+        city: clientCity.trim(),
+        province: clientProvince.trim(),
+        postalCode: clientPostalCode.trim(),
+        country: clientCountry.trim(),
+        billingAddress: clientBillingAddress.trim(),
+        billingCity: clientBillingCity.trim(),
+        billingProvince: clientBillingProvince.trim(),
+        billingPostalCode: clientBillingPostalCode.trim(),
+        billingCountry: clientBillingCountry.trim(),
+        shippingAddress: clientShippingAddress.trim(),
+        shippingCity: clientShippingCity.trim(),
+        shippingProvince: clientShippingProvince.trim(),
+        shippingPostalCode: clientShippingPostalCode.trim(),
+        shippingCountry: clientShippingCountry.trim(),
+        createdBy: clientCreatedBy,
+        assignedAdminId: clientAssignedAdminId
       };
 
       const newOriginal = await ClientDetailService.updateProfile(
@@ -199,54 +273,57 @@
     if (hasNestedData) {
       const resp = await confirmStore.requireMatch("ATTENZIONE: Questo cliente possiede dati collegati (contratti, incassi, log, attività). Vuoi procedere? Verranno eliminati definitivamente in cascata tutti i suoi dati.", 'ELIMINA');
       if (!resp) return;
-    } else {
-      const ok = await confirmStore.prompt("Sei sicuro di voler eliminare definitivamente questa anagrafica cliente? Questa azione è irreversibile.");
-      if (!ok) return;
     }
 
     submittingProfile = true;
 
     try {
-      await ClientDetailService.deleteClient(clientId, activitiesList, historyList);
-      toast.success('Anagrafica cliente eliminata con successo! Reindirizzamento...');
-      setTimeout(() => {
-        goto('/dashboard/clients');
-      }, 1500);
+      await ClientDetailService.deleteClientCascade(clientId);
+
+      toast.success('Anagrafica ed eventuali sotto-risorse collegate eliminate con successo!');
+      goto('/dashboard/clients');
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Errore durante l'eliminazione del cliente.");
+      toast.error(err.message || 'Errore durante l\'eliminazione dell\'anagrafica.');
+    } finally {
       submittingProfile = false;
     }
   }
 
-  async function handleAddNote(e: Event) {
-    e.preventDefault();
-    const noteText = (e.target as any).noteText.value.trim();
-    if (!noteText || !authState.user) return;
-
+  async function handleAddNote(e: Event | string) {
+    let noteText = '';
+    if (typeof e === 'string') {
+      noteText = e;
+    } else {
+      e.preventDefault();
+      const form = e.currentTarget as HTMLFormElement;
+      const formData = new FormData(form);
+      noteText = (formData.get('noteText') as string) || '';
+      form.reset();
+    }
+    if (!noteText.trim() || !authState.user) return;
     try {
-      await ClientDetailService.addNote(clientId, clientNotes, noteText, { uid: authState.user.uid, email: authState.user.email! });
-      (e.target as any).noteText.value = '';
+      const updatedNotes = await ClientDetailService.addNote(clientId, noteText, authState.user.email || 'Utente');
+      clientNotes = updatedNotes;
       toast.success('Nota aggiunta con successo!');
-      await loadAllData();
-    } catch (e: any) {
-      toast.error('Errore durante l\'inserimento della nota: ' + e.message);
+    } catch (err: any) {
+      toast.error('Errore durante il salvataggio della nota: ' + err.message);
     }
   }
 
-  async function logActivity(type: string) {
+  async function logActivity(notes: string, appointmentDate?: string) {
+    if (!notes.trim()) {
+      toast.error('Inserisci una nota descrittiva dell\'attività.');
+      return;
+    }
     if (!authState.user) return;
+
     submittingActivity = true;
 
     try {
-      const clientNameStr = `${clientName} ${clientCognome}`.trim();
       const activityId = await ClientDetailService.logActivity(
         clientId, 
-        clientNameStr, 
-        clientStatus, 
-        type, 
-        '', // Empty note initially
-        undefined, // Empty datetime initially
+        notes, 
+        appointmentDate, 
         { uid: authState.user.uid, email: authState.user.email! }
       );
 
@@ -320,63 +397,43 @@
     quoteSuccessMsg = '';
 
     try {
-      const clientNameStr = `${clientName} ${clientCognome}`.trim();
-      let secondVendorEmail = '';
-      if (secondVendorUid) {
-        const found = usersList.find(u => u.uid === secondVendorUid);
-        secondVendorEmail = found ? found.email : '';
-      }
-
+      const fullName = `${clientName} ${clientCognome}`.trim();
       await ClientDetailService.saveQuote(
         clientId, 
-        clientNameStr, 
-        clientEmail, 
-        clientStatus, 
+        fullName, 
         quoteItems, 
         quoteTotal, 
-        secondVendorUid, 
-        secondVendorEmail, 
-        secondVendorShare, 
         { uid: authState.user.uid, email: authState.user.email! }
       );
-      
+
+      quoteSuccessMsg = 'Preventivo bozza salvato con successo!';
       quoteItems = [];
-      secondVendorUid = '';
-      secondVendorShare = 30;
-      quoteSuccessMsg = 'Preventivo salvato in bozza con successo!';
       await loadAllData();
     } catch (e: any) {
-      quoteErrorMsg = 'Errore durante il salvataggio del preventivo: ' + e.message;
+      quoteErrorMsg = 'Errore durante il salvataggio: ' + e.message;
     } finally {
       submittingQuote = false;
     }
   }
 
-  async function convertToContract(items: typeof quoteItems, quoteId?: string) {
-    if (items.length === 0 || !authState.user) return;
+  async function handleApproveQuote(quoteId: string) {
+    if (!authState.user || !activeRoleState.role) return;
     submittingQuote = true;
     quoteErrorMsg = '';
     quoteSuccessMsg = '';
 
     try {
-      const clientNameStr = `${clientName} ${clientCognome}`.trim();
-      let secondVendorEmail = '';
-      if (secondVendorUid) {
-        const found = usersList.find(u => u.uid === secondVendorUid);
-        secondVendorEmail = found ? found.email : '';
-      }
+      const coSeller = secondVendorUid ? {
+        uid: secondVendorUid,
+        share: secondVendorShare
+      } : undefined;
 
-      await ClientDetailService.convertToContract(
+      await ClientDetailService.approveQuoteToContract(
+        quoteId, 
         clientId, 
-        clientNameStr, 
-        clientEmail, 
-        clientStatus, 
-        items, 
-        secondVendorUid, 
-        secondVendorEmail, 
-        secondVendorShare, 
-        { uid: authState.user.uid, email: authState.user.email! },
-        quoteId
+        coSeller, 
+        activeRoleState.role, 
+        { uid: authState.user.uid, email: authState.user.email! }
       );
 
       quoteSuccessMsg = 'Preventivo convertito in contratto! In attesa di approvazione amministrativa.';
@@ -415,8 +472,6 @@
   }
 </script>
 
-
-
 <div class="client-details-page animate-fade-in">
   <Card class="header-card">
     <div class="page-top-actions">
@@ -442,7 +497,7 @@
           class:active={activeTab === 'profile'} 
           onclick={() => activeTab = 'profile'}
         >
-          <User size={16} /> Profilo & Audit Log
+          <User size={16} /> Profilo & Scheda Dettagli
         </button>
 
         {#if hasActivitiesModule && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
@@ -476,11 +531,33 @@
           bind:clientCognome
           bind:clientEmail
           bind:clientPhone
+          bind:clientWebsite
           bind:clientStatus
           bind:clientCreatedBy
+          bind:clientAssignedAdminId
           bind:clientFiscalId
           bind:clientPartitaIva
           bind:clientCodiceFiscale
+          bind:clientSdiCode
+          bind:clientPec
+          bind:clientIban
+          bind:clientBankName
+          bind:clientPaymentTerms
+          bind:clientAddress
+          bind:clientCity
+          bind:clientProvince
+          bind:clientPostalCode
+          bind:clientCountry
+          bind:clientBillingAddress
+          bind:clientBillingCity
+          bind:clientBillingProvince
+          bind:clientBillingPostalCode
+          bind:clientBillingCountry
+          bind:clientShippingAddress
+          bind:clientShippingCity
+          bind:clientShippingProvince
+          bind:clientShippingPostalCode
+          bind:clientShippingCountry
           usersList={usersList}
           historyList={historyList}
           submittingProfile={submittingProfile}
@@ -496,6 +573,7 @@
           clientNotes={clientNotes}
           clientCreatedAt={clientCreatedAt}
           newlyCreatedId={newlyCreatedId}
+          activitiesConfig={activitiesConfig}
 
           activeRole={activeRoleState.role}
           submittingActivity={submittingActivity}
@@ -521,155 +599,125 @@
           bind:secondVendorShare
           activeRole={activeRoleState.role}
           submittingQuote={submittingQuote}
-          bind:quoteSuccessMsg
-          bind:quoteErrorMsg
+          quoteSuccessMsg={quoteSuccessMsg}
+          quoteErrorMsg={quoteErrorMsg}
           quoteTotal={quoteTotal}
+
           onProductSelectChange={onProductSelectChange}
           onAddQuoteItem={handleAddQuoteItem}
           onRemoveQuoteItem={handleRemoveQuoteItem}
           onSaveQuote={handleSaveQuote}
-          onConvertToContract={convertToContract}
+          onConvertToContract={(items, qId) => handleApproveQuote(qId || '')}
         />
       {/if}
     </div>
   {/if}
 </div>
 
+{#if showQRCodeModal}
+  <ClientTicketQRCodeModal clientId={clientId} clientName={`${clientName} ${clientCognome}`} bind:isOpen={showQRCodeModal} />
+{/if}
+
 <style>
   .client-details-page {
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
-
   .page-top-actions {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 25px;
     flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
   }
-
-  .back-link-btn {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-300);
-    color: var(--color-neutral-600);
-    padding: 8px 14px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .back-link-btn:hover {
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-800);
-  }
-
   .title-header {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: var(--color-neutral-800);
+    color: var(--color-neutral-900);
   }
-
-  .loading-box {
-    display: flex;
+  .action-link {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
+    gap: 8px;
+    color: var(--color-neutral-600);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .action-link:hover {
+    color: var(--color-primary-600);
+  }
+  .btn-qr-modal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+    border: 1px solid var(--color-neutral-300);
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-qr-modal:hover {
+    background: var(--color-neutral-200);
+    color: var(--color-neutral-900);
+  }
+  .details-tab-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--color-neutral-200);
+    padding-bottom: 0;
+    margin-bottom: -16px;
+  }
+  .tab-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-neutral-600);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-nav-btn:hover {
+    color: var(--color-primary-600);
+  }
+  .tab-nav-btn.active {
+    color: var(--color-primary-600);
+    border-bottom-color: var(--color-primary-600);
+  }
+  .loading-box {
     padding: 40px;
-    color: var(--color-neutral-500);
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
+    display: flex;
+    justify-content: center;
   }
-
   .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.15);
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--color-neutral-200);
+    border-top-color: var(--color-primary-600);
     border-radius: 50%;
-    border-top-color: var(--color-primary-500);
-    animation: spin 1s linear infinite;
+    animation: spin 0.8s linear infinite;
   }
-
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
-
-  .details-tab-nav {
-    display: flex;
-    gap: 10px;
-    margin-top: 24px;
-    border-bottom: 1px solid var(--color-neutral-200);
-    padding-bottom: 8px;
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease;
   }
-
-  .tab-nav-btn {
-    background: transparent;
-    border: none;
-    padding: 10px 16px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-neutral-500);
-    cursor: pointer;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .tab-nav-btn:hover {
-    color: var(--color-primary-600);
-    background: var(--color-neutral-100);
-  }
-
-  .tab-nav-btn.active {
-    color: var(--color-primary-600);
-    border-bottom: 3px solid var(--color-primary-500);
-    background: var(--color-primary-50);
-  }
-
-  .tab-content-panel {
-    width: 100%;
-  }
-  .tab-content-panel {
-    margin-top: 24px;
-  }
-
-  .action-link {
-    text-decoration: none;
-  }
-
-  .btn-qr-modal {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0.9rem;
-    border-radius: 8px;
-    background-color: var(--primary, #3b82f6);
-    color: #ffffff;
-    border: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-qr-modal:hover {
-    background-color: #2563eb;
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 </style>
-
-<ClientTicketQRCodeModal
-  bind:isOpen={showQRCodeModal}
-  clientId={clientId}
-  clientName={`${clientName} ${clientCognome}`.trim()}
-/>
