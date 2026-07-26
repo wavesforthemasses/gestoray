@@ -43,7 +43,7 @@
     <div class="dropdown-backdrop" onclick={() => showDropdown = false}></div>
     <div class="notifications-dropdown">
       <div class="dropdown-header">
-        <h4>🔔 Notifiche ({unreadCount} non lette)</h4>
+        <h4><Bell size={16} class="bell-icon" /> Notifiche ({unreadCount} non lette)</h4>
       </div>
 
       <div class="dropdown-body">

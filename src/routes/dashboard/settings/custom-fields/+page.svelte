@@ -5,6 +5,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { menuConfigStore } from '$lib/stores/menu';
+  import { SlidersHorizontal, Plus, Pencil, Trash2, X } from '@lucide/svelte';
 
   let fields = $state<CustomFieldDefinition[]>([]);
   let loading = $state(true);
@@ -149,21 +150,21 @@
 <div class="custom-fields-container">
   <div class="page-header">
     <div>
-      <h1 class="page-title">⚙️ Gestione Campi Personalizzati PMI</h1>
+      <h1 class="page-title"><SlidersHorizontal size={24} class="title-icon" /> Gestione Campi Personalizzati PMI</h1>
       <p class="page-subtitle">Aggiungi e personalizza i campi dinamici per rispecchiare i processi della tua azienda.</p>
     </div>
-    <button onclick={openCreateModal} class="btn btn-primary">➕ Nuovo Campo Personalizzato</button>
+    <button onclick={openCreateModal} class="btn btn-primary"><Plus size={16} /> Nuovo Campo Personalizzato</button>
   </div>
 
   <div class="module-filter-bar">
     <label for="module-select">Filtra per Modulo:</label>
     <select id="module-select" bind:value={selectedModule} class="form-control-select">
       <option value="all">Tutti i Moduli</option>
-      <option value="clients">👤 Clienti</option>
-      {#if hasInterventi}<option value="interventi">🛠️ Interventi</option>{/if}
-      {#if hasTickets}<option value="tickets">🎫 Ticket Assistenza</option>{/if}
-      {#if hasContracts}<option value="contracts">📄 Contratti</option>{/if}
-      <option value="global">🌐 Modulo Globale</option>
+      <option value="clients">Clienti</option>
+      {#if hasInterventi}<option value="interventi">Interventi</option>{/if}
+      {#if hasTickets}<option value="tickets">Ticket Assistenza</option>{/if}
+      {#if hasContracts}<option value="contracts">Contratti</option>{/if}
+      <option value="global">Modulo Globale</option>
     </select>
   </div>
 
@@ -172,7 +173,7 @@
   {:else if filteredFields.length === 0}
     <div class="empty-box">
       <p>Nessun campo personalizzato trovato per questo modulo.</p>
-      <button onclick={openCreateModal} class="btn btn-secondary mt-8">Crea il primo campo</button>
+      <button onclick={openCreateModal} class="btn btn-secondary mt-8"><Plus size={16} /> Crea il primo campo</button>
     </div>
   {:else}
     <div class="table-responsive">
@@ -205,8 +206,8 @@
               <td><span class="module-tag">{f.module}</span></td>
               <td>{f.required ? 'Sì' : 'No'}</td>
               <td class="actions-cell">
-                <button onclick={() => openEditModal(f)} class="btn-action edit">✏️ Modifica</button>
-                <button onclick={() => handleDelete(f.id)} class="btn-action delete">🗑️ Elimina</button>
+                <button onclick={() => openEditModal(f)} class="btn-action edit"><Pencil size={14} /> Modifica</button>
+                <button onclick={() => handleDelete(f.id)} class="btn-action delete"><Trash2 size={14} /> Elimina</button>
               </td>
             </tr>
           {/each}
@@ -222,8 +223,8 @@
   <div class="modal-backdrop" onclick={() => (isModalOpen = false)}>
     <div class="modal-card" onclick={(e) => e.stopPropagation()}>
       <header class="modal-header">
-        <h3>{editingId ? '✏️ Modifica Campo Personalizzato' : '➕ Nuovo Campo Personalizzato'}</h3>
-        <button class="close-btn" onclick={() => (isModalOpen = false)}>✕</button>
+        <h3>{editingId ? 'Modifica Campo Personalizzato' : 'Nuovo Campo Personalizzato'}</h3>
+        <button class="close-btn" onclick={() => (isModalOpen = false)}><X size={18} /></button>
       </header>
 
       <form onsubmit={handleSubmit} class="modal-body">
@@ -252,11 +253,11 @@
           <div class="form-group">
             <label for="cf-module">Modulo di Destinazione</label>
             <select id="cf-module" bind:value={fieldModule} class="form-control">
-              <option value="clients">👤 Clienti</option>
-              {#if hasInterventi}<option value="interventi">🛠️ Interventi</option>{/if}
-              {#if hasTickets}<option value="tickets">🎫 Ticket Assistenza</option>{/if}
-              {#if hasContracts}<option value="contracts">📄 Contratti</option>{/if}
-              <option value="global">🌐 Modulo Globale</option>
+              <option value="clients">Clienti</option>
+              {#if hasInterventi}<option value="interventi">Interventi</option>{/if}
+              {#if hasTickets}<option value="tickets">Ticket Assistenza</option>{/if}
+              {#if hasContracts}<option value="contracts">Contratti</option>{/if}
+              <option value="global">Modulo Globale</option>
             </select>
           </div>
         </div>

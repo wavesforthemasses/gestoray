@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { QrCode, Printer, Copy, Check, X, Smartphone } from '@lucide/svelte';
+
   let {
     isOpen = $bindable(false),
     clientId = '',
@@ -38,8 +40,12 @@
   <div class="modal-backdrop" onclick={() => (isOpen = false)}>
     <div class="modal-card" onclick={(e) => e.stopPropagation()}>
       <header class="modal-header">
-        <h3>📱 QR Code & Link Assistenza Dedicato</h3>
-        <button class="close-btn" onclick={() => (isOpen = false)}>✕</button>
+        <h3>
+          <Smartphone size={20} class="header-icon" /> QR Code & Link Assistenza Dedicato
+        </h3>
+        <button class="close-btn" onclick={() => (isOpen = false)}>
+          <X size={18} />
+        </button>
       </header>
 
       <div class="modal-body">
@@ -63,14 +69,20 @@
           <div class="input-group">
             <input id="ded-link" type="text" readonly value={dedicatedLink} class="link-input" />
             <button onclick={handleCopy} class="btn-copy">
-              {copied ? 'Copaito! ✓' : 'Copia Link'}
+              {#if copied}
+                <Check size={14} /> Copiato!
+              {:else}
+                <Copy size={14} /> Copia Link
+              {/if}
             </button>
           </div>
         </div>
       </div>
 
       <footer class="modal-footer">
-        <button onclick={handlePrint} class="btn btn-secondary">🖨️ Stampa QR Code</button>
+        <button onclick={handlePrint} class="btn btn-secondary">
+          <Printer size={16} /> Stampa QR Code
+        </button>
         <button onclick={() => (isOpen = false)} class="btn btn-primary">Chiudi</button>
       </footer>
     </div>
@@ -113,6 +125,13 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  :global(.header-icon) {
+    color: var(--color-primary-500);
   }
 
   .close-btn {
@@ -121,6 +140,8 @@
     font-size: 1.2rem;
     cursor: pointer;
     color: #64748b;
+    display: flex;
+    align-items: center;
   }
 
   .modal-body {
@@ -202,6 +223,9 @@
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .modal-footer {
@@ -218,6 +242,9 @@
     font-weight: 600;
     font-size: 0.88rem;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .btn-primary { background: #3b82f6; color: #fff; border: none; }

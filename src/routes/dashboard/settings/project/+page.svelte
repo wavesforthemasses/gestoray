@@ -8,7 +8,7 @@
   import { Card, FormField, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Configurazione Progetto');
-  import { ArrowLeft } from '@lucide/svelte';
+  import { ArrowLeft, AlertTriangle } from '@lucide/svelte';
 
   let projectName = $state('');
   let projectEmail = $state('');
@@ -18,19 +18,15 @@
 
   $effect(() => {
     const currentRole = activeRoleState.role;
-    if (currentRole && !hasAccess(currentRole, ['superadmin', 'amministrazione', 'direzione'])) {
-      goto('/dashboard/settings');
+    if (currentRole && !hasAccess(currentRole, ['superadmin'])) {
+      goto('/dashboard');
     }
   });
 
-  onMount(() => {
-
-    loadSettings();
-  });
-
-  async function loadSettings() {
+  onMount(async () => {
     try {
-      const docSnap = await getDoc(doc(db, 'settings', 'project'));
+      const docRef = doc(db, 'settings', 'project');
+      const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
         projectName = data.projectName || '';
@@ -38,30 +34,26 @@
         resendApiKey = data.resendApiKey || '';
       }
     } catch (e: any) {
-      toast.error("Errore nel caricamento delle impostazioni.");
+      toast.error('Errore durante il caricamento delle impostazioni: ' + e.message);
     } finally {
       loading = false;
     }
-  }
+  });
 
-  async function saveSettings(e: Event) {
+  async function handleSubmit(e: Event) {
     e.preventDefault();
-    if (!projectName.trim() || !projectEmail.trim()) {
-      toast.error('Tutti i campi sono obbligatori.');
-      return;
-    }
-    
     submitting = true;
     try {
-      await setDoc(doc(db, 'settings', 'project'), {
-        projectName: projectName.trim(),
-        projectEmail: projectEmail.trim(),
-        resendApiKey: resendApiKey.trim()
+      const docRef = doc(db, 'settings', 'project');
+      await setDoc(docRef, {
+        projectName,
+        projectEmail,
+        resendApiKey,
+        updatedAt: new Date().toISOString()
       }, { merge: true });
-      
-      toast.success('Impostazioni di progetto salvate con successo.');
-    } catch (err: any) {
-      toast.error(err.message || 'Errore durante il salvataggio.');
+      toast.success('Impostazioni di progetto salvate con successo');
+    } catch (e: any) {
+      toast.error('Errore durante il salvataggio: ' + e.message);
     } finally {
       submitting = false;
     }
@@ -69,52 +61,51 @@
 </script>
 
 <div class="project-settings-page animate-fade-in">
-  <div class="page-top-actions">
-    <a href="/dashboard/settings" class="back-link-btn action-link">
-      <ArrowLeft size={16} /> Torna a Impostazioni
-    </a>
-    <h2 class="title-header">Configurazione Progetto</h2>
-  </div>
+  <Card title="Configurazione Progetto" description="Modifica il nome del progetto, l'email aziendale principale ed integra le API di notifica per Resend." class="settings-card">
+    {#snippet headerSnippet()}
+      <a href="/dashboard/settings" class="back-link">
+        <ArrowLeft size={14} /> Torna a Impostazioni
+      </a>
+    {/snippet}
 
-  {#if loading}
-    <div class="loading-box">
-      <span class="spinner"></span>
-      Caricamento...
-    </div>
-  {:else}
-    <Card title="Dettagli Piattaforma" description="Modifica il nome del CRM e l'email mittente globale.">
-      <form onsubmit={saveSettings} class="project-form">
-        <FormField 
-          id="projectName"
-          label="Nome Progetto / Azienda"
-          type="text"
-          bind:value={projectName}
-          placeholder="es. Acme CRM"
-          required
-        />
+    {#if loading}
+      <p class="loading-text">Caricamento impostazioni...</p>
+    {:else}
+      <form onsubmit={handleSubmit} class="settings-form">
+        <FormField id="projectName" label="Nome Progetto / Ragione Sociale">
+          <input
+            id="projectName"
+            type="text"
+            bind:value={projectName}
+            placeholder="Gestoray S.r.l."
+            required
+          />
+        </FormField>
 
-        <FormField 
-          id="projectEmail"
-          label="Email Mittente (No-Reply)"
-          type="email"
-          bind:value={projectEmail}
-          placeholder="es. no-reply@acme.it"
-          required
-        />
+        <FormField id="projectEmail" label="Email Aziendale di Contatto">
+          <input
+            id="projectEmail"
+            type="email"
+            bind:value={projectEmail}
+            placeholder="info@azienda.it"
+            required
+          />
+        </FormField>
 
-        <FormField 
-          id="resendApiKey"
-          label="API Key (Resend) - Opzionale"
-          type="password"
-          bind:value={resendApiKey}
-          placeholder="re_xxxxxxxxxxxxxx"
-        />
+        <FormField id="resendApiKey" label="API Key Resend (Email Transazionali)">
+          <input
+            id="resendApiKey"
+            type="password"
+            bind:value={resendApiKey}
+            placeholder="re_xxxxxxxxxxxxxx"
+          />
 
-        {#if !resendApiKey}
-          <div class="alert warning warning-box">
-            ⚠️ <strong>Nessuna API Key inserita.</strong> L'invio reale delle email (ad es. i PIN d'accesso) è disattivato. I codici PIN verranno salvati solo nei log.
-          </div>
-        {/if}
+          {#if !resendApiKey}
+            <div class="alert warning warning-box">
+              <AlertTriangle size={16} /> <strong>Nessuna API Key inserita.</strong> L'invio reale delle email (ad es. i PIN d'accesso) è disattivato. I codici PIN verranno salvati solo nei log.
+            </div>
+          {/if}
+        </FormField>
 
         <div class="form-actions">
           <Button variant="primary" type="submit" disabled={submitting}>
@@ -122,8 +113,8 @@
           </Button>
         </div>
       </form>
-    </Card>
-  {/if}
+    {/if}
+  </Card>
 </div>
 
 <style>

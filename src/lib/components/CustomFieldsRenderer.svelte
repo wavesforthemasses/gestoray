@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
+  import { Check, X } from '@lucide/svelte';
 
   interface Props {
     fields: CustomFieldDefinition[];
@@ -26,7 +27,11 @@
         {#if readonly}
           <div class="readonly-value">
             {#if field.type === 'boolean'}
-              <span>{values[field.key] ? '✅ Sì' : '❌ No'}</span>
+              {#if values[field.key]}
+                <span class="badge badge-success"><Check size={12} /> Sì</span>
+              {:else}
+                <span class="badge badge-neutral"><X size={12} /> No</span>
+              {/if}
             {:else if field.type === 'select'}
               <span>{field.options?.find(o => o.value === values[field.key])?.label || values[field.key] || '-'}</span>
             {:else}

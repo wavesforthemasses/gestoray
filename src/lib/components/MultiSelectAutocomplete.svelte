@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { Search } from '@lucide/svelte';
 
   export interface AutocompleteOption {
     id: string;
@@ -93,7 +94,7 @@
       {disabled}
       class="form-input autocomplete-input"
     />
-    <div class="search-icon">🔍</div>
+    <div class="search-icon"><Search size={16} /></div>
   </div>
 
   {#if isOpen && !disabled && filteredOptions.length > 0}

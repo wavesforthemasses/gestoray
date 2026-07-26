@@ -1,7 +1,7 @@
 <script lang="ts">
   import { functions, httpsCallable } from "$lib/firebase";
   import { projectStore } from '$lib/stores/project';
-  import { ShieldCheck, Loader2 } from "lucide-svelte";
+  import { ShieldCheck, Loader2, XCircle } from "lucide-svelte";
 
   let status = $state<"idle" | "loading" | "success" | "error">("idle");
   let message = $state("");
@@ -89,7 +89,9 @@
               <p class="success-message">{message}</p>
               <a href="/login" class="btn btn-primary mt-20">Vai al Login</a>
             {:else}
-              <div class="icon-circle error">❌</div>
+              <div class="icon-circle error">
+                <XCircle size={32} />
+              </div>
               <h3>Errore</h3>
               <p class="error-message">{message}</p>
               <button onclick={() => status = "idle"} class="btn btn-secondary mt-20">Riprova</button>

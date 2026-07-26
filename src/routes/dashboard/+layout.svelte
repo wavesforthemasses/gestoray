@@ -5,7 +5,7 @@
   import { signOut as clientSignOut } from '$lib/firebase';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText } from '@lucide/svelte';
+  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText, WifiOff } from '@lucide/svelte';
   import { iconMap } from '$lib/utils/iconMap';
   import { KPI_LEGEND } from '$lib/kpiLegend';
   import ProjectSetupBlocker from '$lib/components/ProjectSetupBlocker.svelte';
@@ -142,7 +142,7 @@
     <main class="content-viewport">
       {#if !$isOnlineStore}
         <div class="offline-banner">
-          ⚠️ <strong>Sei attualmente offline.</strong> Le modifiche verranno sincronizzate non appena la connessione sarà ripristinata.
+          <WifiOff size={16} /> <strong>Sei attualmente offline.</strong> Le modifiche verranno sincronizzate non appena la connessione sarà ripristinata.
         </div>
       {/if}
       {@render children()}
