@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { ProductsService } from '../products.service';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
+  import { UnitsOfMeasureService, type UnitOfMeasure } from '$lib/services/unitsOfMeasureService';
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
@@ -10,6 +11,7 @@
 
   let customFieldsList = $state<CustomFieldDefinition[]>([]);
   let customFieldsValues = $state<CustomFieldValues>({});
+  let unitsCatalog = $state<UnitOfMeasure[]>([]);
 
   let loading = $state(true);
   let saving = $state(false);
@@ -26,9 +28,14 @@
 
   onMount(async () => {
     try {
-      customFieldsList = await CustomFieldsService.getFieldsForModule('products');
+      const [fields, units] = await Promise.all([
+        CustomFieldsService.getFieldsForModule('products'),
+        UnitsOfMeasureService.getUnits()
+      ]);
+      customFieldsList = fields;
+      unitsCatalog = units;
     } catch (e) {
-      console.error('Errore caricamento custom fields prodotti:', e);
+      console.error('Errore caricamento dati prodotti:', e);
     } finally {
       loading = false;
     }
@@ -135,17 +142,15 @@
           <div class="form-group">
             <label for="prod-unit">Unità di Misura</label>
             <select id="prod-unit" bind:value={unit} class="form-control">
-              <option value="pz">Pezzi (pz)</option>
-              <option value="kg">Chilogrammi (kg)</option>
-              <option value="m">Metri (m)</option>
-              <option value="l">Litri (l)</option>
-              <option value="ora">Ore (ora)</option>
+              {#each unitsCatalog as u (u.code)}
+                <option value={u.code}>{u.label}</option>
+              {/each}
             </select>
           </div>
 
           <div class="form-group">
             <label for="prod-stock">Giacenza Iniziale *</label>
-            <input id="prod-stock" type="number" bind:value={stockQty} required class="form-control" />
+            <input id="prod-stock" type="number" step={UnitsOfMeasureService.getStepForUnit(unit)} bind:value={stockQty} required class="form-control" />
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.onActivityCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
 const v2_1 = require("firebase-functions/v2");
 (0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
@@ -23,4 +23,8 @@ Object.defineProperty(exports, "getChartAggregations", { enumerable: true, get: 
 var onClientCreated_1 = require("./src/triggers/onClientCreated");
 Object.defineProperty(exports, "onClientCreated", { enumerable: true, get: function () { return onClientCreated_1.onClientCreated; } });
 Object.defineProperty(exports, "onClientUpdated", { enumerable: true, get: function () { return onClientCreated_1.onClientUpdated; } });
+// --- MODULE FUNCTIONS: activities BEGIN ---
+var onActivityCreated_1 = require("./src/triggers/onActivityCreated");
+Object.defineProperty(exports, "onActivityCreated", { enumerable: true, get: function () { return onActivityCreated_1.onActivityCreated; } });
+// --- MODULE FUNCTIONS: activities END ---
 //# sourceMappingURL=index.js.map

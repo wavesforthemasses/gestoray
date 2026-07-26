@@ -94,6 +94,14 @@ function installModule(moduleName) {
     console.log(`  ✅ Rotte aggiuntive registrate in src/routes/`);
   }
 
+  // 3.5. Copy functions if present
+  const srcFunctions = path.join(moduleDir, 'functions');
+  const destFunctionsDir = path.resolve(__dirname, '../functions/src');
+  if (fs.existsSync(srcFunctions)) {
+    copyDirRecursive(srcFunctions, destFunctionsDir);
+    console.log(`  ⚡ Cloud Functions registrate in functions/src/`);
+  }
+
   // 4. Update generated_menu.ts if menu.snippet.ts exists
   const menuSnippetPath = path.join(moduleDir, 'menu.snippet.ts');
   if (fs.existsSync(menuSnippetPath)) {

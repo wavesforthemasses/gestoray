@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { ProductsService } from '../products.service';
   import type { ProductItem } from '../schema';
+  import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import type { CustomFieldDefinition } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
@@ -84,7 +85,7 @@
       <div class="info-row">
         <span class="info-label">Giacenza Attuale</span>
         <span class="stock-badge {product.stockQty > 0 ? 'stock-ok' : 'stock-zero'}">
-          {product.stockQty} {product.unit}
+          {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit}
         </span>
       </div>
 

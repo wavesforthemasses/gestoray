@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { ProductsService } from './products.service';
   import type { ProductItem } from './schema';
+  import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Package, Euro, Search, Plus, Eye, Pencil, Trash2 } from '@lucide/svelte';
@@ -142,7 +143,7 @@
               <td class="font-bold text-primary">€ {(p.price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
               <td>
                 <span class="stock-badge {p.stockQty > 0 ? 'stock-ok' : 'stock-zero'}">
-                  {p.stockQty} {p.unit}
+                  {UnitsOfMeasureService.formatQuantity(p.stockQty, p.unit)} {p.unit}
                 </span>
               </td>
               <td class="text-right">

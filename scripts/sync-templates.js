@@ -53,6 +53,27 @@ function syncTemplates() {
         copyDirRecursiveSync(activeRouteDir, templateFilesDir);
         console.log(`  ✅ Modello Puro '${moduleName}' sincronizzato con src/routes/dashboard/${moduleName}/`);
       }
+
+      // Sync settings extra_routes if exists
+      const activeSettingsDir = path.resolve(__dirname, '../src/routes/dashboard/settings', moduleName);
+      const templateExtraRoutesDir = path.join(moduleTemplatesDir, moduleName, 'extra_routes/dashboard/settings', moduleName);
+      if (fs.existsSync(activeSettingsDir)) {
+        copyDirRecursiveSync(activeSettingsDir, templateExtraRoutesDir);
+        console.log(`  ⚙️ Impostazioni '${moduleName}' sincronizzate con extra_routes`);
+      }
+
+      // Sync lib_services if template defines lib_services folder
+      const templateLibServicesDir = path.join(moduleTemplatesDir, moduleName, 'lib_services');
+      if (fs.existsSync(templateLibServicesDir)) {
+        const serviceFiles = fs.readdirSync(templateLibServicesDir);
+        for (const file of serviceFiles) {
+          const activeServiceFile = path.resolve(__dirname, '../src/lib/services', file);
+          if (fs.existsSync(activeServiceFile)) {
+            fs.copyFileSync(activeServiceFile, path.join(templateLibServicesDir, file));
+          }
+        }
+        console.log(`  🛠️ Servizi lib_services per '${moduleName}' sincronizzati`);
+      }
     }
   }
 
