@@ -12,7 +12,7 @@
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import Autocomplete from '$lib/components/Autocomplete.svelte';
-  import MultiSelectAutocomplete from '$lib/components/MultiSelectAutocomplete.svelte';
+  import MultiComplete from '$lib/components/MultiComplete.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   
   import InterventionItemsForm from '../../add/components/InterventionItemsForm.svelte';
@@ -533,7 +533,7 @@
 
           <div class="form-group">
             <label for="operators-select">Operatori Assegnati</label>
-            <MultiSelectAutocomplete 
+            <MultiComplete 
               options={users.map(u => ({ id: u.id, label: u.name }))} 
               bind:value={selectedOperatorUids} 
               placeholder="Scegli operatori..." 
@@ -542,7 +542,7 @@
 
           <div class="form-group">
             <label for="vehicles-select">Mezzi Assegnati</label>
-            <MultiSelectAutocomplete 
+            <MultiComplete 
               options={vehicles.map(v => ({ id: v.id || '', label: `${v.name} (${v.plate || 'No Targa'})` }))} 
               bind:value={selectedVehicleIds} 
               placeholder="Scegli mezzi..." 

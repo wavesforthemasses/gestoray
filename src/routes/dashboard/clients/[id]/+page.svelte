@@ -6,15 +6,18 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, User, MessageSquare, FileText, QrCode } from '@lucide/svelte';
+  import { ArrowLeft, User, MessageSquare, FileText, QrCode, UserCheck } from '@lucide/svelte';
   import ConfirmModal from '$lib/components/ConfirmModal.svelte';
   import ClientTicketQRCodeModal from '$lib/components/ClientTicketQRCodeModal.svelte';
+  import AnonymizeModal from '$lib/components/AnonymizeModal.svelte';
+  import { AnonymizationService, CLIENTS_ANONYMIZATION_SPEC } from '$lib/services/anonymizationService';
   import { can } from '$lib/services/roles.service';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Scheda Cliente CRM');
   import ClientProfileTab from './components/ClientProfileTab.svelte';
   import ClientActivitiesTab from './components/ClientActivitiesTab.svelte';
   import ClientQuotesTab from './components/ClientQuotesTab.svelte';
+  import ClientContactsTab from './components/ClientContactsTab.svelte';
   import { Card } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
   import { ClientDetailService } from './client-detail.service';
@@ -26,9 +29,10 @@
 
   const clientId = $page.params.id as string;
   let showQRCodeModal = $state(false);
+  let showAnonymizeModal = $state(false);
 
   // Tabs
-  let activeTab = $state<'profile' | 'activities' | 'quotes'>('profile');
+  let activeTab = $state<'profile' | 'contacts' | 'activities' | 'quotes'>('profile');
 
   // Loaders & Status
   let loadingData = $state(true);
@@ -53,12 +57,36 @@
   let clientPartitaIva = $state('');
   let clientCodiceFiscale = $state('');
 
+  // Anagrafica & ERP additions
+  let clientCode = $state('');
+  let clientGroup = $state('Standard');
+  let certificationStatus = $state('Certificato');
+  let isItalianSubject = $state(true);
+
   // SDI & Bank Data
   let clientSdiCode = $state('');
   let clientPec = $state('');
   let clientIban = $state('');
   let clientBankName = $state('');
   let clientPaymentTerms = $state('');
+  let mainPhone = $state('');
+
+  // Referenti Rapidi
+  let referenteTecnico = $state('');
+  let telReferente = $state('');
+  let emailContatto = $state('');
+  let emailAlternativa = $state('');
+
+  // Affidabilità & Credito
+  let crifCheck = $state('ESEGUITO & VALIDO');
+  let riskClass = $state('AAA (Basso Rischio)');
+  let maxCredit = $state<number>(0);
+  let residualCredit = $state<number>(0);
+  let paymentStatus = $state('Regolare');
+
+  // Note ERP
+  let internalAdminNotes = $state('');
+  let quoteAutoNotes = $state('');
 
   // Sede Principale
   let clientAddress = $state('');
@@ -147,11 +175,31 @@
       clientCreatedBy = originalProfile.createdBy || '';
       clientAssignedAdminId = originalProfile.assignedAdminId || originalProfile.createdBy || '';
 
+      clientCode = originalProfile.clientCode || '';
+      clientGroup = originalProfile.clientGroup || 'Standard';
+      certificationStatus = originalProfile.certificationStatus || 'Certificato';
+      isItalianSubject = originalProfile.isItalianSubject !== undefined ? originalProfile.isItalianSubject : true;
+
       clientSdiCode = originalProfile.sdiCode || '';
       clientPec = originalProfile.pec || '';
       clientIban = originalProfile.iban || '';
       clientBankName = originalProfile.bankName || '';
       clientPaymentTerms = originalProfile.paymentTerms || '';
+      mainPhone = originalProfile.mainPhone || originalProfile.phone || '';
+
+      referenteTecnico = originalProfile.referenteTecnico || '';
+      telReferente = originalProfile.telReferente || '';
+      emailContatto = originalProfile.emailContatto || originalProfile.email || '';
+      emailAlternativa = originalProfile.emailAlternativa || '';
+
+      crifCheck = originalProfile.crifCheck || 'ESEGUITO & VALIDO';
+      riskClass = originalProfile.riskClass || 'AAA (Basso Rischio)';
+      maxCredit = originalProfile.maxCredit || 0;
+      residualCredit = originalProfile.residualCredit || 0;
+      paymentStatus = originalProfile.paymentStatus || 'Regolare';
+
+      internalAdminNotes = originalProfile.internalAdminNotes || '';
+      quoteAutoNotes = originalProfile.quoteAutoNotes || '';
 
       clientAddress = originalProfile.address || '';
       clientCity = originalProfile.city || '';
@@ -220,11 +268,27 @@
         fiscalId: clientFiscalId.trim(),
         partitaIva: clientPartitaIva.trim(),
         codiceFiscale: clientCodiceFiscale.trim(),
+        clientCode: clientCode.trim(),
+        clientGroup,
+        certificationStatus,
+        isItalianSubject,
         sdiCode: clientSdiCode.trim(),
         pec: clientPec.trim(),
         iban: clientIban.trim(),
         bankName: clientBankName.trim(),
         paymentTerms: clientPaymentTerms.trim(),
+        mainPhone: mainPhone.trim(),
+        referenteTecnico: referenteTecnico.trim(),
+        telReferente: telReferente.trim(),
+        emailContatto: emailContatto.trim(),
+        emailAlternativa: emailAlternativa.trim(),
+        crifCheck,
+        riskClass,
+        maxCredit,
+        residualCredit,
+        paymentStatus,
+        internalAdminNotes: internalAdminNotes.trim(),
+        quoteAutoNotes: quoteAutoNotes.trim(),
         address: clientAddress.trim(),
         city: clientCity.trim(),
         province: clientProvince.trim(),
@@ -470,6 +534,20 @@
       itemPriceSold = null;
     }
   }
+  async function confirmAnonymize() {
+    try {
+      submittingProfile = true;
+      showAnonymizeModal = false;
+      await AnonymizationService.anonymizeEntity('clients', clientId, CLIENTS_ANONYMIZATION_SPEC, authState.user?.uid || 'system');
+      toast.success('Cliente anonimizzato con successo.');
+      await loadAllData();
+    } catch (e: any) {
+      console.error('Error anonymizing client:', e);
+      toast.error('Errore durante l\'anonimizzazione: ' + e.message);
+    } finally {
+      submittingProfile = false;
+    }
+  }
 </script>
 
 <div class="client-details-page animate-fade-in">
@@ -498,6 +576,14 @@
           onclick={() => activeTab = 'profile'}
         >
           <User size={16} /> Profilo & Scheda Dettagli
+        </button>
+
+        <button 
+          class="tab-nav-btn" 
+          class:active={activeTab === 'contacts'} 
+          onclick={() => activeTab = 'contacts'}
+        >
+          <UserCheck size={16} /> Contatti & Referenti
         </button>
 
         {#if hasActivitiesModule && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
@@ -538,11 +624,26 @@
           bind:clientFiscalId
           bind:clientPartitaIva
           bind:clientCodiceFiscale
+          bind:clientCode
+          bind:clientGroup
+          bind:certificationStatus
+          bind:isItalianSubject
           bind:clientSdiCode
           bind:clientPec
           bind:clientIban
           bind:clientBankName
           bind:clientPaymentTerms
+          bind:referenteTecnico
+          bind:telReferente
+          bind:emailContatto
+          bind:emailAlternativa
+          bind:crifCheck
+          bind:riskClass
+          bind:maxCredit
+          bind:residualCredit
+          bind:paymentStatus
+          bind:internalAdminNotes
+          bind:quoteAutoNotes
           bind:clientAddress
           bind:clientCity
           bind:clientProvince
@@ -566,6 +667,13 @@
           contractsCount={clientDerived.contractsCount || 0}
           onUpdateProfile={handleUpdateProfile}
           onDeleteClient={handleDeleteClient}
+          onOpenAnonymize={() => showAnonymizeModal = true}
+        />
+      {:else if activeTab === 'contacts'}
+        <ClientContactsTab
+          clientId={clientId}
+          clientName={clientName}
+          userId={authState.user?.uid || ''}
         />
       {:else if activeTab === 'activities' && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
         <ClientActivitiesTab
@@ -616,6 +724,17 @@
 
 {#if showQRCodeModal}
   <ClientTicketQRCodeModal clientId={clientId} clientName={`${clientName} ${clientCognome}`} bind:isOpen={showQRCodeModal} />
+{/if}
+
+{#if showAnonymizeModal}
+  <AnonymizeModal
+    isOpen={showAnonymizeModal}
+    entityName="Cliente"
+    originalDoc={{...originalProfile, id: clientId}}
+    specs={CLIENTS_ANONYMIZATION_SPEC}
+    onConfirm={confirmAnonymize}
+    onClose={() => showAnonymizeModal = false}
+  />
 {/if}
 
 <style>

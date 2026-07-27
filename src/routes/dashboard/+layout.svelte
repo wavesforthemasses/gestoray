@@ -79,7 +79,7 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       {#if !isCollapsed}
-        <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="sidebar-logo" />
+        <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'CRM'} Logo" class="sidebar-logo" />
         <button onclick={toggleSidebar} class="toggle-btn" aria-label="Nascondi barra laterale">
           <ChevronLeft size={18} />
         </button>

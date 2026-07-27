@@ -99,6 +99,26 @@ export const EntitiesService = {
 };
 ```
 
+## 5. Audit History & GDPR Anonymization
+
+When implementing a new entity, **always** integrate the `AuditHistoryService` for compliance and auditing:
+
+1. **History Logging**: Track updates by calculating diffs.
+```typescript
+import { AuditHistoryService } from '$lib/services/auditHistoryService';
+
+// During update:
+const changes = AuditHistoryService.calculateDiff(oldData, newData);
+if (Object.keys(changes).length > 0) {
+  await AuditHistoryService.logChange('entities', entityId, 'UPDATE', authUid, changes);
+}
+```
+
+2. **GDPR Anonymization**: All new entities containing Personally Identifiable Information (PII) must have an Anonymization Spec in `AnonymizationService`.
+   - Update `src/lib/services/anonymizationService.ts` with your entity's spec (e.g., `ENTITIES_ANONYMIZATION_SPEC`).
+   - Only include fields that actually exist on the entity.
+   - The `anonymizeEntity` method automatically wipes the `history` subcollection and inserts a single "ANONYMIZED" log to maintain the Right to be Forgotten while preserving audit integrity.
+
 ## 5. Listing (`+page.svelte`)
 
 Use the shared `Listing` component to display data consistently. **Always use `translate.it` for user-facing strings.**

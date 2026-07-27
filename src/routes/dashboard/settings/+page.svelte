@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package } from '@lucide/svelte';
+  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package, Briefcase } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -86,6 +86,13 @@
         icon={ClipboardList}
       />
     {/if}
+
+    <SettingsNavCard 
+      href="/dashboard/settings/clients"
+      title="Configurazione Campi Scheda Cliente"
+      description="Personalizza la visibilità e l'organizzazione dei gruppi di campi (Anagrafici, Sede & SDI, Referenti, Affidabilità & Credito, Note ERP) nei form e nella scheda cliente."
+      icon={Briefcase}
+    />
 
     {#if hasProductsModule}
       <SettingsNavCard 

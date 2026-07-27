@@ -6,6 +6,7 @@
   import StatusBadge from '$lib/components/StatusBadge.svelte';
   import { activeRoleState } from '$lib/auth.svelte';
   import { projectStore } from '$lib/stores/project';
+  import { menuConfigStore } from '$lib/stores/menu';
 
   interface Props {
     clientsList: any[];
@@ -24,6 +25,8 @@
     onAddClick,
     selectedPeriod
   } = $props();
+
+  let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
 
   let filteredClients = $derived.by(() => {
     let list = clientsList;
@@ -72,13 +75,15 @@
       >
         Dettagli
       </a>
-      <a 
-        href={`/dashboard/clients/${row.id}?tab=quotes`} 
-        class="quick-action-btn action-link"
-        title="Nuovo Preventivo per questo cliente"
-      >
-        Nuovo Preventivo
-      </a>
+      {#if hasContractsModule}
+        <a 
+          href={`/dashboard/clients/${row.id}?tab=quotes`} 
+          class="quick-action-btn action-link"
+          title="Nuovo Preventivo per questo cliente"
+        >
+          Nuovo Preventivo
+        </a>
+      {/if}
     </div>
   {/if}
 {/snippet}

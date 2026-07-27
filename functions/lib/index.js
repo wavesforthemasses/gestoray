@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onInstallmentWrite = exports.onContractUpdated = exports.onContractCreated = exports.onActivityCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.onActivityCreated = exports.auditLogger = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = require("firebase-admin");
 const v2_1 = require("firebase-functions/v2");
 (0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
@@ -23,16 +23,10 @@ Object.defineProperty(exports, "getChartAggregations", { enumerable: true, get: 
 var onClientCreated_1 = require("./src/triggers/onClientCreated");
 Object.defineProperty(exports, "onClientCreated", { enumerable: true, get: function () { return onClientCreated_1.onClientCreated; } });
 Object.defineProperty(exports, "onClientUpdated", { enumerable: true, get: function () { return onClientCreated_1.onClientUpdated; } });
+var auditLogger_1 = require("./src/triggers/auditLogger");
+Object.defineProperty(exports, "auditLogger", { enumerable: true, get: function () { return auditLogger_1.auditLogger; } });
 // --- MODULE FUNCTIONS: activities BEGIN ---
 var onActivityCreated_1 = require("./src/triggers/onActivityCreated");
 Object.defineProperty(exports, "onActivityCreated", { enumerable: true, get: function () { return onActivityCreated_1.onActivityCreated; } });
 // --- MODULE FUNCTIONS: activities END ---
-// --- MODULE FUNCTIONS: contracts BEGIN ---
-var onContractCreated_1 = require("./src/triggers/onContractCreated");
-Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: function () { return onContractCreated_1.onContractCreated; } });
-var onContractUpdated_1 = require("./src/triggers/onContractUpdated");
-Object.defineProperty(exports, "onContractUpdated", { enumerable: true, get: function () { return onContractUpdated_1.onContractUpdated; } });
-var onInstallmentWrite_1 = require("./src/triggers/onInstallmentWrite");
-Object.defineProperty(exports, "onInstallmentWrite", { enumerable: true, get: function () { return onInstallmentWrite_1.onInstallmentWrite; } });
-// --- MODULE FUNCTIONS: contracts END ---
 //# sourceMappingURL=index.js.map

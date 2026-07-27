@@ -1,6 +1,15 @@
 import { db, collection, writeBatch, doc } from '$lib/firebase';
 import type { ImportModuleSpec, ConflictStrategy } from '$lib/types/importTypes';
-import type { MinimoFatturabileConfig } from '../../../../routes/dashboard/products/schema';
+export interface MinimoFatturabileConfig {
+  enabled: boolean;
+  minQuantity?: number | null;
+  flatPrice?: number | null;
+  unitCode?: string | null;
+  displayText?: string | null;
+  value?: number | null;
+  type?: 'quantita' | 'prezzo' | 'percentuale';
+  applyTo?: 'riga' | 'totale_documento';
+}
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
 import { uuidv7 } from 'uuidv7';

@@ -2,6 +2,7 @@ import { db, doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc, 
 import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib/search-utils';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
+import { AuditHistoryService } from '$lib/services/auditHistoryService';
 
 export interface ClientDataPayload {
   clientDerived: any;
@@ -52,12 +53,36 @@ export class ClientDetailService {
       partitaIva: orig.partitaIva || data.partitaIva || '',
       codiceFiscale: orig.codiceFiscale || data.codiceFiscale || '',
       
+      // Anagrafica & ERP additions
+      clientCode: orig.clientCode || orig.codiceCliente || data.clientCode || '',
+      clientGroup: orig.clientGroup || orig.gruppoCliente || data.clientGroup || '',
+      certificationStatus: orig.certificationStatus || orig.statoCertificazione || data.certificationStatus || '',
+      isItalianSubject: orig.isItalianSubject !== undefined ? orig.isItalianSubject : true,
+      
       // SDI & Bank Data
-      sdiCode: orig.sdiCode || data.sdiCode || orig.sdi_code || '',
+      sdiCode: orig.sdiCode || data.sdiCode || orig.sdi_code || orig.codiceSdi || '',
       pec: orig.pec || data.pec || '',
       iban: orig.iban || data.iban || '',
       bankName: orig.bankName || data.bankName || '',
-      paymentTerms: orig.paymentTerms || data.paymentTerms || '',
+      paymentTerms: orig.paymentTerms || data.paymentTerms || orig.condizioniPagamento || '',
+      mainPhone: orig.mainPhone || orig.telefonoCentralino || orig.phone || '',
+
+      // Referenti Rapidi
+      referenteTecnico: orig.referenteTecnico || '',
+      telReferente: orig.telReferente || '',
+      emailContatto: orig.emailContatto || orig.email || '',
+      emailAlternativa: orig.emailAlternativa || '',
+
+      // Affidabilità & Credito
+      crifCheck: orig.crifCheck || orig.controlloCrif || 'NON ESEGUITO',
+      riskClass: orig.riskClass || orig.classeRischio || 'AAA (Basso Rischio)',
+      maxCredit: orig.maxCredit || orig.fidoMassimo || 0,
+      residualCredit: orig.residualCredit || orig.fidoResiduo || 0,
+      paymentStatus: orig.paymentStatus || orig.statoPagamenti || 'Regolare',
+
+      // Note ERP
+      internalAdminNotes: orig.internalAdminNotes || orig.noteAmministrative || '',
+      quoteAutoNotes: orig.quoteAutoNotes || orig.notePreventivo || '',
 
       // Sede Principale
       address: orig.address || data.address || '',
@@ -139,18 +164,7 @@ export class ClientDetailService {
     }
     payload.activitiesList = acts.sort((a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime());
 
-    const histories: any[] = [];
-    if (historySnap.forEach) {
-      historySnap.forEach((d: any) => {
-        const h = d.data();
-        histories.push({ id: d.id, ...h.original, edits: h.edits });
-      });
-    }
-    payload.historyList = histories.sort((a, b) => {
-      const timeB = new Date(b.edits?.createdAt || b.createdAt || 0).getTime();
-      const timeA = new Date(a.edits?.createdAt || a.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
+    payload.historyList = await AuditHistoryService.getEntityHistory('clients', clientId);
 
     const uList: any[] = [];
     if (usersSnap.forEach) {
@@ -180,7 +194,11 @@ export class ClientDetailService {
     
     const fields = [
       'nome', 'cognome', 'email', 'phone', 'website', 'status', 'fiscalId', 'partitaIva', 'codiceFiscale',
-      'sdiCode', 'pec', 'iban', 'bankName', 'paymentTerms',
+      'clientCode', 'clientGroup', 'certificationStatus', 'isItalianSubject',
+      'sdiCode', 'pec', 'iban', 'bankName', 'paymentTerms', 'mainPhone',
+      'referenteTecnico', 'telReferente', 'emailContatto', 'emailAlternativa',
+      'crifCheck', 'riskClass', 'maxCredit', 'residualCredit', 'paymentStatus',
+      'internalAdminNotes', 'quoteAutoNotes',
       'address', 'city', 'province', 'postalCode', 'country',
       'billingAddress', 'billingCity', 'billingProvince', 'billingPostalCode', 'billingCountry',
       'shippingAddress', 'shippingCity', 'shippingProvince', 'shippingPostalCode', 'shippingCountry',
@@ -208,33 +226,6 @@ export class ClientDetailService {
     await updateDoc(doc(db, 'clients', clientId), updatePayload);
 
     await CacheLookupService.updateClientCache(clientId, fullClientName);
-
-    const changes: Record<string, { oldVal: any, newVal: any }> = {};
-    let hasChanges = false;
-
-    fields.forEach(f => {
-      const oldVal = originalProfile[f] || '';
-      const newVal = newOriginal[f] || '';
-      if (oldVal !== newVal) {
-        changes[f] = { oldVal, newVal };
-        hasChanges = true;
-      }
-    });
-
-    if (hasChanges) {
-      const historyId = generateId('audit');
-      await setDoc(doc(db, 'clients', clientId, 'history', historyId), {
-        original: {
-          clientId,
-          updatedBy: authObj.uid,
-          updatedEmail: authObj.email,
-          changes
-        },
-        edits: {
-          createdAt: now
-        }
-      });
-    }
 
     return newOriginal;
   }

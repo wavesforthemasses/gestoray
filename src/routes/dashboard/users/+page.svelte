@@ -9,11 +9,47 @@
   import UsersTable from './components/UsersTable.svelte';
   import UserAddForm from './components/UserAddForm.svelte';
   import { pageTitle } from '$lib/stores/page';
+  import { toast } from '$lib/stores/toast.svelte';
+  
+  import AnonymizeModal from '$lib/components/AnonymizeModal.svelte';
+  import { AnonymizationService, USERS_ANONYMIZATION_SPEC } from '$lib/services/anonymizationService';
+  import { db, doc, getDoc } from '$lib/firebase';
+
   pageTitle.set('Gestione Utenti');
 
   let showAddForm = $state(false);
   let registeredUsers = $state<UserData[]>([]);
   let qualificationsList = $state<Qualification[]>([]);
+
+  let anonymizeModalOpen = $state(false);
+  let selectedUserForAnonymization = $state<Record<string, any> | null>(null);
+
+  async function handleAnonymizeClick(uid: string) {
+    try {
+      const docSnap = await getDoc(doc(db, 'users', uid));
+      if (!docSnap.exists()) {
+        toast.error('Utente non trovato nel database.');
+        return;
+      }
+      const data = docSnap.data();
+      data.uid = uid; // Ensure ID is present for modal
+      selectedUserForAnonymization = data;
+      anonymizeModalOpen = true;
+    } catch (e: any) {
+      toast.error('Errore durante il caricamento utente: ' + e.message);
+    }
+  }
+
+  async function confirmAnonymize() {
+    if (!selectedUserForAnonymization || !selectedUserForAnonymization.uid) return;
+    try {
+      await AnonymizationService.anonymizeEntity('users', selectedUserForAnonymization.uid, USERS_ANONYMIZATION_SPEC, authState.user?.uid || 'system');
+      toast.success('Utente anonimizzato con successo.');
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error('Errore durante l\'anonimizzazione: ' + e.message);
+    }
+  }
 
   async function fetchUsers() {
     try {
@@ -54,6 +90,7 @@
       users={registeredUsers} 
       activeRole={activeRoleState.role} 
       onAddClick={() => showAddForm = true} 
+      onAnonymizeClick={handleAnonymizeClick}
     />
   {:else}
     <UserAddForm 
@@ -65,6 +102,15 @@
     />
   {/if}
 </div>
+
+<AnonymizeModal
+  isOpen={anonymizeModalOpen}
+  entityName="Utente"
+  originalDoc={selectedUserForAnonymization}
+  specs={USERS_ANONYMIZATION_SPEC}
+  onClose={() => { anonymizeModalOpen = false; selectedUserForAnonymization = null; }}
+  onConfirm={confirmAnonymize}
+/>
 
 <style>
   .users-container {

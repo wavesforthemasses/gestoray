@@ -50,7 +50,7 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="setup-logo" />
+      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'CRM'} Logo" class="setup-logo" />
     </div>
 
     <div class="header">

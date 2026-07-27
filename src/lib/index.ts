@@ -10,6 +10,7 @@ import ConfirmModal from './components/ConfirmModal.svelte';
 import StatusBadge from './components/StatusBadge.svelte';
 import KPITile from './components/KPITile.svelte';
 import TrendChart from './components/TrendChart.svelte';
+import MultiComplete from './components/MultiComplete.svelte';
 
 export {
   Card,
@@ -23,6 +24,7 @@ export {
   ConfirmModal,
   StatusBadge,
   KPITile,
-  TrendChart
+  TrendChart,
+  MultiComplete
 };
 export { generateSearchTerms } from './search-utils';

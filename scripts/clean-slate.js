@@ -219,6 +219,14 @@ service cloud.firestore {
       }
     }
     
+    // CONTACTS
+    match /contacts/{contactId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived();
+      allow delete: if isAuth();
+    }
+
     // QUALIFICATIONS
     match /qualifications/{qualId} {
       allow read: if isAuth();

@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import { page } from '$app/stores';
-  import { activeRoleState } from '$lib/auth.svelte';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Dettagli Utente');
   import { UserDetailService } from './user-detail.service';

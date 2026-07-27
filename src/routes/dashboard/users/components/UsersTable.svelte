@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, Table, Pagination } from '$lib';
-  import { Database, UserPlus } from '@lucide/svelte';
+  import { Database, UserPlus, UserX } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import type { UserData } from '../users.service';
 
@@ -8,9 +8,10 @@
     users: UserData[];
     activeRole: string;
     onAddClick: () => void;
+    onAnonymizeClick?: (uid: string) => void;
   }
 
-  let { users, activeRole, onAddClick } = $props();
+  let { users, activeRole, onAddClick, onAnonymizeClick } = $props();
 
   let currentPage = $state(1);
   const itemsPerPage = 5;
@@ -23,7 +24,8 @@
     { key: 'nome', header: 'Nome' },
     { key: 'cognome', header: 'Cognome' },
     { key: 'email', header: 'Indirizzo Email' },
-    { key: 'roles', header: 'Ruoli Assegnati' }
+    { key: 'roles', header: 'Ruoli Assegnati' },
+    { key: 'azioni', header: 'Azioni' }
   ];
 
   function handleSelectUser(item: any) {
@@ -56,6 +58,17 @@
         {/each}
       {:else if col.key === 'email'}
         <span class="email-cell">{row.email}</span>
+      {:else if col.key === 'azioni'}
+        {#if activeRole === 'superadmin'}
+          <button 
+            type="button" 
+            class="btn-icon btn-danger-icon" 
+            onclick={(e) => { e.stopPropagation(); onAnonymizeClick?.(row.uid); }}
+            title="Anonimizza Utente"
+          >
+            <UserX size={16} />
+          </button>
+        {/if}
       {:else}
         <span class="name-cell">{row[col.key] || 'N/D'}</span>
       {/if}
@@ -145,5 +158,24 @@
     background: var(--color-primary-50);
     color: var(--color-primary-600);
     border: 1px solid var(--color-primary-200);
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-danger-icon {
+    color: var(--color-red-500);
+  }
+  .btn-danger-icon:hover {
+    background: var(--color-red-50);
+    color: var(--color-red-700);
   }
 </style>

@@ -6,7 +6,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import Button from '$lib/components/Button.svelte';
-  import { Save, ArrowLeft, Menu } from 'lucide-svelte';
+  import { Save, ArrowLeft, Menu, ChevronUp, ChevronDown } from 'lucide-svelte';
   import { DEFAULT_MENU_CONFIG, type MenuItemConfig } from '$lib/stores/menu';
   import { pageTitle } from '$lib/stores/page';
 
@@ -22,6 +22,7 @@
   const MENU_LABELS: Record<string, string> = {
     'todo': 'Cose da Fare',
     'clients': 'Gestione Clienti',
+    'contacts': 'Gestione Contatti',
     'activities': 'Gestione Attività',
     'contracts': 'Gestione Contratti',
     'my-commissions': 'Le Mie Provvigioni',
@@ -41,7 +42,6 @@
   });
 
   onMount(() => {
-
     loadSettings();
   });
 
@@ -51,12 +51,15 @@
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.list && Array.isArray(data.list) && data.list.length > 0) {
-          // Merge with defaults to ensure all keys exist
-          const merged = DEFAULT_MENU_CONFIG.map(defaultItem => {
-            const existing = data.list.find((i: any) => i.id === defaultItem.id);
-            return existing ? { ...defaultItem, ...existing } : defaultItem;
-          });
-          menuItems = merged;
+          const savedList: MenuItemConfig[] = data.list;
+          const validIds = new Set(DEFAULT_MENU_CONFIG.map(item => item.id));
+          const filteredSaved = savedList.map(item => {
+            const def = DEFAULT_MENU_CONFIG.find(d => d.id === item.id);
+            return def ? { ...def, ...item } : item;
+          }).filter(item => validIds.has(item.id));
+          const savedIds = new Set(filteredSaved.map(item => item.id));
+          const missingItems = DEFAULT_MENU_CONFIG.filter(item => !savedIds.has(item.id));
+          menuItems = [...filteredSaved, ...missingItems];
         }
       }
     } catch (e: any) {
@@ -64,6 +67,15 @@
     } finally {
       loading = false;
     }
+  }
+
+  function moveItem(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= menuItems.length) return;
+    const copy = [...menuItems];
+    const [moved] = copy.splice(index, 1);
+    copy.splice(targetIndex, 0, moved);
+    menuItems = copy;
   }
 
   function toggleRole(itemId: string, role: string) {
@@ -100,7 +112,7 @@
     </Button>
     <div class="title-header">
       <Menu size={24} color="var(--color-neutral-800)" />
-      <h2>Visibilità Menu</h2>
+      <h2>Visibilità Menu & Ordine</h2>
     </div>
   </div>
 
@@ -111,13 +123,14 @@
       <div class="card-header">
         <div class="header-text">
           <h3>Voci di Menu</h3>
-          <p class="subtitle">Scegli quali ruoli possono visualizzare ciascuna voce nel menu di navigazione laterale.</p>
+          <p class="subtitle">Scegli quali ruoli possono visualizzare ciascuna voce nel menu di navigazione laterale e personalizzane l'ordine di visualizzazione.</p>
         </div>
       </div>
       <div class="card-body">
         <table class="menu-table">
           <thead>
             <tr>
+              <th class="text-center" style="width: 80px;">Ordine</th>
               <th>Voce di Menu</th>
               {#each ALL_ROLES as role}
                 <th class="text-center capitalize-text">{role}</th>
@@ -125,10 +138,32 @@
             </tr>
           </thead>
           <tbody>
-            {#each menuItems as item}
+            {#each menuItems as item, idx (item.id)}
               <tr>
+                <td class="text-center order-cell">
+                  <div class="order-btn-group">
+                    <button 
+                      type="button" 
+                      class="btn-order" 
+                      onclick={() => moveItem(idx, 'up')} 
+                      disabled={idx === 0 || submitting}
+                      title="Sposta Su"
+                    >
+                      <ChevronUp size={16} />
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn-order" 
+                      onclick={() => moveItem(idx, 'down')} 
+                      disabled={idx === menuItems.length - 1 || submitting}
+                      title="Sposta Giù"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                  </div>
+                </td>
                 <td class="item-name">
-                  <strong>{MENU_LABELS[item.id] || item.id}</strong>
+                  <strong>{MENU_LABELS[item.id] || item.label || item.id}</strong>
                   <span class="item-id">({item.id})</span>
                 </td>
                 {#each ALL_ROLES as role}
@@ -361,5 +396,39 @@
 
   .capitalize-text {
     text-transform: capitalize;
+  }
+
+  .order-cell {
+    width: 70px;
+  }
+
+  .order-btn-group {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .btn-order {
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    color: var(--color-neutral-700);
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .btn-order:hover:not(:disabled) {
+    background: var(--color-primary-50);
+    color: var(--color-primary-600);
+    border-color: var(--color-primary-300);
+  }
+
+  .btn-order:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 </style>

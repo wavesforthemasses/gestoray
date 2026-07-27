@@ -10,6 +10,8 @@ export interface ActivityType {
   defaultStatus: 'da_fare' | 'in_corso' | 'completata';
   rolesInsert: string[];
   canAssignToOthers: string[];
+  order?: number;
+  isSystem?: boolean;
 }
 
 export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
@@ -22,7 +24,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'media',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 1,
+    isSystem: true
   },
   {
     id: 'visit',
@@ -33,7 +37,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'media',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 2,
+    isSystem: true
   },
   {
     id: 'email',
@@ -44,7 +50,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'bassa',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 3,
+    isSystem: true
   },
   {
     id: 'quote',
@@ -55,7 +63,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'alta',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 4,
+    isSystem: true
   },
   {
     id: 'support',
@@ -66,7 +76,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'alta',
     defaultStatus: 'in_corso',
     rolesInsert: ['superadmin', 'amministrazione', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 5,
+    isSystem: true
   },
   {
     id: 'note',
@@ -77,7 +89,9 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     defaultPriority: 'bassa',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione']
+    canAssignToOthers: ['superadmin', 'amministrazione'],
+    order: 6,
+    isSystem: true
   }
 ];
 
@@ -103,15 +117,37 @@ export class ActivityTypesService {
     await setDoc(doc(db, 'settings', 'activity_types'), { types }, { merge: true });
   }
 
-  static canRoleCreateType(type: ActivityType, userRole: string): boolean {
+  static async saveActivityType(typeToSave: ActivityType): Promise<void> {
+    const types = await this.getActivityTypes();
+    const existingIndex = types.findIndex(t => t.id === typeToSave.id);
+    if (existingIndex >= 0) {
+      types[existingIndex] = typeToSave;
+    } else {
+      types.push(typeToSave);
+    }
+    await this.saveActivityTypes(types);
+  }
+
+  static async deleteActivityType(id: string): Promise<void> {
+    const types = await this.getActivityTypes();
+    const updated = types.filter(t => t.id !== id);
+    await this.saveActivityTypes(updated);
+  }
+
+  static async resetDefaults(): Promise<void> {
+    await this.saveActivityTypes(DEFAULT_ACTIVITY_TYPES);
+  }
+
+  static canAssignToOthers(userRole: string | null | undefined, type?: ActivityType | null): boolean {
     if (!userRole) return false;
     if (userRole === 'superadmin') return true;
-    return Array.isArray(type.rolesInsert) && type.rolesInsert.includes(userRole);
+    if (type && Array.isArray(type.canAssignToOthers)) {
+      return type.canAssignToOthers.includes(userRole);
+    }
+    return ['superadmin', 'amministrazione', 'direzione'].includes(userRole);
   }
 
   static canRoleAssignToOthers(type: ActivityType, userRole: string): boolean {
-    if (!userRole) return false;
-    if (userRole === 'superadmin') return true;
-    return Array.isArray(type.canAssignToOthers) && type.canAssignToOthers.includes(userRole);
+    return this.canAssignToOthers(userRole, type);
   }
 }

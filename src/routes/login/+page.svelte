@@ -84,7 +84,7 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png" alt="{$projectStore?.projectName || 'CRM'} Logo" class="login-logo" />
+      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'CRM'} Logo" class="login-logo" />
     </div>
 
     {#if errorMessage}

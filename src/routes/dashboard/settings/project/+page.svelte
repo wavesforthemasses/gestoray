@@ -13,6 +13,7 @@
   let projectName = $state('');
   let projectEmail = $state('');
   let resendApiKey = $state('');
+  let enableHistoryLogs = $state(true);
   let loading = $state(true);
   let submitting = $state(false);
 
@@ -32,6 +33,7 @@
         projectName = data.projectName || '';
         projectEmail = data.projectEmail || '';
         resendApiKey = data.resendApiKey || '';
+        enableHistoryLogs = data.enableHistoryLogs !== false; // Default true
       }
     } catch (e: any) {
       toast.error('Errore durante il caricamento delle impostazioni: ' + e.message);
@@ -49,6 +51,7 @@
         projectName,
         projectEmail,
         resendApiKey,
+        enableHistoryLogs,
         updatedAt: new Date().toISOString()
       }, { merge: true });
       toast.success('Impostazioni di progetto salvate con successo');
@@ -106,6 +109,16 @@
             </div>
           {/if}
         </FormField>
+
+        <div class="checkbox-group privacy-settings mt-6">
+          <label class="checkbox-container">
+            <input type="checkbox" bind:checked={enableHistoryLogs} />
+            <span class="checkbox-label">
+              <strong>Abilita Log di Modifica (History)</strong>
+              <p class="checkbox-desc">Quando attivo, il sistema registra le variazioni sui dati per fini di audit. Disattivare questa voce impedirà al sistema di scrivere la cronologia delle modifiche.</p>
+            </span>
+          </label>
+        </div>
 
         <div class="form-actions">
           <Button variant="primary" type="submit" disabled={submitting}>
@@ -168,5 +181,31 @@
     background: #fef3c7;
     padding: 8px 12px;
     border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mt-6 { margin-top: 24px; }
+  .checkbox-group {
+    background: var(--color-neutral-50);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-neutral-200);
+  }
+  .checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .checkbox-container input {
+    margin-top: 4px;
+    cursor: pointer;
+  }
+  .checkbox-desc {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    line-height: 1.4;
   }
 </style>

@@ -43,6 +43,7 @@ This skill provides a comprehensive index of all generic, reusable modules, serv
 | **`<CustomFieldsRenderer>`** | [src/lib/components/CustomFieldsRenderer.svelte](file:///home/vincenzo/Code/gestoray/src/lib/components/CustomFieldsRenderer.svelte) | `moduleName`, `bind:values`, `readonly` | Renders dynamic PMI form fields (text, number, select, date, boolean) or readonly detail cards. |
 | **`<NotificationCenter>`** | [src/routes/dashboard/components/NotificationCenter.svelte](file:///home/vincenzo/Code/gestoray/src/routes/dashboard/components/NotificationCenter.svelte) | Internal stream | Header bell icon drawer displaying realtime unread notifications with mark-as-read actions. |
 | **`<ProjectSetupBlocker>`** | [src/lib/components/ProjectSetupBlocker.svelte](file:///home/vincenzo/Code/gestoray/src/lib/components/ProjectSetupBlocker.svelte) | Internal | Overlay modal blocking admin users until project name and email are configured. |
+| **`<MultiComplete>`** | [src/lib/components/MultiComplete.svelte](file:///home/vincenzo/Code/gestoray/src/lib/components/MultiComplete.svelte) | `options`, `bind:value`, `placeholder`, `disabled` | Generic multi-select autocomplete component rendering selected items as interactive pills with removal icons and real-time dropdown filtering. |
 | **`<RoleSelector>`** | [src/lib/components/RoleSelector.svelte](file:///home/vincenzo/Code/gestoray/src/lib/components/RoleSelector.svelte) | `bind:selectedRole` | Reusable role selection dropdown for user creation and permission editing. |
 
 ---
