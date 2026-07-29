@@ -71,26 +71,110 @@
       <p class="card-section-desc">Disattiva le sezioni non necessarie per semplificare la compilazione per i tuoi utenti.</p>
 
       <div class="group-list">
-        <div class="group-item">
-          <div class="group-info">
-            <div class="group-icon primary"><Building size={22} /></div>
+        <!-- Dati Anagrafici (Mandatory Info Box) -->
+        <div class="mandatory-info-box">
+          <div class="group-icon primary"><Building size={22} /></div>
+          <div class="info-content">
+            <div class="info-title">Dati Anagrafici <span class="badge-mandatory">Obbligatorio per il sistema</span></div>
+            <div class="info-desc">I campi Ragione Sociale, Subject Italiano, Partita IVA, Codice Fiscale, Gruppo Cliente e Stato Certificazione sono essenziali e sempre attivi.</div>
+          </div>
+        </div>
+
+        <!-- Gestione Sedi & Indirizzi (Structured Config Table) -->
+        <div class="sedi-card-section">
+          <div class="sedi-header">
+            <div class="group-icon info"><FileText size={22} /></div>
             <div>
-              <div class="group-name">Dati Anagrafici</div>
-              <div class="group-detail">Ragione Sociale, Soggetto Italiano, Partita IVA, Codice Fiscale, Codice Cliente, Gruppo Cliente, Stato Certificazione</div>
+              <h4 class="sedi-title">Gestione Sedi & Indirizzi Cliente</h4>
+              <p class="sedi-desc">Definisci la visibilità delle sedi, l'indirizzo predefinito di riferimento ed la regola di copia automatica in creazione.</p>
             </div>
           </div>
-          <label class="switch">
-            <input type="checkbox" bind:checked={settings.datiAnagrafici.visible} />
-            <span class="slider"></span>
-          </label>
+
+          <div class="sedi-table-container">
+            <table class="sedi-table">
+              <thead>
+                <tr>
+                  <th>Tipologia Sede</th>
+                  <th class="text-center">Visibile nei Form</th>
+                  <th class="text-center">Sede Predefinita</th>
+                  <th class="text-center">Copia da Predefinita se Vuota</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Sede Operativa / Principale</strong>
+                    <span class="sub-label">Indirizzo di operatività quotidiana</span>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" checked disabled title="La Sede Operativa è sempre visibile" />
+                  </td>
+                  <td class="text-center">
+                    <input 
+                      type="radio" 
+                      name="defaultSede" 
+                      value="operativa" 
+                      checked={settings.sediConfig.defaultSedeId === 'operativa'}
+                      onchange={() => (settings.sediConfig.defaultSedeId = 'operativa')}
+                    />
+                  </td>
+                  <td class="text-center text-muted">—</td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <strong>Sede Legale</strong>
+                    <span class="sub-label">Sede legale per fatturazione e contratti</span>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" bind:checked={settings.sediConfig.sedi.legale.visible} />
+                  </td>
+                  <td class="text-center">
+                    <input 
+                      type="radio" 
+                      name="defaultSede" 
+                      value="legale" 
+                      checked={settings.sediConfig.defaultSedeId === 'legale'}
+                      onchange={() => (settings.sediConfig.defaultSedeId = 'legale')}
+                    />
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" bind:checked={settings.sediConfig.sedi.legale.autoCopyFromDefault} disabled={!settings.sediConfig.sedi.legale.visible} />
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <strong>Sede Spedizione</strong>
+                    <span class="sub-label">Indirizzo di consegna merci e materiali</span>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" bind:checked={settings.sediConfig.sedi.spedizione.visible} />
+                  </td>
+                  <td class="text-center">
+                    <input 
+                      type="radio" 
+                      name="defaultSede" 
+                      value="spedizione" 
+                      checked={settings.sediConfig.defaultSedeId === 'spedizione'}
+                      onchange={() => (settings.sediConfig.defaultSedeId = 'spedizione')}
+                    />
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" bind:checked={settings.sediConfig.sedi.spedizione.autoCopyFromDefault} disabled={!settings.sediConfig.sedi.spedizione.visible} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="group-item">
           <div class="group-info">
             <div class="group-icon info"><FileText size={22} /></div>
             <div>
-              <div class="group-name">Fatturazione</div>
-              <div class="group-detail">Indirizzo Sede Legale, Codice SDI, PEC Amministrazione, Condizioni di Pagamento, Telefono Centralino, IBAN di Appoggio</div>
+              <div class="group-name">Dati di Fatturazione Elettronica & SDI</div>
+              <div class="group-detail">Codice SDI, PEC Amministrazione, Condizioni di Pagamento, IBAN di Appoggio</div>
             </div>
           </div>
           <label class="switch">
@@ -98,6 +182,8 @@
             <span class="slider"></span>
           </label>
         </div>
+
+
 
         <div class="group-item">
           <div class="group-info">
@@ -309,4 +395,97 @@
   input:checked + .slider:before {
     transform: translateX(22px);
   }
+
+  /* Mandatory Info Box */
+  .mandatory-info-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-md, 8px);
+  }
+  .info-content {
+    display: flex;
+    flex-direction: column;
+  }
+  .info-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-mandatory {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+  .info-desc {
+    font-size: 13px;
+    color: #3b82f6;
+    margin-top: 2px;
+  }
+
+  /* Structured Sedi Card Section & Table */
+  .sedi-card-section {
+    background: white;
+    border: 1px solid var(--color-neutral-200, #e5e7eb);
+    border-radius: var(--radius-md, 8px);
+    padding: 18px;
+  }
+  .sedi-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .sedi-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-neutral-800, #1f2937);
+  }
+  .sedi-desc {
+    font-size: 13px;
+    color: var(--color-neutral-500, #6b7280);
+    margin: 2px 0 0 0;
+  }
+  .sedi-table-container {
+    overflow-x: auto;
+  }
+  .sedi-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .sedi-table th {
+    background: var(--color-neutral-100, #f3f4f6);
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-neutral-700, #374151);
+    border-bottom: 2px solid var(--color-neutral-200, #e5e7eb);
+  }
+  .sedi-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-neutral-200, #e5e7eb);
+    vertical-align: middle;
+  }
+  .sub-label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-neutral-500, #6b7280);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .text-center { text-align: center; }
+  .text-muted { color: #9ca3af; }
+
 </style>

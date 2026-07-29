@@ -74,7 +74,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && notWritingDerived();
       allow update: if isAuth() && notWritingDerived();
-      allow delete: if isAuth();
+      allow delete: if isAdmin();
     }
 
     // QUALIFICATIONS
@@ -100,9 +100,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // SYSTEM CACHE
+    // SYSTEM CACHE (Read-only for clients, write restricted to Admin/Functions to prevent Cache Poisoning)
     match /system_cache/{cacheId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isAdmin();
     }
 
     // CUSTOM FIELDS
@@ -122,24 +123,17 @@ service cloud.firestore {
       }
     }
 
-    // --- MODULE: activities BEGIN ---
-    // ACTIVITIES
-match /activities/{docId} {
-  allow read: if isAuth();
-  allow write: if isAuth();
-}
-match /activity_types/{docId} {
-  allow read: if isAuth();
-  allow write: if isAdmin();
-}
-    // --- MODULE: activities END ---
 
-    // --- MODULE: products BEGIN ---
-    // PRODUCTS
-match /products/{docId} {
-  allow read: if isAuth();
-  allow write: if isAdmin();
-}
-    // --- MODULE: products END ---
+    // SYNC ERRORS (server-side only, read by admin for debugging)
+    match /sync_errors/{errorId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // SYSTEM DIRTY PERIODS (server-side only, used by scheduledReconciliation)
+    match /system_dirty_periods/{periodId} {
+      allow read, write: if false;
+    }
   }
 }
+

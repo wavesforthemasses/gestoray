@@ -1,5 +1,5 @@
 import { db, doc, getDoc, setDoc } from '$lib/firebase';
-import { MODULE_FEATURE_SNIPPETS } from '$lib/config/auto_generated/generated_features';
+import modulesRegistry from '$lib/config/modules.registry.json';
 
 export interface TenantFeatureConfig {
   id: string;
@@ -15,9 +15,25 @@ export const BASE_TENANT_FEATURES: Record<string, TenantFeatureConfig> = {
   settings: { id: 'settings', label: 'Impostazioni generali', description: 'Configurazioni piattaforma', enabled: true, moduleKey: 'settings' }
 };
 
+const MODULE_FEATURE_MAP: Record<string, TenantFeatureConfig> = {};
+(modulesRegistry.modules || []).forEach((m: any) => {
+  const f = m.featureFlag || {
+    moduleKey: m.id,
+    name: m.label,
+    description: m.description || `Abilita il modulo ${m.label}.`
+  };
+  MODULE_FEATURE_MAP[m.id] = {
+    id: m.id,
+    label: f.name || m.label,
+    description: f.description || `Abilita il modulo ${m.label}.`,
+    enabled: m.enabled !== false,
+    moduleKey: m.id
+  };
+});
+
 export const DEFAULT_TENANT_FEATURES: Record<string, TenantFeatureConfig> = {
   ...BASE_TENANT_FEATURES,
-  ...MODULE_FEATURE_SNIPPETS
+  ...MODULE_FEATURE_MAP
 };
 
 export class TenantFeaturesService {

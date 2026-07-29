@@ -1,0 +1,19 @@
+{
+  "id": "tickets",
+  "label": "Ticket & Assistenza",
+  "description": "Gestione ticket e richieste clienti",
+  "icon": "Ticket",
+  "path": "/dashboard/tickets",
+  "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione", "tecnico"],
+  "enabled": true,
+  "anonymization": {
+    "collectionName": "tickets",
+    "linkFieldPath": "original.clientId",
+    "redactFields": [
+      { "fieldPath": "original.description", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "original.contactName", "replacement": "ANONIMIZZATO" },
+      { "fieldPath": "original.contactPhone", "replacement": "" }
+    ]
+  }
+}

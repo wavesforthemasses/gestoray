@@ -1,0 +1,17 @@
+{
+  "id": "interventi",
+  "label": "Interventi Operativi",
+  "description": "Gestione interventi tecnici",
+  "icon": "Wrench",
+  "path": "/dashboard/interventi",
+  "rolesView": ["superadmin", "direzione", "tecnico", "operaio"],
+  "enabled": true,
+  "anonymization": {
+    "collectionName": "interventi",
+    "linkFieldPath": "original.clientId",
+    "redactFields": [
+      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "original.dettaglio", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+    ]
+  }
+}

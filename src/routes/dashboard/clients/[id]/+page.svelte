@@ -21,7 +21,7 @@
   import { Card } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
   import { ClientDetailService } from './client-detail.service';
-  import { ActivityTypesService } from '$lib/services/activityTypesService';
+
 
   let hasActivitiesModule = $derived($menuConfigStore.some(i => i.id === 'activities'));
   let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
@@ -150,7 +150,20 @@
     loadingData = true;
     try {
       const payload = await ClientDetailService.fetchClientData(clientId);
-      activitiesConfig = await ActivityTypesService.getActivityTypes();
+      if (hasActivitiesModule) {
+        try {
+          const { loadOptionalService } = await import('$lib/utils/moduleBridge');
+          const mod = await loadOptionalService('activityTypesService');
+          if (mod && mod.ActivityTypesService) {
+            activitiesConfig = await mod.ActivityTypesService.getActivityTypes();
+          }
+        } catch (e) {
+          console.warn('ActivityTypesService dynamic import failed:', e);
+        }
+      }
+
+
+
       
       clientDerived = payload.clientDerived;
       originalProfile = payload.originalProfile;

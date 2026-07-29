@@ -1,7 +1,40 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getChartAggregations = void 0;
-const admin = require("firebase-admin");
+exports.scheduledReconciliation = exports.getChartAggregations = void 0;
+const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cors: true }, async (request) => {
@@ -133,6 +166,63 @@ exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cor
     catch (error) {
         console.error('Aggregation error:', error);
         throw new https_1.HttpsError('internal', 'Errore nel calcolo delle aggregazioni.');
+    }
+});
+/**
+ * scheduledReconciliation (Nightly Cron Job)
+ * Self-healing reconciliation engine that runs at 03:00 AM.
+ * Instead of scanning full database history, it ONLY recalculates months flagged in `system_dirty_periods`.
+ */
+const scheduler_1 = require("firebase-functions/v2/scheduler");
+const logger = __importStar(require("firebase-functions/logger"));
+exports.scheduledReconciliation = (0, scheduler_1.onSchedule)({ schedule: '0 3 * * *', timeZone: 'Europe/Rome', region: 'europe-west3' }, async () => {
+    const db = admin.firestore();
+    logger.info('[NIGHTLY RECONCILIATION] Starting smart dirty-period reconciliation check...');
+    try {
+        const dirtySnap = await db.collection('system_dirty_periods').get();
+        if (dirtySnap.empty) {
+            logger.info('[NIGHTLY RECONCILIATION] Zero dirty periods flagged. System 100% synchronized.');
+            return;
+        }
+        logger.info(`[NIGHTLY RECONCILIATION] Found ${dirtySnap.size} dirty period(s) to reconcile.`);
+        for (const dDoc of dirtySnap.docs) {
+            const data = dDoc.data();
+            const yearMonth = data.yearMonth || dDoc.id;
+            logger.info(`[RECONCILING PERIOD] Recalculating monthly materialized analytics for ${yearMonth}...`);
+            // Compute start and end ISO dates for the target yearMonth (YYYY-MM)
+            const [yearStr, monthStr] = yearMonth.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            const startDate = new Date(year, month - 1, 1).toISOString();
+            const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+            // 1. Recalculate monthly sales
+            const salesSnap = await db.collection('contracts')
+                .where('edits.createdAt', '>=', startDate)
+                .where('edits.createdAt', '<=', endDate)
+                .get();
+            let monthlyTotalSales = 0;
+            let monthlyApprovedSales = 0;
+            salesSnap.forEach(sDoc => {
+                const cData = sDoc.data()?.original || {};
+                monthlyTotalSales += (cData.totalPrice || 0);
+                if (cData.status === 'approved') {
+                    monthlyApprovedSales += (cData.totalPrice || 0);
+                }
+            });
+            // 2. Update materialized view
+            await db.collection('analytics_monthly').doc(yearMonth).set({
+                totalSales: monthlyTotalSales,
+                approvedSales: monthlyApprovedSales,
+                reconciledAt: new Date().toISOString(),
+                status: 'synced'
+            }, { merge: true });
+            // 3. Clear dirty flag
+            await dDoc.ref.delete();
+            logger.info(`[RECONCILED SUCCESS] Period ${yearMonth} successfully reconciled and dirty flag cleared.`);
+        }
+    }
+    catch (error) {
+        logger.error('[NIGHTLY RECONCILIATION ERROR] Failed during scheduled reconciliation:', error);
     }
 });
 //# sourceMappingURL=aggregations.js.map

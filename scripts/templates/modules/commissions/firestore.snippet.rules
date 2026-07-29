@@ -1,5 +1,15 @@
-// COMMISSIONS
+// COMMISSIONS & CLOSINGS
 match /commissions/{docId} {
   allow read: if isAuth();
   allow write: if isAdmin();
 }
+match /commissions_closings/{closingId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+
+  match /versions/{versionId} {
+    allow read: if isAuth();
+    allow write: if isAdmin();
+  }
+}
+

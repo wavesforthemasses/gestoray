@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { db, doc, onSnapshot } from '$lib/firebase';
-import { MODULE_MENU_SNIPPETS } from '$lib/config/auto_generated/generated_menu';
+import modulesRegistry from '$lib/config/modules.registry.json';
 
 export interface MenuItemConfig {
   id: string;
@@ -22,9 +22,17 @@ export const BASE_MENU_CONFIG: MenuItemConfig[] = [
   { id: 'settings', label: 'Impostazioni', icon: 'Settings', path: '/dashboard/settings', matchExact: true, rolesView: ['superadmin'] },
 ];
 
+const MODULE_MENU_ITEMS: MenuItemConfig[] = (modulesRegistry.modules || []).map((m: any) => ({
+  id: m.id,
+  label: m.label,
+  icon: m.icon,
+  path: m.path,
+  rolesView: m.rolesView || ['superadmin', 'direzione']
+}));
+
 export const DEFAULT_MENU_CONFIG: MenuItemConfig[] = [
   ...BASE_MENU_CONFIG,
-  ...MODULE_MENU_SNIPPETS
+  ...MODULE_MENU_ITEMS
 ];
 
 let unsubscribe: (() => void) | null = null;

@@ -90,18 +90,10 @@ export class ContactsService {
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  /**
-   * Gets a single contact by ID.
-   */
-  static async getContact(contactId: string): Promise<ContactItem | null> {
-    const docSnap = await getDoc(doc(db, 'contacts', contactId));
-    if (!docSnap.exists()) return null;
-
-    const data: any = docSnap.data();
-    const orig = data.original || {};
-
+  private static mapDocToItem(id: string, data: any): ContactItem {
+    const orig = data?.original || {};
     return {
-      id: docSnap.id,
+      id,
       firstName: orig.firstName || '',
       lastName: orig.lastName || '',
       fullName: `${orig.firstName || ''} ${orig.lastName || ''}`.trim(),
@@ -114,10 +106,21 @@ export class ContactsService {
       notes: orig.notes || '',
       linkedClientIds: orig.linkedClientIds || [],
       createdBy: orig.createdBy || '',
-      createdAt: data.edits?.createdAt || orig.createdAt || new Date().toISOString(),
-      derived: data.derived || {}
+      createdAt: data?.edits?.createdAt || orig.createdAt || new Date().toISOString(),
+      modifiedAt: data?.edits?.modifiedAt,
+      derived: data?.derived || {}
     };
   }
+
+  /**
+   * Gets a single contact by ID.
+   */
+  static async getContact(contactId: string): Promise<ContactItem | null> {
+    const docSnap = await getDoc(doc(db, 'contacts', contactId));
+    if (!docSnap.exists()) return null;
+    return this.mapDocToItem(docSnap.id, docSnap.data());
+  }
+
 
   /**
    * Creates a new contact.
@@ -156,6 +159,89 @@ export class ContactsService {
     await setDoc(doc(db, 'contacts', contactId), payload);
     return contactId;
   }
+
+  /**
+   * Creates a new contact OR links an existing contact if matching by email or phone.
+   */
+  static async createOrLinkContact(input: CreateContactInput): Promise<string> {
+    const email = (input.email || '').trim().toLowerCase();
+    const phone = (input.phone || input.mobile || '').trim();
+
+    if (!email && !phone) {
+      return await this.createContact(input);
+    }
+
+    const snapAll = await getDocs(collection(db, 'contacts'));
+    let existingContactId: string | null = null;
+    let existingItem: ContactItem | null = null;
+
+    for (const d of snapAll.docs) {
+      const item = this.mapDocToItem(d.id, d.data());
+      const itemEmail = (item.email || '').trim().toLowerCase();
+      const itemPhone = (item.phone || item.mobile || '').trim();
+
+      if ((email && itemEmail === email) || (phone && itemPhone === phone)) {
+        existingContactId = d.id;
+        existingItem = item;
+        break;
+      }
+    }
+
+    if (existingContactId && existingItem) {
+      const currentClientIds = existingItem.linkedClientIds || [];
+      const newClientIds = input.linkedClientIds || [];
+      const mergedClientIds = Array.from(new Set([...currentClientIds, ...newClientIds]));
+
+      await updateDoc(doc(db, 'contacts', existingContactId), {
+        'original.linkedClientIds': mergedClientIds,
+        'edits.modifiedAt': new Date().toISOString(),
+        'edits.modifiedBy': input.userId
+      });
+
+      return existingContactId;
+    }
+
+    return await this.createContact(input);
+  }
+
+  /**
+   * Scans all contacts and merges duplicates with identical email or phone into a single contact card.
+   */
+  static async deduplicateExistingContacts(): Promise<number> {
+    const snap = await getDocs(collection(db, 'contacts'));
+    if (snap.empty) return 0;
+
+    const seenMap = new Map<string, ContactItem>();
+    let mergedCount = 0;
+
+    for (const docSnap of snap.docs) {
+      const item = this.mapDocToItem(docSnap.id, docSnap.data());
+      const emailKey = (item.email || '').trim().toLowerCase();
+      const phoneKey = (item.phone || item.mobile || '').trim();
+      const key = emailKey || phoneKey;
+
+      if (!key) continue;
+
+      if (seenMap.has(key)) {
+        const primary = seenMap.get(key)!;
+        const mergedClients = Array.from(new Set([...(primary.linkedClientIds || []), ...(item.linkedClientIds || [])]));
+        primary.linkedClientIds = mergedClients;
+
+        await updateDoc(doc(db, 'contacts', primary.id), {
+          'original.linkedClientIds': mergedClients,
+          'edits.modifiedAt': new Date().toISOString()
+        });
+
+        await deleteDoc(doc(db, 'contacts', item.id));
+        mergedCount++;
+      } else {
+        seenMap.set(key, item);
+      }
+    }
+
+    return mergedCount;
+  }
+
 
   /**
    * Updates an existing contact.

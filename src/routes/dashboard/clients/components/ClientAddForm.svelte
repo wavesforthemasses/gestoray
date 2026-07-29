@@ -5,7 +5,9 @@
   import { generateId } from '$lib/utils/helpers';
   import { generateSearchTerms } from '$lib/search-utils';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
+  import { ContactsService } from '$lib/services/contacts.service';
   import { ClientSettingsService, DEFAULT_CLIENT_FIELDS_SETTINGS, type ClientFieldsSettings } from '$lib/services/clientSettingsService';
+
   import { toast } from '$lib/stores/toast.svelte';
   import { FormField } from '$lib';
   import { Building, FileText, UserCheck, ShieldAlert, Notebook } from '@lucide/svelte';
@@ -20,11 +22,30 @@
   let isItalianSubject = $state(true);
   let partitaIva = $state('');
   let codiceFiscale = $state('');
-  let clientCode = $state('');
   let clientGroup = $state('Standard');
-  let certificationStatus = $state('Certificato');
+  let certificationStatus = $state('in_attesa');
 
+  // Sede Operativa / Principale
   let address = $state('');
+  let city = $state('');
+  let province = $state('');
+  let postalCode = $state('');
+  let country = $state('Italy');
+
+  // Sede Legale
+  let billingAddress = $state('');
+  let billingCity = $state('');
+  let billingProvince = $state('');
+  let billingPostalCode = $state('');
+  let billingCountry = $state('Italy');
+
+  // Sede Spedizione
+  let shippingAddress = $state('');
+  let shippingCity = $state('');
+  let shippingProvince = $state('');
+  let shippingPostalCode = $state('');
+  let shippingCountry = $state('Italy');
+
   let sdiCode = $state('');
   let pec = $state('');
   let paymentTerms = $state('');
@@ -36,12 +57,6 @@
   let emailContatto = $state('');
   let emailAlternativa = $state('');
 
-  let crifCheck = $state('ESEGUITO & VALIDO');
-  let riskClass = $state('AAA (Basso Rischio)');
-  let maxCredit = $state<number | null>(null);
-  let residualCredit = $state<number | null>(null);
-  let paymentStatus = $state('Regolare');
-
   let internalAdminNotes = $state('');
   let quoteAutoNotes = $state('');
 
@@ -50,10 +65,32 @@
   onMount(async () => {
     try {
       fieldSettings = await ClientSettingsService.getSettings();
+      if (fieldSettings.datiAnagrafici?.defaultStatoCertificazione) {
+        certificationStatus = fieldSettings.datiAnagrafici.defaultStatoCertificazione;
+      }
+      if (fieldSettings.datiAnagrafici?.defaultGruppoCliente) {
+        clientGroup = fieldSettings.datiAnagrafici.defaultGruppoCliente;
+      }
     } catch (e) {
       console.warn('Impossibile caricare impostazioni campi clienti:', e);
     }
   });
+
+  function copyBillingFromOperativa() {
+    billingAddress = address;
+    billingCity = city;
+    billingProvince = province;
+    billingPostalCode = postalCode;
+    billingCountry = country;
+  }
+
+  function copyShippingFromOperativa() {
+    shippingAddress = address;
+    shippingCity = city;
+    shippingProvince = province;
+    shippingPostalCode = postalCode;
+    shippingCountry = country;
+  }
 
   async function handleCreateClient(e: Event) {
     e.preventDefault();
@@ -83,6 +120,22 @@
         }
       }
 
+      // Auto copy from Sede Operativa if enabled in settings
+      const copyLegale = fieldSettings.sediConfig?.sedi?.legale?.autoCopyFromDefault;
+      const copySpedizione = fieldSettings.sediConfig?.sedi?.spedizione?.autoCopyFromDefault;
+
+      const finalBillingAddress = billingAddress.trim() || (copyLegale ? address.trim() : '');
+      const finalBillingCity = billingCity.trim() || (copyLegale ? city.trim() : '');
+      const finalBillingProvince = billingProvince.trim() || (copyLegale ? province.trim() : '');
+      const finalBillingPostalCode = billingPostalCode.trim() || (copyLegale ? postalCode.trim() : '');
+      const finalBillingCountry = billingCountry.trim() || (copyLegale ? country.trim() : 'Italy');
+
+      const finalShippingAddress = shippingAddress.trim() || (copySpedizione ? address.trim() : '');
+      const finalShippingCity = shippingCity.trim() || (copySpedizione ? city.trim() : '');
+      const finalShippingProvince = shippingProvince.trim() || (copySpedizione ? province.trim() : '');
+      const finalShippingPostalCode = shippingPostalCode.trim() || (copySpedizione ? postalCode.trim() : '');
+      const finalShippingCountry = shippingCountry.trim() || (copySpedizione ? country.trim() : 'Italy');
+
       const clientId = generateId('client');
       const now = new Date().toISOString();
       const fullClientName = `${nome.trim()} ${cognome.trim()}`.trim();
@@ -97,12 +150,32 @@
           isItalianSubject,
           partitaIva: partitaIva.trim(),
           codiceFiscale: codiceFiscale.trim(),
-          clientCode: clientCode.trim(),
           clientGroup,
           certificationStatus,
+
           fiscalId: computedFiscalId,
           
+          // Sede Operativa / Principale
           address: address.trim(),
+          city: city.trim(),
+          province: province.trim(),
+          postalCode: postalCode.trim(),
+          country: country.trim(),
+
+          // Sede Legale / Fatturazione
+          billingAddress: finalBillingAddress,
+          billingCity: finalBillingCity,
+          billingProvince: finalBillingProvince,
+          billingPostalCode: finalBillingPostalCode,
+          billingCountry: finalBillingCountry,
+
+          // Sede Spedizione / Cantiere
+          shippingAddress: finalShippingAddress,
+          shippingCity: finalShippingCity,
+          shippingProvince: finalShippingProvince,
+          shippingPostalCode: finalShippingPostalCode,
+          shippingCountry: finalShippingCountry,
+
           sdiCode: sdiCode.trim(),
           pec: pec.trim(),
           paymentTerms: paymentTerms.trim(),
@@ -116,14 +189,9 @@
           emailContatto: emailContatto.trim(),
           emailAlternativa: emailAlternativa.trim(),
 
-          crifCheck,
-          riskClass,
-          maxCredit: maxCredit || 0,
-          residualCredit: residualCredit || 0,
-          paymentStatus,
-
           internalAdminNotes: internalAdminNotes.trim(),
           quoteAutoNotes: quoteAutoNotes.trim(),
+
 
           status: 'prospect',
           notes: [],
@@ -140,8 +208,31 @@
       };
 
       await setDoc(doc(db, 'clients', clientId), newClient);
+
+      // Automatically create linked Contact for Referente if provided
+      if (referenteTecnico.trim() || emailContatto.trim() || telReferente.trim()) {
+        try {
+          const refParts = referenteTecnico.trim().split(/\s+/);
+          const fn = refParts[0] || 'Referente';
+          const ln = refParts.slice(1).join(' ') || (nome.trim() ? `(${nome.trim()})` : 'Aziendale');
+          
+          await ContactsService.createOrLinkContact({
+            firstName: fn,
+            lastName: ln,
+            role: 'Referente Principale Aziendale',
+            phone: telReferente.trim(),
+            email: emailContatto.trim(),
+            linkedClientIds: [clientId],
+            userId: authState.user.uid
+          });
+
+        } catch (cntErr) {
+          console.warn('Automatic contact creation warning:', cntErr);
+        }
+      }
       
       const historyId = generateId('audit');
+
       await setDoc(doc(db, 'clients', clientId, 'history', historyId), {
         original: {
           clientId,
@@ -167,9 +258,9 @@
 </script>
 
 <form onsubmit={handleCreateClient} class="client-form form-grid-layout">
-  {#if fieldSettings.datiAnagrafici.visible}
     <div class="form-section">
       <div class="section-header">
+
         <Building size={18} class="section-icon" />
         <span class="section-title">Dati Anagrafici & Identificativi</span>
       </div>
@@ -214,27 +305,16 @@
         </FormField>
       </div>
 
-      <div class="form-grid-columns">
-        <FormField id="client-code" label="Codice Cliente" helpText="Identificativo univoco ERP (es. C001)">
-          <input
-            type="text"
-            id="client-code"
-            bind:value={clientCode}
-            placeholder="es. C001"
-            disabled={submitting}
-          />
-        </FormField>
+      <FormField id="client-cognome" label="Referente Principale / Cognome">
+        <input
+          type="text"
+          id="client-cognome"
+          bind:value={cognome}
+          placeholder="es. Rossi"
+          disabled={submitting}
+        />
+      </FormField>
 
-        <FormField id="client-cognome" label="Referente Principale / Cognome">
-          <input
-            type="text"
-            id="client-cognome"
-            bind:value={cognome}
-            placeholder="es. Rossi"
-            disabled={submitting}
-          />
-        </FormField>
-      </div>
 
       <div class="form-grid-columns">
         <FormField id="client-group" label="Gruppo Cliente">
@@ -248,14 +328,37 @@
 
         <FormField id="client-cert" label="Stato Certificazione">
           <select id="client-cert" bind:value={certificationStatus} disabled={submitting}>
-            <option value="Certificato">Certificato</option>
-            <option value="In Attesa">In Attesa</option>
-            <option value="Non Certificato">Non Certificato</option>
+            <option value="in_attesa">In Attesa</option>
+            <option value="certificato">Certificato</option>
+            <option value="non_certificato">Non Certificato</option>
           </select>
         </FormField>
       </div>
+
+      <div class="sub-section-block">
+        <h4 class="sub-section-title">Indirizzo Sede Operativa / Principale</h4>
+        <div class="form-grid-columns">
+          <FormField id="client-op-addr" label="Indirizzo e N° Civico">
+            <input type="text" id="client-op-addr" bind:value={address} placeholder="es. Via dell'Industria 45" disabled={submitting} />
+          </FormField>
+          <FormField id="client-op-city" label="Città">
+            <input type="text" id="client-op-city" bind:value={city} placeholder="es. Milano" disabled={submitting} />
+          </FormField>
+        </div>
+        <div class="form-grid-triple">
+          <FormField id="client-op-prov" label="Provincia">
+            <input type="text" id="client-op-prov" bind:value={province} placeholder="es. MI" disabled={submitting} />
+          </FormField>
+          <FormField id="client-op-cap" label="CAP">
+            <input type="text" id="client-op-cap" bind:value={postalCode} placeholder="es. 20100" disabled={submitting} />
+          </FormField>
+          <FormField id="client-op-country" label="Nazione">
+            <input type="text" id="client-op-country" bind:value={country} placeholder="es. Italy" disabled={submitting} />
+          </FormField>
+        </div>
+      </div>
     </div>
-  {/if}
+
 
   {#if fieldSettings.fatturazioneSede.visible}
     <div class="form-section">
@@ -264,15 +367,34 @@
         <span class="section-title">Fatturazione, Sede Legale & SDI</span>
       </div>
 
-      <FormField id="client-legal-address" label="Indirizzo Sede Legale">
-        <input
-          type="text"
-          id="client-legal-address"
-          bind:value={address}
-          placeholder="es. Via dell'Industria 45, Milano (MI)"
-          disabled={submitting}
-        />
-      </FormField>
+      {#if fieldSettings.sediConfig?.sedi?.legale?.visible}
+        <div class="sub-section-header">
+          <h4 class="sub-section-title">Indirizzo Sede Legale / Fatturazione</h4>
+          <button type="button" class="btn-copy-address" onclick={copyBillingFromOperativa}>
+            Copia da Sede Operativa
+          </button>
+        </div>
+
+        <div class="form-grid-columns">
+          <FormField id="client-leg-addr" label="Indirizzo Sede Legale">
+            <input type="text" id="client-leg-addr" bind:value={billingAddress} placeholder="es. Via Legale 12" disabled={submitting} />
+          </FormField>
+          <FormField id="client-leg-city" label="Città">
+            <input type="text" id="client-leg-city" bind:value={billingCity} placeholder="es. Milano" disabled={submitting} />
+          </FormField>
+        </div>
+        <div class="form-grid-triple">
+          <FormField id="client-leg-prov" label="Provincia">
+            <input type="text" id="client-leg-prov" bind:value={billingProvince} placeholder="es. MI" disabled={submitting} />
+          </FormField>
+          <FormField id="client-leg-cap" label="CAP">
+            <input type="text" id="client-leg-cap" bind:value={billingPostalCode} placeholder="es. 20100" disabled={submitting} />
+          </FormField>
+          <FormField id="client-leg-country" label="Nazione">
+            <input type="text" id="client-leg-country" bind:value={billingCountry} placeholder="es. Italy" disabled={submitting} />
+          </FormField>
+        </div>
+      {/if}
 
       <div class="form-grid-columns">
         <FormField id="client-sdi" label="Codice SDI">
@@ -295,6 +417,7 @@
           />
         </FormField>
       </div>
+
 
       <div class="form-grid-columns">
         <FormField id="client-payment-terms" label="Condizioni di Pagamento">
@@ -330,15 +453,51 @@
     </div>
   {/if}
 
-  {#if fieldSettings.contattiReferenti.visible}
+  {#if fieldSettings.sediConfig?.sedi?.spedizione?.visible}
     <div class="form-section">
       <div class="section-header">
-        <UserCheck size={18} class="section-icon" />
-        <span class="section-title">Contatti & Referenti Rapidi</span>
+        <FileText size={18} class="section-icon" />
+        <span class="section-title">Indirizzo Sede Spedizione / Cantiere</span>
+      </div>
+
+      <div class="sub-section-header">
+        <button type="button" class="btn-copy-address" onclick={copyShippingFromOperativa}>
+          Copia da Sede Operativa
+        </button>
       </div>
 
       <div class="form-grid-columns">
-        <FormField id="client-ref-tech" label="Referente Tecnico">
+        <FormField id="client-shp-addr" label="Indirizzo Spedizione">
+          <input type="text" id="client-shp-addr" bind:value={shippingAddress} placeholder="es. Via Cantiere 10" disabled={submitting} />
+        </FormField>
+        <FormField id="client-shp-city" label="Città">
+          <input type="text" id="client-shp-city" bind:value={shippingCity} placeholder="es. Monza" disabled={submitting} />
+        </FormField>
+      </div>
+      <div class="form-grid-triple">
+        <FormField id="client-shp-prov" label="Provincia">
+          <input type="text" id="client-shp-prov" bind:value={shippingProvince} placeholder="es. MB" disabled={submitting} />
+        </FormField>
+        <FormField id="client-shp-cap" label="CAP">
+          <input type="text" id="client-shp-cap" bind:value={shippingPostalCode} placeholder="es. 20900" disabled={submitting} />
+        </FormField>
+        <FormField id="client-shp-country" label="Nazione">
+          <input type="text" id="client-shp-country" bind:value={shippingCountry} placeholder="es. Italy" disabled={submitting} />
+        </FormField>
+      </div>
+    </div>
+  {/if}
+
+  {#if fieldSettings.contattiReferenti.visible}
+
+    <div class="form-section">
+      <div class="section-header">
+        <UserCheck size={18} class="section-icon" />
+        <span class="section-title">Referente Principale Aziendale</span>
+      </div>
+
+      <div class="form-grid-columns">
+        <FormField id="client-ref-tech" label="Nome e Cognome Referente">
           <input
             type="text"
             id="client-ref-tech"
@@ -348,7 +507,7 @@
           />
         </FormField>
 
-        <FormField id="client-ref-phone" label="Tel. Referente">
+        <FormField id="client-ref-phone" label="Telefono Referente">
           <input
             type="text"
             id="client-ref-phone"
@@ -360,11 +519,12 @@
       </div>
 
       <div class="form-grid-columns">
-        <FormField id="client-email-contact" label="Email Contatto">
+        <FormField id="client-email-contact" label="Email Referente">
           <input
             type="email"
             id="client-email-contact"
             bind:value={emailContatto}
+
             placeholder="es. m.rossi@cgen.it"
             disabled={submitting}
           />
@@ -383,65 +543,7 @@
     </div>
   {/if}
 
-  {#if fieldSettings.affidabilitaCredito.visible}
-    <div class="form-section">
-      <div class="section-header">
-        <ShieldAlert size={18} class="section-icon" />
-        <span class="section-title">Affidabilità & Credito</span>
-      </div>
 
-      <div class="form-grid-columns">
-        <FormField id="client-crif" label="Controllo CRIF">
-          <select id="client-crif" bind:value={crifCheck} disabled={submitting}>
-            <option value="ESEGUITO & VALIDO">✓ ESEGUITO & VALIDO</option>
-            <option value="IN ATTESA">IN ATTESA</option>
-            <option value="FALLITO">FALLITO</option>
-            <option value="NON ESEGUITO">NON ESEGUITO</option>
-          </select>
-        </FormField>
-
-        <FormField id="client-risk" label="Classe di Rischio">
-          <select id="client-risk" bind:value={riskClass} disabled={submitting}>
-            <option value="AAA (Basso Rischio)">AAA (Basso Rischio)</option>
-            <option value="AA">AA (Rischio Medio-Basso)</option>
-            <option value="A">A (Rischio Moderato)</option>
-            <option value="BBB">BBB (Rischio Medio)</option>
-            <option value="High Risk">High Risk (Alto Rischio)</option>
-          </select>
-        </FormField>
-      </div>
-
-      <div class="form-grid-columns">
-        <FormField id="client-max-credit" label="Fido Massimo Concesso (€)">
-          <input
-            type="number"
-            id="client-max-credit"
-            bind:value={maxCredit}
-            placeholder="es. 50000"
-            disabled={submitting}
-          />
-        </FormField>
-
-        <FormField id="client-res-credit" label="Fido Residuo (€)">
-          <input
-            type="number"
-            id="client-res-credit"
-            bind:value={residualCredit}
-            placeholder="es. 32400"
-            disabled={submitting}
-          />
-        </FormField>
-      </div>
-
-      <FormField id="client-pay-status" label="Stato Pagamenti">
-        <select id="client-pay-status" bind:value={paymentStatus} disabled={submitting}>
-          <option value="Regolare">Regolare</option>
-          <option value="In Ritardo">In Ritardo</option>
-          <option value="Bloccato">Bloccato</option>
-        </select>
-      </FormField>
-    </div>
-  {/if}
 
   {#if fieldSettings.noteErp.visible}
     <div class="form-section">
@@ -535,8 +637,51 @@
     gap: 16px;
   }
 
+  .form-grid-triple {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .sub-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 12px 0 8px 0;
+  }
+
+  .sub-section-block {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--color-neutral-200, #e5e7eb);
+  }
+
+  .sub-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-700, #374151);
+    margin: 0 0 10px 0;
+  }
+
+
+  .btn-copy-address {
+    background: #f0f7ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-copy-address:hover {
+    background: #dbeafe;
+  }
+
   @media (max-width: 650px) {
-    .form-grid-columns {
+    .form-grid-columns, .form-grid-triple {
       grid-template-columns: 1fr;
     }
   }
@@ -567,3 +712,4 @@
     margin-top: 10px;
   }
 </style>
+

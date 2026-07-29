@@ -1,13 +1,10 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { getProjectSettingsCached } from '../utils';
 
 // List of collections that we want to track automatically
 const AUDITED_COLLECTIONS = ['users', 'clients', 'contacts', 'products', 'activities'];
-
-// Memory cache to avoid excessive reads of settings/project on every update
-let cachedSettings: { enableHistoryLogs: boolean; timestamp: number } | null = null;
-const CACHE_TTL_MS = 60000; // 60 seconds
 
 export const auditLogger = onDocumentUpdated('{collectionId}/{docId}', async (event) => {
   const collectionId = event.params.collectionId;
@@ -28,22 +25,10 @@ export const auditLogger = onDocumentUpdated('{collectionId}/{docId}', async (ev
   const beforeData = snapshotBefore.data();
   const afterData = snapshotAfter.data();
 
-  // Check if logging is enabled at project level (with memory cache)
+  // Check if logging is enabled at project level (with shared RAM cache)
   try {
-    const now = Date.now();
-    if (!cachedSettings || (now - cachedSettings.timestamp > CACHE_TTL_MS)) {
-      const settingsDoc = await admin.firestore().collection('settings').doc('project').get();
-      if (settingsDoc.exists) {
-        cachedSettings = {
-          enableHistoryLogs: settingsDoc.data()?.enableHistoryLogs !== false,
-          timestamp: now
-        };
-      } else {
-        cachedSettings = { enableHistoryLogs: true, timestamp: now };
-      }
-    }
-
-    if (cachedSettings && cachedSettings.enableHistoryLogs === false) {
+    const projectSettings = await getProjectSettingsCached(admin.firestore());
+    if (projectSettings?.enableHistoryLogs === false) {
       return; // Logging is explicitly disabled
     }
   } catch (error) {

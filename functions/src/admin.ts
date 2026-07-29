@@ -28,9 +28,27 @@ async function checkAdminPermissions(callerUid: string, db: admin.firestore.Fire
  * Seeds the initial superadmin user: wavesforthemasses@gmail.com
  */
 export const initSuperAdmin = onCall({ region: REGION }, async (request) => {
-  const email = 'wavesforthemasses@gmail.com';
   const db = admin.firestore();
   const auth = admin.auth();
+
+  let email = request.data?.email;
+
+  if (!email) {
+    try {
+      const settingsSnap = await db.collection('settings').doc('project').get();
+      if (settingsSnap.exists) {
+        email = settingsSnap.data()?.adminEmail || settingsSnap.data()?.email;
+      }
+    } catch (e) {
+      logger.warn('Failed to read settings/project for initSuperAdmin:', e);
+    }
+  }
+
+  if (!email) {
+    email = process.env.INITIAL_ADMIN_EMAIL || 'wavesforthemasses@gmail.com';
+  }
+
+  email = email.trim().toLowerCase();
 
   try {
     // Check if user already exists in Firestore

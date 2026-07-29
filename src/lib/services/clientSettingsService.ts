@@ -2,7 +2,16 @@ import { db, doc, getDoc, setDoc } from '$lib/firebase';
 
 export interface ClientFieldsSettings {
   datiAnagrafici: {
-    visible: boolean;
+    defaultStatoCertificazione: string;
+    defaultGruppoCliente: string;
+  };
+  sediConfig: {
+    defaultSedeId: 'operativa' | 'legale' | 'spedizione';
+    sedi: {
+      operativa: { visible: boolean; autoCopyFromDefault: boolean };
+      legale: { visible: boolean; autoCopyFromDefault: boolean };
+      spedizione: { visible: boolean; autoCopyFromDefault: boolean };
+    };
   };
   fatturazioneSede: {
     visible: boolean;
@@ -19,7 +28,18 @@ export interface ClientFieldsSettings {
 }
 
 export const DEFAULT_CLIENT_FIELDS_SETTINGS: ClientFieldsSettings = {
-  datiAnagrafici: { visible: true },
+  datiAnagrafici: {
+    defaultStatoCertificazione: 'in_attesa',
+    defaultGruppoCliente: 'Standard'
+  },
+  sediConfig: {
+    defaultSedeId: 'operativa',
+    sedi: {
+      operativa: { visible: true, autoCopyFromDefault: false },
+      legale: { visible: true, autoCopyFromDefault: true },
+      spedizione: { visible: true, autoCopyFromDefault: true }
+    }
+  },
   fatturazioneSede: { visible: true },
   contattiReferenti: { visible: true },
   affidabilitaCredito: { visible: true },
@@ -37,7 +57,25 @@ export class ClientSettingsService {
         const data = snap.data() as Partial<ClientFieldsSettings>;
         return {
           datiAnagrafici: {
-            visible: data.datiAnagrafici?.visible ?? DEFAULT_CLIENT_FIELDS_SETTINGS.datiAnagrafici.visible
+            defaultStatoCertificazione: data.datiAnagrafici?.defaultStatoCertificazione || DEFAULT_CLIENT_FIELDS_SETTINGS.datiAnagrafici.defaultStatoCertificazione,
+            defaultGruppoCliente: data.datiAnagrafici?.defaultGruppoCliente || DEFAULT_CLIENT_FIELDS_SETTINGS.datiAnagrafici.defaultGruppoCliente
+          },
+          sediConfig: {
+            defaultSedeId: data.sediConfig?.defaultSedeId || DEFAULT_CLIENT_FIELDS_SETTINGS.sediConfig.defaultSedeId,
+            sedi: {
+              operativa: {
+                visible: true, // Operating address is always visible
+                autoCopyFromDefault: false
+              },
+              legale: {
+                visible: data.sediConfig?.sedi?.legale?.visible ?? DEFAULT_CLIENT_FIELDS_SETTINGS.sediConfig.sedi.legale.visible,
+                autoCopyFromDefault: data.sediConfig?.sedi?.legale?.autoCopyFromDefault ?? DEFAULT_CLIENT_FIELDS_SETTINGS.sediConfig.sedi.legale.autoCopyFromDefault
+              },
+              spedizione: {
+                visible: data.sediConfig?.sedi?.spedizione?.visible ?? DEFAULT_CLIENT_FIELDS_SETTINGS.sediConfig.sedi.spedizione.visible,
+                autoCopyFromDefault: data.sediConfig?.sedi?.spedizione?.autoCopyFromDefault ?? DEFAULT_CLIENT_FIELDS_SETTINGS.sediConfig.sedi.spedizione.autoCopyFromDefault
+              }
+            }
           },
           fatturazioneSede: {
             visible: data.fatturazioneSede?.visible ?? DEFAULT_CLIENT_FIELDS_SETTINGS.fatturazioneSede.visible
@@ -60,9 +98,10 @@ export class ClientSettingsService {
   }
 
   /**
-   * Saves client fields settings to Firestore.
+   * Saves client fields settings to Firestore settings/client_fields.
    */
   static async saveSettings(settings: ClientFieldsSettings): Promise<void> {
     await setDoc(doc(db, 'settings', 'client_fields'), settings, { merge: true });
   }
 }
+

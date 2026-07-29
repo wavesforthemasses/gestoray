@@ -68,4 +68,69 @@ describe('ContactsService', () => {
     await ContactsService.deleteContact('cnt_1');
     expect(deleteDoc).toHaveBeenCalledOnce();
   });
+
+  it('should link to existing contact when creating with matching email', async () => {
+    vi.mocked(getDocs).mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'cnt_existing',
+          data: () => ({
+            original: {
+              firstName: 'Luca',
+              lastName: 'Prova',
+              email: 'wavesforthemasses@gmail.com',
+              linkedClientIds: ['client_1']
+            }
+          })
+        }
+      ]
+    } as any);
+
+    const resultId = await ContactsService.createOrLinkContact({
+      firstName: 'Luca',
+      lastName: 'Prova',
+      email: 'wavesforthemasses@gmail.com',
+      linkedClientIds: ['client_2'],
+      userId: 'user_1'
+    });
+
+    expect(resultId).toBe('cnt_existing');
+    expect(updateDoc).toHaveBeenCalledOnce();
+  });
+
+  it('should deduplicate existing contacts by merging duplicate cards', async () => {
+    vi.mocked(getDocs).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        {
+          id: 'cnt_1',
+          data: () => ({
+            original: {
+              firstName: 'Luca',
+              lastName: 'Prova',
+              email: 'luca@test.it',
+              linkedClientIds: ['client_1']
+            }
+          })
+        },
+        {
+          id: 'cnt_2',
+          data: () => ({
+            original: {
+              firstName: 'Luca',
+              lastName: 'Prova',
+              email: 'luca@test.it',
+              linkedClientIds: ['client_2']
+            }
+          })
+        }
+      ]
+    } as any);
+
+    const mergedCount = await ContactsService.deduplicateExistingContacts();
+    expect(mergedCount).toBe(1);
+    expect(updateDoc).toHaveBeenCalledOnce();
+    expect(deleteDoc).toHaveBeenCalledOnce();
+  });
 });
+

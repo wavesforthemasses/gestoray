@@ -102,42 +102,28 @@ function installModule(moduleName) {
     console.log(`  ⚡ Cloud Functions registrate in functions/src/`);
   }
 
-  // 4. Update generated_menu.ts if menu.snippet.ts exists
-  const menuSnippetPath = path.join(moduleDir, 'menu.snippet.ts');
-  if (fs.existsSync(menuSnippetPath)) {
-    const snippet = fs.readFileSync(menuSnippetPath, 'utf-8').trim();
-    updateGeneratedMenu(snippet, moduleName);
+  // 4. Update modules.registry.json if module.json exists
+  const moduleJsonPath = path.join(moduleDir, 'module.json');
+  if (fs.existsSync(moduleJsonPath)) {
+    const snippet = fs.readFileSync(moduleJsonPath, 'utf-8').trim();
+    updateModulesRegistry(snippet);
   }
 
-  // 5. Update generated_roles.ts if roles.snippet.ts exists
-  const rolesSnippetPath = path.join(moduleDir, 'roles.snippet.ts');
-  if (fs.existsSync(rolesSnippetPath)) {
-    const snippet = fs.readFileSync(rolesSnippetPath, 'utf-8').trim();
-    updateGeneratedRoles(snippet, moduleName);
-  }
-
-  // 6. Update generated_features.ts if features.snippet.ts exists
-  const featuresSnippetPath = path.join(moduleDir, 'features.snippet.ts');
-  if (fs.existsSync(featuresSnippetPath)) {
-    const snippet = fs.readFileSync(featuresSnippetPath, 'utf-8').trim();
-    updateGeneratedFeatures(snippet, moduleName);
-  }
-
-  // 7. Update firestore.indexes.json if firestore.snippet.indexes.json exists
+  // 5. Update firestore.indexes.json if firestore.snippet.indexes.json exists
   const indexesSnippetPath = path.join(moduleDir, 'firestore.snippet.indexes.json');
   if (fs.existsSync(indexesSnippetPath)) {
     const snippetContent = fs.readFileSync(indexesSnippetPath, 'utf-8').trim();
     updateFirestoreIndexes(snippetContent);
   }
 
-  // 8. Update firestore.rules if snippet exists
+  // 6. Update firestore.rules if snippet exists
   const rulesSnippetPath = path.join(moduleDir, 'firestore.snippet.rules');
   if (fs.existsSync(rulesSnippetPath)) {
     const snippet = fs.readFileSync(rulesSnippetPath, 'utf-8').trim();
     updateFirestoreRules(snippet, moduleName);
   }
 
-  // 9. Update functions/index.ts if functions.snippet.ts exists
+  // 7. Update functions/index.ts if functions.snippet.ts exists
   const functionsSnippetPath = path.join(moduleDir, 'functions.snippet.ts');
   if (fs.existsSync(functionsSnippetPath)) {
     const snippet = fs.readFileSync(functionsSnippetPath, 'utf-8').trim();
@@ -166,67 +152,35 @@ function installBridge(bridgeName) {
   console.log(`✨ Bridge '${bridgeName}' installato in src/lib/services/bridges/!`);
 }
 
-function updateGeneratedMenu(menuSnippet, moduleName) {
-  const genMenuPath = path.resolve(__dirname, '../src/lib/config/auto_generated/generated_menu.ts');
-  let content = fs.readFileSync(genMenuPath, 'utf-8');
+function updateModulesRegistry(moduleJsonContent) {
+  const paths = [
+    path.resolve(__dirname, '../src/lib/config/modules.registry.json'),
+    path.resolve(__dirname, '../functions/src/config/modules.registry.json')
+  ];
 
-  if (content.includes(`id: '${moduleName}'`)) return false;
+  try {
+    const modConfig = typeof moduleJsonContent === 'string' ? JSON.parse(moduleJsonContent) : moduleJsonContent;
 
-  let cleanSnippet = menuSnippet.trim();
-  if (!cleanSnippet.endsWith(',')) cleanSnippet += ',';
+    for (const regPath of paths) {
+      if (!fs.existsSync(regPath)) continue;
+      const data = JSON.parse(fs.readFileSync(regPath, 'utf-8'));
+      if (!data.modules) data.modules = [];
 
-  const insertIdx = content.indexOf('export const MODULE_MENU_SNIPPETS: MenuItemConfig[] = [');
-  if (insertIdx === -1) return false;
+      const existingIdx = data.modules.findIndex(m => m.id === modConfig.id);
+      if (existingIdx !== -1) {
+        data.modules[existingIdx] = { ...data.modules[existingIdx], ...modConfig };
+      } else {
+        data.modules.push(modConfig);
+      }
 
-  const bracketClose = content.indexOf('];', insertIdx);
-  if (bracketClose === -1) return false;
-
-  content = content.slice(0, bracketClose) + `  ${cleanSnippet}\n` + content.slice(bracketClose);
-  fs.writeFileSync(genMenuPath, content, 'utf-8');
-  console.log(`  ✅ Registrato menu in auto_generated/generated_menu.ts`);
-  return true;
-}
-
-function updateGeneratedRoles(rolesSnippet, moduleName) {
-  const genRolesPath = path.resolve(__dirname, '../src/lib/config/auto_generated/generated_roles.ts');
-  let content = fs.readFileSync(genRolesPath, 'utf-8');
-
-  if (content.includes(`module: '${moduleName}'`)) return false;
-
-  let cleanSnippet = rolesSnippet.trim();
-  if (!cleanSnippet.endsWith(',')) cleanSnippet += ',';
-
-  const insertIdx = content.indexOf('export const MODULE_ROLES_SNIPPETS: any[] = [');
-  if (insertIdx === -1) return false;
-
-  const bracketClose = content.indexOf('];', insertIdx);
-  if (bracketClose === -1) return false;
-
-  content = content.slice(0, bracketClose) + `  ${cleanSnippet}\n` + content.slice(bracketClose);
-  fs.writeFileSync(genRolesPath, content, 'utf-8');
-  console.log(`  ✅ Registrati permessi in auto_generated/generated_roles.ts`);
-  return true;
-}
-
-function updateGeneratedFeatures(featuresSnippet, moduleName) {
-  const genFeaturesPath = path.resolve(__dirname, '../src/lib/config/auto_generated/generated_features.ts');
-  let content = fs.readFileSync(genFeaturesPath, 'utf-8');
-
-  if (content.includes(`moduleKey: '${moduleName}'`)) return false;
-
-  let cleanSnippet = featuresSnippet.trim();
-  if (!cleanSnippet.endsWith(',')) cleanSnippet += ',';
-
-  const insertIdx = content.indexOf('export const MODULE_FEATURE_SNIPPETS: Record<string, any> = {');
-  if (insertIdx === -1) return false;
-
-  const braceClose = content.indexOf('};', insertIdx);
-  if (braceClose === -1) return false;
-
-  content = content.slice(0, braceClose) + `  ${cleanSnippet}\n` + content.slice(braceClose);
-  fs.writeFileSync(genFeaturesPath, content, 'utf-8');
-  console.log(`  ✅ Registrata feature flag in auto_generated/generated_features.ts`);
-  return true;
+      fs.writeFileSync(regPath, JSON.stringify(data, null, 2), 'utf-8');
+    }
+    console.log(`  ✅ Modulo registrato in modules.registry.json`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Errore durante l'aggiornamento di modules.registry.json:`, err);
+    return false;
+  }
 }
 
 function updateFirestoreIndexes(snippetContent) {

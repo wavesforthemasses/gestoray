@@ -54,8 +54,14 @@
   let formLinkedClientIds = $state<string[]>([]);
 
   onMount(async () => {
+    try {
+      await ContactsService.deduplicateExistingContacts();
+    } catch (e) {
+      console.warn('Contacts deduplication error:', e);
+    }
     await Promise.all([loadContacts(), loadClientsLookup()]);
   });
+
 
   async function loadClientsLookup() {
     try {
@@ -268,18 +274,10 @@
           <option value="doNotContact">Non contattare più</option>
         </select>
       </div>
-
-      <div class="filter-item">
-        <Building size={16} class="filter-icon" />
-        <select bind:value={filterClientId} onchange={() => loadContacts()}>
-          <option value="">Tutti i Clienti</option>
-          {#each clientOptions as item}
-            <option value={item.id}>{item.name}</option>
-          {/each}
-        </select>
-      </div>
     </div>
   </div>
+
+
 
   {#if loading}
     <div class="loading-state">Caricamento contatti in corso...</div>

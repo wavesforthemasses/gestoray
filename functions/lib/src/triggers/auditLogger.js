@@ -1,14 +1,45 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auditLogger = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
-const admin = require("firebase-admin");
-const logger = require("firebase-functions/logger");
+const admin = __importStar(require("firebase-admin"));
+const logger = __importStar(require("firebase-functions/logger"));
+const utils_1 = require("../utils");
 // List of collections that we want to track automatically
 const AUDITED_COLLECTIONS = ['users', 'clients', 'contacts', 'products', 'activities'];
-// Memory cache to avoid excessive reads of settings/project on every update
-let cachedSettings = null;
-const CACHE_TTL_MS = 60000; // 60 seconds
 exports.auditLogger = (0, firestore_1.onDocumentUpdated)('{collectionId}/{docId}', async (event) => {
     const collectionId = event.params.collectionId;
     const docId = event.params.docId;
@@ -23,22 +54,10 @@ exports.auditLogger = (0, firestore_1.onDocumentUpdated)('{collectionId}/{docId}
     }
     const beforeData = snapshotBefore.data();
     const afterData = snapshotAfter.data();
-    // Check if logging is enabled at project level (with memory cache)
+    // Check if logging is enabled at project level (with shared RAM cache)
     try {
-        const now = Date.now();
-        if (!cachedSettings || (now - cachedSettings.timestamp > CACHE_TTL_MS)) {
-            const settingsDoc = await admin.firestore().collection('settings').doc('project').get();
-            if (settingsDoc.exists) {
-                cachedSettings = {
-                    enableHistoryLogs: settingsDoc.data()?.enableHistoryLogs !== false,
-                    timestamp: now
-                };
-            }
-            else {
-                cachedSettings = { enableHistoryLogs: true, timestamp: now };
-            }
-        }
-        if (cachedSettings && cachedSettings.enableHistoryLogs === false) {
+        const projectSettings = await (0, utils_1.getProjectSettingsCached)(admin.firestore());
+        if (projectSettings?.enableHistoryLogs === false) {
             return; // Logging is explicitly disabled
         }
     }

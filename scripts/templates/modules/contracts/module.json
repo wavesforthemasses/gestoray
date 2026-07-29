@@ -1,0 +1,17 @@
+{
+  "id": "contracts",
+  "label": "Contratti",
+  "description": "Gestione contratti e ordini",
+  "icon": "FileText",
+  "path": "/dashboard/contracts",
+  "rolesView": ["superadmin", "direzione", "amministrazione"],
+  "enabled": true,
+  "anonymization": {
+    "collectionName": "contracts",
+    "linkFieldPath": "original.clientId",
+    "redactFields": [
+      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "original.clientNotes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+    ]
+  }
+}

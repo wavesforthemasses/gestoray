@@ -35,8 +35,11 @@ describe('ClientSettingsService', () => {
 
     const settings = await ClientSettingsService.getSettings();
     expect(settings.affidabilitaCredito.visible).toBe(false);
-    expect(settings.datiAnagrafici.visible).toBe(true);
+    expect(settings.datiAnagrafici.defaultStatoCertificazione).toBe('in_attesa');
   });
+
+
+
 
   it('should save settings calling setDoc', async () => {
     await ClientSettingsService.saveSettings(DEFAULT_CLIENT_FIELDS_SETTINGS);

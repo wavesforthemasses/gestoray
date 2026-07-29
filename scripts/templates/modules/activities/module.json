@@ -1,0 +1,16 @@
+{
+  "id": "activities",
+  "label": "Attività & Task",
+  "description": "Tracciamento attività commerciali e operative",
+  "icon": "ClipboardList",
+  "path": "/dashboard/activities",
+  "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione"],
+  "enabled": true,
+  "anonymization": {
+    "collectionName": "activities",
+    "linkFieldPath": "original.clientId",
+    "redactFields": [
+      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+    ]
+  }
+}

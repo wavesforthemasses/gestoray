@@ -222,15 +222,9 @@
         {/snippet}
 
         <div class="vertical-layout-stack">
-          <div class="form-grid-columns">
-            <FormField id="c-nome" label="Ragione Sociale / Nome Azienda *">
-              <input type="text" id="c-nome" bind:value={clientName} required disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. COSTRUZIONI GENERALI SPA" />
-            </FormField>
-
-            <FormField id="c-code" label="Codice Cliente (ERP)">
-              <input type="text" id="c-code" bind:value={clientCode} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. C001" />
-            </FormField>
-          </div>
+          <FormField id="c-nome" label="Ragione Sociale / Nome Azienda *">
+            <input type="text" id="c-nome" bind:value={clientName} required disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. COSTRUZIONI GENERALI SPA" />
+          </FormField>
 
           <div class="checkbox-row">
             <label class="checkbox-label">
@@ -242,8 +236,8 @@
           <div class="form-grid-columns">
             <FormField id="c-group" label="Gruppo Tariffario / Cliente">
               <select id="c-group" bind:value={clientGroup} disabled={submittingProfile || activeRole === 'direzione'}>
-                <option value="Grandi Clienti">Grandi Clienti</option>
                 <option value="Standard">Standard</option>
+                <option value="Grandi Clienti">Grandi Clienti</option>
                 <option value="Premium">Premium</option>
                 <option value="VIP">VIP</option>
               </select>
@@ -251,12 +245,13 @@
 
             <FormField id="c-cert" label="Stato Certificazione">
               <select id="c-cert" bind:value={certificationStatus} disabled={submittingProfile || activeRole === 'direzione'}>
-                <option value="Certificato">Certificato</option>
-                <option value="In Attesa">In Attesa</option>
-                <option value="Non Certificato">Non Certificato</option>
+                <option value="in_attesa">In Attesa</option>
+                <option value="certificato">Certificato</option>
+                <option value="non_certificato">Non Certificato</option>
               </select>
             </FormField>
           </div>
+
 
           <div class="form-grid-columns">
             <FormField id="c-email" label="Indirizzo Email Contatto">
@@ -334,35 +329,75 @@
     {/if}
 
     {#if activeSubTab === 'banking'}
-      <Card title="Fatturazione Elettronica & Dati Bancari" description="Configurazione PEC, Codice Destinatario SDI e coordinate di pagamento.">
-        {#snippet icon()}
-          <CreditCard size={20} class="icon-accent" />
-        {/snippet}
+      <div class="vertical-layout-stack">
+        <Card title="Indirizzo Sede Legale & Fatturazione" description="Indirizzo ufficiale per fatture, contratti ed estratti conto.">
+          {#snippet icon()}
+            <Building2 size={20} class="icon-accent" />
+          {/snippet}
 
-        <div class="vertical-layout-stack">
-          <h4 class="section-divider-title">Fatturazione Elettronica</h4>
-          <div class="form-grid-columns">
-            <FormField id="c-sdi" label="Codice SDI / Destinatario" helpText="Codice alfanumerico di 7 caratteri.">
-              <input type="text" id="c-sdi" bind:value={clientSdiCode} placeholder="es. K0R9X2" disabled={submittingProfile || activeRole === 'direzione'} />
-            </FormField>
+          <div class="vertical-layout-stack">
+            <div class="action-top-row">
+              <button type="button" class="btn-copy-address" onclick={copyBillingFromSede}>
+                <Copy size={14} /> Copia da Sede Operativa
+              </button>
+            </div>
 
-            <FormField id="c-pec" label="PEC Amministrazione">
-              <input type="email" id="c-pec" bind:value={clientPec} placeholder="es. amministrazione@pec.cgen.it" disabled={submittingProfile || activeRole === 'direzione'} />
-            </FormField>
+            <div class="form-grid-columns">
+              <FormField id="c-b-addr" label="Indirizzo Sede Legale / Fatturazione">
+                <input type="text" id="c-b-addr" bind:value={clientBillingAddress} placeholder="es. Via dell'Industria 45" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+
+              <FormField id="c-b-city" label="Città">
+                <input type="text" id="c-b-city" bind:value={clientBillingCity} placeholder="es. Milano" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+            </div>
+
+            <div class="form-grid-triple">
+              <FormField id="c-b-prov" label="Provincia">
+                <input type="text" id="c-b-prov" bind:value={clientBillingProvince} placeholder="es. MI" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+
+              <FormField id="c-b-cap" label="CAP">
+                <input type="text" id="c-b-cap" bind:value={clientBillingPostalCode} placeholder="es. 20100" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+
+              <FormField id="c-b-country" label="Nazione">
+                <input type="text" id="c-b-country" bind:value={clientBillingCountry} placeholder="es. Italy" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+            </div>
           </div>
+        </Card>
 
-          <h4 class="section-divider-title">Dati Bancari & Modalità di Pagamento</h4>
-          <div class="form-grid-columns">
-            <FormField id="c-iban" label="IBAN di Appoggio">
-              <input type="text" id="c-iban" bind:value={clientIban} placeholder="es. IT98A0123412345000000098765" disabled={submittingProfile || activeRole === 'direzione'} />
-            </FormField>
+        <Card title="Fatturazione Elettronica & Dati Bancari" description="Configurazione PEC, Codice Destinatario SDI e coordinate di pagamento.">
+          {#snippet icon()}
+            <CreditCard size={20} class="icon-accent" />
+          {/snippet}
 
-            <FormField id="c-payment-terms" label="Condizioni di Pagamento">
-              <input type="text" id="c-payment-terms" bind:value={clientPaymentTerms} placeholder="es. Bonifico 60gg DF FM" disabled={submittingProfile || activeRole === 'direzione'} />
-            </FormField>
+          <div class="vertical-layout-stack">
+            <h4 class="section-divider-title">Fatturazione Elettronica</h4>
+            <div class="form-grid-columns">
+              <FormField id="c-sdi" label="Codice SDI / Destinatario" helpText="Codice alfanumerico di 7 caratteri.">
+                <input type="text" id="c-sdi" bind:value={clientSdiCode} placeholder="es. K0R9X2" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+
+              <FormField id="c-pec" label="PEC Amministrazione">
+                <input type="email" id="c-pec" bind:value={clientPec} placeholder="es. amministrazione@pec.cgen.it" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+            </div>
+
+            <h4 class="section-divider-title">Dati Bancari & Modalità di Pagamento</h4>
+            <div class="form-grid-columns">
+              <FormField id="c-iban" label="IBAN di Appoggio">
+                <input type="text" id="c-iban" bind:value={clientIban} placeholder="es. IT98A0123412345000000098765" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+
+              <FormField id="c-payment-terms" label="Condizioni di Pagamento">
+                <input type="text" id="c-payment-terms" bind:value={clientPaymentTerms} placeholder="es. Bonifico 60gg DF FM" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     {/if}
 
     {#if activeSubTab === 'credit'}
@@ -425,44 +460,6 @@
 
     {#if activeSubTab === 'addresses'}
       <div class="vertical-layout-stack">
-        <Card title="Indirizzo di Fatturazione" description="Indirizzo dove inviare fatture ed estratti conto.">
-          {#snippet icon()}
-            <Building2 size={20} class="icon-accent" />
-          {/snippet}
-
-          <div class="vertical-layout-stack">
-            <div class="action-top-row">
-              <button type="button" class="btn-copy-address" onclick={copyBillingFromSede}>
-                <Copy size={14} /> Uguale a Info Cliente (Sede Legale)
-              </button>
-            </div>
-
-            <div class="form-grid-columns">
-              <FormField id="c-b-addr" label="Indirizzo Fatturazione">
-                <input type="text" id="c-b-addr" bind:value={clientBillingAddress} placeholder="es. Via dell'Industria 45" disabled={submittingProfile || activeRole === 'direzione'} />
-              </FormField>
-
-              <FormField id="c-b-city" label="Città">
-                <input type="text" id="c-b-city" bind:value={clientBillingCity} placeholder="es. Milano" disabled={submittingProfile || activeRole === 'direzione'} />
-              </FormField>
-            </div>
-
-            <div class="form-grid-triple">
-              <FormField id="c-b-prov" label="Provincia">
-                <input type="text" id="c-b-prov" bind:value={clientBillingProvince} placeholder="es. MI" disabled={submittingProfile || activeRole === 'direzione'} />
-              </FormField>
-
-              <FormField id="c-b-cap" label="CAP">
-                <input type="text" id="c-b-cap" bind:value={clientBillingPostalCode} placeholder="es. 20100" disabled={submittingProfile || activeRole === 'direzione'} />
-              </FormField>
-
-              <FormField id="c-b-country" label="Nazione">
-                <input type="text" id="c-b-country" bind:value={clientBillingCountry} placeholder="es. Italy" disabled={submittingProfile || activeRole === 'direzione'} />
-              </FormField>
-            </div>
-          </div>
-        </Card>
-
         <Card title="Indirizzo di Spedizione / Cantiere" description="Indirizzo per la consegna delle merci o effettuazione dei servizi.">
           {#snippet icon()}
             <Truck size={20} class="icon-accent" />
@@ -471,7 +468,7 @@
           <div class="vertical-layout-stack">
             <div class="action-top-row">
               <button type="button" class="btn-copy-address" onclick={copyShippingFromBilling}>
-                <Copy size={14} /> Copia Indirizzo Fatturazione
+                <Copy size={14} /> Copia da Sede Operativa / Legale
               </button>
             </div>
 
@@ -502,6 +499,7 @@
         </Card>
       </div>
     {/if}
+
 
     {#if activeSubTab === 'admin'}
       <div class="vertical-layout-stack">

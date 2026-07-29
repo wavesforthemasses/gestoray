@@ -1,6 +1,6 @@
 import { db, doc, getDoc, setDoc, onSnapshot } from '$lib/firebase';
 import { writable, get } from 'svelte/store';
-import { MODULE_ROLES_SNIPPETS } from '$lib/config/auto_generated/generated_roles';
+import modulesRegistry from '$lib/config/modules.registry.json';
 
 export type ActionKey = 'list' | 'read' | 'create' | 'update' | 'delete';
 
@@ -59,16 +59,33 @@ export const BASE_MODULE_PERMISSIONS: ModulePermissionSpec[] = [
     module: 'settings',
     label: 'Impostazioni Generali',
     actions: [
-      { key: 'list', label: 'Visualizzazione' },
-      { key: 'update', label: 'Modifica' }
+      { key: 'list', label: 'Elenco' },
+      { key: 'read', label: 'Dettaglio' },
+      { key: 'create', label: 'Creazione' },
+      { key: 'update', label: 'Modifica' },
+      { key: 'delete', label: 'Eliminazione' },
     ]
   }
 ];
 
-export const MODULE_PERMISSIONS_REGISTRY: ModulePermissionSpec[] = [
+const MODULE_ROLE_SPECS: ModulePermissionSpec[] = (modulesRegistry.modules || []).map((m: any) => ({
+  module: m.id,
+  label: m.label,
+  actions: [
+    { key: 'list', label: 'Elenco' },
+    { key: 'read', label: 'Dettaglio' },
+    { key: 'create', label: 'Creazione' },
+    { key: 'update', label: 'Modifica' },
+    { key: 'delete', label: 'Eliminazione' }
+  ]
+}));
+
+export const ALL_MODULE_PERMISSIONS: ModulePermissionSpec[] = [
   ...BASE_MODULE_PERMISSIONS,
-  ...MODULE_ROLES_SNIPPETS
+  ...MODULE_ROLE_SPECS
 ];
+
+export const MODULE_PERMISSIONS_REGISTRY = ALL_MODULE_PERMISSIONS;
 
 export interface RoleConfig {
   id: string;
