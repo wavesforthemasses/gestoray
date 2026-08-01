@@ -70,6 +70,46 @@ export class ImportEngineService {
   }
 
   /**
+   * Parses Italian (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY) and ISO date strings.
+   */
+  static parseDateValue(val: any): string | null {
+    if (!val) return null;
+    const str = String(val).trim();
+    if (!str) return null;
+
+    // Match DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+    const dmyMatch = str.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{4})/);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const month = parseInt(dmyMatch[2], 10) - 1;
+      const year = parseInt(dmyMatch[3], 10);
+      const dateObj = new Date(Date.UTC(year, month, day));
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString();
+      }
+    }
+
+    // Match YYYY-MM-DD, YYYY/MM/DD
+    const ymdMatch = str.match(/^(\d{4})[\/\.-](\d{1,2})[\/\.-](\d{1,2})/);
+    if (ymdMatch) {
+      const year = parseInt(ymdMatch[1], 10);
+      const month = parseInt(ymdMatch[2], 10) - 1;
+      const day = parseInt(ymdMatch[3], 10);
+      const dateObj = new Date(Date.UTC(year, month, day));
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString();
+      }
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+
+    return null;
+  }
+
+  /**
    * Pre-Flight Validation Mode: Evaluates data types, required fields, auto-generators, and entity references.
    */
   static validateRows(
@@ -136,11 +176,11 @@ export class ImportEngineService {
               break;
             }
             case 'date': {
-              const d = new Date(rawValue);
-              if (isNaN(d.getTime())) {
+              const parsedIso = this.parseDateValue(rawValue);
+              if (!parsedIso) {
                 errors.push(`"${field.label}" deve essere una data valida (${rawValue})`);
               } else {
-                mappedData[field.key] = d.toISOString();
+                mappedData[field.key] = parsedIso;
               }
               break;
             }
@@ -158,6 +198,7 @@ export class ImportEngineService {
           errors.push(`Errore nel campo "${field.label}": ${err.message}`);
         }
       }
+
 
       // Perform Entity Reference resolution if lookupKeys defined
       let matchStatus: MatchStatus | undefined = undefined;

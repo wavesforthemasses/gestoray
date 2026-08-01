@@ -1,6 +1,8 @@
 import { writable } from 'svelte/store';
 import { db, collection, query, where, getDocs, onSnapshot } from '$lib/firebase';
 
+import modulesRegistry from '$lib/config/modules.registry.json';
+
 // Mappa reattiva: idModulo -> numero badge (es. { tickets: 3, todo: 2 })
 export const menuBadgesStore = writable<Record<string, number>>({});
 
@@ -19,10 +21,13 @@ export function initTicketsBadgeListener(userUid: string | null, isExecutive: bo
     unsubTicketsBadge = null;
   }
 
-  if (!userUid && !isExecutive) {
+  // Verifica che il modulo tickets sia effettivamente installato
+  const isTicketsInstalled = (modulesRegistry.modules || []).some((m: any) => m.id === 'tickets');
+  if (!isTicketsInstalled || (!userUid && !isExecutive)) {
     setMenuBadge('tickets', 0);
     return;
   }
+
 
   try {
     const colRef = collection(db, 'tickets');

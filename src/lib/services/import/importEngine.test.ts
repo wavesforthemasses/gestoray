@@ -34,7 +34,27 @@ describe('Universal Import Engine Unit Tests', () => {
     });
   });
 
+  describe('ImportEngineService Date & Currency Parsers', () => {
+    it('should parse Italian dates (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY) into ISO strings', () => {
+      const iso1 = ImportEngineService.parseDateValue('15/05/2024');
+      expect(iso1).toBe('2024-05-15T00:00:00.000Z');
+
+      const iso2 = ImportEngineService.parseDateValue('01-08-2026');
+      expect(iso2).toBe('2026-08-01T00:00:00.000Z');
+
+      const iso3 = ImportEngineService.parseDateValue('31.12.2025');
+      expect(iso3).toBe('2025-12-31T00:00:00.000Z');
+    });
+
+    it('should parse Italian numbers and currency formats correctly', () => {
+      expect(ImportEngineService.parseNumberValue('€1.250,50')).toBe(1250.5);
+      expect(ImportEngineService.parseNumberValue('350,00')).toBe(350);
+      expect(ImportEngineService.parseNumberValue('270.00 €')).toBe(270);
+    });
+  });
+
   describe('ImportRegistry', () => {
+
     beforeEach(() => {
       ImportRegistry.unregister('test_module');
       ImportRegistry.unregister('test_parent');

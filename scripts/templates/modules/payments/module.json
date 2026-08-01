@@ -1,0 +1,13 @@
+{
+  "id": "payments",
+  "label": "Scadenzario & Incassi",
+  "description": "Gestione rate, scadenze ed incassi clienti",
+  "icon": "CreditCard",
+  "path": "/dashboard/payments",
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
+  ],
+  "enabled": true
+}

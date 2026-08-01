@@ -39,7 +39,8 @@ export const activitiesImportSpec: ImportModuleSpec = {
         const resolvedClientId = sessionMap[row.clientId] || row.clientId;
 
         const activityDoc = {
-          title: (row.title || '').trim(),
+          title: String(row.title || '').trim(),
+
           clientId: resolvedClientId || '',
           date: row.date || new Date().toISOString(),
           status: row.status || 'aperto',

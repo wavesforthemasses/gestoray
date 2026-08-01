@@ -1,0 +1,20 @@
+{
+  "id": "products",
+  "label": "Gestione Prodotti",
+  "description": "Catalogo prodotti, servizi e listini prezzi",
+  "icon": "Package",
+  "path": "/dashboard/products",
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione",
+    "commerciale",
+    "tecnico"
+  ],
+  "enabled": true,
+  "anonymization": {
+    "collectionName": "products",
+    "linkFieldPath": "id",
+    "redactFields": []
+  }
+}

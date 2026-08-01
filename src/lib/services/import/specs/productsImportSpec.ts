@@ -146,13 +146,14 @@ export const productsImportSpec: ImportModuleSpec = {
     rows.forEach((row, idx) => {
       try {
         const legacySku = row.sku || row.name;
-        const explicitId = (row.id || '').trim();
-        const targetId = explicitId || ((conflictStrategy === 'upsert' && legacySku) ? legacySku : uuidv7());
+        const explicitId = String(row.id || '').trim();
+        const targetId = explicitId || ((conflictStrategy === 'upsert' && legacySku) ? String(legacySku).trim() : uuidv7());
 
         const docRef = doc(collection(db, 'products'), targetId);
-        const name = (row.name || '').trim();
-        const sku = (row.sku || '').trim();
+        const name = String(row.name || '').trim();
+        const sku = String(row.sku || '').trim();
         const unit = normalizeUnitOfMeasure(row.unit);
+
 
         const rawStock = typeof row.stockQty === 'number' ? row.stockQty : parseFloat(String(row.stockQty || 0).replace(',', '.'));
         const cleanStock = isNaN(rawStock) ? 0 : UnitsOfMeasureService.roundQuantity(rawStock, unit);

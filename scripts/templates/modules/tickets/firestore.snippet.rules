@@ -1,16 +1,7 @@
 // TICKETS
 match /tickets/{docId} {
-  allow read: if isAuth() && (
-    isAdmin() || 
-    isDirezione() || 
-    resource.data.assignedTo == request.auth.uid || 
-    resource.data.requesterEmail == request.auth.token.email
-  );
+  allow read: if isAuth();
   allow create: if isAuth();
-  allow update: if isAuth() && (
-    isAdmin() || 
-    isDirezione() || 
-    resource.data.assignedTo == request.auth.uid
-  );
+  allow update: if isAuth();
   allow delete: if hasRole('superadmin');
 }

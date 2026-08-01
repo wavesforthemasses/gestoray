@@ -61,15 +61,16 @@ export const clientsImportSpec: ImportModuleSpec = {
 
     rows.forEach((row, idx) => {
       try {
-        const explicitId = (row.id || '').trim();
-        const fiscalIdComputed = (row.fiscalId || row.piva || row.codice_fiscale || '').trim();
-        const legacyId = fiscalIdComputed || row.email;
+        const explicitId = String(row.id || '').trim();
+        const fiscalIdComputed = String(row.fiscalId || row.piva || row.codice_fiscale || '').trim();
+        const legacyId = fiscalIdComputed || (row.email ? String(row.email).trim() : '');
         const targetId = explicitId || ((conflictStrategy === 'upsert' && legacyId) ? legacyId : uuidv7());
 
         const docRef = doc(collection(db, 'clients'), targetId);
-        const name = (row.nome || '').trim();
-        const cognome = (row.cognome || '').trim();
+        const name = String(row.nome || '').trim();
+        const cognome = String(row.cognome || '').trim();
         const fullName = `${name} ${cognome}`.trim();
+
 
         const address = row.address || '';
         const city = row.city || '';

@@ -134,6 +134,40 @@ service cloud.firestore {
     match /system_dirty_periods/{periodId} {
       allow read, write: if false;
     }
+
+    // SYSTEM IMPORT LOGS (read and written during data import in settings)
+    match /system_import_logs/{logId} {
+      allow read, write: if isAuth();
+    }
+    match /import_logs/{logId} {
+      allow read, write: if isAuth();
+    }
+
+
+
+
+    // --- MODULE: contracts BEGIN ---
+    // CONTRACTS & INSTALLMENTS
+match /contracts/{contractId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin');
+
+  match /installments/{instId} {
+    allow read: if isAuth();
+    allow write: if isAuth();
+  }
+}
+    // --- MODULE: contracts END ---
+
+    // --- MODULE: products BEGIN ---
+    // PRODUCTS
+match /products/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: products END ---
   }
 }
 

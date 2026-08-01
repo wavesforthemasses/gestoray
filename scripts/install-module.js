@@ -102,12 +102,15 @@ function installModule(moduleName) {
     console.log(`  ⚡ Cloud Functions registrate in functions/src/`);
   }
 
-  // 4. Update modules.registry.json if module.json exists
+  // 4. Update modules.registry.json (MANDATORY module.json check)
   const moduleJsonPath = path.join(moduleDir, 'module.json');
-  if (fs.existsSync(moduleJsonPath)) {
-    const snippet = fs.readFileSync(moduleJsonPath, 'utf-8').trim();
-    updateModulesRegistry(snippet);
+  if (!fs.existsSync(moduleJsonPath)) {
+    console.error(`❌ Errore critico: Il modulo '${moduleName}' non contiene il file 'module.json' obbligatorio per la registrazione nel menu!`);
+    process.exit(1);
   }
+  const snippet = fs.readFileSync(moduleJsonPath, 'utf-8').trim();
+  updateModulesRegistry(snippet);
+
 
   // 5. Update firestore.indexes.json if firestore.snippet.indexes.json exists
   const indexesSnippetPath = path.join(moduleDir, 'firestore.snippet.indexes.json');

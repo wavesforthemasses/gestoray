@@ -544,16 +544,62 @@
 
             {#if importReport.failed > 0}
               <div class="download-error-box">
-                <AlertCircle size={20} class="text-warning" />
-                <span>Ci sono {importReport.failed} righe scartate a causa di errori. Puoi scaricare il file CSV degli errori per correggerle e riprovare.</span>
+                <div class="error-box-top">
+                  <AlertCircle size={20} class="text-warning" />
+                  <span><strong>Ci sono {importReport.failed} righe scartate a causa di errori.</strong> Consulta l'elenco dei motivi di errore qui sotto oppure scarica il file CSV completo.</span>
+                </div>
                 <button type="button" class="btn-warning-sm" onclick={downloadErrorCsv}>
                   <Download size={16} /> Scarica Report Errori (CSV)
                 </button>
+              </div>
+
+              <!-- INLINE ERROR DETAILS TABLE -->
+              <div class="error-details-section">
+                <h4 class="error-details-title">
+                  <AlertTriangle size={18} class="text-danger" />
+                  Dettaglio Motivi dello Scarto ({importReport.errors.length} righe con errore)
+                </h4>
+
+                <div class="rows-table-wrapper">
+                  <table class="rows-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 80px;">Riga #</th>
+                        <th style="width: 45%;">Motivo dell'Errore</th>
+                        <th>Dati della Riga CSV</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each importReport.errors as errItem}
+                        <tr class="row-invalid">
+                          <td><span class="status-pill pill-danger">#{errItem.row}</span></td>
+                          <td>
+                            <ul class="error-bullets-list">
+                              {#each errItem.errors as errMsg}
+                                <li class="error-bullet"><AlertCircle size={14} class="inline-err-icon" /> {errMsg}</li>
+                              {/each}
+                            </ul>
+                          </td>
+                          <td>
+                            <div class="cell-data-preview">
+                              {#each Object.entries(errItem.data).slice(0, 4) as [k, v]}
+                                {#if v !== null && v !== undefined && v !== ''}
+                                  <span class="data-tag"><strong>{k}:</strong> {v}</span>
+                                {/if}
+                              {/each}
+                            </div>
+                          </td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             {/if}
           </div>
         {/if}
       </div>
+
 
       <!-- Modal Footer Controls -->
       <div class="modal-footer">
@@ -1077,4 +1123,49 @@
     font-size: 0.875rem;
     color: #92400e;
   }
+
+  .error-box-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .error-details-section {
+    margin-top: 1.5rem;
+    text-align: left;
+  }
+
+  .error-details-title {
+    font-size: 0.938rem;
+    font-weight: 700;
+    color: #b91c1c;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .error-bullets-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .error-bullet {
+    font-size: 0.8125rem;
+    color: #dc2626;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .inline-err-icon {
+    flex-shrink: 0;
+    color: #dc2626;
+  }
 </style>
+

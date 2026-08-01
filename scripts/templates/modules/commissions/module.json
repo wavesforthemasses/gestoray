@@ -1,0 +1,13 @@
+{
+  "id": "commissions",
+  "label": "Provvigioni Commerciali",
+  "description": "Calcolo e liquidazione provvigioni agenti e rete commerciale",
+  "icon": "Award",
+  "path": "/dashboard/commissions",
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
+  ],
+  "enabled": true
+}
