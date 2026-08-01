@@ -23,6 +23,10 @@
   } from '@lucide/svelte';
 
   import MultiComplete from '$lib/components/MultiComplete.svelte';
+  import SearchToolbar from '$lib/components/SearchToolbar.svelte';
+  import FilterSelect from '$lib/components/FilterSelect.svelte';
+
+
 
   pageTitle.set('Gestione Contatti & Referenti');
 
@@ -254,28 +258,26 @@
   </div>
 
   <!-- Filter & Search Toolbar -->
-  <div class="toolbar-card">
-    <div class="search-box">
-      <Search size={18} class="search-icon" />
-      <input
-        type="text"
-        placeholder="Cerca per nome, cognome, email, telefono o ruolo..."
-        bind:value={searchVal}
-        oninput={() => loadContacts()}
+  <SearchToolbar
+    bind:searchQuery={searchVal}
+    placeholder="Cerca per nome, cognome, email, telefono o ruolo..."
+    onSearch={() => loadContacts()}
+  >
+    {#snippet filtersSnippet()}
+      <FilterSelect
+        bind:value={filterStatus}
+        icon={Filter}
+        options={[
+          { value: 'all', label: 'Tutti gli stati' },
+          { value: 'active', label: 'Solo Attivi' },
+          { value: 'doNotContact', label: 'Non contattare più' }
+        ]}
+        onChange={() => loadContacts()}
       />
-    </div>
+    {/snippet}
+  </SearchToolbar>
 
-    <div class="filters-row">
-      <div class="filter-item">
-        <Filter size={16} class="filter-icon" />
-        <select bind:value={filterStatus} onchange={() => loadContacts()}>
-          <option value="all">Tutti gli stati</option>
-          <option value="active">Solo Attivi</option>
-          <option value="doNotContact">Non contattare più</option>
-        </select>
-      </div>
-    </div>
-  </div>
+
 
 
 
@@ -523,58 +525,8 @@
     cursor: pointer;
   }
 
-  .toolbar-card {
-    background: white;
-    border: 1px solid var(--color-neutral-200, #e5e7eb);
-    border-radius: var(--radius-lg, 12px);
-    padding: 16px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--color-neutral-50, #f9fafb);
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: var(--radius-md, 8px);
-    padding: 8px 14px;
-    flex: 1;
-    min-width: 280px;
-  }
-  .search-box input {
-    border: none;
-    background: transparent;
-    width: 100%;
-    outline: none;
-    font-size: 14px;
-  }
-  .filters-row {
-    display: flex;
-    gap: 12px;
-  }
-  .filter-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--color-neutral-50, #f9fafb);
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: var(--radius-md, 8px);
-    padding: 8px 12px;
-  }
-  .filter-item select {
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
   .loading-state {
+
     padding: 40px;
     text-align: center;
     color: var(--color-neutral-500, #6b7280);

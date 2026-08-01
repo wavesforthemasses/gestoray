@@ -11,6 +11,8 @@ import StatusBadge from './components/StatusBadge.svelte';
 import KPITile from './components/KPITile.svelte';
 import TrendChart from './components/TrendChart.svelte';
 import MultiComplete from './components/MultiComplete.svelte';
+import SearchToolbar from './components/SearchToolbar.svelte';
+import FilterSelect from './components/FilterSelect.svelte';
 
 export {
   Card,
@@ -25,6 +27,10 @@ export {
   StatusBadge,
   KPITile,
   TrendChart,
-  MultiComplete
+  MultiComplete,
+  SearchToolbar,
+  FilterSelect
 };
+
+
 export { generateSearchTerms } from './search-utils';

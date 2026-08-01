@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Table, Card } from '$lib';
-  import { Users, Search } from '@lucide/svelte';
+  import { Table, Card, SearchToolbar } from '$lib';
+  import { Users } from '@lucide/svelte';
+
 
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
   import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -120,32 +121,12 @@
       <button onclick={triggerPrint} class="export-btn" title="Stampa l'elenco / Salva PDF">
         Stampa / PDF
       </button>
-      {#if activeRoleState.role !== 'direzione'}
-        <button onclick={onAddClick} class="add-client-btn fixed-height-btn">
-          Aggiungi Cliente
-        </button>
-      {/if}
     </div>
   {/snippet}
 
-
-
-  <div class="search-bar-row">
-    <input 
-      type="text" 
-      bind:value={searchQuery} 
-      placeholder="Cerca cliente per nome, partita IVA o codice fiscale..." 
-      class="search-input"
-      onkeydown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }}
-    />
-    <button onclick={() => onSearch(searchQuery)} class="search-btn">Cerca</button>
-    {#if searchQuery}
-      <button onclick={onReset} class="clear-search-btn">Reset</button>
-    {/if}
-  </div>
-
   <div class="table-wrapper">
     <Table
+
       {columns}
       data={filteredClients}
       cellSnippet={cell}

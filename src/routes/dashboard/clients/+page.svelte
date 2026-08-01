@@ -3,8 +3,8 @@
   import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ArrowLeft } from '@lucide/svelte';
-  import { Card } from '$lib';
+  import { ArrowLeft, Users, Plus } from '@lucide/svelte';
+  import { Card, SearchToolbar } from '$lib';
 
   import ClientAddForm from './components/ClientAddForm.svelte';
   import ClientsChart from './components/ClientsChart.svelte';
@@ -12,6 +12,7 @@
   import { ClientsService } from './clients.service';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Gestione Clienti CRM');
+
 
   $effect(() => {
     const currentRole = activeRoleState.role;
@@ -88,12 +89,35 @@
 
 <div class="clients-page animate-fade-in">
   {#if !showAddForm}
+    <div class="page-top-actions">
+      <div>
+        <h2 class="title-header">
+          <Users size={28} color="var(--color-primary-600)" />
+          Gestione Clienti CRM
+        </h2>
+        <p class="subtitle">Database dei contatti e dei lead commerciali.</p>
+      </div>
+
+      {#if activeRoleState.role !== 'direzione'}
+        <button class="btn-primary" onclick={() => showAddForm = true}>
+          <Plus size={18} /> Aggiungi Cliente
+        </button>
+      {/if}
+    </div>
+
     <ClientsChart 
       bind:isGraphExpanded 
       onToggle={toggleGraph}
       bind:selectedPointIdx
       onPointSelect={(idx: number | null) => selectedPointIdx = idx}
       bind:chartPeriods
+    />
+
+    <SearchToolbar
+      bind:searchQuery
+      placeholder="Cerca cliente per nome, partita IVA o codice fiscale..."
+      onSearch={(q) => fetchClients(q, true)}
+      onReset={() => { searchQuery = ''; fetchClients(undefined, true); }}
     />
 
     {#if loadingClients}
@@ -110,6 +134,7 @@
         onAddClick={() => showAddForm = true}
         {selectedPeriod}
       />
+
       
       {#if hasMore}
         <div class="load-more-container">
@@ -143,7 +168,52 @@
 <style>
   .clients-page {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
+
+  .page-top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .title-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-neutral-900, #111827);
+    margin: 0 0 4px 0;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--color-neutral-500, #6b7280);
+    margin: 0;
+  }
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-primary-600, #2563eb);
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-700, #1d4ed8);
+  }
+
 
   .back-link {
     display: inline-flex;

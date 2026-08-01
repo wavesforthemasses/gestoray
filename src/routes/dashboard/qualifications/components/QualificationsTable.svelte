@@ -37,13 +37,6 @@
     <Award size={20} class="icon-accent" />
   {/snippet}
 
-  {#snippet headerSnippet()}
-    <div class="header-actions">
-      <button onclick={onAddNew} class="add-btn">
-        <Plus size={16} /> Nuova Qualifica
-      </button>
-    </div>
-  {/snippet}
 
   <div class="table-wrapper">
     <Table

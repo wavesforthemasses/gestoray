@@ -1,4 +1,4 @@
-import { db, doc, setDoc, collection, getDocs } from '$lib/firebase';
+import { db, doc, setDoc, updateDoc, collection, getDocs, getDoc } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
@@ -10,27 +10,66 @@ export interface UserData {
   nome?: string;
   cognome?: string;
   createdAt?: string;
+  isActive?: boolean;
+  qualification?: string;
+  customCommissionPercentage?: number | null;
 }
 
 export class UsersService {
-  static async getUsers(): Promise<UserData[]> {
+  static async getUsers(
+    searchVal?: string,
+    filterStatus?: 'all' | 'active' | 'inactive',
+    filterRole?: string
+  ): Promise<UserData[]> {
     const querySnapshot = await getDocs(collection(db, 'users'));
     const list: UserData[] = [];
     
-    querySnapshot.forEach((doc: any) => {
-      const data = doc.data() || {};
+    querySnapshot.forEach((docSnap: any) => {
+      const data = docSnap.data() || {};
       const original = data.original || data || {};
+      const isActive = original.isActive !== false;
+      const roles: string[] = original.roles || [];
+      const nome = original.nome || '';
+      const cognome = original.cognome || '';
+      const email = original.email || '';
+
+      // Status filter
+      if (filterStatus === 'active' && !isActive) return;
+      if (filterStatus === 'inactive' && isActive) return;
+
+      // Role filter
+      if (filterRole && !roles.includes(filterRole)) return;
+
+      // Search filter
+      if (searchVal && searchVal.trim()) {
+        const term = searchVal.trim().toLowerCase();
+        const full = `${nome} ${cognome} ${email}`.toLowerCase();
+        if (!full.includes(term)) return;
+      }
+
       list.push({
-        uid: doc.id,
-        email: original.email,
-        roles: original.roles || [],
-        nome: original.nome,
-        cognome: original.cognome,
-        createdAt: data.edits?.createdAt || data.createdAt
+        uid: docSnap.id,
+        email,
+        roles,
+        nome,
+        cognome,
+        createdAt: data.edits?.createdAt || data.createdAt,
+        isActive,
+        qualification: original.qualification,
+        customCommissionPercentage: original.customCommissionPercentage ?? null
       });
     });
     
-    return list;
+    return list.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }
+
+  static async toggleUserActiveStatus(uid: string, isActive: boolean, modifierUid: string): Promise<void> {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      'original.isActive': isActive,
+      'edits.modifiedAt': new Date().toISOString(),
+      'edits.modifiedBy': modifierUid
+    });
   }
 
   static async createUser(
@@ -70,7 +109,8 @@ export class UsersService {
         cognome: cleanCognome,
         email: cleanEmail,
         roles: roles,
-        qualification: qualification
+        qualification: qualification,
+        isActive: true
       },
       derived: {
         totalContractsCount: 0,
@@ -90,3 +130,4 @@ export class UsersService {
     });
   }
 }
+

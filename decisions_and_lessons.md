@@ -75,9 +75,15 @@
 
 ---
 
-### 13. Ponte Dinamico Plugin (Zero Import Statici di Moduli Opzionali nel Core)
-- **Lezione**: Importare staticamente servizi o componenti di moduli opzionali (es. `import { ActivityTypesService } from '$lib/services/activityTypesService'`) all'interno di pagine o componenti Core (es. `clients/[id]/+page.svelte`) rompe l'applicazione generando un errore HTTP 500 quando quel modulo viene disinstallato.
-- **Regola**: Il codice Core e gli altri moduli NON devono mai importare staticamente servizi di moduli opzionali. Qualsiasi integrazione trasversale deve avvenire tramite carichi dinamici condizionati (`if ($menuConfigStore.some(m => m.id === 'activities')) { const { ActivityTypesService } = await import('$lib/services/activityTypesService'); ... }`) guidati dal registro `modules.registry.json`.
+---
+
+### 12. Standardizzazione UX Inviolabile della Gerarchia Visuale dei Moduli (`Page Top Actions ➔ SearchToolbar ➔ Data Card`)
+- **Lezione**: Consentire che le diverse pagine dell'applicazione (Clienti, Contatti, Utenti, Qualifiche) posizionino la barra di ricerca, i filtri o i pulsanti di azione in posti diversi (es. alcune barre dentro la Card, altre sopra senza titolo, altre con formattazioni grafiche eterogenee) distrugge la consistenza UX. Gli utenti sono costretti a "riimparare" il layout ogni volta che cambiano sezione.
+- **Regola**: Tutte le pagine elenco di Gestoray DEVONO seguire la stessa identica gerarchia e struttura visuale a 3 livelli:
+  1. **Page Top Actions Bar (`page-top-actions`)**: In alto, Titolo con Icona + Sottotitolo descrittivo a sinistra, ed il Pulsante d'Azione Primario (es. `+ Nuovo Utente`, `+ Aggiungi Cliente`) a destra.
+  2. **Centralized Search Toolbar (`SearchToolbar.svelte`)**: Posizionata sempre SUBITO SOTTO il titolo della pagina e PRIMA dei dati, composta da Input di ricerca a sinistra con icona integrata e reset `(X)`, e Filtri dinamici a tendina a destra.
+  3. **Data Card (Table o Cards Grid)**: Contiene solo l'elenco/tabella dei dati e gli eventuali pulsanti di esportazione (CSV/Excel/PDF).
+
 
 
 
