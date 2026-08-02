@@ -13,6 +13,9 @@ import TrendChart from './components/TrendChart.svelte';
 import MultiComplete from './components/MultiComplete.svelte';
 import SearchToolbar from './components/SearchToolbar.svelte';
 import FilterSelect from './components/FilterSelect.svelte';
+import TagInput from './components/TagInput.svelte';
+import Autocomplete from './components/Autocomplete.svelte';
+
 
 export {
   Card,
@@ -29,8 +32,11 @@ export {
   TrendChart,
   MultiComplete,
   SearchToolbar,
-  FilterSelect
+  FilterSelect,
+  TagInput,
+  Autocomplete
 };
 
 
 export { generateSearchTerms } from './search-utils';
+

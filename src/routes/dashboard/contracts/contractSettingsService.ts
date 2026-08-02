@@ -8,7 +8,11 @@ export const DEFAULT_CONTRACT_SETTINGS: ContractSettings = {
   numberPadding: 4,
   lastNumber: 0,
   resetCounterAnnually: true,
-  lastCounterYear: new Date().getFullYear()
+  lastCounterYear: new Date().getFullYear(),
+  allowedTypes: ['Ricorrente', 'Non Ricorrente'],
+  defaultInitialStatus: 'bozza',
+  defaultTermsAndConditions: 'Offerta valida 30 giorni dalla data di emissione. Pagamento come da accordi contrattuali.',
+  nonRecurringEndDateMode: 'optional'
 };
 
 export class ContractSettingsService {
@@ -19,7 +23,20 @@ export class ContractSettingsService {
       const ref = doc(db, this.SETTINGS_DOC_PATH);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        return { ...DEFAULT_CONTRACT_SETTINGS, ...snap.data() } as ContractSettings;
+        const raw = snap.data();
+        let allowed = raw.allowedTypes || ['Ricorrente', 'Non Ricorrente'];
+        allowed = allowed.map((t: string) => {
+          if (t === 'Canone Ricorrente') return 'Ricorrente';
+          if (t === 'Fornitura / Quotazione' || t === 'Monte Ore' || t === 'SLA Garantito' || t === 'Licenza / Abbonamento') return 'Non Ricorrente';
+          return t;
+        });
+        allowed = Array.from(new Set(allowed));
+
+        return { 
+          ...DEFAULT_CONTRACT_SETTINGS, 
+          ...raw,
+          allowedTypes: allowed
+        } as ContractSettings;
       }
     } catch (e) {
       console.warn('Errore lettura impostazioni contratti/preventivi:', e);

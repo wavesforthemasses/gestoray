@@ -57,6 +57,10 @@ function copyDirRecursive(src, dest) {
       copyDirRecursive(srcPath, destPath);
     } else {
       fs.copyFileSync(srcPath, destPath);
+      const now = new Date();
+      try {
+        fs.utimesSync(destPath, now, now);
+      } catch (e) {}
     }
   }
 }

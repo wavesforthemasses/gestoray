@@ -38,7 +38,26 @@ export class ContractsService {
   }
 
   /**
-   * Genera il prossimo numero progressivo per contratto/preventivo in base alle impostazioni
+   * Anteprima in sola lettura del prossimo numero progressivo (SENZA incrementare o salvare il contatore in Firestore)
+   */
+  static async previewNextContractNumber(): Promise<string> {
+    const settings = await ContractSettingsService.getSettings();
+    const currentYear = new Date().getFullYear();
+
+    let nextNumber = settings.lastNumber + 1;
+    if (settings.resetCounterAnnually && settings.lastCounterYear !== currentYear) {
+      nextNumber = 1;
+    }
+
+    const prefix = settings.prefix || (settings.entityNaming === 'quote' ? 'PREV-' : 'CTR-');
+    const yearPart = settings.includeYear ? `${currentYear}-` : '';
+    const numPart = String(nextNumber).padStart(settings.numberPadding || 4, '0');
+
+    return `${prefix}${yearPart}${numPart}`;
+  }
+
+  /**
+   * Genera ed incrementa atomicamente il prossimo numero progressivo salvandolo nelle impostazioni
    */
   static async generateNextContractNumber(): Promise<string> {
     const settings = await ContractSettingsService.getSettings();
@@ -55,7 +74,7 @@ export class ContractsService {
 
     const formattedNumber = `${prefix}${yearPart}${numPart}`;
 
-    // Aggiorna contatore nelle impostazioni
+    // Aggiorna contatore nelle impostazioni al salvataggio reale
     await ContractSettingsService.saveSettings({
       lastNumber: nextNumber,
       lastCounterYear: currentYear
@@ -68,15 +87,22 @@ export class ContractsService {
     const settings = await ContractSettingsService.getSettings();
     const labels = ContractSettingsService.getLabels(settings);
 
-    // Titolo opzionale: se vuoto, imposta fallback es. "Contratto - Nome Cliente" o "Preventivo N° CTR-2026-0001"
+    // Se il numero di contratto non è stato passato o è vuoto, lo genera ed incrementa ora al salvataggio
+    let contractNumber = data.contractNumber?.trim();
+    if (!contractNumber) {
+      contractNumber = await this.generateNextContractNumber();
+    }
+
+    // Titolo opzionale: se vuoto, imposta fallback es. "Contratto CTR-2026-0001 - Nome Cliente"
     const effectiveTitle = data.title?.trim() 
       ? data.title.trim() 
-      : `${labels.singular} ${data.contractNumber || ''} - ${data.clientName || 'Cliente'}`;
+      : `${labels.singular} ${contractNumber} - ${data.clientName || 'Cliente'}`;
 
-    const textSearch = generateSearchTerms(`${data.contractNumber || ''} ${effectiveTitle} ${data.clientName || ''}`);
+    const textSearch = generateSearchTerms(`${contractNumber} ${effectiveTitle} ${data.clientName || ''}`);
     
     const payload = {
       ...data,
+      contractNumber,
       title: effectiveTitle,
       derived: {
         textSearch
@@ -84,6 +110,7 @@ export class ContractsService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
 
     const docRef = await addDoc(collection(db, this.COLLECTION_NAME), payload);
 

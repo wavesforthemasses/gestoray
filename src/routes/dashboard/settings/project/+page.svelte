@@ -132,8 +132,7 @@
 
 <style>
   .project-settings-page {
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%;
     padding: 24px 0;
   }
   .page-top-actions {

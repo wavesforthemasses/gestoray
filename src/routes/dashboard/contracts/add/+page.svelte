@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { menuConfigStore } from '$lib/stores/menu';
+  import { Card } from '$lib';
   import { ContractsService } from '../contracts.service';
   import { ContractSettingsService } from '../contractSettingsService';
   import type { ContractType, RecurringFrequency, ContractStatus, ContractProductItem, ContractSettings } from '../schema';
@@ -8,9 +10,25 @@
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
-  import Autocomplete from '$lib/components/Autocomplete.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { ArrowLeft, FileText, AlertTriangle, Save, Plus, Trash2, ShoppingBag } from '@lucide/svelte';
+  import { FileText, ArrowLeft, AlertTriangle } from '@lucide/svelte';
+  import { authState } from '$lib/auth.svelte';
+
+  import ContractHeaderSection from '../components/ContractHeaderSection.svelte';
+  import ContractDatesSection from '../components/ContractDatesSection.svelte';
+  import ContractItemsSection from '../components/ContractItemsSection.svelte';
+  import ContractNotesSection from '../components/ContractNotesSection.svelte';
+
+  function parsePriceNumber(val: any): number {
+    if (val == null) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    if (typeof val === 'string') {
+      const cleaned = val.replace('€', '').replace(/\./g, '').replace(',', '.').trim();
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  }
 
   let settings = $state<ContractSettings>({
     entityNaming: 'contract',
@@ -25,7 +43,26 @@
   let clients = $state<{ id: string; name: string }[]>([]);
   let clientOptions = $derived(clients.map(c => ({ id: c.id, label: c.name })));
 
+  let agents = $state<{ id: string; name: string }[]>([]);
+  let agentOptions = $derived(agents.map(a => ({ id: a.id, label: a.name })));
+
+  let projects = $state<{ id: string; name: string }[]>([]);
+  let projectOptions = $derived(projects.map(p => ({ id: p.id, label: p.name })));
+  let hasProjectsModule = $state(false);
+
   let productsCatalog = $state<any[]>([]);
+  let productOptions = $derived(
+    productsCatalog.map(p => {
+      const price = parsePriceNumber(p.price ?? p.listPrice ?? p.unitPrice ?? p.priceSold);
+      const unit = p.unit || 'pz';
+      const priceTag = price > 0 ? ` - € ${price.toFixed(2)} / ${unit}` : '';
+      return {
+        id: p.id,
+        label: `${p.name || p.label || 'Articolo'}${priceTag}`
+      };
+    })
+  );
+
   let customFieldsList = $state<CustomFieldDefinition[]>([]);
   let customFieldsValues = $state<CustomFieldValues>({});
 
@@ -37,36 +74,107 @@
   let contractNumber = $state('');
   let title = $state('');
   let clientId = $state('');
-  let type = $state<ContractType>('Canone Ricorrente');
-  let totalAmount = $state<number>(0);
+  let agentId = $state('');
+  let projectId = $state('');
+  let type = $state<ContractType>('Ricorrente');
   let billingFrequency = $state<RecurringFrequency>('mensile');
   let startDate = $state(new Date().toISOString().slice(0, 10));
   let endDate = $state(new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10));
-  let status = $state<ContractStatus>('attivo');
+  let status = $state<ContractStatus>('bozza');
   let notes = $state('');
+  let clientNotes = $state('');
+  let adminNotes = $state('');
+  let termsAndConditions = $state('');
+  let tags = $state<string[]>([]);
 
-  // Items State (Prodotti / Servizi quotati)
+  // Totali e Sconti Documento
+  let discountType = $state<'percent' | 'amount'>('percent');
+  let discountValue = $state<number>(0);
+
+  // Items State
   let items = $state<ContractProductItem[]>([]);
   let selectedProductId = $state('');
+  let itemTitle = $state('');
+  let itemDescription = $state('');
   let itemQty = $state<number>(1);
   let itemPriceSold = $state<number | undefined>(undefined);
-  let itemNotes = $state('');
+
+  let availableTypes = $derived<ContractType[]>(
+    settings.allowedTypes && settings.allowedTypes.length > 0
+      ? settings.allowedTypes
+      : ['Ricorrente', 'Non Ricorrente']
+  );
+
+  let showEndDate = $derived(
+    type === 'Ricorrente' || (settings.nonRecurringEndDateMode !== 'hidden')
+  );
+
+  let isEndDateRequired = $derived(
+    type === 'Ricorrente' || (settings.nonRecurringEndDateMode === 'required')
+  );
+
+  // Derived Totals
+  let taxableAmount = $derived(
+    items.reduce((sum, i) => sum + i.subtotal, 0)
+  );
+
+  let discountAmount = $derived(
+    discountType === 'percent'
+      ? (taxableAmount * (discountValue || 0)) / 100
+      : (discountValue || 0)
+  );
+
+  let grandTotalAmount = $derived(
+    Math.max(0, taxableAmount - discountAmount)
+  );
 
   onMount(async () => {
     try {
-      const [s, cList, pList, cf] = await Promise.all([
+      const [s, cList, uList, cf, nextNumPreview] = await Promise.all([
         ContractSettingsService.getSettings(),
         CacheLookupService.getLookup('clients'),
-        CacheLookupService.getLookup('products'),
-        CustomFieldsService.getFieldsForModule('contracts')
+        CacheLookupService.getLookup('users'),
+        CustomFieldsService.getFieldsForModule('contracts'),
+        ContractsService.previewNextContractNumber()
       ]);
       settings = s;
       clients = cList;
-      productsCatalog = pList;
+      agents = uList;
       customFieldsList = cf;
+      contractNumber = nextNumPreview;
+      termsAndConditions = s.defaultTermsAndConditions || '';
+      status = s.defaultInitialStatus || 'bozza';
 
-      // Auto-genera prossimo numero in base alle impostazioni
-      contractNumber = await ContractsService.generateNextContractNumber();
+      // Pre-compila l'agente commerciale con l'utente autenticato
+      if (authState.user?.uid) {
+        const foundAgent = uList.find(a => a.id === authState.user?.uid);
+        if (foundAgent) {
+          agentId = foundAgent.id;
+        }
+      }
+
+      if (s.allowedTypes && s.allowedTypes.length > 0) {
+        type = s.allowedTypes[0];
+      }
+
+      if ($menuConfigStore.some(m => m.id === 'products')) {
+        try {
+          const { ProductsService } = await import('../../products/products.service');
+          productsCatalog = await ProductsService.getProducts();
+        } catch (e) {
+          console.warn('Fallback cache prodotti:', e);
+          productsCatalog = await CacheLookupService.getLookup('products');
+        }
+      }
+
+      hasProjectsModule = $menuConfigStore.some(m => m.id === 'projects' || m.id === 'interventi');
+      if (hasProjectsModule) {
+        try {
+          projects = await CacheLookupService.getLookup('projects');
+        } catch (e) {
+          projects = [];
+        }
+      }
     } catch (e) {
       console.error('Errore caricamento dati creazione:', e);
     } finally {
@@ -78,58 +186,60 @@
     selectedProductId = prodId;
     const found = productsCatalog.find(p => p.id === prodId);
     if (found) {
-      itemPriceSold = found.listPrice || found.price || 0;
+      itemTitle = found.name || found.label || '';
+      itemDescription = found.description || '';
+      itemPriceSold = parsePriceNumber(found.price ?? found.listPrice ?? found.unitPrice ?? found.priceSold);
     }
   }
 
   function handleAddItem() {
     if (!selectedProductId || itemQty <= 0 || itemPriceSold === undefined || itemPriceSold < 0) {
-      toast.error('Seleziona un prodotto e inserisci quantità e prezzo validi');
+      toast.error('Seleziona un prodotto ed inserisci quantità e prezzo validi');
       return;
     }
 
     const prod = productsCatalog.find(p => p.id === selectedProductId);
-    const productName = prod ? (prod.name || prod.label || 'Prodotto') : 'Prodotto';
-    const listPrice = prod ? (prod.listPrice || prod.price || 0) : itemPriceSold;
-    const minPrice = prod ? prod.minPrice : undefined;
-    const unit = prod ? prod.unit : undefined;
-    const subtotal = itemQty * itemPriceSold;
+    const productName = itemTitle.trim() || (prod ? (prod.name || prod.label || 'Prodotto') : 'Prodotto');
+    const description = itemDescription.trim();
+    const listPrice = prod ? parsePriceNumber(prod.price ?? prod.listPrice ?? prod.unitPrice) : itemPriceSold;
+    const minPrice = prod ? parsePriceNumber(prod.minPrice) : undefined;
+    const unit = prod ? (prod.unit || 'pz') : 'pz';
+
+    const minRes = ContractsService.calculateMinimoFatturabilePrice(itemQty, itemPriceSold, prod?.minimoFatturabile);
+    const subtotal = minRes.totalAmount;
+    const minimoFatturabileText = minRes.isMinimoApplied ? minRes.note : undefined;
 
     items = [
       ...items,
       {
         productId: selectedProductId,
         productName,
+        description,
         unit,
         listPrice,
         minPrice,
         priceSold: itemPriceSold,
         quantity: itemQty,
         subtotal,
-        notes: itemNotes.trim()
+        minimoFatturabileText
       }
     ];
 
-    // Recalculate totalAmount
-    totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
-
-    // Reset item form
     selectedProductId = '';
+    itemTitle = '';
+    itemDescription = '';
     itemQty = 1;
     itemPriceSold = undefined;
-    itemNotes = '';
-    toast.success('Articolo aggiunto alla quotazione');
   }
 
   function handleRemoveItem(index: number) {
     items = items.filter((_, i) => i !== index);
-    totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
-  async function handleSubmit(e: SubmitEvent) {
+  async function handleSubmit(e: Event) {
     e.preventDefault();
     if (!clientId) {
-      errorMsg = 'Seleziona un cliente intestatario obbligatorio.';
+      toast.error('Seleziona un cliente intestatario obbligatorio');
       return;
     }
 
@@ -138,20 +248,34 @@
 
     try {
       const selectedClient = clients.find(c => c.id === clientId);
+      const selectedAgent = agents.find(a => a.id === agentId);
+      const selectedProject = projects.find(p => p.id === projectId);
 
       const contractId = await ContractsService.createContract({
-        contractNumber: contractNumber.trim(),
+        contractNumber: '',
         title: title.trim(),
         clientId,
         clientName: selectedClient ? selectedClient.name : 'Cliente',
+        agentId: agentId || undefined,
+        agentName: selectedAgent ? selectedAgent.name : undefined,
+        projectId: projectId || undefined,
+        projectName: selectedProject ? selectedProject.name : undefined,
         type,
-        totalAmount,
         billingFrequency,
         startDate,
         endDate,
         status,
         notes: notes.trim(),
+        clientNotes: clientNotes.trim(),
+        adminNotes: adminNotes.trim(),
+        termsAndConditions: termsAndConditions.trim(),
+        tags,
         items,
+        taxableAmount,
+        discountType,
+        discountValue,
+        discountAmount,
+        totalAmount: grandTotalAmount,
         customFields: customFieldsValues
       });
 
@@ -170,384 +294,189 @@
   <title>{labels.newSingular} | Gestoray</title>
 </svelte:head>
 
-<div class="add-contract-page animate-fade-in">
-  <div class="page-top">
-    <a href="/dashboard/contracts" class="back-link">
-      <ArrowLeft size={16} /> Torna alla Gestione {labels.plural}
-    </a>
-    <h2>Pianifica {labels.newSingular}</h2>
-  </div>
-
+<div class="add-contract-container animate-fade-in">
   {#if loading}
     <div class="loader-box">
       <span class="spinner"></span>
       Caricamento in corso...
     </div>
   {:else}
-    {#if errorMsg}
-      <div class="alert error-box">
-        <AlertTriangle size={18} /> {errorMsg}
-      </div>
-    {/if}
+    <Card
+      title={labels.newSingular}
+      description={`Compila le informazioni di seguito per generare un nuovo ${labels.singular.toLowerCase()}.`}
+      class="form-card"
+    >
+      {#snippet icon()}
+        <FileText size={20} class="icon-accent" />
+      {/snippet}
 
-    <form onsubmit={handleSubmit} class="contract-form">
-      <!-- 1. CLIENTE E RIFERIMENTI -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3 class="card-title">Cliente & Riferimenti</h3>
-          <p class="card-subtitle">Seleziona il cliente intestatario del {labels.singular.toLowerCase()}.</p>
-        </div>
+      {#snippet headerSnippet()}
+        <a href="/dashboard/contracts" class="back-link">
+          <ArrowLeft size={14} /> Annulla e Torna all'elenco
+        </a>
+      {/snippet}
 
-        <div class="grid-2">
-          <div class="form-group">
-            <label for="clientId">Cliente Intestatario *</label>
-            <Autocomplete
-              options={clientOptions}
-              bind:value={clientId}
-
-              placeholder="Cerca cliente per nome o ragione sociale..."
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="contractNumber">{labels.numberLabel} *</label>
-            <input type="text" id="contractNumber" bind:value={contractNumber} required />
-          </div>
-        </div>
-
-        <div class="form-group margin-top-12">
-          <label for="title">{labels.titleLabel} <span class="optional-tag">(opzionale)</span></label>
-          <input type="text" id="title" bind:value={title} placeholder="es. Fornitura Licenze e Manutenzione Annuale..." />
-        </div>
-      </div>
-
-      <!-- 2. PRODOTTI & SERVIZI INCLUSI -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3 class="card-title">
-            <ShoppingBag size={18} color="var(--color-primary-600)" /> Prodotti & Servizi Inclusi nella Quotazione
-          </h3>
-          <p class="card-subtitle">Seleziona i prodotti dal catalogo, imposta quantità e prezzo venduto.</p>
-        </div>
-
-        <!-- FORM INSERIMENTO PRODOTTO -->
-        <div class="add-item-box">
-          <div class="grid-3">
-            <div class="form-group">
-              <label for="selectProd">Seleziona Prodotto / Servizio</label>
-              <select 
-                id="selectProd" 
-                bind:value={selectedProductId} 
-                onchange={(e) => handleProductSelectChange(e.currentTarget.value)}
-              >
-                <option value="">-- Seleziona dal Catalogo --</option>
-                {#each productsCatalog as p}
-                  <option value={p.id}>{p.name || p.label} (Listino: €{(p.listPrice || p.price || 0).toFixed(2)})</option>
-                {/each}
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="itemPrice">Prezzo Venduto (€)</label>
-              <input type="number" id="itemPrice" bind:value={itemPriceSold} step="0.01" min="0" placeholder="0.00" />
-            </div>
-
-            <div class="form-group">
-              <label for="itemQty">Quantità</label>
-              <input type="number" id="itemQty" bind:value={itemQty} min="1" step="1" />
-            </div>
-          </div>
-
-          <div class="add-item-footer">
-            <input type="text" bind:value={itemNotes} placeholder="Note o specifiche della riga (opzionale)..." class="flex-1" />
-            <button type="button" class="btn-secondary" onclick={handleAddItem}>
-              <Plus size={16} /> Aggiungi Articolo
-            </button>
-          </div>
-        </div>
-
-        <!-- TABELLA ARTICOLI INSERITI -->
-        {#if items.length === 0}
-          <div class="empty-items-text">Nessun articolo inserito. Il totale verrà specificato manualmente sotto.</div>
-        {:else}
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Prodotto / Servizio</th>
-                <th>P. Listino (€)</th>
-                <th>P. Venduto (€)</th>
-                <th>Qtà</th>
-                <th>Subtotale (€)</th>
-                <th class="text-right">Azione</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each items as item, idx}
-                <tr>
-                  <td>
-                    <strong>{item.productName}</strong>
-                    {#if item.notes}<div class="sub-text">{item.notes}</div>{/if}
-                  </td>
-                  <td>€ {item.listPrice.toFixed(2)}</td>
-                  <td class="font-bold">€ {item.priceSold.toFixed(2)}</td>
-                  <td>{item.quantity} {item.unit || ''}</td>
-                  <td class="font-bold">€ {item.subtotal.toFixed(2)}</td>
-                  <td class="text-right">
-                    <button type="button" class="btn-icon btn-danger-icon" onclick={() => handleRemoveItem(idx)}>
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {/if}
-      </div>
-
-      <!-- 3. DETTAGLI ECONOMICI E FREQUENZA -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3 class="card-title">Condizioni Economiche & Scadenze</h3>
-        </div>
-
-        <div class="grid-2">
-          <div class="form-group">
-            <label for="type">{labels.typeLabel}</label>
-            <select id="type" bind:value={type}>
-              <option value="Canone Ricorrente">Canone Ricorrente</option>
-              <option value="Fornitura / Quotazione">Fornitura / Quotazione</option>
-              <option value="Monte Ore">Monte Ore</option>
-              <option value="SLA Garantito">SLA Garantito</option>
-              <option value="Licenza / Abbonamento">Licenza / Abbonamento</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="billingFrequency">Frequenza Fatturazione</label>
-            <select id="billingFrequency" bind:value={billingFrequency}>
-              <option value="mensile">Mensile</option>
-              <option value="bimestrale">Bimestrale</option>
-              <option value="trimestrale">Trimestrale</option>
-              <option value="semestrale">Semestrale</option>
-              <option value="annuale">Annuale</option>
-              <option value="una_una">Una Tantum / Singola</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid-3 margin-top-12">
-          <div class="form-group">
-            <label for="totalAmount">{labels.totalValueLabel} (€) *</label>
-            <input type="number" id="totalAmount" bind:value={totalAmount} step="0.01" min="0" required />
-          </div>
-
-          <div class="form-group">
-            <label for="startDate">Data Inizio / Decorrenza *</label>
-            <input type="date" id="startDate" bind:value={startDate} required />
-          </div>
-
-          <div class="form-group">
-            <label for="endDate">Data Scadenza *</label>
-            <input type="date" id="endDate" bind:value={endDate} required />
-          </div>
-        </div>
-
-        <div class="form-group margin-top-12">
-          <label for="notes">Note Riservate / Specifiche</label>
-          <textarea id="notes" bind:value={notes} rows="3" placeholder="Note interne, dettagli accordo..."></textarea>
-        </div>
-      </div>
-
-      <!-- CAMPI PERSONALIZZATI -->
-      {#if customFieldsList.length > 0}
-        <div class="card form-card">
-          <h3 class="card-title">Campi Personalizzati</h3>
-          <CustomFieldsRenderer fields={customFieldsList} bind:values={customFieldsValues} />
+      {#if errorMsg}
+        <div class="alert error-box">
+          <AlertTriangle size={18} /> {errorMsg}
         </div>
       {/if}
 
-      <!-- SUBMIT -->
-      <div class="form-actions">
-        <a href="/dashboard/contracts" class="btn-secondary">Annulla</a>
-        <button type="submit" class="btn-primary" disabled={saving}>
-          <Save size={18} /> {saving ? 'Salvataggio...' : `Salva ${labels.singular}`}
+      <form onsubmit={handleSubmit} class="contract-form-grid">
+        <!-- 1. Header Section -->
+        <ContractHeaderSection
+          {labels}
+          {clientOptions}
+          {agentOptions}
+          {projectOptions}
+          {hasProjectsModule}
+          bind:clientId
+          bind:title
+          bind:agentId
+          bind:contractNumber
+          bind:projectId
+        />
+
+        <!-- 2. Dates & Status Section -->
+        <ContractDatesSection
+          {labels}
+          {availableTypes}
+          {showEndDate}
+          {isEndDateRequired}
+          bind:type
+          bind:status
+          bind:billingFrequency
+          bind:startDate
+          bind:endDate
+          bind:tags
+        />
+
+        <!-- 3. Items & Totals Section -->
+        <ContractItemsSection
+          {productOptions}
+          bind:items
+          bind:selectedProductId
+          bind:itemTitle
+          bind:itemDescription
+          bind:itemQty
+          bind:itemPriceSold
+          bind:discountType
+          bind:discountValue
+          {taxableAmount}
+          {discountAmount}
+          {grandTotalAmount}
+          onProductSelectChange={handleProductSelectChange}
+          onAddItem={handleAddItem}
+          onRemoveItem={handleRemoveItem}
+        />
+
+        <!-- 4. Notes & Terms Section -->
+        <ContractNotesSection
+          bind:clientNotes
+          bind:adminNotes
+          bind:termsAndConditions
+        />
+
+        <!-- 5. Custom Fields (Dynamic) -->
+        {#if customFieldsList.length > 0}
+          <div class="custom-fields-wrapper">
+            <CustomFieldsRenderer fields={customFieldsList} bind:values={customFieldsValues} />
+          </div>
+        {/if}
+
+        <!-- Submit Button -->
+        <button type="submit" class="save-btn" disabled={saving}>
+          {#if saving}
+            Salvataggio in corso...
+          {:else}
+            Crea Nuovo {labels.singular}
+          {/if}
         </button>
-      </div>
-    </form>
+      </form>
+    </Card>
   {/if}
 </div>
 
 <style>
-  .add-contract-page {
+  .add-contract-container {
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
   }
 
-  .page-top h2 {
-    font-size: 22px;
-    font-weight: 700;
-    margin: 6px 0 0 0;
+  :global(.icon-accent) {
+    color: var(--color-primary-500);
   }
 
   .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--color-neutral-600, #4b5563);
+    background: var(--color-white);
+    border: 1px solid var(--color-neutral-300);
+    color: var(--color-neutral-600);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
     text-decoration: none;
+    font-family: inherit;
     font-size: 13px;
-    font-weight: 500;
-  }
-
-  .contract-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .grid-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-  }
-
-  .margin-top-12 {
-    margin-top: 12px;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
   }
 
-  .form-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-neutral-700, #374151);
+  .back-link:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
   }
 
-  .optional-tag {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--color-neutral-500, #6b7280);
-  }
-
-  input[type="text"], input[type="number"], input[type="date"], select, textarea {
-    padding: 9px 12px;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    box-sizing: border-box;
-    background: white;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--color-primary-500, #3b82f6);
-  }
-
-  .add-item-box {
-    background: var(--color-neutral-50, #f9fafb);
-    border: 1px dashed var(--color-neutral-300, #d1d5db);
-    border-radius: 8px;
-    padding: 14px;
+  .contract-form-grid {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 24px;
   }
 
-  .add-item-footer {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .flex-1 { flex: 1; }
-
-  .items-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  .items-table th {
-    background: var(--color-neutral-50, #f9fafb);
-    padding: 10px 12px;
-    text-align: left;
+  .save-btn {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: var(--color-white);
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 15px;
     font-weight: 600;
-    color: var(--color-neutral-500, #6b7280);
-    border-bottom: 1px solid var(--color-neutral-200, #e5e7eb);
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
+    margin-top: 8px;
   }
 
-  .items-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--color-neutral-200, #e5e7eb);
+  .save-btn:hover:not(:disabled) {
+    opacity: 0.95;
   }
 
-  .empty-items-text {
-    font-size: 13px;
-    color: var(--color-neutral-500, #6b7280);
-    padding: 12px 0;
-    font-style: italic;
+  .save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
   }
 
-  .btn-primary {
-    display: inline-flex;
+  .loader-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: var(--color-neutral-500);
+    font-size: 14px;
+  }
+
+  .alert.error-box {
+    background: var(--color-error-light, #fee2e2);
+    color: var(--color-error-text, #991b1b);
+    border: 1px solid var(--color-error-border, #fca5a5);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--color-primary-600, #2563eb);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+    font-size: 13px;
   }
-
-  .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--color-neutral-100, #f3f4f6);
-    color: var(--color-neutral-800, #1f2937);
-    padding: 9px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  .btn-icon {
-    background: transparent;
-    border: none;
-    color: var(--color-red-500, #ef4444);
-    padding: 4px;
-    cursor: pointer;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-
-  .sub-text {
-    font-size: 12px;
-    color: var(--color-neutral-500, #6b7280);
-  }
-
-  .text-right { text-align: right; }
-  .font-bold { font-weight: 700; }
-  .loader-box { padding: 40px; text-align: center; }
 </style>

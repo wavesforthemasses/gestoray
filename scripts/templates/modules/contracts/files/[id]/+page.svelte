@@ -19,7 +19,11 @@
     User, 
     Plus,
     AlertTriangle,
-    ShoppingBag
+    ShoppingBag,
+    Tag,
+    UserCheck,
+    Building2,
+    Receipt
   } from '@lucide/svelte';
 
   const contractId = page.params.id || '';
@@ -101,9 +105,12 @@
 
   function getStatusBadge(status: ContractStatus) {
     switch (status) {
-      case 'attivo': return { label: labels.activeTabLabel, class: 'badge-success' };
+      case 'attivo': case 'accettato': return { label: labels.activeTabLabel, class: 'badge-success' };
+      case 'inviato': return { label: 'Inviato al Cliente', class: 'badge-info' };
+      case 'bozza': return { label: 'Bozza', class: 'badge-neutral' };
       case 'in_scadenza': return { label: labels.expiringTabLabel, class: 'badge-warning' };
       case 'scaduto': return { label: labels.expiredTabLabel, class: 'badge-danger' };
+      case 'rifiutato': return { label: 'Rifiutato', class: 'badge-danger' };
       case 'sospeso': return { label: 'Sospeso', class: 'badge-neutral' };
       default: return { label: status, class: 'badge-neutral' };
     }
@@ -143,6 +150,14 @@
         <p class="page-subtitle">
           <User size={14} /> Cliente Intestatario: <strong>{contract.clientName}</strong>
         </p>
+
+        {#if contract.tags && contract.tags.length > 0}
+          <div class="tags-bar margin-top-8">
+            {#each contract.tags as tag}
+              <span class="tag-chip"><Tag size={12} /> #{tag}</span>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       <div class="header-actions">
@@ -167,27 +182,56 @@
             <thead>
               <tr>
                 <th>Prodotto / Servizio</th>
-                <th>P. Listino (€)</th>
-                <th>P. Venduto (€)</th>
-                <th>Qtà</th>
-                <th>Subtotale (€)</th>
+                <th>Descrizione Dettagliata</th>
+                <th>Qtà & Unità</th>
+                <th>Prezzo Unt. (€)</th>
+                <th class="text-right">Subtotale (€)</th>
               </tr>
             </thead>
             <tbody>
               {#each contract.items as item}
-                <tr>
+                <tr class:row-optional={item.isOptional}>
                   <td>
                     <strong>{item.productName}</strong>
-                    {#if item.notes}<div class="sub-text">{item.notes}</div>{/if}
+                    {#if item.isOptional}
+                      <span class="badge-optional">Opzionale</span>
+                    {/if}
                   </td>
-                  <td>€ {item.listPrice.toFixed(2)}</td>
-                  <td class="font-bold">€ {item.priceSold.toFixed(2)}</td>
+                  <td class="cell-desc">{item.description || '-'}</td>
                   <td>{item.quantity} {item.unit || ''}</td>
-                  <td class="font-bold">€ {item.subtotal.toFixed(2)}</td>
+                  <td>€ {item.priceSold?.toFixed(2)}</td>
+                  <td class="text-right font-bold">
+                    € {item.subtotal?.toFixed(2)}
+                    {#if item.minimoFatturabileText}
+                      <div class="minimo-info-note"><Info size={12} /> {item.minimoFatturabileText}</div>
+                    {/if}
+                  </td>
                 </tr>
               {/each}
             </tbody>
           </table>
+        </div>
+
+        <!-- SUMMARY RIEPILOGO TOTALE -->
+        <div class="totals-summary-card margin-top-16">
+          {#if contract.taxableAmount != null}
+            <div class="totals-row">
+              <span class="t-label">Imponibile Parziale:</span>
+              <span class="t-val">€ {contract.taxableAmount.toFixed(2)}</span>
+            </div>
+          {/if}
+
+          {#if contract.discountAmount && contract.discountAmount > 0}
+            <div class="totals-row">
+              <span class="t-label">Sconto Documento ({contract.discountType === 'percent' ? `${contract.discountValue}%` : '€'}):</span>
+              <span class="t-val text-danger">- € {contract.discountAmount.toFixed(2)}</span>
+            </div>
+          {/if}
+
+          <div class="totals-row grand-total-row">
+            <span class="t-label-grand">TOTALE COMPLESSIVO:</span>
+            <span class="t-val-grand">€ {(contract.totalAmount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+          </div>
         </div>
       </Card>
     {/if}
@@ -210,10 +254,19 @@
           <span class="info-val">{contract.type}</span>
         </div>
 
-        <div class="info-row">
-          <span class="info-label">Frequenza Fatturazione</span>
-          <span class="info-val capitalize">{contract.billingFrequency}</span>
-        </div>
+        {#if contract.agentName}
+          <div class="info-row">
+            <span class="info-label"><UserCheck size={14} /> Agente / Commerciale</span>
+            <span class="info-val">{contract.agentName}</span>
+          </div>
+        {/if}
+
+        {#if contract.projectName}
+          <div class="info-row">
+            <span class="info-label"><Building2 size={14} /> Cantiere / Progetto</span>
+            <span class="info-val">{contract.projectName}</span>
+          </div>
+        {/if}
 
         <div class="info-row">
           <span class="info-label">{labels.totalValueLabel}</span>
@@ -230,10 +283,24 @@
           <span class="info-val">{contract.endDate || 'N.D.'}</span>
         </div>
 
-        {#if contract.notes}
+        {#if contract.clientNotes}
           <div class="notes-box">
-            <strong>Note Riservate:</strong>
-            <p>{contract.notes}</p>
+            <strong>Note Visibili al Cliente:</strong>
+            <p>{contract.clientNotes}</p>
+          </div>
+        {/if}
+
+        {#if contract.adminNotes || contract.notes}
+          <div class="notes-box admin-notes">
+            <strong>Note Riservate (Amministrazione):</strong>
+            <p>{contract.adminNotes || contract.notes}</p>
+          </div>
+        {/if}
+
+        {#if contract.termsAndConditions}
+          <div class="notes-box terms-box">
+            <strong>Termini & Condizioni Contrattuali:</strong>
+            <p>{contract.termsAndConditions}</p>
           </div>
         {/if}
       </div>
@@ -303,18 +370,18 @@
 
             <div class="form-group">
               <label for="instAmt">Importo (€) *</label>
-              <input type="number" id="instAmt" bind:value={instAmount} step="0.01" min="0.01" required />
+              <input type="number" id="instAmt" bind:value={instAmount} min="0.01" step="any" placeholder="0.00" required />
             </div>
 
             <div class="form-group">
-              <label for="instN">Note</label>
-              <input type="text" id="instN" bind:value={instNotes} placeholder="es. Rata 1 di 4..." />
+              <label for="instNotes">Note (opzionale)</label>
+              <input type="text" id="instNotes" bind:value={instNotes} placeholder="es. Acconto 30% all'ordine..." />
             </div>
 
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" onclick={() => showInstallmentModal = false}>Annulla</button>
-              <button type="submit" class="btn btn-primary" disabled={savingInst}>
-                {savingInst ? 'Salvataggio...' : 'Salva Rata'}
+              <button type="button" class="btn-neutral" onclick={() => showInstallmentModal = false}>Annulla</button>
+              <button type="submit" class="btn-primary" disabled={savingInst}>
+                {#if savingInst}Salvataggio...{:else}Salva Rata{/if}
               </button>
             </div>
           </form>
@@ -326,202 +393,373 @@
 
 <style>
   .contract-detail-page {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1.5rem;
   }
 
   .back-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    color: var(--color-neutral-600, #4b5563);
-    text-decoration: none;
-    font-size: 13px;
+    gap: 0.35rem;
+    color: var(--text-muted, #64748b);
+    font-size: 0.875rem;
     font-weight: 500;
+    text-decoration: none;
   }
+  .back-link:hover { color: var(--color-primary, #2563eb); }
 
   .detail-header {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid var(--color-neutral-200, #e5e7eb);
+    padding: 1.5rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
   .header-tag {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: var(--color-primary-600, #2563eb);
     text-transform: uppercase;
+    color: var(--color-primary, #2563eb);
     letter-spacing: 0.05em;
-
   }
 
   .page-title {
-    font-size: 22px;
+    font-size: 1.75rem;
     font-weight: 800;
-    margin: 4px 0;
+    margin: 0.25rem 0;
+    color: var(--text-heading, #0f172a);
   }
 
   .page-subtitle {
-    font-size: 14px;
-    color: var(--color-neutral-500, #6b7280);
+    font-size: 0.875rem;
+    color: var(--text-muted, #64748b);
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.35rem;
+  }
+
+  .tags-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--bg-subtle, #f1f5f9);
+    color: var(--color-primary, #2563eb);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
   }
 
   .header-actions {
     display: flex;
-    gap: 10px;
-  }
-
-  .btn {
-    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 13px;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-  }
-
-  .btn-secondary {
-    background: var(--color-neutral-100, #f3f4f6);
-    color: var(--color-neutral-800, #1f2937);
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-  }
-
-  .btn-primary {
-    background: var(--color-primary-600, #2563eb);
-    color: white;
+    gap: 0.75rem;
   }
 
   .info-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
   }
 
   .info-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid var(--color-neutral-200, #e5e7eb);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: 1.125rem;
     font-weight: 700;
-    margin: 0 0 16px 0;
+    margin: 0 0 0.5rem 0;
     display: flex;
     align-items: center;
-    gap: 8px;
-  }
-
-  .card-header-flex {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .btn-small-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--color-primary-600, #2563eb);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+    gap: 0.5rem;
+    color: var(--text-heading, #0f172a);
   }
 
   .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--color-neutral-100, #f3f4f6);
-    font-size: 14px;
+    align-items: center;
+    font-size: 0.875rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
   }
 
   .info-label {
-    color: var(--color-neutral-500, #6b7280);
+    color: var(--text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .info-val {
     font-weight: 600;
+    color: var(--text-heading, #0f172a);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .data-table th {
+    background: var(--bg-subtle, #f8fafc);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-heading, #0f172a);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+  }
+
+  .data-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+    vertical-align: top;
+  }
+
+  .cell-desc {
+    max-width: 260px;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #64748b);
+  }
+
+  .row-optional {
+    opacity: 0.65;
+    background: #fcfcfc;
+  }
+
+  .badge-optional {
+    font-size: 0.7rem;
+    background: #fef3c7;
+    color: #b45309;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.35rem;
+  }
+
+  .minimo-info-note {
+    font-size: 0.75rem;
+    color: #d97706;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  .totals-summary-card {
+    background: var(--bg-subtle, #f8fafc);
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 420px;
+    margin-left: auto;
+  }
+
+  .totals-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-main, #334155);
+  }
+
+  .grand-total-row {
+    border-top: 2px solid var(--border-color, #cbd5e1);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .t-label-grand {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-heading, #0f172a);
+  }
+
+  .t-val-grand {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-primary, #2563eb);
   }
 
   .notes-box {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-neutral-50, #f9fafb);
-    border-radius: 8px;
-    font-size: 13px;
+    background: var(--bg-subtle, #f8fafc);
+    border-left: 3px solid var(--color-primary, #2563eb);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
   }
 
-  .notes-box p {
-    margin: 4px 0 0 0;
-    color: var(--color-neutral-700, #374151);
+  .admin-notes {
+    border-left-color: #f59e0b;
+  }
+
+  .terms-box {
+    border-left-color: #64748b;
+    font-size: 0.8125rem;
+  }
+
+  .notes-box p { margin: 0.25rem 0 0 0; color: var(--text-main, #334155); }
+
+  .card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-small-primary {
+    background: var(--color-primary, #2563eb);
+    color: #ffffff;
+    border: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .installments-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
   }
 
   .installment-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
-    background: var(--color-neutral-50, #f9fafb);
+    padding: 0.625rem 0.875rem;
+    background: var(--bg-subtle, #f8fafc);
+    border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 8px;
-    border: 1px solid var(--color-neutral-200, #e5e7eb);
   }
 
-  .inst-num { font-weight: 700; display: block; font-size: 13px; }
-  .inst-date { font-size: 12px; color: var(--color-neutral-500, #6b7280); }
-  .inst-amount { font-weight: 800; font-size: 15px; color: var(--color-neutral-900, #111827); }
+  .inst-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .inst-num { font-weight: 600; font-size: 0.875rem; }
+  .inst-date { font-size: 0.75rem; color: var(--text-muted, #64748b); }
+  .inst-amount { font-weight: 700; color: var(--color-primary, #2563eb); }
 
-  .table-wrapper { overflow-x: auto; }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th { background: var(--color-neutral-50, #f9fafb); padding: 10px 12px; text-align: left; font-weight: 600; color: var(--color-neutral-500, #6b7280); }
-  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--color-neutral-200, #e5e7eb); }
+  .empty-subtext {
+    font-size: 0.84rem;
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+  }
 
-  .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 12px; }
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-card {
+    background: var(--bg-surface, #ffffff);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 440px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .modal-header h3 { margin: 0; font-size: 1.125rem; font-weight: 700; }
+  .btn-close { background: none; border: none; cursor: pointer; color: var(--text-muted, #64748b); }
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-group label { font-size: 0.8125rem; font-weight: 600; }
+  .form-group input {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #cbd5e1);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--color-primary, #2563eb);
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-neutral {
+    background: var(--bg-subtle, #f1f5f9);
+    border: 1px solid var(--border-color, #cbd5e1);
+    color: var(--text-main, #334155);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .badge-info { background: #e0f2fe; color: #0369a1; }
   .badge-success { background: #dcfce7; color: #15803d; }
   .badge-warning { background: #fef3c7; color: #b45309; }
   .badge-danger { background: #fee2e2; color: #b91c1c; }
-  .badge-neutral { background: #f3f4f6; color: #4b5563; }
-
-  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal-card { background: white; border-radius: 12px; width: 100%; max-width: 440px; padding: 20px; }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .btn-close { background: none; border: none; cursor: pointer; color: var(--color-neutral-500); }
-  .modal-body { display: flex; flex-direction: column; gap: 12px; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
-
-  .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label { font-size: 12px; font-weight: 600; }
-  .form-group input { padding: 8px 10px; border: 1px solid var(--color-neutral-300); border-radius: 6px; }
-
-  .empty-subtext { font-size: 13px; color: var(--color-neutral-500); font-style: italic; }
-  .sub-text { font-size: 12px; color: var(--color-neutral-500); }
+  .badge-neutral { background: #f1f5f9; color: #475569; }
+  .text-danger { color: #dc2626; }
+  .text-right { text-align: right; }
   .font-bold { font-weight: 700; }
-  .capitalize { text-transform: capitalize; }
-  .loader-box { padding: 40px; text-align: center; }
+  .margin-top-8 { margin-top: 0.5rem; }
+  .margin-top-16 { margin-top: 1rem; }
 </style>

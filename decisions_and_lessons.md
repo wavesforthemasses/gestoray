@@ -84,8 +84,31 @@
   2. **Centralized Search Toolbar (`SearchToolbar.svelte`)**: Posizionata sempre SUBITO SOTTO il titolo della pagina e PRIMA dei dati, composta da Input di ricerca a sinistra con icona integrata e reset `(X)`, e Filtri dinamici a tendina a destra.
   3. **Data Card (Table o Cards Grid)**: Contiene solo l'elenco/tabella dei dati e gli eventuali pulsanti di esportazione (CSV/Excel/PDF).
 
+### 13. CacheLookupService Restituisce Solo `{ id, name }` — Mai Usare per Dati Completi
+- **Lezione**: `CacheLookupService.getLookup('products')` è un cache leggero chunked che restituisce esclusivamente `{ id: string; name: string }`. **Non contiene** campi come `price`, `unit`, `description`, `minimoFatturabile`, `sku`, ecc. Usarlo per popolare form di selezione prodotti con prezzo causa campi a `0` o vuoti.
+- **Regola**: Quando un modulo necessita dei dati completi di un'entità di un altro modulo opzionale (es. `contracts` necessita dei prodotti completi con prezzo da `products`), utilizzare un **Dynamic Plugin Bridge** che importa condizionalmente il service del modulo sorgente:
+  ```ts
+  if ($menuConfigStore.some(m => m.id === 'products')) {
+    const { ProductsService } = await import('../../products/products.service');
+    productsCatalog = await ProductsService.getProducts();
+  }
+  ```
+  Con fallback a `CacheLookupService.getLookup('products')` nel blocco `catch` per massima resilienza.
 
+---
 
+### 14. Il Campo Prezzo nei Prodotti si Chiama `price` (Non `listPrice` né `unitPrice`)
+- **Lezione**: Lo schema `ProductItem` definisce il prezzo come `price: number`. Accedere a `found.listPrice` o `found.unitPrice` restituisce `undefined`, causando prezzo `0` nel form.
+- **Regola**: Quando si legge il prezzo di un prodotto, utilizzare sempre la catena di fallback con `price` in prima posizione:
+  ```ts
+  const priceVal = parsePriceNumber(found.price ?? found.listPrice ?? found.unitPrice ?? 0);
+  ```
+
+---
+
+### 15. Standardizzazione Inviolabile della Larghezza Form & Schede (100% Full-Width Standard)
+- **Lezione**: Impostare limitazioni artificiali di larghezza massima (es. `max-width: 800px`, `max-width: 900px`) sulle schede di inserimento/modifica dati o sulle impostazioni genera disallineamenti sgradevoli tra le varie sezioni della piattaforma (es. form di Clienti, Qualifiche ed Utenti che occupano il 100% della pagina vs form di Contratti rimpiccioliti al centro con vistosi margini vuoti).
+- **Regola**: TUTTE le pagine e schede di form/inserimento/dettaglio/impostazioni in Gestoray DEVONO occupare il **100% della larghezza disponibile** (`width: 100%`). È fatto **divieto assoluto** di impostare `max-width` o `margin: 0 auto` sui contenitori principali di pagina delle schede form. La distribuzione visiva dei campi deve essere gestita esclusivamente dal sistema interno di grid flessibile (`.form-group-row` / `.fields-grid`).
 
 
 

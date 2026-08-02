@@ -17,8 +17,7 @@
     Eye, 
     Edit, 
     Trash2, 
-    Filter,
-    Settings
+    Filter
   } from '@lucide/svelte';
 
   let settings = $state<ContractSettings>({
@@ -106,13 +105,11 @@
     </div>
 
     <div class="header-btns">
-      <a href="/dashboard/settings/contracts" class="btn-secondary" title="Impostazioni Numerazione e Denominazione">
-        <Settings size={18} />
-      </a>
       <a href="/dashboard/contracts/add" class="btn-primary">
         <Plus size={18} /> {labels.newSingular}
       </a>
     </div>
+
   </div>
 
   <!-- KPI CARDS -->

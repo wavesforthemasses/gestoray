@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package, Briefcase } from '@lucide/svelte';
+  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package, Briefcase, FileText } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -20,6 +20,7 @@
   let hasInterventiModule = $derived($menuConfigStore.some((item) => item.id === 'interventi'));
   let hasActivitiesModule = $derived($menuConfigStore.some((item) => item.id === 'activities'));
   let hasProductsModule = $derived($menuConfigStore.some((item) => item.id === 'products'));
+  let hasContractsModule = $derived($menuConfigStore.some((item) => item.id === 'contracts'));
 </script>
 
 <div class="settings-hub animate-fade-in">
@@ -100,6 +101,15 @@
         title="Configurazione Campi Scheda Prodotto"
         description="Personalizza la visibilità e l'obbligatorietà dei campi (Codice SKU, Giacenza, Minimo Fatturabile, Categoria, Descrizione) nei form e nelle tabelle."
         icon={Package}
+      />
+    {/if}
+
+    {#if hasContractsModule}
+      <SettingsNavCard 
+        href="/dashboard/settings/contracts"
+        title="Configurazione Contratti & Preventivi"
+        description="Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza."
+        icon={FileText}
       />
     {/if}
 

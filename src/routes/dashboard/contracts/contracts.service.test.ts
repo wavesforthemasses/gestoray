@@ -30,8 +30,9 @@ describe('ContractsService Unit Tests', () => {
       title: 'Contratto Manutenzione Sede',
       clientId: 'client_1',
       clientName: 'Cliente Prova Srl',
-      type: 'Canone Ricorrente',
+      type: 'Ricorrente',
       totalAmount: 1200,
+
       billingFrequency: 'mensile',
       startDate: '2026-01-01',
       endDate: '2026-12-31',

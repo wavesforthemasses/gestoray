@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { ContractSettingsService } from '../../contracts/contractSettingsService';
-  import type { ContractSettings } from '../../contracts/schema';
+  import type { ContractSettings, ContractType, NonRecurringEndDateMode } from '../../contracts/schema';
 
   import { toast } from '$lib/stores/toast.svelte';
   import { Card, FormField, Button } from '$lib';
-  import { FileText, Save, RefreshCw, Hash, Settings } from '@lucide/svelte';
+  import { FileText, Save, RefreshCw, Hash, Settings, Calendar } from '@lucide/svelte';
 
   let settings = $state<ContractSettings>({
     entityNaming: 'contract',
@@ -14,15 +14,31 @@
     numberPadding: 4,
     lastNumber: 0,
     resetCounterAnnually: true,
-    lastCounterYear: new Date().getFullYear()
+    lastCounterYear: new Date().getFullYear(),
+    allowedTypes: ['Ricorrente', 'Non Ricorrente'],
+    defaultInitialStatus: 'bozza',
+    defaultTermsAndConditions: '',
+    nonRecurringEndDateMode: 'optional'
   });
 
   let loading = $state(true);
   let saving = $state(false);
 
+  const ALL_CONTRACT_TYPES: ContractType[] = [
+    'Ricorrente',
+    'Non Ricorrente'
+  ];
+
   onMount(async () => {
     try {
-      settings = await ContractSettingsService.getSettings();
+      const s = await ContractSettingsService.getSettings();
+      settings = {
+        ...s,
+        allowedTypes: s.allowedTypes && s.allowedTypes.length > 0 
+          ? s.allowedTypes 
+          : ['Ricorrente', 'Non Ricorrente'],
+        nonRecurringEndDateMode: s.nonRecurringEndDateMode || 'optional'
+      };
     } catch (e) {
       console.error('Errore caricamento impostazioni contratti:', e);
       toast.error('Impossibile caricare le impostazioni');
@@ -30,6 +46,19 @@
       loading = false;
     }
   });
+
+  function toggleType(type: ContractType) {
+    let current = settings.allowedTypes || [];
+    if (current.includes(type)) {
+      if (current.length === 1) {
+        toast.info('Devi mantenere abilitata almeno una tipologia contrattuale');
+        return;
+      }
+      settings.allowedTypes = current.filter(t => t !== type);
+    } else {
+      settings.allowedTypes = [...current, type];
+    }
+  }
 
   async function handleSave(e: Event) {
     e.preventDefault();
@@ -64,7 +93,7 @@
         <Settings size={28} color="var(--color-primary-600)" />
         Impostazioni Contratti & Preventivi
       </h2>
-      <p class="subtitle">Configura la denominazione ufficiale, il formato di numerazione automatica ed i contatori progressivi.</p>
+      <p class="subtitle">Configura la denominazione ufficiale, il formato di numerazione automatica, le tipologie abilitate e la gestione della data di scadenza.</p>
     </div>
   </div>
 
@@ -95,7 +124,54 @@
         </div>
       </Card>
 
-      <!-- 2. FORMATO NUMERAZIONE AUTOMATICA -->
+      <!-- 2. TIPOLOGIE CONTRATTUALI ABILITATE -->
+      <Card title="Tipologie Contrattuali Abilitate nel Workspace" description="Seleziona quali tipologie mostrare nei form (Ricorrente / Non Ricorrente). Se è attiva una sola tipologia, verrà pre-selezionata automaticamente.">
+        <div class="checkbox-group-grid">
+          {#each ALL_CONTRACT_TYPES as t}
+            <label class="checkbox-box-label {settings.allowedTypes?.includes(t) ? 'active' : ''}">
+              <input 
+                type="checkbox" 
+                checked={settings.allowedTypes?.includes(t)} 
+                onchange={() => toggleType(t)}
+              />
+              <span class="type-name">{t === 'Ricorrente' ? 'Ricorrente (Canoni & Abbonamenti)' : 'Non Ricorrente (Forniture & Quotazioni una tantum)'}</span>
+            </label>
+          {/each}
+        </div>
+      </Card>
+
+      <!-- 3. DATA DI SCADENZA PER CONTRATTI NON RICORRENTI -->
+      <Card title="Gestione Data Scadenza per Contratti Non Ricorrenti" description="Pianifica come deve comportarsi il campo 'Data Scadenza' quando l'utente crea o modifica un contratto o preventivo Non Ricorrente (una tantum).">
+        <div class="grid-2">
+          <FormField id="nonRecurringEndDateMode" label="MODALITÀ DATA SCADENZA PER NON RICORRENTI">
+            <select id="nonRecurringEndDateMode" bind:value={settings.nonRecurringEndDateMode} class="form-select">
+              <option value="optional">Opzionale (Consigliato - la data di fine è mostrata ma facoltativa)</option>
+              <option value="hidden">Nascosta (la data di fine viene del tutto rimossa dai contratti non ricorrenti)</option>
+              <option value="required">Obbligatoria (la data di fine è sempre richiesta)</option>
+            </select>
+          </FormField>
+        </div>
+      </Card>
+
+      <!-- 4. STATO INIZIALE & VALORI PREDEFINITI -->
+      <Card title="Stato Iniziale & Valori Predefiniti Documento" description="Configura lo stato predefinito (Bozza) ed i termini contrattuali standard per i nuovi documenti.">
+        <div class="grid-2">
+          <FormField id="defaultInitialStatus" label="STATO INIZIALE PREDEFINITO PER NUOVI DOCUMENTI">
+            <select id="defaultInitialStatus" bind:value={settings.defaultInitialStatus} class="form-select">
+              <option value="bozza">Bozza (Consigliato)</option>
+              <option value="inviato">Inviato al Cliente</option>
+              <option value="attivo">Attivo / Accettato</option>
+            </select>
+          </FormField>
+        </div>
+
+        <div class="form-group margin-top-12">
+          <label for="defaultTerms">Termini & Condizioni Predefiniti (Footer Documento)</label>
+          <textarea id="defaultTerms" bind:value={settings.defaultTermsAndConditions} rows="3" placeholder="es. Offerta valida 30 giorni dalla data di emissione. Pagamento come da accordi contrattuali..."></textarea>
+        </div>
+      </Card>
+
+      <!-- 5. FORMATO NUMERAZIONE AUTOMATICA -->
       <Card title="Formato Numerazione Automatica" description="Personalizza il prefisso, l'anno e la lunghezza delle cifre del numero sequenziale.">
         <div class="grid-2">
           <FormField id="prefix" label="PREFISSO NUMERAZIONE">
@@ -107,7 +183,7 @@
           </FormField>
         </div>
 
-        <div class="toggles-grid">
+        <div class="toggles-grid margin-top-12">
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={settings.includeYear} />
             <span>Includi l'anno corrente nel numero (es. {settings.prefix || ''}{new Date().getFullYear()}-0001)</span>
@@ -120,7 +196,7 @@
         </div>
       </Card>
 
-      <!-- 3. GESTIONE CONTATORE PROGRESSIVO -->
+      <!-- 6. GESTIONE CONTATORE PROGRESSIVO -->
       <Card title="Contatore Progressivo Attuale" description="Visualizza e modifica manualmente l'ultimo numero progressivo generato.">
         <div class="grid-2 align-end">
           <FormField id="lastNumber" label="ULTIMO NUMERO PROGRESSIVO GENERATO">
@@ -178,7 +254,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 16px;
-    margin-top: 8px;
   }
 
   .radio-label {
@@ -186,108 +261,134 @@
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    background: var(--bg-surface, #ffffff);
   }
 
   .radio-label.active {
-    border-color: var(--color-primary-600, #2563eb);
-    background: #eff6ff;
-  }
-
-  .radio-label strong {
-    display: block;
-    font-size: 15px;
-    margin-bottom: 4px;
+    border-color: var(--color-primary, #2563eb);
+    background: var(--bg-subtle, #f8fafc);
   }
 
   .radio-label p {
-    font-size: 13px;
-    color: var(--color-neutral-600, #4b5563);
-    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #64748b);
+    margin: 4px 0 0 0;
+  }
+
+  .checkbox-group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .checkbox-box-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--bg-surface, #ffffff);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .checkbox-box-label.active {
+    border-color: var(--color-primary, #2563eb);
+    background: var(--bg-subtle, #f8fafc);
+    color: var(--color-primary, #2563eb);
+    font-weight: 600;
   }
 
   .grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 16px;
   }
 
-  .align-end {
-    align-items: flex-end;
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .form-select, textarea {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    font-size: 0.875rem;
+    background: var(--bg-surface, #ffffff);
+    color: var(--text-main, #334155);
+  }
+
+  .checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
   }
 
   .toggles-grid {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-neutral-200, #e5e7eb);
+    gap: 10px;
   }
 
-  .checkbox-label {
+  .actions-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--color-primary-600, #2563eb);
-    color: white;
-    padding: 10px 24px;
-    border-radius: var(--radius-md, 8px);
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
+    padding-bottom: 2px;
   }
 
   .btn-secondary {
+    background: var(--bg-surface, #ffffff);
+    border: 1px solid var(--border-color, #cbd5e1);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: var(--color-neutral-100, #f3f4f6);
-    color: var(--color-neutral-800, #1f2937);
-    padding: 10px 16px;
-    border-radius: var(--radius-md, 8px);
-    font-weight: 600;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    cursor: pointer;
+    gap: 6px;
   }
 
   .submit-bar {
     display: flex;
     justify-content: flex-end;
-    margin-top: 12px;
+    padding: 12px 0;
+  }
+
+  .btn-primary {
+    background: var(--color-primary, #2563eb);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .loading-box {
     padding: 40px;
     text-align: center;
-    background: white;
-    border-radius: 12px;
+    color: var(--text-muted, #64748b);
   }
 
-  input[type="text"], input[type="number"] {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    box-sizing: border-box;
-  }
-
-  input[type="text"]:focus, input[type="number"]:focus {
-    border-color: var(--color-primary-500, #3b82f6);
-  }
+  .margin-top-12 { margin-top: 12px; }
+  .align-end { align-items: flex-end; }
 </style>

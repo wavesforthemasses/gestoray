@@ -234,7 +234,9 @@
 <style>
   .settings-page {
     padding: 24px 0;
-    max-width: 900px;
+  }
+  .settings-clients-container {
+    width: 100%;
   }
   .page-header {
     display: flex;

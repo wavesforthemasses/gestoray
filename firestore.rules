@@ -143,8 +143,13 @@ service cloud.firestore {
       allow read, write: if isAuth();
     }
 
-
-
+    // --- MODULE: products BEGIN ---
+    // PRODUCTS
+match /products/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: products END ---
 
     // --- MODULE: contracts BEGIN ---
     // CONTRACTS & INSTALLMENTS
@@ -160,14 +165,6 @@ match /contracts/{contractId} {
   }
 }
     // --- MODULE: contracts END ---
-
-    // --- MODULE: products BEGIN ---
-    // PRODUCTS
-match /products/{docId} {
-  allow read: if isAuth();
-  allow write: if isAdmin();
-}
-    // --- MODULE: products END ---
   }
 }
 
