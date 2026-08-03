@@ -84,36 +84,6 @@ export class DashboardService {
         kpis.totalClienti = clientsCountSnap.data().count;
       } catch (e) { console.error("Error clients count", e); }
 
-      if (hasContracts) {
-        try {
-          const contractsSnap = await getDocs(collection(db, 'contracts'));
-          let totalVenduto = 0;
-          let totalContratti = contractsSnap.size;
-          let pendingContratti = 0;
-
-          contractsSnap.forEach((d: any) => {
-            const data = d.data();
-            const val = data.totalAmount ?? data.original?.totalPrice ?? 0;
-            const status = data.status ?? data.original?.status ?? 'bozza';
-            totalVenduto += val;
-            if (status === 'bozza' || status === 'inviato' || status === 'pending') {
-              pendingContratti++;
-            }
-          });
-
-          kpis.totalVenduto = totalVenduto;
-          kpis.totalContratti = totalContratti;
-          kpis.pendingContratti = pendingContratti;
-        } catch (e) { console.error("Error contracts KPIs", e); }
-      }
-
-      if (hasPayments) {
-        try {
-          const paymentsValSnap = await getAggregateFromServer(collection(db, 'payments'), { val: sum('original.amount') });
-          kpis.totalIncassato = paymentsValSnap.data().val || 0;
-        } catch (e) { console.error("Error payments KPIs", e); }
-      }
-
       try {
         const nncfCountSnap = await getCountFromServer(query(collection(db, 'clients'), where('derived.nncfOrderId', '!=', null)));
         kpis.totalNNCF = nncfCountSnap.data().count;
@@ -126,6 +96,26 @@ export class DashboardService {
           kpis.usersList.push({ uid: d.id, ...u });
         });
       } catch (e) { console.error("Error users list", e); }
+    }
+
+    // 3. Dynamic Module KPI Bridges Dispatcher (100% Pure Agnostic Core)
+    const KPI_BRIDGES: Record<string, () => Promise<any>> = {
+      contracts: () => import('./contracts/contracts.kpi.bridge')
+    };
+
+    for (const modId of activeModuleIds) {
+      if (KPI_BRIDGES[modId]) {
+        try {
+          const bridgeModule = await KPI_BRIDGES[modId]();
+          const bridgeClass = bridgeModule.ContractsKPIBridge || bridgeModule.default;
+          if (bridgeClass?.fetchKPIs) {
+            const moduleKPIs = await bridgeClass.fetchKPIs({ role, uid: myUid });
+            Object.assign(kpis, moduleKPIs);
+          }
+        } catch (e) {
+          console.warn(`KPI Bridge execution skipped for uninstalled module ${modId}:`, e);
+        }
+      }
     }
 
     // 3. Fetch activity counts if activities module is active
@@ -321,36 +311,24 @@ export class DashboardService {
     const matchQuery = (val: string | undefined, q: string) => !q || (val?.toLowerCase().includes(q.toLowerCase()) || false);
     let items: any[] = [];
     
-    // 1. Fetch data directly for the period
+    // 1. Fetch data directly for the period via dynamic KPI bridge if available
     if (activeChartTab === 'vss') {
-      if (isComm) {
-        const [pSnap, sSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('agentId', '==', myUid))),
-          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid)))
-        ]);
-        pSnap.forEach((d: any) => {
-          const data = d.data();
-          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
-          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString()) {
-            items.push({ id: d.id, ...data });
-          }
-        });
-        sSnap.forEach((d: any) => {
-          const data = d.data();
-          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
-          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString() && !items.some(x => x.id === d.id)) {
-            items.push({ id: d.id, ...data });
-          }
-        });
-      } else {
-        const snap = await getDocs(collection(db, 'contracts'));
-        snap.forEach((d: any) => {
-          const data = d.data();
-          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
-          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString()) {
-            items.push({ id: d.id, ...data });
-          }
-        });
+      try {
+        const bridgeModule: any = await import('./contracts/contracts.kpi.bridge');
+        const bridgeClass = bridgeModule.ContractsKPIBridge || bridgeModule.default;
+        if (bridgeClass?.fetchDrillDownItems) {
+          return await bridgeClass.fetchDrillDownItems({
+            period,
+            tab: activeChartTab,
+            role,
+            uid: myUid,
+            clientFilter,
+            vendorFilter,
+            productFilter
+          });
+        }
+      } catch (e) {
+        console.warn('Contracts KPI Bridge drill-down fallback:', e);
       }
     } else if (activeChartTab === 'gi' || activeChartTab === 'payments') {
       const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));

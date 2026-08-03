@@ -26,6 +26,7 @@
       "description": "Gestione contratti e ordini",
       "icon": "FileText",
       "path": "/dashboard/contracts",
+      "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
       "rolesView": [
         "superadmin",
         "direzione",
@@ -37,14 +38,91 @@
         "linkFieldPath": "original.clientId",
         "redactFields": [
           {
-            "fieldPath": "original.notes",
+            "fieldPath": "notes",
             "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
           },
           {
-            "fieldPath": "original.clientNotes",
+            "fieldPath": "clientNotes",
             "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
           }
         ]
+      },
+      "schema": {
+        "fields": {
+          "contractNumber": {
+            "type": "string",
+            "description": "Numero sequenziale del contratto (es. CTR-2026-0001)",
+            "tags": [
+              "filter:number",
+              "search",
+              "sort"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Oggetto o descrizione sintetica del contratto",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "clientId": {
+            "type": "string",
+            "description": "ID del cliente intestatario del contratto",
+            "tags": [
+              "filter:client",
+              "relation:clients"
+            ]
+          },
+          "clientName": {
+            "type": "string",
+            "description": "Ragione sociale / nome del cliente al momento del salvataggio",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "agentId": {
+            "type": "string",
+            "description": "UID dell'agente responsabile del contratto",
+            "tags": [
+              "filter:agent",
+              "kpi:user_sales"
+            ]
+          },
+          "totalAmount": {
+            "type": "currency",
+            "description": "Valore totale del contratto al netto degli sconti",
+            "tags": [
+              "kpi:vss",
+              "filter:amount",
+              "chart:aggregate"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato operativo (bozza, inviato, attivo, accettato, in_scadenza, scaduto)",
+            "tags": [
+              "filter:status",
+              "kpi:pending_contracts"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipologia contrattuale (Ricorrente, Non Ricorrente)",
+            "tags": [
+              "filter:type"
+            ]
+          },
+          "createdAt": {
+            "type": "datetime",
+            "description": "Data ISO 8601 di creazione del contratto",
+            "tags": [
+              "filter:date",
+              "sort:default"
+            ]
+          }
+        }
       }
     }
   ]
