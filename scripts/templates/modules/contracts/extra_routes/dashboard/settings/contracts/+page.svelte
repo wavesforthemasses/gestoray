@@ -15,7 +15,8 @@
     lastNumber: 0,
     resetCounterAnnually: true,
     lastCounterYear: new Date().getFullYear(),
-    allowedTypes: ['Ricorrente', 'Non Ricorrente'],
+    allowedTypes: ['Non Ricorrente'],
+    defaultType: 'Non Ricorrente',
     defaultInitialStatus: 'bozza',
     defaultTermsAndConditions: '',
     nonRecurringEndDateMode: 'optional'
@@ -36,7 +37,8 @@
         ...s,
         allowedTypes: s.allowedTypes && s.allowedTypes.length > 0 
           ? s.allowedTypes 
-          : ['Ricorrente', 'Non Ricorrente'],
+          : ['Non Ricorrente'],
+        defaultType: s.defaultType || (s.allowedTypes && s.allowedTypes.length > 0 ? s.allowedTypes[0] : 'Non Ricorrente'),
         nonRecurringEndDateMode: s.nonRecurringEndDateMode || 'optional'
       };
     } catch (e) {
@@ -55,6 +57,10 @@
         return;
       }
       settings.allowedTypes = current.filter(t => t !== type);
+      // If we just disabled the current default, switch to the remaining one
+      if (settings.defaultType === type) {
+        settings.defaultType = settings.allowedTypes[0];
+      }
     } else {
       settings.allowedTypes = [...current, type];
     }
@@ -139,6 +145,30 @@
           {/each}
         </div>
       </Card>
+
+      <!-- 2b. TIPOLOGIA PREDEFINITA -->
+      {#if settings.allowedTypes && settings.allowedTypes.length > 1}
+        <Card title="Tipologia Predefinita per Nuovi Documenti" description="Quando entrambe le tipologie sono abilitate, scegli quale deve essere pre-selezionata alla creazione di un nuovo contratto.">
+          <div class="radio-group">
+            {#each settings.allowedTypes as t}
+              <label class="radio-label {settings.defaultType === t ? 'active' : ''}">
+                <input 
+                  type="radio" 
+                  name="defaultType" 
+                  value={t} 
+                  bind:group={settings.defaultType}
+                />
+                <div>
+                  <strong>{t === 'Ricorrente' ? 'Ricorrente (Canoni & Abbonamenti)' : 'Non Ricorrente (Forniture & Quotazioni)'}</strong>
+                  <p>{t === 'Ricorrente' 
+                    ? 'I nuovi contratti saranno pre-impostati come ricorrenti con frequenza di rinnovo.'
+                    : 'I nuovi contratti saranno pre-impostati come forniture una tantum.'}</p>
+                </div>
+              </label>
+            {/each}
+          </div>
+        </Card>
+      {/if}
 
       <!-- 3. DATA DI SCADENZA PER CONTRATTI NON RICORRENTI -->
       <Card title="Gestione Data Scadenza per Contratti Non Ricorrenti" description="Pianifica come deve comportarsi il campo 'Data Scadenza' quando l'utente crea o modifica un contratto o preventivo Non Ricorrente (una tantum).">

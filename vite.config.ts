@@ -17,6 +17,12 @@ export default defineConfig({
 			adapter: adapter()
 		})
 	],
+	server: {
+		watch: {
+			usePolling: true,
+			interval: 500
+		}
+	},
 	ssr: {
 		noExternal: ['@lucide/svelte', 'lucide-svelte']
 	}

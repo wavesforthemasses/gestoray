@@ -32,24 +32,18 @@ export const getChartAggregations = onCall({ region: 'europe-west3', cors: true 
           results.push(snapshot.data().count || 0);
 
         } else if (entity === 'vss') {
-          let q: admin.firestore.Query = db.collection('contracts');
-          if (filters?.vendorUid) {
-            q = q.where('original.vendorUid', '==', filters.vendorUid);
-          }
-          q = q.where('edits.createdAt', '>=', period.start).where('edits.createdAt', '<=', period.end);
-          // @ts-ignore
-          const snapshot = await q.aggregate({ total: AggregateField.sum('original.totalPrice') }).get();
-          let total = snapshot.data().total || 0;
-
-          if (filters?.vendorUid) {
-            let q2 = db.collection('contracts')
-              .where('original.secondVendorUid', '==', filters.vendorUid)
-              .where('edits.createdAt', '>=', period.start)
-              .where('edits.createdAt', '<=', period.end);
-            // @ts-ignore
-            const snap2 = await q2.aggregate({ total: AggregateField.sum('original.totalPrice') }).get();
-            total += snap2.data().total || 0;
-          }
+          const contractsSnap = await db.collection('contracts').get();
+          let total = 0;
+          contractsSnap.forEach(doc => {
+            const data = doc.data();
+            const created = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+            if (created && created >= period.start && created <= period.end) {
+              const vendorMatch = !filters?.vendorUid || data.agentId === filters.vendorUid || data.original?.vendorUid === filters.vendorUid || data.original?.secondVendorUid === filters.vendorUid;
+              if (vendorMatch) {
+                total += (data.totalAmount ?? data.original?.totalPrice ?? 0);
+              }
+            }
+          });
           results.push(total);
 
         } else if (entity === 'gi' || entity === 'payments') {
@@ -177,18 +171,20 @@ export const scheduledReconciliation = onSchedule(
         const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
 
         // 1. Recalculate monthly sales
-        const salesSnap = await db.collection('contracts')
-          .where('edits.createdAt', '>=', startDate)
-          .where('edits.createdAt', '<=', endDate)
-          .get();
+        const salesSnap = await db.collection('contracts').get();
 
         let monthlyTotalSales = 0;
         let monthlyApprovedSales = 0;
         salesSnap.forEach(sDoc => {
-          const cData = sDoc.data()?.original || {};
-          monthlyTotalSales += (cData.totalPrice || 0);
-          if (cData.status === 'approved') {
-            monthlyApprovedSales += (cData.totalPrice || 0);
+          const data = sDoc.data() || {};
+          const created = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+          if (created && created >= startDate && created <= endDate) {
+            const val = data.totalAmount ?? data.original?.totalPrice ?? 0;
+            const status = data.status ?? data.original?.status ?? 'bozza';
+            monthlyTotalSales += val;
+            if (status === 'attivo' || status === 'accettato' || status === 'approved') {
+              monthlyApprovedSales += val;
+            }
           }
         });
 

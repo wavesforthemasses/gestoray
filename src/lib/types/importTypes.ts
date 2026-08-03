@@ -22,6 +22,7 @@ export interface ImportFieldDef {
   defaultValue?: any;
   validationRegex?: RegExp;
   description?: string;
+  aliases?: string[];
   autoGenerators?: FieldAutoGenerator[];
 }
 

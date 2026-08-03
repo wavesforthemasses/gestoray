@@ -180,5 +180,16 @@ describe('Universal Import Engine Unit Tests', () => {
       expect(states[0].mappedData.price).toBe(350);
       expect(states[1].mappedData.price).toBe(270);
     });
+
+    it('should automatically map headers like Prezzo, Descrizione, Gruppo Prodotto using field aliases', () => {
+      const csvHeaders = ['Descrizione', 'Descrizione Lunga', 'Prezzo', 'Unità', 'Gruppo prodotto', 'Minimo Fatturabile'];
+      const autoMapping = ImportEngineService.autoMapHeaders(csvHeaders, productsImportSpec.fields);
+
+      expect(autoMapping.price).toBe('Prezzo');
+      expect(autoMapping.name).toBe('Descrizione');
+      expect(autoMapping.category).toBe('Gruppo prodotto');
+      expect(autoMapping.unit).toBe('Unità');
+      expect(autoMapping.minimoFatturabile).toBe('Minimo Fatturabile');
+    });
   });
 });

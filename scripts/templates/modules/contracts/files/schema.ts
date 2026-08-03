@@ -36,6 +36,7 @@ export interface ContractSettings {
   resetCounterAnnually: boolean;
   lastCounterYear?: number;
   allowedTypes?: ContractType[];
+  defaultType?: ContractType;
   defaultInitialStatus?: ContractStatus;
   defaultTermsAndConditions?: string;
   nonRecurringEndDateMode?: NonRecurringEndDateMode;

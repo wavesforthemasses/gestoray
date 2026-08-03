@@ -9,7 +9,8 @@ export const DEFAULT_CONTRACT_SETTINGS: ContractSettings = {
   lastNumber: 0,
   resetCounterAnnually: true,
   lastCounterYear: new Date().getFullYear(),
-  allowedTypes: ['Ricorrente', 'Non Ricorrente'],
+  allowedTypes: ['Non Ricorrente'],
+  defaultType: 'Non Ricorrente',
   defaultInitialStatus: 'bozza',
   defaultTermsAndConditions: 'Offerta valida 30 giorni dalla data di emissione. Pagamento come da accordi contrattuali.',
   nonRecurringEndDateMode: 'optional'
@@ -24,7 +25,7 @@ export class ContractSettingsService {
       const snap = await getDoc(ref);
       if (snap.exists()) {
         const raw = snap.data();
-        let allowed = raw.allowedTypes || ['Ricorrente', 'Non Ricorrente'];
+        let allowed = raw.allowedTypes || ['Non Ricorrente'];
         allowed = allowed.map((t: string) => {
           if (t === 'Canone Ricorrente') return 'Ricorrente';
           if (t === 'Fornitura / Quotazione' || t === 'Monte Ore' || t === 'SLA Garantito' || t === 'Licenza / Abbonamento') return 'Non Ricorrente';
@@ -32,10 +33,17 @@ export class ContractSettingsService {
         });
         allowed = Array.from(new Set(allowed));
 
+        // Ensure defaultType is valid: must be within allowedTypes
+        let defaultType = raw.defaultType as string | undefined;
+        if (!defaultType || !allowed.includes(defaultType)) {
+          defaultType = allowed[0];
+        }
+
         return { 
           ...DEFAULT_CONTRACT_SETTINGS, 
           ...raw,
-          allowedTypes: allowed
+          allowedTypes: allowed,
+          defaultType: defaultType as any
         } as ContractSettings;
       }
     } catch (e) {

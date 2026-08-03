@@ -25,11 +25,16 @@ export class ImportEngineService {
     for (const field of moduleFields) {
       const cleanFieldKey = EntityResolutionService.cleanKey(field.key);
       const cleanFieldLabel = EntityResolutionService.cleanKey(field.label);
+      const cleanAliases = (field.aliases || []).map((a) => EntityResolutionService.cleanKey(a));
 
       let matchedHeader = '';
       for (const header of csvHeaders) {
         const cleanHeader = EntityResolutionService.cleanKey(header);
-        if (cleanHeader === cleanFieldKey || cleanHeader === cleanFieldLabel) {
+        if (
+          cleanHeader === cleanFieldKey ||
+          cleanHeader === cleanFieldLabel ||
+          cleanAliases.includes(cleanHeader)
+        ) {
           matchedHeader = header;
           break;
         }

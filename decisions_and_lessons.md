@@ -110,5 +110,26 @@
 - **Lezione**: Impostare limitazioni artificiali di larghezza massima (es. `max-width: 800px`, `max-width: 900px`) sulle schede di inserimento/modifica dati o sulle impostazioni genera disallineamenti sgradevoli tra le varie sezioni della piattaforma (es. form di Clienti, Qualifiche ed Utenti che occupano il 100% della pagina vs form di Contratti rimpiccioliti al centro con vistosi margini vuoti).
 - **Regola**: TUTTE le pagine e schede di form/inserimento/dettaglio/impostazioni in Gestoray DEVONO occupare il **100% della larghezza disponibile** (`width: 100%`). È fatto **divieto assoluto** di impostare `max-width` o `margin: 0 auto` sui contenitori principali di pagina delle schede form. La distribuzione visiva dei campi deve essere gestita esclusivamente dal sistema interno di grid flessibile (`.form-group-row` / `.fields-grid`).
 
+---
+
+### 16. Contratti di Schema TypeScript & Prevenzione Disallineamento Chiavi (Zero Arbitrary Strings)
+- **Lezione**: Accedere a nomi di proprietà liberi in stringhe o presupporre strutture annidate arbitrarie (es. `original.totalPrice` o `edits.createdAt`) quando un modulo definisce uno schema tipo `ContractItem` con campi a livello root (`totalAmount`, `createdAt`, `status`, `agentId`) crea silenziosamente disallineamenti in cui le query restituiscono `0` o array vuoti.
+- **Regola**: 
+  1. Ogni modulo deve definire ed esportare la propria interfaccia TypeScript di riferimento per i documenti Firestore (es. `ContractItem`, `ClientItem`).
+  2. I servizi di dashboard, aggregazione ed analytics (sia client-side che Cloud Functions) DEVONO importare ed utilizzare i tipi ed helper di estrazione oppure supportare esplicitamente la lettura resiliente dei campi dichiarati negli schemi di modulo.
+  3. È fatto divieto di scrivere query aggregate Firestore o filtri su stringhe rigide non verificate contro lo schema ufficiale del modulo. In fase di sviluppo, verificare sempre che i nomi campo nelle query coincidano esattamente con le chiavi salvate dal `Service.create` del modulo.
+
+---
+
+### 17. Dynamic KPI Bridges & Schema Field Registry (Agnostic Core Dashboard Standard)
+- **Lezione**: Inserire `if (hasContracts)` o query hardcodate su collezioni di moduli opzionali (es. `contracts`, `payments`, `commissions_closings`) direttamente dentro il file Core `dashboard.service.ts` viola gravemente la modularità pura. Se un modulo viene disinstallato via CLI (`npm run module:uninstall`), il codice del Core rischia di rimanere sporco di riferimenti a collezioni morte.
+- **Regola**:
+  1. **Agnostic Core Dashboard**: `dashboard.service.ts` non deve contenere NESSUN riferimento cablato a collezioni di moduli opzionali. Deve agire esclusivamente come un orchestratore agnostico che interroga `modules.registry.json`.
+  2. **Module KPI Bridge**: Ogni modulo opzionale che fornisce metriche o dati di aggregazione deve definire ed esportare un bridge dedicato (`<modulo>.kpi.bridge.ts`) collocato dentro il modulo stesso.
+  3. **Schema Field Registry**: Ogni modulo deve definire nel proprio `module.json` la mappa dei metadati dei propri campi (`schema.fields`) indicando per ciascuna chiave il tipo, la descrizione e i tag di ruolo (`kpi:vss`, `filter:date`, `search`, ecc.).
+  4. **Dynamic Import**: Il Core Dashboard carica ed invoca i KPI Bridges unicamente tramite `import()` dinamici in base ai moduli attualmente attivi in `modules.registry.json`. All'atto della disinstallazione di un modulo, il bridge viene rimosso ed il Core rimane pulito al 100%.
+
+
+
 
 

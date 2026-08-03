@@ -86,14 +86,24 @@ export class DashboardService {
 
       if (hasContracts) {
         try {
-          const [allContractsValSnap, contractsCountSnap, pendingContractsSnap] = await Promise.all([
-            getAggregateFromServer(collection(db, 'contracts'), { val: sum('original.totalPrice') }),
-            getCountFromServer(collection(db, 'contracts')),
-            getCountFromServer(query(collection(db, 'contracts'), where('original.status', '==', 'pending')))
-          ]);
-          kpis.totalVenduto = allContractsValSnap.data().val || 0;
-          kpis.totalContratti = contractsCountSnap.data().count;
-          kpis.pendingContratti = pendingContractsSnap.data().count;
+          const contractsSnap = await getDocs(collection(db, 'contracts'));
+          let totalVenduto = 0;
+          let totalContratti = contractsSnap.size;
+          let pendingContratti = 0;
+
+          contractsSnap.forEach((d: any) => {
+            const data = d.data();
+            const val = data.totalAmount ?? data.original?.totalPrice ?? 0;
+            const status = data.status ?? data.original?.status ?? 'bozza';
+            totalVenduto += val;
+            if (status === 'bozza' || status === 'inviato' || status === 'pending') {
+              pendingContratti++;
+            }
+          });
+
+          kpis.totalVenduto = totalVenduto;
+          kpis.totalContratti = totalContratti;
+          kpis.pendingContratti = pendingContratti;
         } catch (e) { console.error("Error contracts KPIs", e); }
       }
 
@@ -315,14 +325,32 @@ export class DashboardService {
     if (activeChartTab === 'vss') {
       if (isComm) {
         const [pSnap, sSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()))),
-          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())))
+          getDocs(query(collection(db, 'contracts'), where('agentId', '==', myUid))),
+          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid)))
         ]);
-        pSnap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
-        sSnap.forEach((d: any) => { if (!items.some(x => x.id === d.id)) items.push({ id: d.id, ...d.data() }); });
+        pSnap.forEach((d: any) => {
+          const data = d.data();
+          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString()) {
+            items.push({ id: d.id, ...data });
+          }
+        });
+        sSnap.forEach((d: any) => {
+          const data = d.data();
+          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString() && !items.some(x => x.id === d.id)) {
+            items.push({ id: d.id, ...data });
+          }
+        });
       } else {
-        const snap = await getDocs(query(collection(db, 'contracts'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())));
-        snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
+        const snap = await getDocs(collection(db, 'contracts'));
+        snap.forEach((d: any) => {
+          const data = d.data();
+          const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+          if (dt && dt >= period.start.toISOString() && dt <= period.end.toISOString()) {
+            items.push({ id: d.id, ...data });
+          }
+        });
       }
     } else if (activeChartTab === 'gi' || activeChartTab === 'payments') {
       const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
@@ -401,11 +429,17 @@ export class DashboardService {
       const isComm = role === 'commerciale';
       if (activeChartTab === 'vss') {
         const orig = item.original || {};
-        let displayVal = orig.totalPrice || 0;
+        const totalVal = item.totalAmount ?? orig.totalPrice ?? 0;
+        const statusVal = item.status ?? orig.status ?? 'bozza';
+        const clientNameVal = item.clientName || orig.clientName || 'Cliente';
+        const agentNameVal = item.agentName || orig.vendorEmail || orig.createdBy || 'Commerciale';
+        const createdDateVal = item.createdAt || item.edits?.createdAt || orig.createdAt;
+
+        let displayVal = totalVal;
         let info = 'Quota Primario (100%)';
         if (orig.secondVendorUid) {
           if (isComm) {
-            if (orig.vendorUid === myUid) {
+            if (orig.vendorUid === myUid || item.agentId === myUid) {
               displayVal = displayVal * (100 - orig.secondVendorShare) / 100;
               info = `Quota Primario (${100 - orig.secondVendorShare}%)`;
             } else {
@@ -417,8 +451,8 @@ export class DashboardService {
           }
         }
         return {
-          id: item.id, cliente: orig.clientName, consulente: orig.vendorEmail + (orig.secondVendorEmail ? ` / ${orig.secondVendorEmail}` : ''),
-          data: formatDate(item.edits?.createdAt || orig.createdAt), valore: displayVal, dettaglio: info, status: orig.status === 'approved' ? 'Approvato' : 'In attesa', link: `/dashboard/contracts/${item.id}`
+          id: item.id, cliente: clientNameVal, consulente: agentNameVal,
+          data: formatDate(createdDateVal), valore: displayVal, dettaglio: info, status: statusVal, link: `/dashboard/contracts/${item.id}`
         };
       } else if (activeChartTab === 'gi') {
         const orig = item.original || {};

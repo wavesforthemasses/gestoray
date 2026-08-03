@@ -21,7 +21,7 @@ export function normalizeUnitOfMeasure(rawUnit: string): string {
 
 export function parseMinimoFatturabile(raw: any): MinimoFatturabileConfig | undefined {
   if (!raw) return undefined;
-  
+
   if (typeof raw === 'object' && raw.enabled !== undefined) {
     return raw as MinimoFatturabileConfig;
   }
@@ -70,7 +70,8 @@ export const productsImportSpec: ImportModuleSpec = {
       key: 'name',
       label: 'Nome Prodotto / Servizio',
       type: 'string',
-      required: true
+      required: true,
+      aliases: ['nome', 'titolo', 'prodotto', 'servizio', 'nome prodotto', 'descrizione']
     },
     {
       key: 'sku',
@@ -78,6 +79,7 @@ export const productsImportSpec: ImportModuleSpec = {
       type: 'string',
       required: false,
       defaultValue: '',
+      aliases: ['codice', 'codice sku', 'sku', 'art', 'articolo', 'codice articolo'],
       autoGenerators: [
         {
           key: '__sku_seq',
@@ -91,14 +93,16 @@ export const productsImportSpec: ImportModuleSpec = {
       label: 'Categoria',
       type: 'string',
       required: false,
-      defaultValue: 'Generale'
+      defaultValue: 'Generale',
+      aliases: ['categoria', 'gruppo', 'gruppo prodotto', 'famiglia']
     },
     {
       key: 'price',
       label: 'Prezzo (€ / Suggerito)',
       type: 'currency',
       required: false,
-      defaultValue: 0
+      defaultValue: 0,
+      aliases: ['prezzo', 'prezzo unitario', 'prezzo suggerito', 'listino', 'importo', 'costo']
     },
     {
       key: 'unit',
@@ -106,6 +110,7 @@ export const productsImportSpec: ImportModuleSpec = {
       type: 'string',
       required: false,
       defaultValue: 'pz',
+      aliases: ['unita', 'unità', 'unita di misura', 'unità di misura', 'um', 'u.m.'],
       description: 'Normalizza automatica di valori tipo Pezzi -> pz, Kili -> kg, Metri -> m, Ore -> ora'
     },
     {
@@ -113,7 +118,8 @@ export const productsImportSpec: ImportModuleSpec = {
       label: 'Giacenza / Quantità',
       type: 'number',
       required: false,
-      defaultValue: 0
+      defaultValue: 0,
+      aliases: ['giacenza', 'quantita', 'quantità', 'stock', 'qta', 'qtà']
     },
     {
       key: 'minimoFatturabile',
@@ -121,6 +127,7 @@ export const productsImportSpec: ImportModuleSpec = {
       type: 'string',
       required: false,
       defaultValue: '',
+      aliases: ['minimo fatturabile', 'minimo', 'minimo ordine'],
       description: 'Condizione o testo minimo fatturabile (es. "Sotto i 20 mc 7000€" oppure "20 mc = 7000€")'
     },
     {
@@ -128,7 +135,8 @@ export const productsImportSpec: ImportModuleSpec = {
       label: 'Descrizione / Note',
       type: 'string',
       required: false,
-      defaultValue: ''
+      defaultValue: '',
+      aliases: ['descrizione lunga', 'note', 'dettaglio', 'descrizione']
     }
   ],
 

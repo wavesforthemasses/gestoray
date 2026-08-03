@@ -76,7 +76,7 @@
   let clientId = $state('');
   let agentId = $state('');
   let projectId = $state('');
-  let type = $state<ContractType>('Ricorrente');
+  let type = $state<ContractType>('Non Ricorrente');
   let billingFrequency = $state<RecurringFrequency>('mensile');
   let startDate = $state(new Date().toISOString().slice(0, 10));
   let endDate = $state(new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10));
@@ -153,9 +153,7 @@
         }
       }
 
-      if (s.allowedTypes && s.allowedTypes.length > 0) {
-        type = s.allowedTypes[0];
-      }
+      type = s.defaultType || (s.allowedTypes && s.allowedTypes.length > 0 ? s.allowedTypes[0] : 'Non Ricorrente');
 
       if ($menuConfigStore.some(m => m.id === 'products')) {
         try {

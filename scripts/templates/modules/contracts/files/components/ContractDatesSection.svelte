@@ -37,20 +37,22 @@
   </div>
 
   <div class="dates-grid">
-    <!-- Row 1: Tipologia (50%) & Stato (50%) -->
-    <div class="col-type">
-      <FormField id="type" label={`${labels.typeLabel} *`}>
-        <select id="type" bind:value={type} disabled={availableTypes.length <= 1}>
-          {#each availableTypes as t}
-            <option value={t}>
-              {t === 'Ricorrente' ? 'Ricorrente (Canone / Abbonamento)' : 'Non Ricorrente (Fornitura / Quotazione)'}
-            </option>
-          {/each}
-        </select>
-      </FormField>
-    </div>
+    <!-- Row 1: Tipologia (50%) & Stato (50%) — Tipologia nascosta se un solo tipo -->
+    {#if availableTypes.length > 1}
+      <div class="col-type">
+        <FormField id="type" label={`${labels.typeLabel} *`}>
+          <select id="type" bind:value={type}>
+            {#each availableTypes as t}
+              <option value={t}>
+                {t === 'Ricorrente' ? 'Ricorrente (Canone / Abbonamento)' : 'Non Ricorrente (Fornitura / Quotazione)'}
+              </option>
+            {/each}
+          </select>
+        </FormField>
+      </div>
+    {/if}
 
-    <div class="col-status">
+    <div class={availableTypes.length > 1 ? "col-status" : "col-full"}>
       <FormField id="status" label="Stato Iniziale Documento *">
         <select id="status" bind:value={status}>
           <option value="bozza">Bozza</option>
@@ -64,7 +66,7 @@
     <!-- Row 2: Frequenza + Dates -->
     {#if type === 'Ricorrente'}
       <div class="col-third">
-        <FormField id="billingFrequency" label="Frequenza Fatturazione">
+        <FormField id="billingFrequency" label="Frequenza Rinnovo">
           <select id="billingFrequency" bind:value={billingFrequency}>
             <option value="mensile">Mensile</option>
             <option value="bimestrale">Bimestrale</option>

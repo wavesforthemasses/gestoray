@@ -18,6 +18,25 @@ import { ContractSettingsService } from './contractSettingsService';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { generateSearchTerms } from '$lib/search-utils';
 
+function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      result[key] = sanitizeFirestoreData(value);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map(item =>
+        item !== null && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date)
+          ? sanitizeFirestoreData(item)
+          : item === undefined ? null : item
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
+
 export class ContractsService {
   private static COLLECTION_NAME = 'contracts';
 
@@ -100,7 +119,7 @@ export class ContractsService {
 
     const textSearch = generateSearchTerms(`${contractNumber} ${effectiveTitle} ${data.clientName || ''}`);
     
-    const payload = {
+    const payload = sanitizeFirestoreData({
       ...data,
       contractNumber,
       title: effectiveTitle,
@@ -109,8 +128,7 @@ export class ContractsService {
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    };
-
+    });
 
     const docRef = await addDoc(collection(db, this.COLLECTION_NAME), payload);
 
@@ -149,7 +167,8 @@ export class ContractsService {
     }
 
     sanitized.updatedAt = new Date().toISOString();
-    await updateDoc(doc(db, this.COLLECTION_NAME, id), sanitized);
+    const finalSanitized = sanitizeFirestoreData(sanitized);
+    await updateDoc(doc(db, this.COLLECTION_NAME, id), finalSanitized);
   }
 
   static async deleteContract(id: string): Promise<void> {

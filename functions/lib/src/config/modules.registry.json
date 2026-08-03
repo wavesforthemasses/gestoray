@@ -1,3 +1,51 @@
 {
-    "modules": []
+    "modules": [
+        {
+            "id": "products",
+            "label": "Gestione Prodotti",
+            "description": "Catalogo prodotti, servizi e listini prezzi",
+            "icon": "Package",
+            "path": "/dashboard/products",
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "anonymization": {
+                "collectionName": "products",
+                "linkFieldPath": "id",
+                "redactFields": []
+            }
+        },
+        {
+            "id": "contracts",
+            "label": "Contratti",
+            "description": "Gestione contratti e ordini",
+            "icon": "FileText",
+            "path": "/dashboard/contracts",
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione"
+            ],
+            "enabled": true,
+            "anonymization": {
+                "collectionName": "contracts",
+                "linkFieldPath": "original.clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "original.notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "original.clientNotes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    }
+                ]
+            }
+        }
+    ]
 }
