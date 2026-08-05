@@ -22,7 +22,7 @@ test.describe('Login Page', () => {
   });
 
   test('flusso completo: email → PIN → redirect a /dashboard', async ({ page }) => {
-    const email = 'test-admin@gestoray.local';
+    const email = 'test-admin@app.local';
     const pinDocUrl = `http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents/login_pins/${email}`;
 
     // Pulisci PIN vecchio
@@ -61,7 +61,7 @@ test.describe('Login Page', () => {
   });
 
   test('mostra errore se si inserisce un PIN errato', async ({ page }) => {
-    const email = 'test-admin@gestoray.local';
+    const email = 'test-admin@app.local';
     
     // Step 1: Inserisci email e invia
     await page.fill('input[type="email"]', email);
@@ -80,7 +80,7 @@ test.describe('Login Page', () => {
   });
 
   test('il bottone "Indietro" torna allo step email', async ({ page }) => {
-    const email = 'test-admin@gestoray.local';
+    const email = 'test-admin@app.local';
     const pinDocUrl = `http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents/login_pins/${email}`;
     await fetch(pinDocUrl, { method: 'DELETE', headers: { 'Authorization': 'Bearer owner' } });
 

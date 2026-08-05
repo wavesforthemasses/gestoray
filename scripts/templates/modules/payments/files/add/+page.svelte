@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { PaymentsService } from '../payments.service';
@@ -75,7 +76,7 @@
 </script>
 
 <svelte:head>
-  <title>Registra Incasso | Gestoray</title>
+  <title>Registra Incasso | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="add-payment-page animate-fade-in">

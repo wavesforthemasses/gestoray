@@ -83,14 +83,14 @@ async function seedUser(email: string, role: string) {
 setup('warmup vite server', async ({ page }) => {
   setup.setTimeout(120000);
   await page.goto('/login');
-  await seedUser('test-admin@gestoray.local', 'amministrazione');
-  await seedUser('test-comm@gestoray.local', 'commerciale');
-  await seedUser('test-super@gestoray.local', 'superadmin');
+  await seedUser('test-admin@app.local', 'amministrazione');
+  await seedUser('test-comm@app.local', 'commerciale');
+  await seedUser('test-super@app.local', 'superadmin');
 
   // Configura i settings di progetto per evitare che ProjectSetupBlocker blocchi la UI agli admin
   await seedFirestoreDoc('settings', 'project', {
     projectName: { stringValue: 'Test CRM' },
-    projectEmail: { stringValue: 'test@gestoray.local' }
+    projectEmail: { stringValue: 'test@app.local' }
   });
 });
 
@@ -101,7 +101,7 @@ setup('authenticate as amministrazione', async ({ page }) => {
   page.on('console', msg => console.log('PAGE LOG:', msg.text()));
   page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
 
-  const email = 'test-admin@gestoray.local';
+  const email = 'test-admin@app.local';
   await seedUser(email, 'amministrazione');
   
   await page.goto('/login');
@@ -153,7 +153,7 @@ setup('authenticate as amministrazione', async ({ page }) => {
 setup('authenticate as commerciale', async ({ page }) => {
   setup.setTimeout(120000);
 
-  const email = 'test-comm@gestoray.local';
+  const email = 'test-comm@app.local';
   await seedUser(email, 'commerciale');
   
   await page.goto('/login');
@@ -202,7 +202,7 @@ setup('authenticate as commerciale', async ({ page }) => {
 setup('authenticate as superadmin', async ({ page }) => {
   setup.setTimeout(120000);
 
-  const email = 'test-super@gestoray.local';
+  const email = 'test-super@app.local';
   await seedUser(email, 'superadmin');
   
   await page.goto('/login');

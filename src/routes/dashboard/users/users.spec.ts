@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Users Page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
     await page.goto('/dashboard/users');
   });
 
@@ -18,7 +18,7 @@ test.describe('Users Page', () => {
 
     await page.locator('#new-nome').fill('TestNuovo');
     await page.locator('#new-cognome').fill('Utente E2E');
-    await page.locator('#new-email').fill(`new-user-e2e-${Date.now()}@gestoray.local`);
+    await page.locator('#new-email').fill(`new-user-e2e-${Date.now()}@app.local`);
     
     // Seleziona il ruolo commerciale
     await page.getByLabel('Commerciale').check();
@@ -31,7 +31,7 @@ test.describe('Users Page', () => {
 
 test.describe('Users Page - Accesso Negato', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
   });
 
   test('impedisce accesso a non-superadmin e reindirizza alla dashboard', async ({ page }) => {

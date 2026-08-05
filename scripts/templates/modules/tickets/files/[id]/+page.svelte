@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -135,7 +136,7 @@
 </script>
 
 <svelte:head>
-  <title>{ticket ? ticket.subject : 'Dettaglio Ticket'} | Gestoray</title>
+  <title>{ticket ? ticket.subject : 'Dettaglio Ticket'} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="ticket-detail-page">

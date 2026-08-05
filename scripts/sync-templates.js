@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Gestoray Module & Bridge Template Syncing Utility
+ * Module & Bridge Template Syncing Utility
  * Synchronizes active route files and bridge services back to scripts/templates/
  * to guarantee that all 7 pure modules and 5 bridge connectors are 100% installable CLI packages.
  */

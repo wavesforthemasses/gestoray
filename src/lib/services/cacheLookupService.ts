@@ -19,7 +19,7 @@ export interface CacheLookupItem {
 
 /**
  * CacheLookupService
- * Scalable Chunked & Sharded Cache Lookup Service for Gestoray.
+ * Scalable Chunked & Sharded Cache Lookup Service for the application.
  * 
  * Features:
  * 1. Multi-entity support ('clients', 'interventions', 'tickets', etc.)

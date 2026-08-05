@@ -129,7 +129,8 @@
   3. **Schema Field Registry**: Ogni modulo deve definire nel proprio `module.json` la mappa dei metadati dei propri campi (`schema.fields`) indicando per ciascuna chiave il tipo, la descrizione e i tag di ruolo (`kpi:vss`, `filter:date`, `search`, ecc.).
   4. **Dynamic Import**: Il Core Dashboard carica ed invoca i KPI Bridges unicamente tramite `import()` dinamici in base ai moduli attualmente attivi in `modules.registry.json`. All'atto della disinstallazione di un modulo, il bridge viene rimosso ed il Core rimane pulito al 100%.
 
+---
 
-
-
-
+### 18. Dynamic Service Delegation across Core Services (Zero Optional Query Leaks in Core)
+- **Lezione**: Inserire interrogazioni dirette a collezioni di moduli opzionali dentro servizi trasversali del Core come `client-detail.service.ts` (scheda cliente) o `todo.service.ts` (cose da fare) provoca errori di esecuzione e letture fallite se i moduli non sono installati.
+- **Regola**: Servizi trasversali del Core NON devono interrogare direttamente le collezioni dei moduli opzionali. Devono sempre verificare che il modulo sia attivo in `$menuConfigStore` / `modules.registry.json` ed importare condizionalmente il bridge o il service fornito dal modulo medesimo via `import()` dinamici con blocco `try/catch`.

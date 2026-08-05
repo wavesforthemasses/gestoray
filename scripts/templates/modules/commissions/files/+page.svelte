@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { CommissionsService } from './commissions.service';
   import type { CommissionItem, CommissionStatus } from './schema';
@@ -57,7 +58,7 @@
 </script>
 
 <svelte:head>
-  <title>Gestione Provvigioni Agenti | Gestoray</title>
+  <title>Gestione Provvigioni Agenti | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="commissions-page animate-fade-in">

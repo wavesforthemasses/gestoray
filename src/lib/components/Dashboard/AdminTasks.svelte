@@ -2,28 +2,28 @@
   import { Card, KPITile, Button } from "$lib";
   import { Clock, AlertTriangle, CreditCard, Banknote, FileText } from "@lucide/svelte";
   import { formatDate } from "$lib/utils/formatters";
+  import { menuConfigStore } from "$lib/stores/menu";
 
   let { 
-    adminPendingContracts,
-    adminOverdueInstallments,
-    adminUndistributedPayments,
-    adminPendingCommissions,
-    adminFinalizedCommissions,
-    onMarkCommissionPaid,
-    hasContracts = true,
-    hasPayments = true,
-    hasCommissions = true
+    adminPendingContracts = [],
+    adminOverdueInstallments = [],
+    adminUndistributedPayments = [],
+    adminPendingCommissions = [],
+    adminFinalizedCommissions = [],
+    onMarkCommissionPaid = () => {}
   } = $props<{
-    adminPendingContracts: any[];
-    adminOverdueInstallments: any[];
-    adminUndistributedPayments: any[];
-    adminPendingCommissions: any[];
-    adminFinalizedCommissions: any[];
-    onMarkCommissionPaid: (id: string) => void;
-    hasContracts?: boolean;
-    hasPayments?: boolean;
-    hasCommissions?: boolean;
+    adminPendingContracts?: any[];
+    adminOverdueInstallments?: any[];
+    adminUndistributedPayments?: any[];
+    adminPendingCommissions?: any[];
+    adminFinalizedCommissions?: any[];
+    onMarkCommissionPaid?: (id: string) => void;
   }>();
+
+  const activeModuleIds = $derived($menuConfigStore.map(m => m.id));
+  const hasContracts = $derived(activeModuleIds.includes('contracts'));
+  const hasPayments = $derived(activeModuleIds.includes('payments'));
+  const hasCommissions = $derived(activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions'));
 </script>
 
 <div class="dashboard-main-split">

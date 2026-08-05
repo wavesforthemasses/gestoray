@@ -18,7 +18,7 @@ export interface ClientDataPayload {
 }
 
 export class ClientDetailService {
-  static async fetchClientData(clientId: string): Promise<ClientDataPayload> {
+  static async fetchClientData(clientId: string, activeModuleIds: string[] = []): Promise<ClientDataPayload> {
     const payload: ClientDataPayload = {
       clientDerived: {},
       originalProfile: {},
@@ -117,43 +117,11 @@ export class ClientDetailService {
       }
     };
 
-    const [productsSnap, activitiesSnap, historySnap, contractsSnap, usersSnap] = await Promise.all([
-      safeGetDocs(collection(db, 'products')),
+    const [activitiesSnap, historySnap, usersSnap] = await Promise.all([
       safeGetDocs(collection(db, 'clients', clientId, 'activities')),
       safeGetDocs(collection(db, 'clients', clientId, 'history')),
-      safeGetDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId))),
       safeGetDocs(collection(db, 'users'))
     ]);
-
-    const prods: any[] = [];
-    if (productsSnap.forEach) {
-      productsSnap.forEach((d: any) => {
-        const p = d.data()?.original || d.data();
-        prods.push({
-          id: d.id,
-          name: p.name,
-          listPrice: p.listPrice,
-          minPrice: p.minPrice
-        });
-      });
-    }
-    payload.productsList = prods;
-
-    const contracts: any[] = [];
-    const quotes: any[] = [];
-    if (contractsSnap.forEach) {
-      contractsSnap.forEach((d: any) => {
-        const c = d.data();
-        const docData = { id: d.id, ...c.original, edits: c.edits, derived: c.derived };
-        if (c.original?.status === 'draft') {
-          quotes.push(docData);
-        } else {
-          contracts.push(docData);
-        }
-      });
-    }
-    payload.contractsList = contracts.sort((a, b) => new Date(b.edits?.createdAt || 0).getTime() - new Date(a.edits?.createdAt || 0).getTime());
-    payload.quotesList = quotes.sort((a, b) => new Date(b.edits?.createdAt || 0).getTime() - new Date(a.edits?.createdAt || 0).getTime());
 
     const acts: any[] = [];
     if (activitiesSnap.forEach) {

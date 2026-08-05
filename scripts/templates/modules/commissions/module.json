@@ -3,11 +3,49 @@
   "label": "Provvigioni Commerciali",
   "description": "Calcolo e liquidazione provvigioni agenti e rete commerciale",
   "icon": "Award",
+  "requirements": ["contracts"],
   "path": "/dashboard/commissions",
-  "rolesView": [
-    "superadmin",
-    "direzione",
-    "amministrazione"
+  "kpiBridgePath": "/dashboard/commissions/commissions.kpi.bridge.ts",
+  "rolesView": ["superadmin", "direzione", "amministrazione"],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "provvigioni_maturate",
+      "title": "Provvigioni Maturate",
+      "subtitle": "Rete Commerciale",
+      "icon": "DollarSign",
+      "valueKey": "commMaturate",
+      "commValueKey": "commMaturate",
+      "format": "currency"
+    }
   ],
-  "enabled": true
+  "schema": {
+    "fields": {
+      "periodStart": {
+        "type": "date",
+        "description": "Data inizio periodo di chiusura provvigionale",
+        "tags": ["filter:date"]
+      },
+      "periodEnd": {
+        "type": "date",
+        "description": "Data fine periodo di chiusura provvigionale",
+        "tags": ["filter:date"]
+      },
+      "totalCommissions": {
+        "type": "currency",
+        "description": "Totale provvigioni della rete commerciale nel periodo",
+        "tags": ["kpi:commMaturate", "chart:aggregate"]
+      },
+      "latestStatus": {
+        "type": "string",
+        "description": "Stato ultima versione (draft, finalized)",
+        "tags": ["filter:status"]
+      },
+      "isPaid": {
+        "type": "boolean",
+        "description": "Indica se le provvigioni del periodo sono state liquidate",
+        "tags": ["kpi:commissions_pending"]
+      }
+    }
+  }
 }

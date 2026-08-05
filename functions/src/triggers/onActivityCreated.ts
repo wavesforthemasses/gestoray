@@ -1,66 +1,54 @@
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
-import { logSyncError, dateToInt } from '../utils';
+import { logSyncError } from '../utils';
 
 const REGION = 'europe-west3';
 
-export async function runActivityWrite(
+export async function runActivityCreated(
   db: admin.firestore.Firestore,
-  clientId: string
+  clientId: string,
+  activityId: string,
+  activityData: any
 ) {
+  const activityDate = activityData.edits?.createdAt || activityData.original?.date || new Date().toISOString();
   const clientRef = db.collection('clients').doc(clientId);
-  const activitiesSnap = await clientRef.collection('activities').get();
 
-  let activitiesCount = 0;
-  let lastActivityDate: string | null = null;
-
-  activitiesSnap.forEach((docSnap) => {
-    const act = docSnap.data() || {};
-    const actDate = act.edits?.createdAt || act.original?.date || act.original?.createdAt || '';
-    activitiesCount++;
-
-    if (actDate) {
-      if (!lastActivityDate || new Date(actDate) > new Date(lastActivityDate)) {
-        lastActivityDate = actDate;
-      }
+  await db.runTransaction(async (transaction) => {
+    const clientSnap = await transaction.get(clientRef);
+    if (!clientSnap.exists) {
+      logger.error(`Client ${clientId} does not exist`);
+      return;
     }
-  });
 
-  const lastActivityDateInt = dateToInt(lastActivityDate);
+    const clientData = clientSnap.data() || {};
+    const currentDerived = clientData.derived || {};
+    const lastActDate = currentDerived.lastActivityDate || '';
 
-  // Avoid unnecessary writes if metrics haven't changed to prevent trigger cascades
-  const clientSnap = await clientRef.get();
-  const currentDerived = clientSnap.data()?.derived || {};
-  if (
-    currentDerived.activitiesCount === activitiesCount &&
-    currentDerived.lastActivityDate === lastActivityDate &&
-    currentDerived.lastActivityDateInt === lastActivityDateInt
-  ) {
-    return;
-  }
+    const newLastActDate = (!lastActDate || new Date(activityDate) > new Date(lastActDate))
+      ? activityDate
+      : lastActDate;
 
-  await clientRef.update({
-    'derived.activitiesCount': activitiesCount,
-    'derived.lastActivityDate': lastActivityDate,
-    'derived.lastActivityDateInt': lastActivityDateInt
+    transaction.update(clientRef, {
+      'derived.activitiesCount': admin.firestore.FieldValue.increment(1),
+      'derived.lastActivityDate': newLastActDate
+    });
   });
 }
 
-
-export const onActivityCreated = onDocumentWritten(
+export const onActivityCreated = onDocumentCreated(
   { region: REGION, document: 'clients/{clientId}/activities/{actId}' },
   async (event) => {
-    const change = event.data;
-    if (!change) return;
+    const snap = event.data;
+    if (!snap) return;
 
     const clientId = event.params.clientId;
     const activityId = event.params.actId;
     const db = admin.firestore();
 
     try {
-      await runActivityWrite(db, clientId);
-      logger.info(`Successfully synced activity metrics for client ${clientId}`);
+      await runActivityCreated(db, clientId, activityId, snap.data());
+      logger.info(`Successfully updated activity derived fields for client ${clientId}`);
     } catch (error: any) {
       logger.error(`Error in onActivityCreated for client ${clientId}:`, error);
       await logSyncError(
@@ -75,3 +63,5 @@ export const onActivityCreated = onDocumentWritten(
     }
   }
 );
+
+export const runActivityWrite = runActivityCreated;

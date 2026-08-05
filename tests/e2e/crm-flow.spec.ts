@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Gestoray E2E CRM Workflow', () => {
+test.describe('E2E CRM Workflow', () => {
   test('should load dashboard and navigate to interventions', async ({ page }) => {
     await page.goto('/dashboard');
     // Verify dashboard or redirect to login

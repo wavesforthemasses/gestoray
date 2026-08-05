@@ -19,7 +19,7 @@ test.describe('Todo Page', () => {
       derived: { mapValue: { fields: {} } }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/todo');
   });
 

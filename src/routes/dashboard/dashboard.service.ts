@@ -28,6 +28,21 @@ export interface AdminTables {
 }
 
 export class DashboardService {
+  private static async getModuleBridge(moduleId: string): Promise<any> {
+    try {
+      const bridgeMap: Record<string, () => Promise<any>> = import.meta.glob('./**/*.kpi.bridge.ts');
+      const matchKey = Object.keys(bridgeMap).find(k => k.endsWith(`/${moduleId}/${moduleId}.kpi.bridge.ts`) || k.endsWith(`/${moduleId}.kpi.bridge.ts`));
+      if (matchKey && typeof bridgeMap[matchKey] === 'function') {
+        const mod = await bridgeMap[matchKey]();
+        const bridgeObj = Object.values(mod).find((exp: any) => exp && (typeof exp?.fetchKPIs === 'function' || typeof exp?.fetchAdminTablesData === 'function' || typeof exp?.fetchDrillDownItems === 'function'));
+        return bridgeObj || mod.default || mod;
+      }
+    } catch (e) {
+      console.warn(`Bridge load failed for module ${moduleId}:`, e);
+    }
+    return null;
+  }
+
   static async fetchGlobalKPIs(role: string, myUid: string, activitiesConfig: any[], activeModuleIds: string[] = []): Promise<DashboardKPIs> {
     const kpis: DashboardKPIs = {
       commContractsCount: 0, commTotalSold: 0, commApprovedSold: 0, commTotalNNCF: 0, commMaturate: 0, commIncassato: 0,
@@ -35,46 +50,17 @@ export class DashboardService {
       activityCounts: {}, commTotalNA: 0, usersList: []
     };
 
-    const hasContracts = activeModuleIds.includes('contracts');
-    const hasPayments = activeModuleIds.includes('payments');
-    const hasCommissions = activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions');
-    const hasActivities = activeModuleIds.includes('activities');
-
-    // 1. Fetch current user profile to read derived KPIs
+    // 1. Fetch current user profile if needed
     try {
       const userSnap = await getDoc(doc(db, 'users', myUid));
       if (userSnap.exists()) {
         const uData = userSnap.data() || {};
         const uDerived = uData.derived || {};
-        if (hasContracts) {
-          kpis.commContractsCount = uDerived.totalContractsCount || 0;
-          kpis.commTotalSold = (uDerived.totalPendingSales || 0) + (uDerived.totalApprovedSales || 0);
-          kpis.commApprovedSold = uDerived.totalApprovedSales || 0;
-          kpis.commTotalNNCF = uDerived.totalNNCF || 0;
-        }
+        // Merge derived stats if present
+        Object.assign(kpis, uDerived);
       }
     } catch (err) {
       console.error("Error fetching user profile", err);
-    }
-
-    // Fetch commMaturate from finalized closings if commissions module is active
-    if (hasCommissions) {
-      try {
-        const versionsSnap = await getDocs(query(collectionGroup(db, 'versions'), where('status', '==', 'finalized')));
-        let totalMaturate = 0;
-        versionsSnap.docs.forEach((vDoc: any) => {
-          const version = vDoc.data();
-          if (role === 'commerciale') {
-            const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
-            if (myBreakdown) totalMaturate += (myBreakdown.commission || 0);
-          } else {
-            totalMaturate += (version.totalCommissions || 0);
-          }
-        });
-        kpis.commMaturate = totalMaturate;
-      } catch (err) {
-        console.error("Error fetching finalized commissions", err);
-      }
     }
 
     // 2. Fetch global directional KPIs if admin/direzione
@@ -99,72 +85,16 @@ export class DashboardService {
     }
 
     // 3. Dynamic Module KPI Bridges Dispatcher (100% Pure Agnostic Core)
-    const KPI_BRIDGES: Record<string, () => Promise<any>> = {
-      contracts: () => import('./contracts/contracts.kpi.bridge')
-    };
-
     for (const modId of activeModuleIds) {
-      if (KPI_BRIDGES[modId]) {
+      const bridgeClass = await this.getModuleBridge(modId);
+      if (bridgeClass && typeof bridgeClass.fetchKPIs === 'function') {
         try {
-          const bridgeModule = await KPI_BRIDGES[modId]();
-          const bridgeClass = bridgeModule.ContractsKPIBridge || bridgeModule.default;
-          if (bridgeClass?.fetchKPIs) {
-            const moduleKPIs = await bridgeClass.fetchKPIs({ role, uid: myUid });
-            Object.assign(kpis, moduleKPIs);
-          }
-        } catch (e) {
-          console.warn(`KPI Bridge execution skipped for uninstalled module ${modId}:`, e);
+          const moduleKPIs = await bridgeClass.fetchKPIs({ role, uid: myUid });
+          Object.assign(kpis, moduleKPIs);
+        } catch (err) {
+          console.error(`Error in bridge fetchKPIs for module ${modId}:`, err);
         }
       }
-    }
-
-    // 3. Fetch activity counts if activities module is active
-    if (hasActivities && activitiesConfig.length > 0) {
-      try {
-        const allowedActivities = activitiesConfig.filter(a => a.rolesView.includes(role));
-        if (role === 'commerciale') {
-          const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('original.type', '==', act.id))));
-          queries.push(getCountFromServer(query(collection(db, 'clients'), where('original.createdBy', '==', myUid))));
-          
-          const snaps = await Promise.all(queries);
-          const naSnap = snaps.pop();
-          kpis.commTotalNA = naSnap?.data()?.count || 0;
-          
-          allowedActivities.forEach((act, idx) => {
-            kpis.activityCounts[act.id] = snaps[idx].data().count;
-          });
-        } else {
-          const queries = allowedActivities.map(act => getCountFromServer(query(collectionGroup(db, 'activities'), where('original.type', '==', act.id))));
-          const snaps = await Promise.all(queries);
-          
-          allowedActivities.forEach((act, idx) => {
-            kpis.activityCounts[act.id] = snaps[idx].data().count;
-          });
-        }
-      } catch (e) { console.error("Error activities count", e); }
-    }
-
-    if (role === 'commerciale' && hasPayments && hasContracts) {
-      let commIncassato = 0;
-      try {
-        const [pSnap, sSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid))),
-          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid)))
-        ]);
-        const myContractIds = new Set<string>();
-        pSnap.forEach((d: any) => myContractIds.add(d.id));
-        sSnap.forEach((d: any) => myContractIds.add(d.id));
-
-        const idsArray = Array.from(myContractIds);
-        for (let i = 0; i < idsArray.length; i += 10) {
-          const chunk = idsArray.slice(i, i + 10);
-          const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk)));
-          chunkSnap.forEach((d: any) => commIncassato += (d.data()?.original?.amount || 0));
-        }
-      } catch (e) {
-        console.error("Error GI comm", e);
-      }
-      kpis.commIncassato = commIncassato;
     }
 
     return kpis;
@@ -176,45 +106,16 @@ export class DashboardService {
       adminFinalizedCommissions: [], adminUndistributedPayments: []
     };
 
-    const hasContracts = activeModuleIds.includes('contracts');
-    const hasPayments = activeModuleIds.includes('payments');
-    const hasCommissions = activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions');
-
-    if (hasContracts) {
-      try {
-        const pendingContrSnap = await getDocs(query(collection(db, 'contracts'), where('original.status', '==', 'pending'), orderBy('edits.createdAt', 'desc')));
-        pendingContrSnap.forEach((d: any) => res.adminPendingContracts.push({ id: d.id, ...d.data().original, ...d.data().edits }));
-      } catch (e) { console.error("Error pending contracts", e); }
-    }
-
-    if (hasPayments) {
-      try {
-        const overdueInstSnap = await getDocs(query(collectionGroup(db, 'installments'), where('original.status', '==', 'pending'), where('original.dueDate', '<', todayStr.split('T')[0])));
-        overdueInstSnap.forEach((d: any) => res.adminOverdueInstallments.push({ id: d.id, ...d.data()?.original }));
-        res.adminOverdueInstallments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-      } catch (e) { console.error("Error overdue installments", e); }
-
-      try {
-        const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('derived.remainingToDistribute', '>', 0)));
-        paymentsSnap.forEach((d: any) => res.adminUndistributedPayments.push({ id: d.id, ...d.data()?.original, ...d.data()?.derived }));
-      } catch (e) { console.error("Error undistributed payments", e); }
-    }
-
-    if (hasCommissions) {
-      try {
-        const allCommSnap = await getDocs(collection(db, 'commissions_closings'));
-        allCommSnap.forEach((d: any) => {
-          const data = d.data();
-          const status = data.latestStatus || 'draft';
-          if (status === 'finalized') {
-            if (!data.isPaid) res.adminFinalizedCommissions.push({ id: d.id, ...data });
-          } else {
-            res.adminPendingCommissions.push({ id: d.id, ...data });
-          }
-        });
-        res.adminPendingCommissions.sort((a, b) => b.id.localeCompare(a.id));
-        res.adminFinalizedCommissions.sort((a, b) => b.id.localeCompare(a.id));
-      } catch (e) { console.error("Error commissions", e); }
+    for (const modId of activeModuleIds) {
+      const bridgeClass = await this.getModuleBridge(modId);
+      if (bridgeClass && typeof bridgeClass.fetchAdminTablesData === 'function') {
+        try {
+          const tablesData = await bridgeClass.fetchAdminTablesData(todayStr);
+          Object.assign(res, tablesData);
+        } catch (err) {
+          console.error(`Error in bridge fetchAdminTablesData for module ${modId}:`, err);
+        }
+      }
     }
 
     return res;
@@ -268,19 +169,15 @@ export class DashboardService {
       } else if (['vss', 'vsa', 'gi', 'provvigioni_maturate'].includes(activeChartTab)) {
         filters.vendorUid = myUid;
       } else {
-        // Tutte le attività dinamiche
         filters.loggedBy = myUid;
       }
     }
     
     const isActivity = !['vss', 'vsa', 'nuove_anagrafiche', 'nncf', 'gi', 'provvigioni_maturate'].includes(activeChartTab);
-    
     if (isActivity) {
       filters.type = activeChartTab; 
     }
 
-    // Call Cloud function
-    // Map periods for CF
     const payload = {
       entity: isActivity ? 'activities' : activeChartTab,
       periods: periods.map(p => ({ start: p.start.toISOString(), end: p.end.toISOString() })),
@@ -289,7 +186,11 @@ export class DashboardService {
     
     try {
       const res = await getChartAggregations(payload);
-      return (res.data as any).data || periods.map(() => 0);
+      const raw = res.data as any;
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.data)) return raw.data;
+      if (Array.isArray(raw?.results)) return raw.results;
+      return periods.map(() => 0);
     } catch (e) {
       console.error("Aggregation error", e);
       return periods.map(() => 0);
@@ -303,21 +204,17 @@ export class DashboardService {
     myUid: string, 
     clientFilter: string, 
     vendorFilter: string, 
-    productFilter: string
+    productFilter: string,
+    activeModuleIds: string[] = []
   ) {
     if (!period) return [];
 
-    const isComm = role === 'commerciale';
-    const matchQuery = (val: string | undefined, q: string) => !q || (val?.toLowerCase().includes(q.toLowerCase()) || false);
-    let items: any[] = [];
-    
-    // 1. Fetch data directly for the period via dynamic KPI bridge if available
-    if (activeChartTab === 'vss') {
-      try {
-        const bridgeModule: any = await import('./contracts/contracts.kpi.bridge');
-        const bridgeClass = bridgeModule.ContractsKPIBridge || bridgeModule.default;
-        if (bridgeClass?.fetchDrillDownItems) {
-          return await bridgeClass.fetchDrillDownItems({
+    // Query active module bridges dynamically
+    for (const modId of activeModuleIds) {
+      const bridgeClass = await this.getModuleBridge(modId);
+      if (bridgeClass && typeof bridgeClass.fetchDrillDownItems === 'function') {
+        try {
+          const items = await bridgeClass.fetchDrillDownItems({
             period,
             tab: activeChartTab,
             role,
@@ -326,125 +223,13 @@ export class DashboardService {
             vendorFilter,
             productFilter
           });
+          if (items && items.length > 0) return items;
+        } catch (e) {
+          console.error(`Error in fetchDrillDownItems for module ${modId}:`, e);
         }
-      } catch (e) {
-        console.warn('Contracts KPI Bridge drill-down fallback:', e);
       }
-    } else if (activeChartTab === 'gi' || activeChartTab === 'payments') {
-      const snap = await getDocs(query(collection(db, 'payments'), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
-      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
-
-      if (isComm) {
-        const [pSnap, sSnap] = await Promise.all([
-          getDocs(query(collection(db, 'contracts'), where('original.vendorUid', '==', myUid))),
-          getDocs(query(collection(db, 'contracts'), where('original.secondVendorUid', '==', myUid)))
-        ]);
-        const myContractIds = new Set<string>();
-        pSnap.forEach((d: any) => myContractIds.add(d.id));
-        sSnap.forEach((d: any) => myContractIds.add(d.id));
-
-        const allocSnapDocs: any[] = [];
-        const idsArray = Array.from(myContractIds);
-        for (let i = 0; i < idsArray.length; i += 30) {
-          const chunk = idsArray.slice(i, i + 30);
-          const chunkSnap = await getDocs(query(collectionGroup(db, 'contractsPaid'), where('original.contractId', 'in', chunk), where('original.date', '>=', period.start.toISOString()), where('original.date', '<=', period.end.toISOString())));
-          chunkSnap.forEach((d: any) => allocSnapDocs.push(d));
-        }
-        
-        const validPaymentIds = new Set(allocSnapDocs.map((doc: any) => doc.data()?.original?.paymentId));
-        items = items.filter(pay => validPaymentIds.has(pay.id)).map(pay => {
-          const alloc = allocSnapDocs.find((a: any) => a.data()?.original?.paymentId === pay.id);
-          return { ...pay, original: { ...pay.original, amount: alloc ? alloc.data().original.amount : pay.original.amount } };
-        });
-      }
-    } else if (activeChartTab === 'provvigioni_maturate') {
-      const snap = await getDocs(query(collection(db, 'commissions_closings'), where('latestStatus', '==', 'finalized'), where('periodEnd', '>=', period.start.toISOString()), where('periodEnd', '<=', period.end.toISOString())));
-      await Promise.all(snap.docs.map(async (d: any) => {
-        const vSnap = await getDocs(query(collection(db, 'commissions_closings', d.id, 'versions'), where('status', '==', 'finalized')));
-        if (!vSnap.empty) {
-          const version = vSnap.docs[0].data();
-          const generatedAt = version.generatedAt || new Date(d.id + "-01").toISOString();
-          let amount = 0;
-          if (isComm) {
-            const myBreakdown = version.breakdown?.find((b: any) => b.uid === myUid);
-            if (myBreakdown) amount = myBreakdown.commission || 0;
-          } else {
-            amount = version.totalCommissions || 0;
-          }
-          if (amount > 0) {
-            items.push({ id: d.id, original: { date: generatedAt, amount } });
-          }
-        }
-      }));
-    } else if (activeChartTab === 'nuove_anagrafiche') {
-      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())) 
-                       : query(collection(db, 'clients'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()));
-      const snap = await getDocs(q);
-      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
-    } else if (activeChartTab === 'nncf') {
-      const q = isComm ? query(collection(db, 'clients'), where('original.createdBy', '==', myUid), where('derived.nncfDate', '>=', period.start.toISOString()), where('derived.nncfDate', '<=', period.end.toISOString())) 
-                       : query(collection(db, 'clients'), where('derived.nncfDate', '>=', period.start.toISOString()), where('derived.nncfDate', '<=', period.end.toISOString()));
-      const snap = await getDocs(q);
-      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
-    } else {
-      let q = isComm ? query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', myUid), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString())) 
-                     : query(collectionGroup(db, 'activities'), where('edits.createdAt', '>=', period.start.toISOString()), where('edits.createdAt', '<=', period.end.toISOString()));
-                     
-      const snap = await getDocs(q);
-      snap.forEach((d: any) => {
-        const type = d.data().original?.type || '';
-        if (type === activeChartTab) {
-          items.push({ id: d.id, ...d.data() });
-        }
-      });
     }
 
-    if (clientFilter) items = items.filter(i => matchQuery(i.original?.clientName || i.original?.nome, clientFilter));
-    if (vendorFilter) items = items.filter(i => i.original?.vendorUid === vendorFilter || i.original?.createdBy === vendorFilter || i.original?.loggedBy === vendorFilter);
-    if (productFilter) items = items.filter(i => (i.original?.products || i.original?.items || []).some((p: any) => matchQuery(p.name, productFilter)));
-
-    return items.map((item) => {
-      const isComm = role === 'commerciale';
-      if (activeChartTab === 'vss') {
-        const orig = item.original || {};
-        const totalVal = item.totalAmount ?? orig.totalPrice ?? 0;
-        const statusVal = item.status ?? orig.status ?? 'bozza';
-        const clientNameVal = item.clientName || orig.clientName || 'Cliente';
-        const agentNameVal = item.agentName || orig.vendorEmail || orig.createdBy || 'Commerciale';
-        const createdDateVal = item.createdAt || item.edits?.createdAt || orig.createdAt;
-
-        let displayVal = totalVal;
-        let info = 'Quota Primario (100%)';
-        if (orig.secondVendorUid) {
-          if (isComm) {
-            if (orig.vendorUid === myUid || item.agentId === myUid) {
-              displayVal = displayVal * (100 - orig.secondVendorShare) / 100;
-              info = `Quota Primario (${100 - orig.secondVendorShare}%)`;
-            } else {
-              displayVal = displayVal * orig.secondVendorShare / 100;
-              info = `Quota Co-selling (${orig.secondVendorShare}%)`;
-            }
-          } else {
-            info = `Ripartito: ${100 - orig.secondVendorShare}% / ${orig.secondVendorShare}%`;
-          }
-        }
-        return {
-          id: item.id, cliente: clientNameVal, consulente: agentNameVal,
-          data: formatDate(createdDateVal), valore: displayVal, dettaglio: info, status: statusVal, link: `/dashboard/contracts/${item.id}`
-        };
-      } else if (activeChartTab === 'gi') {
-        const orig = item.original || {};
-        return { id: item.id, cliente: orig.clientName, consulente: orig.recordedEmail || 'Cassa', data: formatDate(orig.date), valore: orig.amount, dettaglio: 'Riscossione fattura', status: 'Incassato', link: `/dashboard/payments` };
-      } else if (activeChartTab === 'provvigioni_maturate') {
-        const orig = item.original || {};
-        return { id: item.id, cliente: `Chiusura ${item.id}`, consulente: isComm ? 'Personali' : 'Rete', data: formatDate(orig.date), valore: orig.amount, dettaglio: 'Provvigioni Maturate', status: 'Finalizzato', link: `/dashboard/my-commissions` };
-      } else if (activeChartTab === 'nuove_anagrafiche' || activeChartTab === 'nncf') {
-        const orig = item.original || {};
-        return { id: item.id, cliente: `${orig.nome} ${orig.cognome || ''}`.trim(), consulente: orig.email || 'N/A', data: formatDate(item.derived?.nncfDate || item.edits?.createdAt), valore: activeChartTab === 'nncf' ? 'NNCF Attivo' : 'Nuovo Lead', dettaglio: orig.phone || 'N/D', status: 'Anagrafica', link: `/dashboard/clients/${item.id}` };
-      } else {
-        const orig = item.original || {};
-        return { id: item.id, cliente: orig.clientName || 'N/D', consulente: orig.loggedEmail || 'Commerciale', data: formatDate(item.edits?.createdAt || orig.date), valore: '-', dettaglio: orig.notes || 'Registrazione attività', status: orig.type || 'Attività', link: `/dashboard/clients/${orig.clientId}?tab=activities` };
-      }
-    });
+    return [];
   }
 }

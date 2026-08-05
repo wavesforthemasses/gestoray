@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Clients Page - Ruolo: Commerciale', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
     await page.goto('/dashboard/clients');
   });
 
@@ -79,7 +79,7 @@ test.describe('Clients Page - Ruolo: Commerciale', () => {
 
 test.describe('Clients Page - Ruolo: Amministrazione', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/clients');
   });
 

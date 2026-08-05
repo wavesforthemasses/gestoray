@@ -23,6 +23,7 @@ export const BASE_MENU_CONFIG: MenuItemConfig[] = [
 ];
 
 const MODULE_MENU_ITEMS: MenuItemConfig[] = (modulesRegistry.modules || []).map((m: any) => ({
+  ...m,
   id: m.id,
   label: m.label,
   icon: m.icon,
@@ -45,8 +46,10 @@ export function initMenuStore() {
     if (snap.exists()) {
       const data = snap.data();
       const savedList: MenuItemConfig[] = data.list || [];
-      const validIds = new Set(DEFAULT_MENU_CONFIG.map(item => item.id));
-      const filteredSaved = savedList.filter(item => validIds.has(item.id));
+      const defaultConfigMap = new Map(DEFAULT_MENU_CONFIG.map(item => [item.id, item]));
+      const filteredSaved = savedList
+        .filter(item => defaultConfigMap.has(item.id))
+        .map(item => ({ ...defaultConfigMap.get(item.id), ...item }));
       const savedIds = new Set(filteredSaved.map(item => item.id));
       const missingItems = DEFAULT_MENU_CONFIG.filter(item => !savedIds.has(item.id));
       list = [...filteredSaved, ...missingItems];

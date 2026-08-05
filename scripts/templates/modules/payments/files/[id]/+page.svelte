@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { PaymentsService } from '../payments.service';
@@ -41,7 +42,7 @@
 </script>
 
 <svelte:head>
-  <title>{payment ? `Incasso ${payment.paymentNumber}` : 'Dettaglio Incasso'} | Gestoray</title>
+  <title>{payment ? `Incasso ${payment.paymentNumber}` : 'Dettaglio Incasso'} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="payment-detail-page animate-fade-in">

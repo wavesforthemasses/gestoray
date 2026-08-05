@@ -72,7 +72,7 @@
     submittingProfile: boolean;
     activeRole: string | null;
     originalProfile: any;
-    contractsCount: number;
+    contractsCount?: number;
 
     onUpdateProfile: (e: Event) => void;
     onDeleteClient: () => void;

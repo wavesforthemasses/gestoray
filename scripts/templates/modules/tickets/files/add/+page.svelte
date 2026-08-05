@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { TicketsService } from '../tickets.service';
@@ -74,7 +75,7 @@
 </script>
 
 <svelte:head>
-  <title>Nuovo Ticket di Assistenza | Gestoray</title>
+  <title>Nuovo Ticket di Assistenza | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="add-ticket-page">

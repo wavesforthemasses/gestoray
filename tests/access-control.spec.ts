@@ -3,7 +3,7 @@ import { loginAs } from './utils';
 
 test.describe('Access Control - Commerciale non può accedere a pagine admin', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
   });
 
   test('commerciale su /dashboard/users → redirect a /dashboard', async ({ page }) => {

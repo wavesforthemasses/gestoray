@@ -16,7 +16,7 @@ test.describe('Contract Detail Page - Ruolo: Amministrazione', () => {
             status: { stringValue: 'pending' },
             totalPrice: { integerValue: '2000' },
             vendorUid: { stringValue: 'test-uid' },
-            vendorEmail: { stringValue: 'test-comm@gestoray.local' },
+            vendorEmail: { stringValue: 'test-comm@app.local' },
             products: {
               arrayValue: {
                 values: [
@@ -45,7 +45,7 @@ test.describe('Contract Detail Page - Ruolo: Amministrazione', () => {
       }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto(`/dashboard/contracts/${contractId}`);
   });
 

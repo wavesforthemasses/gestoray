@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Gestoray Module Uninstaller (Frontend + Backend Micro-Services)
+ * Module Uninstaller (Frontend + Backend Micro-Services)
  * 
  * Usage: npm run module:uninstall -- --name <moduleName>
  * Example: npm run module:uninstall -- --name activities
@@ -13,12 +13,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// ─── Module Dependency Map ──────────────────────────────────────────────────
-const MODULE_DEPENDENCIES = {
-  contracts: ['products'],    // Contratti richiedono Prodotti
-  commissions: ['contracts'], // Provvigioni richiedono Contratti
-};
 
 function checkDependents(targetModule) {
   const installedModules = [];
@@ -32,10 +26,28 @@ function checkDependents(targetModule) {
     }
   }
 
+  // Dynamically scan requirements from module.json templates
+  const modulesTemplatesDir = path.resolve(__dirname, 'templates/modules');
   const blockingModules = [];
-  for (const [mod, deps] of Object.entries(MODULE_DEPENDENCIES)) {
-    if (deps.includes(targetModule) && installedModules.includes(mod)) {
-      blockingModules.push(mod);
+
+  if (fs.existsSync(modulesTemplatesDir)) {
+    const templateDirs = fs.readdirSync(modulesTemplatesDir, { withFileTypes: true });
+    for (const tDir of templateDirs) {
+      if (tDir.isDirectory()) {
+        const modName = tDir.name;
+        if (!installedModules.includes(modName)) continue;
+
+        const jsonPath = path.join(modulesTemplatesDir, modName, 'module.json');
+        if (fs.existsSync(jsonPath)) {
+          try {
+            const modMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+            const reqs = modMeta.requirements || [];
+            if (reqs.includes(targetModule)) {
+              blockingModules.push(modName);
+            }
+          } catch (e) {}
+        }
+      }
     }
   }
 
@@ -303,7 +315,7 @@ function main() {
   }
 
   console.log('');
-  console.log('🗑️  Gestoray Module Uninstaller (Frontend + Backend Micro-Services)');
+  console.log('🗑️  Module Uninstaller (Frontend + Backend Micro-Services)');
   console.log('─'.repeat(60));
   console.log(`   Modulo da disinstallare: ${name}`);
   console.log('─'.repeat(60));

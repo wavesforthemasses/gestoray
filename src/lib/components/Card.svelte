@@ -26,7 +26,7 @@
   }: Props = $props();
 </script>
 
-<div class="gestoray-card card-variant-{variant} {className}" {style}>
+<div class="app-card card-variant-{variant} {className}" {style}>
   {#if title || description || headerSnippet || icon}
     <div class="card-header">
       <div class="header-main">
@@ -66,46 +66,45 @@
 </div>
 
 <style>
-  .gestoray-card {
-    background-color: var(--card-bg, var(--color-white));
-    border: var(--card-border, 1px solid var(--color-neutral-200));
-    border-radius: var(--card-radius, var(--radius-lg));
-    padding: var(--card-padding, 30px);
-    box-shadow: var(--card-shadow, var(--shadow-md));
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal), background-color var(--transition-normal);
+  .app-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
   }
 
-  .gestoray-card:hover {
-    box-shadow: var(--card-shadow-hover, var(--shadow-lg));
+  .app-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-neutral-300);
   }
 
   /* Glassmorphism Variant */
-  .gestoray-card.card-variant-glass {
-    background-color: var(--card-bg, var(--color-glass-bg));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: var(--card-border, 1px solid var(--color-glass-border));
-    box-shadow: var(--card-shadow, var(--color-glass-shadow));
+  .app-card.card-variant-glass {
+    background: var(--color-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-glass-border);
   }
   
-  .gestoray-card.card-variant-glass:hover {
-    background-color: var(--card-bg-hover, var(--color-glass-bg-hover));
-    border-color: hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
-    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.04);
+  .app-card.card-variant-glass:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: var(--color-primary-300);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
   }
 
   /* Accent Variant (brand color stripe on left border) */
-  .gestoray-card.card-variant-accent {
+  .app-card.card-variant-accent {
     border-left: 4px solid var(--color-primary-500);
   }
 
   /* Error Variant (alert state) */
-  .gestoray-card.card-variant-error {
-    border-color: var(--color-error-border);
-    background-color: var(--color-error-light);
+  .app-card.card-variant-error {
+    border-left: 4px solid var(--color-red-500);
+    background: #fef2f2;
     color: var(--color-error-text);
   }
 

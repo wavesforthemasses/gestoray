@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { 
     ActivityTypesService, 
@@ -194,7 +195,7 @@
 </script>
 
 <svelte:head>
-  <title>Impostazioni Tipi Attività | Gestoray</title>
+  <title>Impostazioni Tipi Attività | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="activity-types-settings animate-fade-in">

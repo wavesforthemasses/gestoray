@@ -5,14 +5,15 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import Button from '$lib/components/Button.svelte';
 
+  import { isOnlineStore } from '$lib/stores/networkState';
+
   let projectName = $state('');
   let projectEmail = $state('');
   let saving = $state(false);
   let error = $state('');
 
-  // Block only if missing name AND the user is an admin.
-  // Wait, if projectEmail is missing, we block too.
-  let needsSetup = $derived($projectStore && (!$projectStore.projectName || !$projectStore.projectEmail));
+  // Block only if missing name/email, online, and user is an admin
+  let needsSetup = $derived($isOnlineStore && $projectStore !== null && (!$projectStore.projectName || !$projectStore.projectEmail));
   let isAdmin = $derived(activeRoleState.role && hasAccess(activeRoleState.role, ['superadmin', 'amministrazione', 'direzione']));
 
   let showBlocker = $derived(needsSetup && isAdmin);

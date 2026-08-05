@@ -113,13 +113,7 @@ export class UsersService {
         isActive: true
       },
       derived: {
-        totalContractsCount: 0,
-        totalApprovedSales: 0,
-        totalPendingSales: 0,
-        totalCommissionEarned: 0,
-        totalCommissionPending: 0,
         totalClientsCreated: 0,
-        totalNNCF: 0,
         textSearch: generateSearchTerms(cleanNome + ' ' + cleanCognome + ' ' + cleanEmail),
         ...(chunkId ? { cacheChunkId: chunkId } : {})
       },

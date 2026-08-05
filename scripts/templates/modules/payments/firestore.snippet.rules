@@ -3,3 +3,8 @@ match /payments/{docId} {
   allow read: if isAuth();
   allow write: if isAdmin();
 }
+
+match /{path=**}/contractsPaid/{allocId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}

@@ -80,7 +80,7 @@
             id="projectName"
             type="text"
             bind:value={projectName}
-            placeholder="Gestoray S.r.l."
+            placeholder="Acme S.r.l."
             required
           />
         </FormField>

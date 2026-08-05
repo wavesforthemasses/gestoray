@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { ContractsService } from '../contracts.service';
@@ -122,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>{contract ? contract.title : labels.detailSingular} | Gestoray</title>
+  <title>{contract ? contract.title : labels.detailSingular} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="contract-detail-page animate-fade-in">

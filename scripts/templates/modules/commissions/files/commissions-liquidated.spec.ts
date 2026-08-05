@@ -24,7 +24,7 @@ test.describe('Commissions Liquidated Page', () => {
             {
               mapValue: {
                 fields: {
-                  vendorEmail: { stringValue: 'test-comm@gestoray.local' },
+                  vendorEmail: { stringValue: 'test-comm@app.local' },
                   name: { stringValue: 'Test Comm' },
                   qualification: { stringValue: 'agente' },
                   sales: { integerValue: '1000' },
@@ -38,7 +38,7 @@ test.describe('Commissions Liquidated Page', () => {
       allocations: { arrayValue: { values: [] } }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto(`/dashboard/commissions/${periodId}/${versionId}`);
   });
 

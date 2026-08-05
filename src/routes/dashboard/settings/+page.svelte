@@ -16,11 +16,22 @@
     }
   });
 
-  let hasTicketsModule = $derived($menuConfigStore.some((item) => item.id === 'tickets'));
-  let hasInterventiModule = $derived($menuConfigStore.some((item) => item.id === 'interventi'));
-  let hasActivitiesModule = $derived($menuConfigStore.some((item) => item.id === 'activities'));
-  let hasProductsModule = $derived($menuConfigStore.some((item) => item.id === 'products'));
-  let hasContractsModule = $derived($menuConfigStore.some((item) => item.id === 'contracts'));
+  const iconMap: Record<string, any> = {
+    Ticket, Wrench, ClipboardList, Package, FileText, Settings, Shield, Building, Menu, Palette, FileSpreadsheet, Ruler, Briefcase
+  };
+
+  // Dynamic Module Settings Cards
+  const dynamicModuleSettings = $derived(
+    $menuConfigStore
+      .filter((m: any) => m.settingsCard)
+      .map((m: any) => ({
+        id: m.id,
+        href: m.settingsCard.path || `/dashboard/settings/${m.id}`,
+        title: m.settingsCard.title || `Configurazione ${m.label}`,
+        description: m.settingsCard.description || `Personalizza le impostazioni ed il comportamento del modulo ${m.label}.`,
+        icon: iconMap[m.settingsCard.icon] || Settings
+      }))
+  );
 </script>
 
 <div class="settings-hub animate-fade-in">
@@ -40,15 +51,6 @@
       icon={Shield}
     />
 
-    {#if hasTicketsModule}
-      <SettingsNavCard 
-        href="/dashboard/settings/tickets"
-        title="Configurazione Ticket & QR Code"
-        description="Gestisci i permessi di apertura ticket (utenti interni, form pubblica, QR Code dedicati)."
-        icon={Ticket}
-      />
-    {/if}
-
     <SettingsNavCard 
       href="/dashboard/settings/project"
       title="Configurazione Progetto"
@@ -63,14 +65,12 @@
       icon={Menu}
     />
 
-    {#if hasInterventiModule}
-      <SettingsNavCard 
-        href="/dashboard/settings/interventi"
-        title="Configurazione Interventi & Cantieri"
-        description="Personalizza la denominazione White-Label, le tariffe, le unità di misura e le opzioni di firma del modulo Interventi."
-        icon={Wrench}
-      />
-    {/if}
+    <SettingsNavCard 
+      href="/dashboard/settings/modules"
+      title="Gestione Moduli & Plugin Bridges"
+      description="Visualizza i moduli e i ponti di integrazione del sistema, verifica i prerequisiti e copia i comandi di installazione."
+      icon={Package}
+    />
 
     <SettingsNavCard 
       href="/dashboard/settings/units"
@@ -79,39 +79,21 @@
       icon={Ruler}
     />
 
-    {#if hasActivitiesModule}
-      <SettingsNavCard 
-        href="/dashboard/settings/activities"
-        title="Configurazione Tipi Attività & KPI"
-        description="Personalizza le tipologie di attività (Telefonata, Visita, Email, Intervento), i bottoni rapidi e i permessi di assegnazione."
-        icon={ClipboardList}
-      />
-    {/if}
-
     <SettingsNavCard 
       href="/dashboard/settings/clients"
       title="Configurazione Campi Scheda Cliente"
-      description="Personalizza la visibilità e l'organizzazione dei gruppi di campi (Anagrafici, Sede & SDI, Referenti, Affidabilità & Credito, Note ERP) nei form e nella scheda cliente."
+      description="Personalizza la visibilità e l'organizzazione dei gruppi di campi nei form e nella scheda cliente."
       icon={Briefcase}
     />
 
-    {#if hasProductsModule}
+    {#each dynamicModuleSettings as card}
       <SettingsNavCard 
-        href="/dashboard/settings/products"
-        title="Configurazione Campi Scheda Prodotto"
-        description="Personalizza la visibilità e l'obbligatorietà dei campi (Codice SKU, Giacenza, Minimo Fatturabile, Categoria, Descrizione) nei form e nelle tabelle."
-        icon={Package}
+        href={card.href}
+        title={card.title}
+        description={card.description}
+        icon={card.icon}
       />
-    {/if}
-
-    {#if hasContractsModule}
-      <SettingsNavCard 
-        href="/dashboard/settings/contracts"
-        title="Configurazione Contratti & Preventivi"
-        description="Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza."
-        icon={FileText}
-      />
-    {/if}
+    {/each}
 
     <SettingsNavCard 
       href="/dashboard/settings/theme"

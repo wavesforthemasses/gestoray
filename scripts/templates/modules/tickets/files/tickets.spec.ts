@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Tickets Module 100% Lifecycle E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
   });
 
   test('1. Dashboard, KPI e Filtri Scope (Tutti / Miei)', async ({ page }) => {
@@ -34,10 +34,10 @@ test.describe('Tickets Module 100% Lifecycle E2E Test Suite', () => {
       await selfBtn.click();
     } else {
       await page.fill('input#requesterName', 'Test Admin');
-      await page.fill('input#requesterEmail', 'test-admin@gestoray.local');
+      await page.fill('input#requesterEmail', 'test-admin@app.local');
     }
 
-    await page.fill('input#ccEmails', 'collega.e2e@gestoray.local');
+    await page.fill('input#ccEmails', 'collega.e2e@app.local');
 
     await page.getByRole('button', { name: /Crea e Invia Ticket/i }).click();
     await expect(page.locator('.toast-success, .alert-success')).toBeVisible({ timeout: 10000 }).catch(() => null);
@@ -53,7 +53,7 @@ test.describe('Tickets Module 100% Lifecycle E2E Test Suite', () => {
 
     const pubSubject = 'Ticket Pubblico Generico - ' + Date.now();
     await page.fill('input#requesterName', 'Cliente E2E');
-    await page.fill('input#requesterEmail', 'cliente.pubblico@gestoray.local');
+    await page.fill('input#requesterEmail', 'cliente.pubblico@app.local');
     await page.fill('input#subject', pubSubject);
     await page.fill('textarea#description', 'Segnalazione pubblica di collaudo.');
 
@@ -128,7 +128,7 @@ test.describe('Tickets Module 100% Lifecycle E2E Test Suite', () => {
     // 6A. Test senza Secret -> 401 Unauthorized
     const unauthRes = await request.post('/api/webhooks/tickets/inbound', {
       data: {
-        from: 'webhook.tester@gestoray.local',
+        from: 'webhook.tester@app.local',
         subject: 'Webhook Test Unauth',
         text: 'Test senza secret.'
       }

@@ -2,6 +2,7 @@ import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
 
 export interface PrintableDocumentData {
   title: string;
+  companyName?: string;
   documentNumber: string;
   date: string;
   clientName: string;
@@ -48,7 +49,7 @@ export class PdfExportService {
       </head>
       <body>
         <div class="header">
-          <div class="logo">GestoRay</div>
+          <div class="logo">${data.companyName || 'ERP'}</div>
           <div class="doc-info">
             <h1 class="doc-title">${data.title}</h1>
             <div>Codice: <strong>${data.documentNumber}</strong></div>

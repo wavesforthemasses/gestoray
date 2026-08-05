@@ -24,8 +24,8 @@
   }: Props = $props();
 </script>
 
-<div class="gestoray-table-container">
-  <table class="gestoray-table">
+<div class="app-table-container">
+  <table class="app-table">
     <thead>
       <tr>
         {#each columns as col}
@@ -34,57 +34,63 @@
       </tr>
     </thead>
     <tbody>
-      {#each data as row}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <tr class="table-row" class:clickable={!!onRowClick} onclick={() => onRowClick?.(row)}>
-          {#each columns as col}
-            <td class={col.class}>
-              {#if cellSnippet}
-                {@render cellSnippet(col, row)}
-              {:else}
-                {row[col.key] ?? ''}
-              {/if}
-            </td>
-          {/each}
-        </tr>
-      {/each}
       {#if data.length === 0}
         <tr>
-          <td colspan={columns.length} class="empty-cell">{emptyText}</td>
+          <td colspan={columns.length} class="empty-cell">
+            {emptyText}
+          </td>
         </tr>
+      {:else}
+        {#each data as row, i}
+          <tr 
+            class:clickable={!!onRowClick} 
+            onclick={() => onRowClick?.(row)}
+          >
+            {#each columns as col}
+              <td class={col.class}>
+                {#if cellSnippet}
+                  {@render cellSnippet(col, row)}
+                {:else}
+                  {row[col.key]}
+                {/if}
+              </td>
+            {/each}
+          </tr>
+        {/each}
       {/if}
     </tbody>
   </table>
 </div>
 
 <style>
-  .gestoray-table-container {
-    background: var(--color-white);
-    border: 1px solid var(--color-neutral-200);
+  .app-table-container {
+    width: 100%;
+    overflow-x: auto;
     border-radius: var(--radius-md);
-    overflow: hidden;
+    border: 1px solid var(--color-neutral-200);
+    background: var(--color-surface);
   }
 
-  .gestoray-table {
+  .app-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 14px;
     text-align: left;
   }
 
-  .gestoray-table th {
-    background: var(--color-neutral-100);
-    padding: 14px 16px;
-    font-weight: 600;
+  .app-table th {
+    background: var(--color-neutral-50);
     color: var(--color-neutral-600);
+    font-weight: 600;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--color-neutral-200);
+    white-space: nowrap;
   }
 
-  .gestoray-table td {
+  .app-table td {
     padding: 14px 16px;
+    color: var(--color-neutral-800);
     border-bottom: 1px solid var(--color-neutral-100);
-    color: var(--color-neutral-700);
   }
 
   .table-row.clickable {

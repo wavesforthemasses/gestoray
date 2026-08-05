@@ -3,15 +3,46 @@
   "label": "Interventi Operativi",
   "description": "Gestione interventi tecnici",
   "icon": "Wrench",
+  "requirements": [],
   "path": "/dashboard/interventi",
+  "kpiBridgePath": "/dashboard/interventi/interventi.kpi.bridge.ts",
   "rolesView": ["superadmin", "direzione", "tecnico", "operaio"],
   "enabled": true,
   "anonymization": {
     "collectionName": "interventi",
-    "linkFieldPath": "original.clientId",
+    "linkFieldPath": "clientId",
     "redactFields": [
-      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "original.dettaglio", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "dettaglio", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
     ]
+  },
+  "schema": {
+    "fields": {
+      "numeroIntervento": {
+        "type": "string",
+        "description": "Numero progressivo dell'intervento tecnico",
+        "tags": ["search", "sort"]
+      },
+      "clientId": {
+        "type": "string",
+        "description": "ID del cliente servito",
+        "tags": ["filter:client", "relation:clients"]
+      },
+      "technicianId": {
+        "type": "string",
+        "description": "UID del tecnico o squadra responsabile",
+        "tags": ["filter:technician"]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato intervento (pianificato, in_corso, completato)",
+        "tags": ["filter:status", "kpi:interventi_pending"]
+      },
+      "date": {
+        "type": "date",
+        "description": "Data programmata dell'intervento",
+        "tags": ["filter:date", "sort:default"]
+      }
+    }
   }
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { ProductsService } from './products.service';
   import type { ProductItem } from './schema';
@@ -56,7 +57,7 @@
 </script>
 
 <svelte:head>
-  <title>Catalogo Prodotti & Ricambi | Gestoray</title>
+  <title>Catalogo Prodotti & Ricambi | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="products-page animate-fade-in">

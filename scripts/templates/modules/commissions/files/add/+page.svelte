@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { CommissionsService } from '../commissions.service';
@@ -82,7 +83,7 @@
 </script>
 
 <svelte:head>
-  <title>Nuova Provvigione | Gestoray</title>
+  <title>Nuova Provvigione | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="add-commission-page animate-fade-in">

@@ -36,10 +36,11 @@ export function initProjectStore() {
         neutralChroma: data.neutralChroma
       });
     } else {
-      projectStore.set({ projectName: '', projectEmail: '' });
+      projectStore.update(curr => curr || { projectName: 'CRM', projectEmail: 'admin@app.local' });
     }
   }, (err: any) => {
-    console.error('Error fetching project settings:', err);
+    console.warn('Error fetching project settings (offline/HMR):', err);
+    projectStore.update(curr => curr || { projectName: 'CRM', projectEmail: 'admin@app.local' });
   });
 }
 

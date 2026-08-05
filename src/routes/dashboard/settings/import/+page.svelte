@@ -59,10 +59,11 @@
     if (entityType === 'activities') return ClipboardList;
     return Layers;
   }
+  import { projectStore } from '$lib/stores/project';
 </script>
 
 <svelte:head>
-  <title>Importazione Dati Centralizzata | Gestoray</title>
+  <title>Importazione Dati Centralizzata | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="settings-page">

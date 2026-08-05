@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Commissions Page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/commissions');
   });
 

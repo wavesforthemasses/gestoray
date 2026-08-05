@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Interventi Module 100% Lifecycle E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
   });
 
   test('1. Dashboard Interventi, KPI e Switch Vista (Lista / Agenda)', async ({ page }) => {

@@ -11,9 +11,12 @@
   let loading = $state(true);
   let selectedModule = $state<string>('clients');
 
-  let hasInterventi = $derived($menuConfigStore.some(i => i.id === 'interventi'));
-  let hasTickets = $derived($menuConfigStore.some(i => i.id === 'tickets'));
-  let hasContracts = $derived($menuConfigStore.some(i => i.id === 'contracts'));
+  // Dynamic Entities from Menu Store (Core always has 'clients')
+  const availableEntities = $derived([
+    { id: 'clients', label: 'Clienti' },
+    ...$menuConfigStore.map((m: any) => ({ id: m.id, label: m.label })),
+    { id: 'global', label: 'Modulo Globale' }
+  ]);
 
   // Form State for Create / Edit
   let isModalOpen = $state(false);
@@ -160,11 +163,9 @@
     <label for="module-select">Filtra per Modulo:</label>
     <select id="module-select" bind:value={selectedModule} class="form-control-select">
       <option value="all">Tutti i Moduli</option>
-      <option value="clients">Clienti</option>
-      {#if hasInterventi}<option value="interventi">Interventi</option>{/if}
-      {#if hasTickets}<option value="tickets">Ticket Assistenza</option>{/if}
-      {#if hasContracts}<option value="contracts">Contratti</option>{/if}
-      <option value="global">Modulo Globale</option>
+      {#each availableEntities as ent}
+        <option value={ent.id}>{ent.label}</option>
+      {/each}
     </select>
   </div>
 
@@ -253,11 +254,9 @@
           <div class="form-group">
             <label for="cf-module">Modulo di Destinazione</label>
             <select id="cf-module" bind:value={fieldModule} class="form-control">
-              <option value="clients">Clienti</option>
-              {#if hasInterventi}<option value="interventi">Interventi</option>{/if}
-              {#if hasTickets}<option value="tickets">Ticket Assistenza</option>{/if}
-              {#if hasContracts}<option value="contracts">Contratti</option>{/if}
-              <option value="global">Modulo Globale</option>
+              {#each availableEntities.filter(e => e.id !== 'all') as ent}
+                <option value={ent.id}>{ent.label}</option>
+              {/each}
             </select>
           </div>
         </div>

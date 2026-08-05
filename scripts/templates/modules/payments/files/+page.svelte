@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { PaymentsService } from './payments.service';
   import type { PaymentItem, PaymentStatus } from './schema';
@@ -56,7 +57,7 @@
 </script>
 
 <svelte:head>
-  <title>Gestione Incassi & Pagamenti | Gestoray</title>
+  <title>Gestione Incassi & Pagamenti | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="payments-page animate-fade-in">

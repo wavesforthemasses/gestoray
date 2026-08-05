@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSearchKeywords = generateSearchKeywords;
 exports.generateSearchTerms = generateSearchTerms;
 /**
- * Centralized Search Utility for Gestoray Cloud Functions.
+ * Centralized Search Utility for the application Cloud Functions.
  * Generates phrase prefixes starting from EVERY word position to the end of the phrase.
  * Example: "Mario Rossi Srl"
  *  - Word 0 ("mario rossi srl"): "ma", "mar", "mari", "mario", "mario r", ..., "mario rossi srl"

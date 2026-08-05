@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { 
     TicketSettingsService, 
@@ -54,7 +55,7 @@
 </script>
 
 <svelte:head>
-  <title>Impostazioni Ticket Assistenza | Gestoray</title>
+  <title>Impostazioni Ticket Assistenza | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="ticket-settings-page animate-fade-in">

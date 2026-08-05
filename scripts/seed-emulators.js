@@ -4,10 +4,10 @@ const AUTH_URL = 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accoun
 const FIRESTORE_URL = 'http://127.0.0.1:8080/v1/projects/gesto-ray/databases/(default)/documents';
 
 const TEST_USERS = [
-  { email: 'test-admin@gestoray.local', role: 'amministrazione', nome: 'Admin', cognome: 'Amministrazione' },
-  { email: 'test-super@gestoray.local', role: 'superadmin', nome: 'Super', cognome: 'Admin' },
-  { email: 'test-comm@gestoray.local', role: 'commerciale', nome: 'Mario', cognome: 'Rossi' },
-  { email: 'test-direzione@gestoray.local', role: 'direzione', nome: 'Elena', cognome: 'Verdi' }
+  { email: 'test-admin@app.local', role: 'amministrazione', nome: 'Admin', cognome: 'Amministrazione' },
+  { email: 'test-super@app.local', role: 'superadmin', nome: 'Super', cognome: 'Admin' },
+  { email: 'test-comm@app.local', role: 'commerciale', nome: 'Mario', cognome: 'Rossi' },
+  { email: 'test-direzione@app.local', role: 'direzione', nome: 'Elena', cognome: 'Verdi' }
 ];
 
 async function seedUser(user) {
@@ -93,8 +93,8 @@ async function seedSettings() {
     },
     body: JSON.stringify({
       fields: {
-        projectName: { stringValue: 'Gestoray Dev' },
-        projectEmail: { stringValue: 'admin@gestoray.local' }
+        projectName: { stringValue: 'ERP Dev' },
+        projectEmail: { stringValue: 'admin@app.local' }
       }
     })
   });

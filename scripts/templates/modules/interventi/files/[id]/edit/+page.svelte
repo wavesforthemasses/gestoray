@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -327,7 +328,7 @@
 </script>
 
 <svelte:head>
-  <title>Modifica Intervento | Gestoray</title>
+  <title>Modifica Intervento | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="add-intervention-page animate-fade-in">

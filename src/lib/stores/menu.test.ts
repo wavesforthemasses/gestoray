@@ -13,7 +13,7 @@ describe('Sidebar Menu Configuration Registry', () => {
   });
 
   it('should dynamically include all installed modules from modules.registry.json', () => {
-    const installedModules = modulesRegistry.modules || [];
+    const installedModules: any[] = modulesRegistry.modules || [];
     
     for (const mod of installedModules) {
       const foundInMenu = DEFAULT_MENU_CONFIG.find(item => item.id === mod.id);

@@ -9,9 +9,6 @@
     adminFinalizedCommissions?: any[];
     adminUndistributedPayments?: any[];
     onMarkCommissionPaid?: (id: string) => void;
-    hasContracts?: boolean;
-    hasPayments?: boolean;
-    hasCommissions?: boolean;
   }
 
   let {
@@ -21,10 +18,7 @@
     adminPendingCommissions = [],
     adminFinalizedCommissions = [],
     adminUndistributedPayments = [],
-    onMarkCommissionPaid = () => {},
-    hasContracts = false,
-    hasPayments = false,
-    hasCommissions = false
+    onMarkCommissionPaid = () => {}
   }: Props = $props();
 </script>
 
@@ -42,9 +36,6 @@
       {adminPendingCommissions}
       {adminFinalizedCommissions}
       {onMarkCommissionPaid}
-      {hasContracts}
-      {hasPayments}
-      {hasCommissions}
     />
   {/if}
 </div>

@@ -87,10 +87,11 @@
       default: return { label: status, class: 'badge-neutral' };
     }
   }
+  import { projectStore } from '$lib/stores/project';
 </script>
 
 <svelte:head>
-  <title>Gestione {labels.plural} | Gestoray</title>
+  <title>Gestione {labels.plural} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="contracts-page animate-fade-in">

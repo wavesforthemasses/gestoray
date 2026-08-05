@@ -3,7 +3,7 @@ import { loginAs, seedFirestoreDoc, deleteFirestoreDoc } from '../../../../tests
 
 test.describe('Payments Page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/payments');
   });
 

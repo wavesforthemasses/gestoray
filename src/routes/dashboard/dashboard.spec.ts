@@ -10,7 +10,7 @@ test.describe('Dashboard Page - Accesso e Sicurezza', () => {
 
 test.describe('Dashboard Page - Ruolo: Amministrazione', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
   });
 
   test('mostra il layout corretto per l\'amministrazione', async ({ page }) => {
@@ -44,7 +44,7 @@ test.describe('Dashboard Page - Ruolo: Amministrazione', () => {
 
 test.describe('Dashboard Page - Ruolo: Commerciale / Direzione', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
   });
 
   test('mostra il layout corretto per commerciale/direzione', async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe('Dashboard Page - Ruolo: Commerciale / Direzione', () => {
 
 test.describe('Dashboard Page - Ruolo: Superadmin', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
   });
 
   test('mostra il layout per superadmin', async ({ page }) => {
@@ -75,17 +75,17 @@ test.describe('Dashboard Page - Ruolo: Superadmin', () => {
 
 test.describe('Dashboard - Sidebar Navigation', () => {
   test('la sidebar mostra le voci corrette per amministrazione', async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await expect(page.locator('.nav-item', { hasText: 'Dashboard' })).toBeVisible();
   });
 
   test('la sidebar mostra le voci corrette per commerciale', async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
     await expect(page.locator('.nav-item', { hasText: 'Dashboard' })).toBeVisible();
   });
 
   test('il bottone Disconnetti è visibile e funzionante', async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     const logoutBtn = page.locator('.logout-btn');
     await expect(logoutBtn).toBeVisible();
     await logoutBtn.click();

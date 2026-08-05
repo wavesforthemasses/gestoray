@@ -63,3 +63,5 @@ export const onActivityCreated = onDocumentCreated(
     }
   }
 );
+
+export const runActivityWrite = runActivityCreated;

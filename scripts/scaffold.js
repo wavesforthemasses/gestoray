@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Gestoray Module Scaffolder
+ * Module Scaffolder
  * 
  * Usage: npm run generate -- --name <ModuleName> --collection <firestore_collection>
  * Example: npm run generate -- --name Tickets --collection tickets
@@ -176,7 +176,7 @@ function main() {
   }
 
   console.log('');
-  console.log('🚀 Gestoray Module Scaffolder');
+  console.log('🚀 Module Scaffolder');
   console.log('─'.repeat(50));
   console.log(`   Modulo:      ${pascalName}`);
   console.log(`   Cartella:    src/routes/dashboard/${kebabName}/`);

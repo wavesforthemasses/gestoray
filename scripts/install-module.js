@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Gestoray Module & Bridge Installer (1-Click CLI Scaffolder)
+ * Module & Bridge Installer (1-Click CLI Scaffolder)
  * 
  * Usage:
  *   npm run module:install -- --name contracts

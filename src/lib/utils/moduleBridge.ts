@@ -1,5 +1,5 @@
 /**
- * Safe Dynamic Plugin Service Loader for Gestoray.
+ * Safe Dynamic Plugin Service Loader for the application.
  * Prevents Vite import-analysis build-time/dev-time failures when optional module services are uninstalled.
  */
 export async function loadOptionalService(serviceName: string): Promise<any> {

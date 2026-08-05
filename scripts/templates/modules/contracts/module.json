@@ -3,10 +3,60 @@
   "label": "Contratti",
   "description": "Gestione contratti e ordini",
   "icon": "FileText",
+  "requirements": ["products"],
   "path": "/dashboard/contracts",
   "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
+  "clientTabs": [
+    {
+      "id": "quotes",
+      "component": "ClientQuotesTab.svelte",
+      "label": "Preventivi & Contratti"
+    }
+  ],
+  "settingsCard": {
+    "title": "Configurazione Contratti & Preventivi",
+    "description": "Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza.",
+    "icon": "FileText",
+    "path": "/dashboard/settings/contracts"
+  },
+  "clientQuickAction": {
+    "label": "Nuovo Preventivo",
+    "title": "Nuovo Preventivo per questo cliente",
+    "tab": "quotes"
+  },
   "rolesView": ["superadmin", "direzione", "amministrazione"],
   "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "nncf",
+      "title": "NNCF",
+      "subtitle": "Conversioni",
+      "icon": "FileText",
+      "valueKey": "totalNNCF",
+      "commValueKey": "commTotalNNCF",
+      "aggregation": {
+        "collection": "clients",
+        "type": "count",
+        "dateFields": ["derived.nncfDate"]
+      }
+    },
+    {
+      "id": "vss",
+      "title": "VSS",
+      "subtitle": "Venduto Netto",
+      "icon": "DollarSign",
+      "valueKey": "totalVenduto",
+      "commValueKey": "commTotalSold",
+      "format": "currency",
+      "aggregation": {
+        "collection": "contracts",
+        "type": "sum",
+        "sumFields": ["totalAmount", "original.totalPrice"],
+        "dateFields": ["createdAt", "edits.createdAt", "original.createdAt"],
+        "vendorFields": ["agentId", "original.vendorUid", "original.secondVendorUid"]
+      }
+    }
+  ],
   "anonymization": {
     "collectionName": "contracts",
     "linkFieldPath": "original.clientId",

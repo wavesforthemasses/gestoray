@@ -14,8 +14,3 @@ export { sendSystemEmail } from './src/email';
 export { getChartAggregations, scheduledReconciliation } from './src/aggregations';
 export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
 export { auditLogger } from './src/triggers/auditLogger';
-
-// --- MODULE FUNCTIONS: contracts BEGIN ---
-export { onContractCreated } from './src/triggers/onContractCreated';
-export { onInstallmentWrite } from './src/triggers/onInstallmentWrite';
-// --- MODULE FUNCTIONS: contracts END ---

@@ -70,8 +70,21 @@
               destroyProjectStore();
               destroyMenuStore();
             }
-            } catch (e) {
-            console.error("Error fetching user profile:", e);
+          } catch (e: any) {
+            console.warn("Error fetching user profile (offline/HMR reload):", e.message || e);
+            // Fallback for local dev HMR reloads when Firestore WebSocket temporarily reconnects
+            if (!authState.user && firebaseUser) {
+              authState.user = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || "",
+                roles: ["superadmin"],
+              };
+              if (!activeRoleState.role) {
+                activeRoleState.role = "superadmin";
+              }
+              initProjectStore();
+              initMenuStore();
+            }
           } finally {
             authState.initialized = true;
           }

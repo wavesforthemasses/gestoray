@@ -19,20 +19,21 @@
 
   const ALL_ROLES = ['superadmin', 'direzione', 'amministrazione', 'commerciale'];
   
-  const MENU_LABELS: Record<string, string> = {
-    'todo': 'Cose da Fare',
-    'clients': 'Gestione Clienti',
-    'contacts': 'Gestione Contatti',
-    'activities': 'Gestione Attività',
-    'contracts': 'Gestione Contratti',
-    'my-commissions': 'Le Mie Provvigioni',
-    'payments': 'Gestione Incassi',
-    'commissions': 'Gestione Provvigioni',
-    'products': 'Catalogo Prodotti',
-    'users': 'Gestione Utenti',
-    'qualifications': 'Gestione Qualifiche',
-    'settings': 'Impostazioni'
-  };
+  import { menuConfigStore } from '$lib/stores/menu';
+
+  function getMenuLabel(item: MenuItemConfig): string {
+    const fromStore = $menuConfigStore.find(m => m.id === item.id);
+    if (fromStore?.label) return fromStore.label;
+    const staticLabels: Record<string, string> = {
+      'todo': 'Cose da Fare',
+      'clients': 'Gestione Clienti',
+      'contacts': 'Gestione Contatti',
+      'activities': 'Gestione Attività',
+      'users': 'Gestione Utenti',
+      'settings': 'Impostazioni'
+    };
+    return staticLabels[item.id] || item.label || item.id;
+  }
 
   $effect(() => {
     const currentRole = activeRoleState.role;
@@ -163,7 +164,7 @@
                   </div>
                 </td>
                 <td class="item-name">
-                  <strong>{MENU_LABELS[item.id] || item.label || item.id}</strong>
+                  <strong>{getMenuLabel(item)}</strong>
                   <span class="item-id">({item.id})</span>
                 </td>
                 {#each ALL_ROLES as role}

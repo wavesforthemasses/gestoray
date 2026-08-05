@@ -1,5 +1,5 @@
 /**
- * Centralized Search Utility for Gestoray.
+ * Centralized Search Utility for the application.
  * Generates phrase prefixes starting from EVERY word position to the end of the phrase.
  * Example: "Mario Rossi Srl"
  *  - Word 0 ("mario rossi srl"): "ma", "mar", "mari", "mario", "mario r", ..., "mario rossi srl"

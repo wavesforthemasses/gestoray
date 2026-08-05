@@ -3,7 +3,7 @@ import { loginAs, seedFirestoreDoc, deleteFirestoreDoc } from '../../../../tests
 
 test.describe('Contracts Page - Ruolo: Commerciale', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
     await page.goto('/dashboard/contracts');
   });
 
@@ -28,7 +28,7 @@ test.describe('Contracts Page - Ruolo: Commerciale', () => {
 
 test.describe('Contracts Page - Ruolo: Amministrazione', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/contracts');
   });
 
@@ -53,7 +53,7 @@ test.describe('Contracts Page - Ruolo: Amministrazione', () => {
             clientName: { stringValue: 'Test Client CSV' },
             status: { stringValue: 'approved' },
             totalPrice: { integerValue: '1000' },
-            vendorEmail: { stringValue: 'test@gestoray.local' }
+            vendorEmail: { stringValue: 'test@app.local' }
           }
         }
       },

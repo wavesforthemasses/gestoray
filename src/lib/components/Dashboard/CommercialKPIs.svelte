@@ -1,39 +1,22 @@
 <script lang="ts">
   import { KPITile } from "$lib";
   import { KPI_LEGEND } from "$lib/kpiLegend";
-  import { Briefcase, DollarSign, FileText, Phone, Users, Calendar } from "@lucide/svelte";
+  import { Briefcase, DollarSign, FileText, Phone, Users, Calendar, Wallet, Award, CreditCard, ActivitySquare, MessageSquare, CheckCircle, Mail } from "@lucide/svelte";
+  import { menuConfigStore } from "$lib/stores/menu";
 
   let { 
-    commTotalNA,
-    commContractsCount,
-    commTotalSold,
-    commMaturate,
-    commTotalNNCF,
-    commIncassato,
-    activityCounts,
-    activitiesConfig,
+    kpis = {},
+    commTotalNA = 0,
+    commContractsCount = 0,
+    commTotalSold = 0,
+    commMaturate = 0,
+    commTotalNNCF = 0,
+    commIncassato = 0,
+    activityCounts = {},
+    activitiesConfig = [],
     onTabSelect,
-    hasContracts = false,
-    hasPayments = false,
-    hasCommissions = false,
     hasActivities = false
-  } = $props<{
-    commTotalNA: number;
-    commContractsCount: number;
-    commTotalSold: number;
-    commMaturate: number;
-    commTotalNNCF: number;
-    commIncassato: number;
-    activityCounts: Record<string, number>;
-    activitiesConfig: any[];
-    onTabSelect: (tab: string) => void;
-    hasContracts?: boolean;
-    hasPayments?: boolean;
-    hasCommissions?: boolean;
-    hasActivities?: boolean;
-  }>();
-
-  import { MessageSquare, ActivitySquare, CheckCircle, Mail } from "@lucide/svelte";
+  } = $props<any>();
 
   const iconMap: Record<string, any> = {
     'Phone': Phone,
@@ -41,13 +24,33 @@
     'Calendar': Calendar,
     'MessageSquare': MessageSquare,
     'FileText': FileText,
+    'DollarSign': DollarSign,
+    'Wallet': Wallet,
+    'Award': Award,
+    'CreditCard': CreditCard,
     'ActivitySquare': ActivitySquare,
     'CheckCircle': CheckCircle,
     'Briefcase': Briefcase,
     'Mail': Mail
   };
 
-  const allowedActivities = $derived(activitiesConfig.filter((a: any) => a.rolesView.includes('commerciale')));
+  const allowedActivities = $derived((activitiesConfig || []).filter((a: any) => a.rolesView.includes('commerciale')));
+
+  const kpisValuesMap = $derived<Record<string, any>>({
+    commTotalNNCF,
+    commContractsCount,
+    commTotalSold,
+    commIncassato,
+    commMaturate,
+    ...kpis
+  });
+
+  // Dynamic KPI Tiles from active modules
+  const activeKPITiles = $derived(
+    $menuConfigStore
+      .filter((m: any) => m.kpiTiles && Array.isArray(m.kpiTiles))
+      .flatMap((m: any) => m.kpiTiles)
+  );
 </script>
 
 <section class="kpi-deck">
@@ -57,7 +60,7 @@
     title="NA" 
     value={commTotalNA} 
     subtitle="Nuovi lead" 
-    titleAttr={`${KPI_LEGEND.NA.label} - ${KPI_LEGEND.NA.description}`} 
+    titleAttr={`${KPI_LEGEND.NA?.label || 'Nuove Anagrafiche'} - ${KPI_LEGEND.NA?.description || ''}`} 
     onclick={() => onTabSelect("nuove_anagrafiche")} 
     inlineSubtitle={true}
   />
@@ -77,52 +80,22 @@
     {/each}
   {/if}
 
-  {#if hasContracts}
+  {#each activeKPITiles as tile}
+    {@const rawVal = kpisValuesMap[tile.commValueKey || tile.valueKey] || 0}
+    {@const isVss = tile.id === 'vss'}
+    {@const displayVal = isVss ? rawVal : (tile.format === 'currency' ? `€ ${Number(rawVal).toFixed(2)}` : rawVal)}
+    {@const subtitleVal = isVss ? `Ord: € ${commTotalSold.toFixed(2)}` : tile.subtitle}
     <KPITile 
       theme="info" 
-      icon={FileText} 
-      title="NNCF" 
-      value={commTotalNNCF} 
-      subtitle="Nuovi clienti" 
-      titleAttr={`${KPI_LEGEND.NNCF.label} - ${KPI_LEGEND.NNCF.description}`} 
-      onclick={() => onTabSelect("nncf")} 
+      icon={iconMap[tile.icon] || FileText} 
+      title={tile.title} 
+      value={displayVal} 
+      subtitle={subtitleVal} 
+      titleAttr={`${(KPI_LEGEND as any)[tile.id?.toUpperCase()]?.label || tile.title}`} 
+      onclick={() => onTabSelect(tile.id)} 
       inlineSubtitle={true}
     />
-
-    <KPITile 
-      theme="info" 
-      icon={Briefcase} 
-      title="VSS" 
-      value={commContractsCount} 
-      subtitle={`Ord: € ${commTotalSold.toFixed(2)}`} 
-      onclick={() => onTabSelect("vss")} 
-      inlineSubtitle={true}
-    />
-  {/if}
-
-  {#if hasPayments}
-    <KPITile 
-      theme="info" 
-      icon={DollarSign} 
-      title="GI" 
-      value={`€ ${commIncassato.toFixed(2)}`} 
-      subtitle="Da contratti" 
-      onclick={() => onTabSelect("gi")} 
-      inlineSubtitle={true}
-    />
-  {/if}
-
-  {#if hasCommissions}
-    <KPITile 
-      theme="info" 
-      icon={DollarSign} 
-      title="Provvigioni Maturate" 
-      value={`€ ${commMaturate.toFixed(2)}`} 
-      subtitle="Definitive" 
-      onclick={() => onTabSelect("provvigioni_maturate")}
-      inlineSubtitle={true}
-    />
-  {/if}
+  {/each}
 </section>
 
 <style>

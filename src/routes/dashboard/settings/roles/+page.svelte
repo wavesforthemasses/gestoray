@@ -145,10 +145,11 @@
       return r;
     });
   }
+  import { projectStore } from '$lib/stores/project';
 </script>
 
 <svelte:head>
-  <title>Matrice Permessi CRUD & Ruoli | Gestoray</title>
+  <title>Matrice Permessi CRUD & Ruoli | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="roles-management-page">

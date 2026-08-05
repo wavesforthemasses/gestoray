@@ -133,7 +133,7 @@ describe('Universal Import Engine Unit Tests', () => {
       expect(ImportEngineService.parseNumberValue('0,00%')).toBe(0);
     });
 
-    it('should normalize units of measure to Gestoray standard codes', () => {
+    it('should normalize units of measure to standard codes', () => {
       expect(normalizeUnitOfMeasure('Pezzi')).toBe('pz');
       expect(normalizeUnitOfMeasure('pcs')).toBe('pz');
       expect(normalizeUnitOfMeasure('Kili')).toBe('kg');

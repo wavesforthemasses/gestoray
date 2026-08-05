@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { TeamsService } from '../teams.service';
   import { VehiclesService } from '../vehicles.service';
@@ -125,7 +126,7 @@
 </script>
 
 <svelte:head>
-  <title>Gestione Squadre di Lavoro | Gestoray</title>
+  <title>Gestione Squadre di Lavoro | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="teams-page">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { VehiclesService } from '../vehicles.service';
   import type { VehicleItem } from '../schema';
@@ -122,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>Parco Mezzi & Attrezzature | Gestoray</title>
+  <title>Parco Mezzi & Attrezzature | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="vehicles-page">

@@ -3,7 +3,7 @@ import { loginAs } from '../../../../tests/utils';
 
 test.describe('Qualifications Page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
     await page.goto('/dashboard/qualifications');
   });
 

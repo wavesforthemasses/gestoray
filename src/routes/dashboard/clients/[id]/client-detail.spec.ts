@@ -28,7 +28,7 @@ test.describe('Client Detail Page - Ruolo: Amministrazione', () => {
       }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto(`/dashboard/clients/${clientId}`);
   });
 
@@ -152,7 +152,7 @@ test.describe('Client Detail Page - Ruolo: Amministrazione', () => {
     await expect(page.getByRole('button', { name: /Elimina questa Anagrafica Cliente/i })).toBeHidden();
 
     // Per testare l'eliminazione entriamo come superadmin
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
     await page.goto(`/dashboard/clients/${clientId}`);
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
 
@@ -190,7 +190,7 @@ test.describe('Client Detail Page - Ruolo: Amministrazione', () => {
       derived: { mapValue: { fields: {} } }
     });
 
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
     await page.goto(`/dashboard/clients/${clientId}`);
     await expect(page.locator('.loader-box')).toBeHidden({ timeout: 15000 });
 

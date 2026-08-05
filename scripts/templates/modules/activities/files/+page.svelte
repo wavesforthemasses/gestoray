@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { ActivitiesService } from './activities.service';
   import type { ActivityItem, ActivityStatus, ActivityPriority } from './schema';
@@ -130,7 +131,7 @@
 
 <svelte:head>
   <!-- Updated activities page with Calendar & Backend Filters -->
-  <title>Attività & Task Interni | Gestoray</title>
+  <title>Attività & Task Interni | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="activities-page animate-fade-in">

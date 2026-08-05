@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { TenantFeaturesService, DEFAULT_TENANT_FEATURES } from '$lib/services/tenantFeaturesService';
   import { tenantFeaturesStore } from '$lib/stores/tenantFeatures';
+  import { projectStore } from '$lib/stores/project';
   import { Plug } from '@lucide/svelte';
 
   let features = $state<Record<string, boolean>>({});
@@ -32,14 +33,14 @@
 </script>
 
 <svelte:head>
-  <title>Attivazione Moduli Tenant | Gestoray</title>
+  <title>Attivazione Moduli Tenant | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="tenant-features-page animate-fade-in">
   <div class="page-header">
     <div>
       <h1 class="page-title"><Plug size={24} class="title-icon" /> Moduli & Funzionalità Attive (Tenant Flags)</h1>
-      <p class="page-subtitle">Attiva o disattiva dinamicamente i moduli di Gestoray per la tua azienda senza disinstallare codice.</p>
+      <p class="page-subtitle">Attiva o disattiva dinamicamente i moduli applicativi per la tua azienda senza disinstallare codice.</p>
     </div>
   </div>
 

@@ -3,7 +3,7 @@ import { loginAs, seedFirestoreDoc, deleteFirestoreDoc } from '../../../../tests
 
 test.describe('Activities Page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-comm@gestoray.local');
+    await loginAs(page, 'test-comm@app.local');
     await page.goto('/dashboard/activities');
   });
 
@@ -14,7 +14,7 @@ test.describe('Activities Page', () => {
 
 test.describe('Activities Page - Ruolo: Amministrazione', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto('/dashboard/activities');
   });
 
@@ -63,7 +63,7 @@ test.describe('Nuova Attività e Submit', () => {
       }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
   });
 
   test.afterEach(async () => {

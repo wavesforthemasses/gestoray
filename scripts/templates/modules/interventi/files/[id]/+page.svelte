@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { InterventiService } from '../interventi.service';
@@ -195,7 +196,7 @@
 </script>
 
 <svelte:head>
-  <title>{intervention ? intervention.title : 'Dettaglio Intervento'} | Gestoray</title>
+  <title>{intervention ? intervention.title : 'Dettaglio Intervento'} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="intervention-detail-page">
@@ -230,7 +231,7 @@
     <!-- INTESTAZIONE RAPPORTINO PER STAMPA -->
     <div class="print-header">
       <h2>RAPPORTINO DI INTERVENTO TECNICO</h2>
-      <p>Gestoray Field Service | Id Intervento: {intervention.id}</p>
+      <p>{$projectStore?.projectName || 'ERP'} Field Service | Id Intervento: {intervention.id}</p>
     </div>
 
     <!-- CARDS DETTAGLIO -->

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -289,7 +290,7 @@
 </script>
 
 <svelte:head>
-  <title>{labels.newSingular} | Gestoray</title>
+  <title>{labels.newSingular} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="add-contract-container animate-fade-in">

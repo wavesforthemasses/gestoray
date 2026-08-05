@@ -16,11 +16,32 @@
   pageTitle.set('Scheda Cliente CRM');
   import ClientProfileTab from './components/ClientProfileTab.svelte';
   import ClientActivitiesTab from './components/ClientActivitiesTab.svelte';
-  import ClientQuotesTab from './components/ClientQuotesTab.svelte';
   import ClientContactsTab from './components/ClientContactsTab.svelte';
   import { Card } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
   import { ClientDetailService } from './client-detail.service';
+
+  // Dynamic Tabs Injection
+  const injectedTabs = import.meta.glob('../../../routes/dashboard/*/client-tabs/*.svelte', { eager: true });
+  
+  let dynamicTabsFromConfig = $derived($menuConfigStore.flatMap(m => 
+    ((m as any).clientTabs || []).map((tab: any) => ({ ...tab, moduleId: m.id }))
+  ));
+
+  let activeDynamicTabs = $derived(
+    dynamicTabsFromConfig.map(tab => {
+      // The path format for the glob is relative to this file's path
+      // This file is at src/routes/dashboard/clients/[id]/+page.svelte
+      // The glob targets src/routes/dashboard/*/client-tabs/*.svelte
+      // So relative path from here is: ../../../routes/dashboard/${moduleId}/client-tabs/${tab.component}
+      // Actually since it's eager: true, keys are like '../../../routes/dashboard/contracts/client-tabs/ClientQuotesTab.svelte'
+      const path = Object.keys(injectedTabs).find(k => k.includes(`/${tab.moduleId}/client-tabs/${tab.component}`));
+      return {
+        ...tab,
+        componentInstance: path ? (injectedTabs[path] as any).default : null
+      };
+    }).filter(tab => tab.componentInstance)
+  );
 
 
   let hasActivitiesModule = $derived($menuConfigStore.some(i => i.id === 'activities'));
@@ -32,7 +53,7 @@
   let showAnonymizeModal = $state(false);
 
   // Tabs
-  let activeTab = $state<'profile' | 'contacts' | 'activities' | 'quotes'>('profile');
+  let activeTab = $state<string>('profile');
 
   // Loaders & Status
   let loadingData = $state(true);
@@ -128,28 +149,20 @@
   let activityNotesText = $state('');
   let appointmentDateTime = $state(getNowDateTimeString());
 
-  // Form: Quote Builder
-  let quoteItems = $state<Array<any>>([]);
-  let selectedProductId = $state('');
-  let itemPriceSold = $state<number | null>(null);
-  let itemQuantity = $state<number>(1);
-  let quoteSuccessMsg = $state('');
-  let quoteErrorMsg = $state('');
 
-  // Co-seller options
-  let secondVendorUid = $state('');
-  let secondVendorShare = $state(30);
 
   function getNowDateTimeString() {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
     return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
   }
 
+  let activeModuleIds = $derived($menuConfigStore.map(m => m.id));
+
   // Load everything
   async function loadAllData() {
     loadingData = true;
     try {
-      const payload = await ClientDetailService.fetchClientData(clientId);
+      const payload = await ClientDetailService.fetchClientData(clientId, activeModuleIds);
       if (hasActivitiesModule) {
         try {
           const { loadOptionalService } = await import('$lib/utils/moduleBridge');
@@ -432,98 +445,7 @@
     }
   }
 
-  function handleAddQuoteItem() {
-    if (!selectedProductId) return;
-    const prod = productsList.find(p => p.id === selectedProductId);
-    if (!prod) return;
 
-    const soldPrice = itemPriceSold !== null ? itemPriceSold : prod.listPrice;
-    const existingIdx = quoteItems.findIndex(item => item.productId === selectedProductId);
-    if (existingIdx > -1) {
-      quoteItems[existingIdx].quantity += itemQuantity;
-      quoteItems[existingIdx].priceSold = soldPrice;
-    } else {
-      quoteItems.push({
-        productId: prod.id,
-        name: prod.name,
-        listPrice: prod.listPrice,
-        minPrice: prod.minPrice,
-        priceSold: soldPrice,
-        quantity: itemQuantity
-      });
-    }
-
-    selectedProductId = '';
-    itemPriceSold = null;
-    itemQuantity = 1;
-    quoteSuccessMsg = 'Prodotto aggiunto al preventivo corrente.';
-  }
-
-  function handleRemoveQuoteItem(index: number) {
-    quoteItems.splice(index, 1);
-  }
-
-  let quoteTotal = $derived(
-    quoteItems.reduce((sum, item) => sum + item.priceSold * item.quantity, 0)
-  );
-
-  async function handleSaveQuote() {
-    if (quoteItems.length === 0 || !authState.user) return;
-    submittingQuote = true;
-    quoteErrorMsg = '';
-    quoteSuccessMsg = '';
-
-    try {
-      const fullName = `${clientName} ${clientCognome}`.trim();
-      await ClientDetailService.saveQuote(
-        clientId, 
-        fullName, 
-        quoteItems, 
-        quoteTotal, 
-        { uid: authState.user.uid, email: authState.user.email! }
-      );
-
-      quoteSuccessMsg = 'Preventivo bozza salvato con successo!';
-      quoteItems = [];
-      await loadAllData();
-    } catch (e: any) {
-      quoteErrorMsg = 'Errore durante il salvataggio: ' + e.message;
-    } finally {
-      submittingQuote = false;
-    }
-  }
-
-  async function handleApproveQuote(quoteId: string) {
-    if (!authState.user || !activeRoleState.role) return;
-    submittingQuote = true;
-    quoteErrorMsg = '';
-    quoteSuccessMsg = '';
-
-    try {
-      const coSeller = secondVendorUid ? {
-        uid: secondVendorUid,
-        share: secondVendorShare
-      } : undefined;
-
-      await ClientDetailService.approveQuoteToContract(
-        quoteId, 
-        clientId, 
-        coSeller, 
-        activeRoleState.role, 
-        { uid: authState.user.uid, email: authState.user.email! }
-      );
-
-      quoteSuccessMsg = 'Preventivo convertito in contratto! In attesa di approvazione amministrativa.';
-      quoteItems = []; 
-      secondVendorUid = '';
-      secondVendorShare = 30;
-      await loadAllData();
-    } catch (e: any) {
-      quoteErrorMsg = 'Errore durante la conversione in contratto: ' + e.message;
-    } finally {
-      submittingQuote = false;
-    }
-  }
 
   function parseNote(noteRaw: string) {
     try {
@@ -539,14 +461,7 @@
     };
   }
 
-  function onProductSelectChange(id: string) {
-    const prod = productsList.find(p => p.id === id);
-    if (prod) {
-      itemPriceSold = prod.listPrice;
-    } else {
-      itemPriceSold = null;
-    }
-  }
+
   async function confirmAnonymize() {
     try {
       submittingProfile = true;
@@ -609,15 +524,15 @@
           </button>
         {/if}
 
-        {#if hasContractsModule && (can('contracts:read', activeRoleState.role) || can('contracts:list', activeRoleState.role) || can('contracts:create', activeRoleState.role))}
+        {#each activeDynamicTabs as tab}
           <button 
             class="tab-nav-btn" 
-            class:active={activeTab === 'quotes'} 
-            onclick={() => activeTab = 'quotes'}
+            class:active={activeTab === tab.id} 
+            onclick={() => activeTab = tab.id}
           >
-            <FileText size={16} /> Preventivatore ({quotesList.length})
+            <FileText size={16} /> {tab.label}
           </button>
-        {/if}
+        {/each}
       </div>
     {/if}
   </Card>
@@ -705,32 +620,11 @@
         />
       {/if}
 
-      {#if activeTab === 'quotes'}
-        <ClientQuotesTab
-          productsList={productsList}
-          quotesList={quotesList}
-          contractsList={contractsList}
-          usersList={usersList}
-          auth={authState.user}
-          bind:selectedProductId
-          bind:itemPriceSold
-          bind:itemQuantity
-          bind:quoteItems
-          bind:secondVendorUid
-          bind:secondVendorShare
-          activeRole={activeRoleState.role}
-          submittingQuote={submittingQuote}
-          quoteSuccessMsg={quoteSuccessMsg}
-          quoteErrorMsg={quoteErrorMsg}
-          quoteTotal={quoteTotal}
-
-          onProductSelectChange={onProductSelectChange}
-          onAddQuoteItem={handleAddQuoteItem}
-          onRemoveQuoteItem={handleRemoveQuoteItem}
-          onSaveQuote={handleSaveQuote}
-          onConvertToContract={(items, qId) => handleApproveQuote(qId || '')}
-        />
-      {/if}
+      {#each activeDynamicTabs as tab}
+        {#if activeTab === tab.id}
+          <svelte:component this={tab.componentInstance} {clientId} clientData={{ nome: clientName, cognome: clientCognome }} />
+        {/if}
+      {/each}
     </div>
   {/if}
 </div>

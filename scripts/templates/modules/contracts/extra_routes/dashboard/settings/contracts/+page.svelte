@@ -5,7 +5,7 @@
 
   import { toast } from '$lib/stores/toast.svelte';
   import { Card, FormField, Button } from '$lib';
-  import { FileText, Save, RefreshCw, Hash, Settings, Calendar } from '@lucide/svelte';
+  import { FileText, Save, RefreshCw, Hash, Settings, Calendar, Tag } from '@lucide/svelte';
 
   let settings = $state<ContractSettings>({
     entityNaming: 'contract',
@@ -86,10 +86,11 @@
       toast.info('Contatore azzerato. Salva le impostazioni per confermare.');
     }
   }
+  import { projectStore } from '$lib/stores/project';
 </script>
 
 <svelte:head>
-  <title>Impostazioni Contratti e Preventivi | Gestoray</title>
+  <title>Impostazioni Contratti e Preventivi | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="contracts-settings-page animate-fade-in">
@@ -114,7 +115,7 @@
             <label class="radio-label {settings.entityNaming === 'contract' ? 'active' : ''}">
               <input type="radio" name="entityNaming" value="contract" bind:group={settings.entityNaming} />
               <div>
-                <strong>📄 Contratti & Canoni (Predefinito)</strong>
+                <strong><FileText size={16} class="inline-icon" /> Contratti & Canoni (Predefinito)</strong>
                 <p>Terminologia incentrata su Contratti, Canoni ricorrenti e Scadenze aziendali.</p>
               </div>
             </label>
@@ -122,7 +123,7 @@
             <label class="radio-label {settings.entityNaming === 'quote' ? 'active' : ''}">
               <input type="radio" name="entityNaming" value="quote" bind:group={settings.entityNaming} />
               <div>
-                <strong>🏷️ Preventivi & Quotazioni</strong>
+                <strong><Tag size={16} class="inline-icon" /> Preventivi & Quotazioni</strong>
                 <p>Terminologia incentrata su Preventivi commercializzati, Offerte e Quotazioni ai clienti.</p>
               </div>
             </label>

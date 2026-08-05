@@ -12,7 +12,7 @@ test.describe('User Detail Page', () => {
           fields: {
             nome: { stringValue: 'Test Detail' },
             cognome: { stringValue: 'User' },
-            email: { stringValue: 'detail@gestoray.local' },
+            email: { stringValue: 'detail@app.local' },
             roles: {
               arrayValue: {
                 values: [{ stringValue: 'commerciale' }]
@@ -24,7 +24,7 @@ test.describe('User Detail Page', () => {
       derived: { mapValue: { fields: {} } }
     });
 
-    await loginAs(page, 'test-super@gestoray.local');
+    await loginAs(page, 'test-super@app.local');
     await page.goto(`/dashboard/users/${testUserId}`);
   });
 

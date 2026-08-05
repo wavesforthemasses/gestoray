@@ -4,10 +4,10 @@ match /contracts/{contractId} {
   allow create: if isAuth() && notWritingDerived();
   allow update: if isAuth() && notWritingDerived();
   allow delete: if hasRole('superadmin');
+}
 
-  match /installments/{instId} {
-    allow read: if isAuth();
-    allow write: if isAuth();
-  }
+match /{path=**}/installments/{instId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
 }
 

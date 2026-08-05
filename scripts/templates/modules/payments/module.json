@@ -4,10 +4,65 @@
   "description": "Gestione rate, scadenze ed incassi clienti",
   "icon": "CreditCard",
   "path": "/dashboard/payments",
-  "rolesView": [
-    "superadmin",
-    "direzione",
-    "amministrazione"
+  "kpiBridgePath": "/dashboard/payments/payments.kpi.bridge.ts",
+  "todoModals": [
+    {
+      "id": "installment",
+      "component": "TodoInstallmentModal.svelte"
+    }
   ],
-  "enabled": true
+  "rolesView": ["superadmin", "direzione", "amministrazione"],
+  "requirements": ["contracts"],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "gi",
+      "title": "GI",
+      "subtitle": "Incassato Reale",
+      "icon": "Wallet",
+      "valueKey": "totalIncassato",
+      "commValueKey": "commIncassato",
+      "format": "currency",
+      "aggregation": {
+        "collection": "payments",
+        "type": "sum",
+        "sumFields": ["amount", "original.amount"],
+        "dateFields": ["date", "paymentDate", "original.date", "createdAt", "edits.createdAt", "original.createdAt"]
+      }
+    }
+  ],
+  "schema": {
+    "fields": {
+      "paymentNumber": {
+        "type": "string",
+        "description": "Numero progressivo dell'incasso riscosso",
+        "tags": ["search", "sort"]
+      },
+      "clientId": {
+        "type": "string",
+        "description": "ID del cliente incassato",
+        "tags": ["filter:client", "relation:clients"]
+      },
+      "clientName": {
+        "type": "string",
+        "description": "Ragione sociale del cliente",
+        "tags": ["search", "display"]
+      },
+      "amount": {
+        "type": "currency",
+        "description": "Importo totale incassato",
+        "tags": ["kpi:gi", "filter:amount", "chart:aggregate"]
+      },
+      "date": {
+        "type": "date",
+        "description": "Data di registrazione dell'incasso",
+        "tags": ["filter:date", "sort:default"]
+      },
+      "derived.remainingToDistribute": {
+        "type": "currency",
+        "description": "Quota rimanente dell'incasso da allocare ai contratti",
+        "tags": ["kpi:undistributed_payments"]
+      }
+    }
+  }
 }

@@ -9,8 +9,6 @@
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Scadenziario To-Do');
   import TodoItemCard from './components/TodoItemCard.svelte';
-  import TodoInstallmentModal from './components/TodoInstallmentModal.svelte';
-
   $effect(() => {
     const currentRole = activeRoleState.role;
     if (currentRole === null) return; // Still loading
@@ -25,83 +23,23 @@
 
   // Database lists
   let clientsList = $state<any[]>([]);
-  let contractsList = $state<any[]>([]);
-  let installmentsList = $state<any[]>([]);
+  let todoItems = $state<TodoItem[]>([]);
   let loading = $state(true);
-
-  // Installment Modal State
-  let showInstallmentModal = $state(false);
-  let selectedInstallmentId = $state('');
-  let selectedContractId = $state('');
-  let installmentActualAmount = $state<number | null>(null);
   let submitting = $state(false);
+
+  import { menuConfigStore } from '$lib/stores/menu';
+  let activeModuleIds = $derived($menuConfigStore.map(m => m.id));
 
   async function fetchData() {
     loading = true;
     try {
       const payload = await TodoService.fetchTodoData(activeRoleState.role, authState.user?.uid);
       clientsList = payload.clientsList;
-      contractsList = payload.contractsList;
-      installmentsList = payload.installmentsList;
+      todoItems = await TodoService.buildTodoItems(clientsList, activeRoleState.role, authState.user?.uid, activeModuleIds);
     } catch (e) {
       console.error('Error fetching todo data:', e);
     } finally {
       loading = false;
-    }
-  }
-
-  // Derive Checklist items based on active role
-  let todoItems = $derived(
-    TodoService.buildTodoItems(clientsList, contractsList, installmentsList, activeRoleState.role, authState.user?.uid)
-  );
-
-  // Action: Postpone Installment
-  async function handlePostponeInstallment(contractId: string, installmentId: string, currentDueDate: string, clientId: string, clientName: string) {
-    const newDate = await confirmStore.askInput("Inserisci la nuova data di scadenza (AAAA-MM-GG):", currentDueDate);
-    if (!newDate) return;
-
-    try {
-      submitting = true;
-      await TodoService.postponeInstallment(contractId, installmentId, newDate, clientId, clientName, { uid: authState.user!.uid, email: authState.user!.email! });
-      toast.success("Scadenza posticipata con successo!");
-      await fetchData();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Errore durante il rinvio: " + e.message);
-    } finally {
-      submitting = false;
-    }
-  }
-
-  // Action: Collect Installment
-  async function handleCollectInstallment(contractId: string, installmentId: string, actualAmount: number) {
-    if (!authState.user) return;
-    try {
-      submitting = true;
-      toast.success("Azione gestita nel modulo incassi.");
-      showInstallmentModal = false;
-      installmentActualAmount = null;
-      await fetchData();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Errore durante l'incasso: " + e.message);
-    } finally {
-      submitting = false;
-    }
-  }
-
-  // Action: Approve Contract
-  async function handleApproveContract(contractId: string) {
-    if (!authState.user) return;
-    try {
-      submitting = true;
-      toast.success("Azione gestita nel modulo contratti.");
-      await fetchData();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Errore durante l'approvazione: " + e.message);
-    } finally {
-      submitting = false;
     }
   }
 </script>
@@ -134,18 +72,7 @@
       {:else}
         <div class="timeline-todo-stack">
           {#each todoItems as item}
-            <TodoItemCard
-              {item}
-              activeRole={activeRoleState.role}
-              onPostpone={handlePostponeInstallment}
-              onCollect={(cId, iId, amount) => {
-                selectedContractId = cId;
-                selectedInstallmentId = iId;
-                installmentActualAmount = amount;
-                showInstallmentModal = true;
-              }}
-              onApprove={handleApproveContract}
-            />
+            <TodoItemCard {item} />
           {/each}
         </div>
       {/if}
@@ -153,13 +80,6 @@
   {/if}
 </div>
 
-{#if showInstallmentModal}
-  <TodoInstallmentModal
-    bind:installmentActualAmount
-    onClose={() => showInstallmentModal = false}
-    onConfirm={(amount) => handleCollectInstallment(selectedContractId, selectedInstallmentId, amount)}
-  />
-{/if}
 
 <style>
   .todo-page {

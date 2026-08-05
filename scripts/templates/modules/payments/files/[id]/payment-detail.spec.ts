@@ -66,7 +66,7 @@ test.describe('Payment Detail Page', () => {
       }
     });
 
-    await loginAs(page, 'test-admin@gestoray.local');
+    await loginAs(page, 'test-admin@app.local');
     await page.goto(`/dashboard/payments/${paymentId}`);
   });
 

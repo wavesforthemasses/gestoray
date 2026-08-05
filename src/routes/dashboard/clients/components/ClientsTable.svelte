@@ -27,7 +27,15 @@
     selectedPeriod
   } = $props();
 
-  let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
+  const dynamicClientActions = $derived(
+    $menuConfigStore
+      .filter((m: any) => m.clientQuickAction)
+      .map((m: any) => ({
+        label: m.clientQuickAction.label,
+        title: m.clientQuickAction.title,
+        href: (row: any) => `/dashboard/clients/${row.id}?tab=${m.clientQuickAction.tab}`
+      }))
+  );
 
   let filteredClients = $derived.by(() => {
     let list = clientsList;
@@ -76,15 +84,15 @@
       >
         Dettagli
       </a>
-      {#if hasContractsModule}
+      {#each dynamicClientActions as act}
         <a 
-          href={`/dashboard/clients/${row.id}?tab=quotes`} 
+          href={act.href(row)} 
           class="quick-action-btn action-link"
-          title="Nuovo Preventivo per questo cliente"
+          title={act.title}
         >
-          Nuovo Preventivo
+          {act.label}
         </a>
-      {/if}
+      {/each}
     </div>
   {/if}
 {/snippet}

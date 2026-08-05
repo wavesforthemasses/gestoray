@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { 
     InterventionSettingsService, 
@@ -54,7 +55,7 @@
 </script>
 
 <svelte:head>
-  <title>Impostazioni Interventi | Gestoray</title>
+  <title>Impostazioni Interventi | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="interventi-settings-page animate-fade-in">

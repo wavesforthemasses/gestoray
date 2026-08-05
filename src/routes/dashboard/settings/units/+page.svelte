@@ -159,10 +159,11 @@
         return 'Quantità / Pezzi';
     }
   }
+  import { projectStore } from '$lib/stores/project';
 </script>
 
 <svelte:head>
-  <title>Gestione Unità di Misura | Gestoray</title>
+  <title>Gestione Unità di Misura | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="units-settings-page animate-fade-in">

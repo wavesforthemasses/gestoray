@@ -3,14 +3,60 @@
   "label": "Attività & Task",
   "description": "Tracciamento attività commerciali e operative",
   "icon": "ClipboardList",
+  "requirements": [],
   "path": "/dashboard/activities",
+  "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
   "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione"],
   "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "activities",
+      "title": "Attività",
+      "subtitle": "Attività Svolte",
+      "icon": "ActivitySquare",
+      "aggregation": {
+        "collectionGroup": "activities",
+        "type": "count",
+        "dateFields": ["edits.createdAt", "createdAt", "original.createdAt"],
+        "typeFilterField": "original.type",
+        "loggedByFilterField": "original.loggedBy"
+      }
+    }
+  ],
   "anonymization": {
     "collectionName": "activities",
-    "linkFieldPath": "original.clientId",
+    "linkFieldPath": "clientId",
     "redactFields": [
-      { "fieldPath": "original.notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
     ]
+  },
+  "schema": {
+    "fields": {
+      "type": {
+        "type": "string",
+        "description": "Tipologia dell'attività (chiamata, riunione, email, nota)",
+        "tags": ["kpi:activity_counts", "filter:type"]
+      },
+      "loggedBy": {
+        "type": "string",
+        "description": "UID dell'utente che ha registrato l'attività",
+        "tags": ["filter:user", "kpi:user_activities"]
+      },
+      "clientId": {
+        "type": "string",
+        "description": "ID del cliente correlato",
+        "tags": ["filter:client", "relation:clients"]
+      },
+      "date": {
+        "type": "date",
+        "description": "Data di svolgimento dell'attività",
+        "tags": ["filter:date"]
+      },
+      "createdAt": {
+        "type": "datetime",
+        "description": "Data di inserimento a sistema ISO 8601",
+        "tags": ["filter:date", "sort:default"]
+      }
+    }
   }
 }

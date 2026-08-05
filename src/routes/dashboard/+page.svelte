@@ -75,16 +75,16 @@
 
   // Active module flags derived from menuConfigStore
   let activeModuleIds = $derived($menuConfigStore.map(m => m.id));
-  let hasContracts = $derived(activeModuleIds.includes('contracts'));
-  let hasPayments = $derived(activeModuleIds.includes('payments'));
-  let hasCommissions = $derived(activeModuleIds.includes('commissions') || activeModuleIds.includes('my-commissions'));
   let hasActivities = $derived(activeModuleIds.includes('activities'));
-  let hasFinancialChart = $derived(hasContracts || hasPayments || hasCommissions || hasActivities);
+  let hasFinancialChart = $derived(activeModuleIds.length > 0);
+
+  let rawKpis = $state<any>({});
 
   async function loadKPIs() {
     loadingData = true;
     try {
       const kpis = await DashboardService.fetchGlobalKPIs(activeRoleState.role || '', authState.user?.uid || '', [], activeModuleIds);
+      rawKpis = kpis;
       commContractsCount = kpis.commContractsCount;
       commTotalSold = kpis.commTotalSold;
       commApprovedSold = kpis.commApprovedSold;
@@ -111,9 +111,10 @@
         adminUndistributedPayments = tables.adminUndistributedPayments;
         loadingAdminTables = false;
       }
+    } catch (e) {
+      console.error("Error loading KPIs", e);
     } finally {
       loadingData = false;
-      loadingAdminTables = false;
     }
   }
 
@@ -149,7 +150,8 @@
         authState.user?.uid || '', 
         clientFilter, 
         vendorFilter, 
-        productFilter
+        productFilter,
+        activeModuleIds
       );
     } finally {
       loadingDrillDown = false;
@@ -178,17 +180,7 @@
     }
   });
 
-  async function handleApproveContract(contractId: string) {
-    const role = activeRoleState.role;
-    if (role !== 'superadmin' && role !== 'amministrazione') return;
 
-    try {
-      toast.success('Azione gestita nel modulo contratti.');
-      await loadKPIs();
-    } catch (e: any) {
-      toast.error('Errore durante l\'approvazione: ' + e.message);
-    }
-  }
 
   async function handleMarkCommissionPaid(periodId: string) {
     const ok = await confirmStore.prompt('Sei sicuro di voler contrassegnare questo mese provvigionale come pagato? Scomparirà dalla dashboard e non sarà più considerato in attesa.');
@@ -205,7 +197,7 @@
 
 {#if authState.user}
   <div class="dashboard-viewport">
-    {#if activeRoleState.role === 'amministrazione' && (hasContracts || hasPayments || hasCommissions)}
+    {#if activeRoleState.role === 'amministrazione' && hasFinancialChart}
       <!-- 1. Admin layout for active admin modules -->
       <div class="dashboard-panoramica admin-layout animate-fade-in">
         <Card
@@ -230,9 +222,6 @@
             {adminPendingCommissions}
             {adminFinalizedCommissions}
             onMarkCommissionPaid={handleMarkCommissionPaid}
-            {hasContracts}
-            {hasPayments}
-            {hasCommissions}
           />
         {/if}
       </div>
@@ -266,7 +255,6 @@
                   bind:clientFilter
                   bind:vendorFilter
                   bind:productFilter
-                  {KPI_LEGEND}
                   {loadingChart}
                   {loadingDrillDown}
                   {computedChartPoints}
@@ -276,9 +264,6 @@
                   activeRole={activeRoleState.role || ''}
                   {formatCurrency}
                   activitiesConfig={[]}
-                  {hasContracts}
-                  {hasPayments}
-                  {hasCommissions}
                   {hasActivities}
                 />
               </div>
@@ -286,6 +271,7 @@
               <div class="dashboard-right-col">
                 {#if activeRoleState.role === "commerciale"}
                   <CommercialKPIs 
+                    kpis={rawKpis}
                     {commTotalNA}
                     {commContractsCount}
                     {commTotalSold}
@@ -294,14 +280,12 @@
                     {commIncassato}
                     {activityCounts}
                     activitiesConfig={[]}
-                    onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
-                    {hasContracts}
-                    {hasPayments}
-                    {hasCommissions}
+                    onTabSelect={(tab: string) => { activeChartTab = tab as any; selectedPointIdx = null; }}
                     {hasActivities}
                   />
                 {:else}
                   <AdminKPIs 
+                    kpis={rawKpis}
                     {totalClienti}
                     {totalVenduto}
                     {totalContratti}
@@ -311,10 +295,7 @@
                     {commMaturate}
                     {activityCounts}
                     activitiesConfig={[]}
-                    onTabSelect={(tab) => { activeChartTab = tab as any; selectedPointIdx = null; }}
-                    {hasContracts}
-                    {hasPayments}
-                    {hasCommissions}
+                    onTabSelect={(tab: string) => { activeChartTab = tab as any; selectedPointIdx = null; }}
                     {hasActivities}
                   />
                 {/if}
@@ -408,9 +389,6 @@
               {adminPendingCommissions}
               {adminFinalizedCommissions}
               {adminUndistributedPayments}
-              {hasContracts}
-              {hasPayments}
-              {hasCommissions}
             />
           {/if}
         {/if}
