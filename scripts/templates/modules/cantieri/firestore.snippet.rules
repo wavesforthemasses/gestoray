@@ -1,7 +1,0 @@
-// CANTIERI
-match /cantieri/{cantiereId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}

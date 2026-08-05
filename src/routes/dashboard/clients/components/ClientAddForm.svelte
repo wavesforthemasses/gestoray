@@ -457,7 +457,7 @@
     <div class="form-section">
       <div class="section-header">
         <FileText size={18} class="section-icon" />
-        <span class="section-title">Indirizzo Sede Spedizione / Cantiere</span>
+        <span class="section-title">Indirizzo Sede Spedizione / Destinazione</span>
       </div>
 
       <div class="sub-section-header">
@@ -467,8 +467,8 @@
       </div>
 
       <div class="form-grid-columns">
-        <FormField id="client-shp-addr" label="Indirizzo Spedizione">
-          <input type="text" id="client-shp-addr" bind:value={shippingAddress} placeholder="es. Via Cantiere 10" disabled={submitting} />
+        <FormField id="client-shp-addr" label="Indirizzo Spedizione / Destinazione">
+          <input type="text" id="client-shp-addr" bind:value={shippingAddress} placeholder="es. Via Roma 10" disabled={submitting} />
         </FormField>
         <FormField id="client-shp-city" label="Città">
           <input type="text" id="client-shp-city" bind:value={shippingCity} placeholder="es. Monza" disabled={submitting} />
@@ -556,7 +556,7 @@
         <textarea
           id="client-admin-notes"
           bind:value={internalAdminNotes}
-          placeholder="es. Fatturazione mensile posticipata al ricevimento delibera cantiere"
+          placeholder="es. Fatturazione mensile posticipata alla consegna del progetto"
           rows="2"
           disabled={submitting}
         ></textarea>

@@ -408,7 +408,7 @@
 
         <div class="field-group">
           <label for="cnt-role">Ruolo / Incarico</label>
-          <input type="text" id="cnt-role" bind:value={formRole} placeholder="es. Referente Tecnico / Capocantiere" disabled={submitting} />
+          <input type="text" id="cnt-role" bind:value={formRole} placeholder="es. Referente Tecnico / Referente Operativo" disabled={submitting} />
         </div>
 
         <div class="form-grid-two">

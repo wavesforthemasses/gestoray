@@ -298,7 +298,7 @@
           </FormField>
 
           <FormField id="new-role-desc" label="Descrizione Operativa">
-            <input type="text" id="new-role-desc" placeholder="es. Gestione rapportini e interventi di cantiere" bind:value={newRoleDesc} />
+            <input type="text" id="new-role-desc" placeholder="es. Gestione rapportini e interventi di progetto" bind:value={newRoleDesc} />
           </FormField>
         </div>
 

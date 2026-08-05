@@ -121,9 +121,9 @@ test.describe('Interventi Module 100% Lifecycle E2E Test Suite', () => {
     await expect(page.locator('.loading-state')).toBeHidden({ timeout: 15000 });
     await expect(page.locator('.page-title')).toContainText('Configurazione Modulo Interventi');
 
-    // Cambia Labeling White-Label a Cantieri
-    const labelSelect = page.locator('select#locLabel');
-    await labelSelect.selectOption('Cantieri');
+    // Cambia Labeling White-Label a Progetti
+    const labelSelect = page.locator('#intervention-label-select');
+    await labelSelect.selectOption('Progetti');
 
     // 5b. Gestione Parco Mezzi Dedicata
     await page.goto('/dashboard/interventi/vehicles');

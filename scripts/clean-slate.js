@@ -27,8 +27,8 @@ const indexesPath = path.resolve(__dirname, '../firestore.indexes.json');
 const functionsIndexPath = path.resolve(__dirname, '../functions/index.ts');
 const autoGenDir = path.resolve(__dirname, '../src/lib/config/auto_generated');
 
-const OPTIONAL_MODULES = ['contracts', 'payments', 'commissions', 'products', 'activities', 'tickets', 'interventi', 'cantieri'];
-const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities', 'products', 'contracts'];
+const OPTIONAL_MODULES = ['contracts', 'payments', 'commissions', 'products', 'activities', 'tickets', 'interventi', 'projects'];
+const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities', 'products', 'contracts', 'projects'];
 
 function removeFileSync(filePath) {
   if (fs.existsSync(filePath)) {
@@ -298,6 +298,12 @@ export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated
 
   fs.writeFileSync(functionsIndexPath, cleanFunctionsIndex, 'utf-8');
   console.log(`  ✅ Ripristinato functions/index.ts al Base Core.`);
+
+  // 11. Reset modules.registry.json to Clean Base Core
+  const emptyRegistry = JSON.stringify({ modules: [] }, null, 2);
+  fs.writeFileSync(path.resolve(__dirname, '../src/lib/config/modules.registry.json'), emptyRegistry, 'utf-8');
+  fs.writeFileSync(path.resolve(__dirname, '../functions/src/config/modules.registry.json'), emptyRegistry, 'utf-8');
+  console.log(`  ✅ Ripristinati registri modules.registry.json al Base Core.`);
 
   // 11. Rebuild Clean Base Core functions into functions/lib/index.js
   try {

@@ -14,6 +14,7 @@
     Lock, 
     Unlock,
     Building2,
+    FolderKanban,
     FileText,
     CreditCard,
     ClipboardList,
@@ -77,10 +78,10 @@
       requirements: []
     },
     {
-      id: 'cantieri',
-      label: 'Gestione Cantieri & Commesse',
+      id: 'projects',
+      label: 'Gestione Progetti',
       description: 'Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.',
-      icon: Building2,
+      icon: FolderKanban,
       requirements: []
     }
   ];
@@ -88,11 +89,11 @@
   // Master list of plugin bridges between modules
   const ALL_BRIDGES_SPECS = [
     {
-      id: 'contracts-cantieri',
-      title: 'Bridge Contratti ➔ Cantieri',
+      id: 'contracts-projects',
+      title: 'Bridge Contratti ➔ Progetti',
       sourceModule: 'contracts',
-      targetModule: 'cantieri',
-      description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Cantiere e deriva l\'importo contrattato.'
+      targetModule: 'projects',
+      description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Progetto e deriva l\'importo contrattato.'
     },
     {
       id: 'payments-contracts',
@@ -102,18 +103,18 @@
       description: 'Consente l\'allocazione degli incassi riscossi sulle rate dei contratti.'
     },
     {
-      id: 'interventi-cantieri',
-      title: 'Bridge Interventi ➔ Cantieri',
+      id: 'interventi-projects',
+      title: 'Bridge Interventi ➔ Progetti',
       sourceModule: 'interventi',
-      targetModule: 'cantieri',
-      description: 'Collega i rapportini di lavoro al cantiere e aggiorna la percentuale di avanzamento lavori.'
+      targetModule: 'projects',
+      description: 'Collega i rapportini di lavoro al progetto e aggiorna la percentuale di avanzamento lavori.'
     },
     {
-      id: 'payments-cantieri',
-      title: 'Bridge Incassi ➔ Cantieri',
+      id: 'payments-projects',
+      title: 'Bridge Incassi ➔ Progetti',
       sourceModule: 'payments',
-      targetModule: 'cantieri',
-      description: 'Mostra la situazione incassi e fatturato direttamente nel riepilogo finanziario del cantiere.'
+      targetModule: 'projects',
+      description: 'Mostra la situazione incassi e fatturato direttamente nel riepilogo finanziario del progetto.'
     }
   ];
 

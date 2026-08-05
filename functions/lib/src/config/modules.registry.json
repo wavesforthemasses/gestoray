@@ -1,6 +1,143 @@
 {
     "modules": [
         {
+            "id": "projects",
+            "label": "Gestione Progetti",
+            "description": "Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.",
+            "icon": "FolderKanban",
+            "requirements": [],
+            "path": "/dashboard/projects",
+            "kpiBridgePath": "/dashboard/projects/projects.kpi.bridge.ts",
+            "clientTabs": [
+                {
+                    "id": "projects",
+                    "component": "ClientProjectsTab.svelte",
+                    "label": "Progetti"
+                }
+            ],
+            "settingsCard": {
+                "title": "Configurazione Progetti",
+                "description": "Denominazione agnostica (Progetto/Cantiere/Commessa/Pratica), prefissi numerazione, stati predefiniti.",
+                "icon": "FolderKanban",
+                "path": "/dashboard/settings/projects"
+            },
+            "clientQuickAction": {
+                "label": "Nuovo Progetto",
+                "title": "Crea un nuovo progetto o contenitore per questo cliente",
+                "tab": "projects"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "projects_attivi",
+                    "title": "Progetti Attivi",
+                    "subtitle": "Contenitori in corso",
+                    "icon": "FolderKanban",
+                    "valueKey": "activeProjectsCount",
+                    "aggregation": {
+                        "collection": "projects",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "startDate",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                },
+                {
+                    "id": "portafoglio_lavori",
+                    "title": "Portafoglio Lavori",
+                    "subtitle": "Valore stimato progetti",
+                    "icon": "Briefcase",
+                    "valueKey": "totalEstimatedPortfolio",
+                    "format": "currency",
+                    "aggregation": {
+                        "collection": "projects",
+                        "type": "sum",
+                        "sumFields": [
+                            "estimatedAmount",
+                            "original.estimatedAmount"
+                        ],
+                        "dateFields": [
+                            "createdAt",
+                            "startDate",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
+            "anonymization": {
+                "collectionName": "projects",
+                "linkFieldPath": "clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "code": {
+                        "type": "string",
+                        "description": "Codice identificativo del progetto (es. PROG-2026-001)",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Nome o denominazione del progetto/contenitore",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "ID del cliente titolare del progetto",
+                        "tags": [
+                            "filter:client",
+                            "relation:clients"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato del progetto (fase_contrattuale, aperto, in_pausa, completato)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:projects_attivi"
+                        ]
+                    },
+                    "progress": {
+                        "type": "number",
+                        "description": "Percentuale di avanzamento (0-100)",
+                        "tags": [
+                            "display",
+                            "sort"
+                        ]
+                    },
+                    "estimatedAmount": {
+                        "type": "currency",
+                        "description": "Importo stimato/preventivato di fallback",
+                        "tags": [
+                            "kpi:portafoglio_lavori"
+                        ]
+                    }
+                }
+            }
+        },
+        {
             "id": "products",
             "label": "Gestione Prodotti",
             "description": "Catalogo prodotti, servizi e listini prezzi",
@@ -231,474 +368,6 @@
                         "tags": [
                             "filter:date",
                             "sort:default"
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "payments",
-            "label": "Scadenzario & Incassi",
-            "description": "Gestione rate, scadenze ed incassi clienti",
-            "icon": "CreditCard",
-            "path": "/dashboard/payments",
-            "kpiBridgePath": "/dashboard/payments/payments.kpi.bridge.ts",
-            "todoModals": [
-                {
-                    "id": "installment",
-                    "component": "TodoInstallmentModal.svelte"
-                }
-            ],
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "amministrazione"
-            ],
-            "requirements": [
-                "contracts"
-            ],
-            "enabled": true,
-            "kpiTiles": [
-                {
-                    "id": "gi",
-                    "title": "GI",
-                    "subtitle": "Incassato Reale",
-                    "icon": "Wallet",
-                    "valueKey": "totalIncassato",
-                    "commValueKey": "commIncassato",
-                    "format": "currency",
-                    "aggregation": {
-                        "collection": "payments",
-                        "type": "sum",
-                        "sumFields": [
-                            "amount",
-                            "original.amount"
-                        ],
-                        "dateFields": [
-                            "date",
-                            "paymentDate",
-                            "original.date",
-                            "createdAt",
-                            "edits.createdAt",
-                            "original.createdAt"
-                        ]
-                    }
-                }
-            ],
-            "schema": {
-                "fields": {
-                    "paymentNumber": {
-                        "type": "string",
-                        "description": "Numero progressivo dell'incasso riscosso",
-                        "tags": [
-                            "search",
-                            "sort"
-                        ]
-                    },
-                    "clientId": {
-                        "type": "string",
-                        "description": "ID del cliente incassato",
-                        "tags": [
-                            "filter:client",
-                            "relation:clients"
-                        ]
-                    },
-                    "clientName": {
-                        "type": "string",
-                        "description": "Ragione sociale del cliente",
-                        "tags": [
-                            "search",
-                            "display"
-                        ]
-                    },
-                    "amount": {
-                        "type": "currency",
-                        "description": "Importo totale incassato",
-                        "tags": [
-                            "kpi:gi",
-                            "filter:amount",
-                            "chart:aggregate"
-                        ]
-                    },
-                    "date": {
-                        "type": "date",
-                        "description": "Data di registrazione dell'incasso",
-                        "tags": [
-                            "filter:date",
-                            "sort:default"
-                        ]
-                    },
-                    "derived.remainingToDistribute": {
-                        "type": "currency",
-                        "description": "Quota rimanente dell'incasso da allocare ai contratti",
-                        "tags": [
-                            "kpi:undistributed_payments"
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "activities",
-            "label": "Attività & Task",
-            "description": "Tracciamento attività commerciali e operative",
-            "icon": "ClipboardList",
-            "requirements": [],
-            "path": "/dashboard/activities",
-            "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "commerciale",
-                "amministrazione"
-            ],
-            "enabled": true,
-            "kpiTiles": [
-                {
-                    "id": "activities",
-                    "title": "Attività",
-                    "subtitle": "Attività Svolte",
-                    "icon": "ActivitySquare",
-                    "aggregation": {
-                        "collectionGroup": "activities",
-                        "type": "count",
-                        "dateFields": [
-                            "edits.createdAt",
-                            "createdAt",
-                            "original.createdAt"
-                        ],
-                        "typeFilterField": "original.type",
-                        "loggedByFilterField": "original.loggedBy"
-                    }
-                }
-            ],
-            "anonymization": {
-                "collectionName": "activities",
-                "linkFieldPath": "clientId",
-                "redactFields": [
-                    {
-                        "fieldPath": "notes",
-                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-                    }
-                ]
-            },
-            "schema": {
-                "fields": {
-                    "type": {
-                        "type": "string",
-                        "description": "Tipologia dell'attività (chiamata, riunione, email, nota)",
-                        "tags": [
-                            "kpi:activity_counts",
-                            "filter:type"
-                        ]
-                    },
-                    "loggedBy": {
-                        "type": "string",
-                        "description": "UID dell'utente che ha registrato l'attività",
-                        "tags": [
-                            "filter:user",
-                            "kpi:user_activities"
-                        ]
-                    },
-                    "clientId": {
-                        "type": "string",
-                        "description": "ID del cliente correlato",
-                        "tags": [
-                            "filter:client",
-                            "relation:clients"
-                        ]
-                    },
-                    "date": {
-                        "type": "date",
-                        "description": "Data di svolgimento dell'attività",
-                        "tags": [
-                            "filter:date"
-                        ]
-                    },
-                    "createdAt": {
-                        "type": "datetime",
-                        "description": "Data di inserimento a sistema ISO 8601",
-                        "tags": [
-                            "filter:date",
-                            "sort:default"
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "cantieri",
-            "label": "Gestione Cantieri & Commesse",
-            "description": "Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.",
-            "icon": "Building2",
-            "requirements": [],
-            "path": "/dashboard/cantieri",
-            "kpiBridgePath": "/dashboard/cantieri/cantieri.kpi.bridge.ts",
-            "clientTabs": [
-                {
-                    "id": "cantieri",
-                    "component": "ClientCantieriTab.svelte",
-                    "label": "Cantieri & Commesse"
-                }
-            ],
-            "settingsCard": {
-                "title": "Configurazione Cantieri & Commesse",
-                "description": "Denominazione ufficiale, prefisso numerazione automatica, stati predefiniti e gestione data scadenza.",
-                "icon": "Building2",
-                "path": "/dashboard/settings/cantieri"
-            },
-            "clientQuickAction": {
-                "label": "Nuovo Cantiere",
-                "title": "Apri un nuovo cantiere per questo cliente",
-                "tab": "cantieri"
-            },
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "amministrazione",
-                "commerciale",
-                "tecnico"
-            ],
-            "enabled": true,
-            "kpiTiles": [
-                {
-                    "id": "cantieri_attivi",
-                    "title": "Cantieri Attivi",
-                    "subtitle": "Commesse in corso",
-                    "icon": "Building2",
-                    "valueKey": "activeCantieriCount",
-                    "aggregation": {
-                        "collection": "cantieri",
-                        "type": "count",
-                        "dateFields": [
-                            "createdAt",
-                            "startDate",
-                            "edits.createdAt",
-                            "original.createdAt"
-                        ]
-                    }
-                },
-                {
-                    "id": "portafoglio_lavori",
-                    "title": "Portafoglio Lavori",
-                    "subtitle": "Valore stimato commesse",
-                    "icon": "Briefcase",
-                    "valueKey": "totalEstimatedPortfolio",
-                    "format": "currency",
-                    "aggregation": {
-                        "collection": "cantieri",
-                        "type": "sum",
-                        "sumFields": [
-                            "estimatedAmount",
-                            "original.estimatedAmount"
-                        ],
-                        "dateFields": [
-                            "createdAt",
-                            "startDate",
-                            "edits.createdAt",
-                            "original.createdAt"
-                        ]
-                    }
-                }
-            ],
-            "anonymization": {
-                "collectionName": "cantieri",
-                "linkFieldPath": "clientId",
-                "redactFields": [
-                    {
-                        "fieldPath": "notes",
-                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-                    }
-                ]
-            },
-            "schema": {
-                "fields": {
-                    "code": {
-                        "type": "string",
-                        "description": "Codice identificativo del cantiere (es. CANTIERE-2026-001)",
-                        "tags": [
-                            "search",
-                            "sort"
-                        ]
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Nome o denominazione del cantiere/progetto",
-                        "tags": [
-                            "search",
-                            "display"
-                        ]
-                    },
-                    "clientId": {
-                        "type": "string",
-                        "description": "ID del cliente titolare del cantiere",
-                        "tags": [
-                            "filter:client",
-                            "relation:clients"
-                        ]
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "Stato del cantiere (fase_contrattuale, aperto, in_pausa, completato)",
-                        "tags": [
-                            "filter:status",
-                            "kpi:cantieri_attivi"
-                        ]
-                    },
-                    "progress": {
-                        "type": "number",
-                        "description": "Percentuale di avanzamento lavori (0-100)",
-                        "tags": [
-                            "display",
-                            "sort"
-                        ]
-                    },
-                    "estimatedAmount": {
-                        "type": "currency",
-                        "description": "Importo stimato/preventivato di fallback",
-                        "tags": [
-                            "kpi:portafoglio_lavori"
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "interventi",
-            "label": "Interventi Operativi",
-            "description": "Gestione interventi tecnici",
-            "icon": "Wrench",
-            "requirements": [],
-            "path": "/dashboard/interventi",
-            "kpiBridgePath": "/dashboard/interventi/interventi.kpi.bridge.ts",
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "tecnico",
-                "operaio"
-            ],
-            "enabled": true,
-            "anonymization": {
-                "collectionName": "interventi",
-                "linkFieldPath": "clientId",
-                "redactFields": [
-                    {
-                        "fieldPath": "notes",
-                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-                    },
-                    {
-                        "fieldPath": "dettaglio",
-                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-                    }
-                ]
-            },
-            "schema": {
-                "fields": {
-                    "numeroIntervento": {
-                        "type": "string",
-                        "description": "Numero progressivo dell'intervento tecnico",
-                        "tags": [
-                            "search",
-                            "sort"
-                        ]
-                    },
-                    "clientId": {
-                        "type": "string",
-                        "description": "ID del cliente servito",
-                        "tags": [
-                            "filter:client",
-                            "relation:clients"
-                        ]
-                    },
-                    "technicianId": {
-                        "type": "string",
-                        "description": "UID del tecnico o squadra responsabile",
-                        "tags": [
-                            "filter:technician"
-                        ]
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "Stato intervento (pianificato, in_corso, completato)",
-                        "tags": [
-                            "filter:status",
-                            "kpi:interventi_pending"
-                        ]
-                    },
-                    "date": {
-                        "type": "date",
-                        "description": "Data programmata dell'intervento",
-                        "tags": [
-                            "filter:date",
-                            "sort:default"
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "commissions",
-            "label": "Provvigioni Commerciali",
-            "description": "Calcolo e liquidazione provvigioni agenti e rete commerciale",
-            "icon": "Award",
-            "requirements": [
-                "contracts"
-            ],
-            "path": "/dashboard/commissions",
-            "kpiBridgePath": "/dashboard/commissions/commissions.kpi.bridge.ts",
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "amministrazione"
-            ],
-            "enabled": true,
-            "kpiTiles": [
-                {
-                    "id": "provvigioni_maturate",
-                    "title": "Provvigioni Maturate",
-                    "subtitle": "Rete Commerciale",
-                    "icon": "DollarSign",
-                    "valueKey": "commMaturate",
-                    "commValueKey": "commMaturate",
-                    "format": "currency"
-                }
-            ],
-            "schema": {
-                "fields": {
-                    "periodStart": {
-                        "type": "date",
-                        "description": "Data inizio periodo di chiusura provvigionale",
-                        "tags": [
-                            "filter:date"
-                        ]
-                    },
-                    "periodEnd": {
-                        "type": "date",
-                        "description": "Data fine periodo di chiusura provvigionale",
-                        "tags": [
-                            "filter:date"
-                        ]
-                    },
-                    "totalCommissions": {
-                        "type": "currency",
-                        "description": "Totale provvigioni della rete commerciale nel periodo",
-                        "tags": [
-                            "kpi:commMaturate",
-                            "chart:aggregate"
-                        ]
-                    },
-                    "latestStatus": {
-                        "type": "string",
-                        "description": "Stato ultima versione (draft, finalized)",
-                        "tags": [
-                            "filter:status"
-                        ]
-                    },
-                    "isPaid": {
-                        "type": "boolean",
-                        "description": "Indica se le provvigioni del periodo sono state liquidate",
-                        "tags": [
-                            "kpi:commissions_pending"
                         ]
                     }
                 }

@@ -144,7 +144,7 @@
 
   <!-- MODULE SUB-NAV BAR -->
   <nav class="module-nav-bar">
-    <a href="/dashboard/interventi" class="nav-tab">📋 Interventi & Cantieri</a>
+    <a href="/dashboard/interventi" class="nav-tab">📋 Interventi & Progetti</a>
     <a href="/dashboard/interventi/teams" class="nav-tab active">👥 Squadre di Lavoro ({teams.length})</a>
     <a href="/dashboard/interventi/vehicles" class="nav-tab">🚚 Parco Mezzi ({vehicles.length})</a>
     <a href="/dashboard/settings/interventi" class="nav-tab tab-settings">⚙️ Impostazioni Modulo</a>

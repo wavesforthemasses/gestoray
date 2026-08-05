@@ -264,7 +264,7 @@
           </div>
 
           <div class="form-grid-columns">
-            <FormField id="c-cognome" label="Referente Tecnico / Capocantiere">
+            <FormField id="c-cognome" label="Referente Tecnico / Referente Operativo">
               <input type="text" id="c-cognome" bind:value={referenteTecnico} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. Mario Rossi" />
             </FormField>
 
@@ -460,7 +460,7 @@
 
     {#if activeSubTab === 'addresses'}
       <div class="vertical-layout-stack">
-        <Card title="Indirizzo di Spedizione / Cantiere" description="Indirizzo per la consegna delle merci o effettuazione dei servizi.">
+        <Card title="Indirizzo di Spedizione / Destinazione" description="Indirizzo per la consegna delle merci o effettuazione dei servizi.">
           {#snippet icon()}
             <Truck size={20} class="icon-accent" />
           {/snippet}

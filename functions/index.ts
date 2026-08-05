@@ -13,3 +13,8 @@ export { updateProfile, updateProfileEmail } from './src/profile';
 export { sendSystemEmail } from './src/email';
 export { getChartAggregations } from './src/aggregations';
 export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
+
+// --- MODULE FUNCTIONS: contracts BEGIN ---
+export { onContractCreated } from './src/triggers/onContractCreated';
+export { onInstallmentWrite } from './src/triggers/onInstallmentWrite';
+// --- MODULE FUNCTIONS: contracts END ---
