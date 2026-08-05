@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FormField, Autocomplete } from '$lib';
-  import { UserCheck } from '@lucide/svelte';
+  import { Building2, FileText, UserCheck, FolderKanban, Hash } from '@lucide/svelte';
 
   interface Props {
     labels: any;
@@ -31,14 +31,19 @@
   }: Props = $props();
 </script>
 
-<div class="form-section-block">
-  <div class="section-title-row">
-    <UserCheck size={18} class="icon-accent" />
-    <span class="section-title-text">Cliente & Riferimenti Generali</span>
+<div class="form-section-card">
+  <div class="section-card-header">
+    <div class="header-icon-box">
+      <Building2 size={20} />
+    </div>
+    <div class="header-titles">
+      <h3 class="card-title">Cliente & Dati Generali</h3>
+      <p class="card-subtitle">Intestazione contratto e associazione {projectLabel.toLowerCase()}</p>
+    </div>
   </div>
 
   <div class="header-grid">
-    <!-- Row 1: Cliente & Titolo (50% - 50%) -->
+    <!-- Row 1: Cliente Intestatario (6 cols) & Agente Commerciale (6 cols) -->
     <div class="col-client">
       <FormField id="clientId" label="Cliente Intestatario *">
         <Autocomplete
@@ -49,14 +54,7 @@
       </FormField>
     </div>
 
-    <div class="col-title">
-      <FormField id="title" label={labels.titleLabel}>
-        <input type="text" id="title" bind:value={title} placeholder="es. Fornitura Sede..." />
-      </FormField>
-    </div>
-
-    <!-- Row 2: Agente, Progetto (se attivo) e N° Contratto -->
-    <div class={hasProjectsModule ? "col-agent" : "col-agent-wide"}>
+    <div class="col-agent">
       <FormField id="agentId" label="Agente / Commerciale">
         <Autocomplete
           options={agentOptions}
@@ -66,17 +64,22 @@
       </FormField>
     </div>
 
-    {#if hasProjectsModule}
-      <div class="col-project">
-        <FormField id="projectId" label="{projectLabel} Correlato">
-          <Autocomplete
-            options={projectOptions}
-            bind:value={projectId}
-            placeholder="Seleziona {projectLabel.toLowerCase()}..."
-          />
-        </FormField>
-      </div>
-    {/if}
+    <!-- Row 2: Titolo Contratto (5 cols), Progetto Correlato (4 cols) & N° Contratto (3 cols) -->
+    <div class="col-title">
+      <FormField id="title" label={labels.titleLabel}>
+        <input type="text" id="title" bind:value={title} placeholder="es. Fornitura e Manutenzione Sede..." />
+      </FormField>
+    </div>
+
+    <div class="col-project">
+      <FormField id="projectId" label="{projectLabel} Correlato">
+        <Autocomplete
+          options={projectOptions}
+          bind:value={projectId}
+          placeholder="Seleziona {projectLabel.toLowerCase()} (opzionale)..."
+        />
+      </FormField>
+    </div>
 
     <div class="col-number">
       <FormField id="contractNumber" label={labels.numberLabel}>
@@ -95,56 +98,75 @@
 </div>
 
 <style>
-  :global(.icon-accent) {
-    color: var(--color-primary-500);
-  }
-
-  .form-section-block {
-    background-color: var(--color-neutral-0);
+  .form-section-card {
+    background: var(--color-neutral-0);
     border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-5);
-    margin-bottom: var(--spacing-6);
-
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease-in-out;
   }
 
-  .form-section-block:focus-within {
-    border-color: var(--color-primary-300);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+  .form-section-card:focus-within {
+    border-color: var(--color-primary-400);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
   }
 
-  .section-title-row {
+  .section-card-header {
     display: flex;
     align-items: center;
-    gap: var(--spacing-2);
-    margin-bottom: var(--spacing-4);
-    padding-bottom: var(--spacing-2);
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 1px dashed var(--color-neutral-200);
   }
 
-  .section-title-text {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-neutral-700);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .header-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary-50), #eff6ff);
+    color: var(--color-primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-neutral-900);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: 0;
   }
 
   .header-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: var(--spacing-4);
+    gap: 18px;
   }
 
   /* Row 1 */
   .col-client { grid-column: span 6; }
-  .col-title { grid-column: span 6; }
+  .col-agent { grid-column: span 6; }
 
   /* Row 2 */
-  .col-agent-wide { grid-column: span 8; }
-  .col-agent { grid-column: span 5; }
+  .col-title { grid-column: span 5; }
   .col-project { grid-column: span 4; }
   .col-number { grid-column: span 3; }
 
@@ -153,15 +175,17 @@
     color: var(--color-neutral-600) !important;
     cursor: not-allowed;
     font-weight: 600;
+    letter-spacing: 0.03em;
   }
 
   @media (max-width: 1024px) {
-    .col-client, .col-title { grid-column: span 12; }
-    .col-agent-wide, .col-agent, .col-project { grid-column: span 6; }
+    .col-client, .col-agent { grid-column: span 12; }
+    .col-title { grid-column: span 6; }
+    .col-project { grid-column: span 6; }
     .col-number { grid-column: span 12; }
   }
 
   @media (max-width: 640px) {
-    .col-agent-wide, .col-agent, .col-project { grid-column: span 12; }
+    .col-title, .col-project { grid-column: span 12; }
   }
 </style>

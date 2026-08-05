@@ -40,10 +40,15 @@
   }: Props = $props();
 </script>
 
-<div class="form-section-block">
-  <div class="section-title-row">
-    <ShoppingBag size={18} class="icon-accent" />
-    <span class="section-title-text">Prodotti & Servizi in Offerta</span>
+<div class="form-section-card">
+  <div class="section-card-header">
+    <div class="header-icon-box">
+      <ShoppingBag size={20} />
+    </div>
+    <div class="header-titles">
+      <h3 class="card-title">Prodotti & Servizi in Offerta</h3>
+      <p class="card-subtitle">Inserisci le voci di catalogo o servizi personalizzati e calcola il totale</p>
+    </div>
   </div>
 
   <!-- Panel Inserimento Articolo -->
@@ -153,29 +158,68 @@
 </div>
 
 <style>
-  .form-section-block {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--color-neutral-200);
+  .form-section-card {
+    background: var(--color-neutral-0);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease-in-out;
   }
 
-  .section-title-row {
+  .form-section-card:focus-within {
+    border-color: var(--color-primary-400);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
+  }
+
+  .section-card-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--color-neutral-200);
+  }
+
+  .header-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary-50), #eff6ff);
+    color: var(--color-primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card-title {
+    font-size: 16px;
     font-weight: 700;
-    color: var(--color-neutral-800);
-    letter-spacing: 0.02em;
+    color: var(--color-neutral-900);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: 0;
   }
 
   .add-item-card {
-    background: var(--color-neutral-100);
+    background: var(--color-neutral-50);
     border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-md);
-    padding: 16px;
+    border-radius: var(--radius-lg);
+    padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -197,7 +241,7 @@
   .col-price { width: 160px; }
 
   .btn-add-item {
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
     color: var(--color-white);
     padding: 12px 20px;
     border: none;
@@ -211,17 +255,18 @@
     gap: 6px;
     height: 46px;
     box-shadow: 0 2px 6px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
-    transition: opacity var(--transition-fast);
+    transition: all 0.2s ease;
   }
 
   .btn-add-item:hover {
-    opacity: 0.9;
+    opacity: 0.95;
+    transform: translateY(-1px);
   }
 
   .table-container {
     overflow-x: auto;
     border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   .items-table {
@@ -231,19 +276,19 @@
   }
 
   .items-table th {
-    background: var(--color-neutral-100);
-    padding: 10px 14px;
+    background: var(--color-neutral-50);
+    padding: 12px 14px;
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-neutral-500);
+    color: var(--color-neutral-600);
     border-bottom: 1px solid var(--color-neutral-200);
   }
 
   .items-table td {
-    padding: 10px 14px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--color-neutral-100);
     vertical-align: top;
   }
@@ -269,8 +314,8 @@
     border: none;
     color: var(--color-error, #dc2626);
     cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
+    padding: 6px;
+    border-radius: var(--radius-md);
   }
   .btn-icon-danger:hover {
     background: #fee2e2;
@@ -281,10 +326,10 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    padding: 24px;
-    background: var(--color-neutral-100);
+    padding: 28px;
+    background: var(--color-neutral-50);
     border: 1px dashed var(--color-neutral-300);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     color: var(--color-neutral-500);
     font-size: 13px;
   }
@@ -294,14 +339,14 @@
   }
 
   .totals-summary-box {
-    background: var(--color-neutral-100);
+    background: var(--color-neutral-50);
     border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-md);
-    padding: 16px;
+    border-radius: var(--radius-lg);
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 360px;
+    gap: 12px;
+    max-width: 380px;
     margin-left: auto;
   }
 
@@ -325,22 +370,22 @@
     border: 1px solid var(--color-neutral-300);
     font-size: 12px;
   }
-  .input-mini { width: 60px; }
+  .input-mini { width: 65px; }
 
   .grand-total-row {
     border-top: 2px solid var(--color-neutral-300);
-    padding-top: 10px;
+    padding-top: 12px;
     margin-top: 4px;
   }
 
   .grand-total-label {
     font-size: 14px;
     font-weight: 700;
-    color: var(--color-neutral-800);
+    color: var(--color-neutral-900);
   }
 
   .grand-total-value {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--color-primary-600);
   }

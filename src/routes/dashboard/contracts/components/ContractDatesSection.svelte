@@ -30,14 +30,19 @@
   }: Props = $props();
 </script>
 
-<div class="form-section-block">
-  <div class="section-title-row">
-    <CalendarDays size={18} class="icon-accent" />
-    <span class="section-title-text">Tipologia & Date Contrattuali</span>
+<div class="form-section-card">
+  <div class="section-card-header">
+    <div class="header-icon-box">
+      <CalendarDays size={20} />
+    </div>
+    <div class="header-titles">
+      <h3 class="card-title">Tipologia & Date Contrattuali</h3>
+      <p class="card-subtitle">Periodo di validità, frequenza di rinnovo ed etichette descrittive</p>
+    </div>
   </div>
 
   <div class="dates-grid">
-    <!-- Row 1: Tipologia (50%) & Stato (50%) — Tipologia nascosta se un solo tipo -->
+    <!-- Row 1: Tipologia & Stato -->
     {#if availableTypes.length > 1}
       <div class="col-type">
         <FormField id="type" label={`${labels.typeLabel} *`}>
@@ -104,7 +109,7 @@
       {/if}
     {/if}
 
-    <!-- Row 3: Tag Input (Full Width) -->
+    <!-- Row 3: Tag Input -->
     <div class="col-full">
       <FormField id="tags" label="Tag & Etichette Descrittive">
         <TagInput bind:tags={tags} placeholder="Es. #urgente, #edilizia, #chiavi_in_mano..." />
@@ -114,32 +119,67 @@
 </div>
 
 <style>
-  :global(.icon-accent) {
-    color: var(--color-primary-500);
+  .form-section-card {
+    background: var(--color-neutral-0);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease-in-out;
   }
 
-  .form-section-block {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--color-neutral-200);
+  .form-section-card:focus-within {
+    border-color: var(--color-primary-400);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
   }
 
-  .section-title-row {
+  .section-card-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--color-neutral-200);
+  }
+
+  .header-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary-50), #eff6ff);
+    color: var(--color-primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card-title {
+    font-size: 16px;
     font-weight: 700;
-    color: var(--color-neutral-800);
-    letter-spacing: 0.02em;
+    color: var(--color-neutral-900);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: 0;
   }
 
   .dates-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: 16px;
+    gap: 18px;
   }
 
   .col-type { grid-column: span 6; }

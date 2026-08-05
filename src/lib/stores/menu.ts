@@ -36,12 +36,15 @@ export const DEFAULT_MENU_CONFIG: MenuItemConfig[] = [
   ...MODULE_MENU_ITEMS
 ];
 
-let unsubscribe: (() => void) | null = null;
+let unsubscribeMenu: (() => void) | null = null;
+let unsubscribeProjectsSettings: (() => void) | null = null;
 
 export function initMenuStore() {
-  if (unsubscribe) return;
+  if (unsubscribeMenu) return;
+
+  // Listen to menu custom order/visibility settings
   const docRef = doc(db, 'settings', 'menu');
-  unsubscribe = onSnapshot(docRef, (snap: any) => {
+  unsubscribeMenu = onSnapshot(docRef, (snap: any) => {
     let list = DEFAULT_MENU_CONFIG;
     if (snap.exists()) {
       const data = snap.data();
@@ -54,13 +57,42 @@ export function initMenuStore() {
       const missingItems = DEFAULT_MENU_CONFIG.filter(item => !savedIds.has(item.id));
       list = [...filteredSaved, ...missingItems];
     }
+    
+    // Apply initial projects dynamic label if projects module exists
+    const projectSettingsRef = doc(db, 'settings', 'projects');
+    if (!unsubscribeProjectsSettings) {
+      unsubscribeProjectsSettings = onSnapshot(projectSettingsRef, (pSnap: any) => {
+        let pluralLabel = 'Progetti';
+        if (pSnap.exists()) {
+          const d = pSnap.data();
+          const naming = d.entityNaming || 'progetto';
+          if (naming === 'cantiere') pluralLabel = 'Cantieri';
+          else if (naming === 'commessa') pluralLabel = 'Commesse';
+          else if (naming === 'pratica') pluralLabel = 'Pratiche';
+          else if (naming === 'custom' && d.customPluralLabel) pluralLabel = d.customPluralLabel;
+        }
+
+        menuConfigStore.update(items =>
+          items.map(item =>
+            item.id === 'projects'
+              ? { ...item, label: `Gestione ${pluralLabel}` }
+              : item
+          )
+        );
+      });
+    }
+
     menuConfigStore.set(list);
   });
 }
 
 export function destroyMenuStore() {
-  if (unsubscribe) {
-    unsubscribe();
-    unsubscribe = null;
+  if (unsubscribeMenu) {
+    unsubscribeMenu();
+    unsubscribeMenu = null;
+  }
+  if (unsubscribeProjectsSettings) {
+    unsubscribeProjectsSettings();
+    unsubscribeProjectsSettings = null;
   }
 }

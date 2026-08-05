@@ -25,6 +25,7 @@
     UserCheck,
     Building2,
     FolderKanban,
+    ExternalLink,
     Receipt
   } from '@lucide/svelte';
 
@@ -272,10 +273,17 @@
           </div>
         {/if}
 
-        {#if contract.projectName}
+        {#if contract.projectName || contract.projectId}
           <div class="info-row">
-            <span class="info-label"><FolderKanban size={14} /> {projectLabel}</span>
-            <span class="info-val">{contract.projectName}</span>
+            <span class="info-label"><FolderKanban size={14} /> {projectLabel} Correlato</span>
+            {#if contract.projectId}
+              <a href="/dashboard/projects/{contract.projectId}" class="project-link-badge" title="Apri {projectLabel}">
+                <span>{contract.projectName || contract.projectId}</span>
+                <ExternalLink size={12} />
+              </a>
+            {:else}
+              <span class="info-val">{contract.projectName}</span>
+            {/if}
           </div>
         {/if}
 
@@ -403,6 +411,26 @@
 </div>
 
 <style>
+  :global(.project-link-badge) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    background-color: #e0e7ff;
+    color: #3730a3;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  :global(.project-link-badge:hover) {
+    background-color: #c7d2fe;
+    color: #1e1b4b;
+    transform: translateY(-1px);
+  }
+
   .contract-detail-page {
     display: flex;
     flex-direction: column;

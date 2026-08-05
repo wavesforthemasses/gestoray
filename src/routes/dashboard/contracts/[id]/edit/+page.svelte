@@ -49,8 +49,14 @@
   let agents = $state<{ id: string; name: string }[]>([]);
   let agentOptions = $derived(agents.map(a => ({ id: a.id, label: a.name })));
 
-  let projects = $state<{ id: string; name: string }[]>([]);
-  let projectOptions = $derived(projects.map(p => ({ id: p.id, label: p.name })));
+  let projects = $state<{ id: string; name: string; clientId?: string }[]>([]);
+  let filteredProjects = $derived.by(() => {
+    if (!clientId) return projects;
+    const clientMatches = projects.filter(p => p.clientId === clientId);
+    if (clientMatches.length > 0) return clientMatches;
+    return projects;
+  });
+  let projectOptions = $derived(filteredProjects.map(p => ({ id: p.id, label: p.name })));
   let hasProjectsModule = $state(false);
   let projectLabel = $state('Progetto');
 
@@ -199,7 +205,11 @@
               ProjectsService.getProjects(),
               ProjectSettingsService.getSettings()
             ]);
-            projects = projectsList.map((c: any) => ({ id: c.id!, name: `${c.code} - ${c.name}` }));
+            projects = projectsList.map((c: any) => ({
+              id: c.id!,
+              name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
+              clientId: c.clientId
+            }));
             projectLabel = ProjectSettingsService.getLabels(settings).singular;
           } else {
             projects = await CacheLookupService.getLookup('projects');

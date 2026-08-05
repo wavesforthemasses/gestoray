@@ -1,143 +1,6 @@
 {
   "modules": [
     {
-      "id": "projects",
-      "label": "Gestione Progetti",
-      "description": "Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.",
-      "icon": "FolderKanban",
-      "requirements": [],
-      "path": "/dashboard/projects",
-      "kpiBridgePath": "/dashboard/projects/projects.kpi.bridge.ts",
-      "clientTabs": [
-        {
-          "id": "projects",
-          "component": "ClientProjectsTab.svelte",
-          "label": "Progetti"
-        }
-      ],
-      "settingsCard": {
-        "title": "Configurazione Progetti",
-        "description": "Denominazione agnostica (Progetto/Cantiere/Commessa/Pratica), prefissi numerazione, stati predefiniti.",
-        "icon": "FolderKanban",
-        "path": "/dashboard/settings/projects"
-      },
-      "clientQuickAction": {
-        "label": "Nuovo Progetto",
-        "title": "Crea un nuovo progetto o contenitore per questo cliente",
-        "tab": "projects"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "projects_attivi",
-          "title": "Progetti Attivi",
-          "subtitle": "Contenitori in corso",
-          "icon": "FolderKanban",
-          "valueKey": "activeProjectsCount",
-          "aggregation": {
-            "collection": "projects",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "startDate",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        },
-        {
-          "id": "portafoglio_lavori",
-          "title": "Portafoglio Lavori",
-          "subtitle": "Valore stimato progetti",
-          "icon": "Briefcase",
-          "valueKey": "totalEstimatedPortfolio",
-          "format": "currency",
-          "aggregation": {
-            "collection": "projects",
-            "type": "sum",
-            "sumFields": [
-              "estimatedAmount",
-              "original.estimatedAmount"
-            ],
-            "dateFields": [
-              "createdAt",
-              "startDate",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "projects",
-        "linkFieldPath": "clientId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice identificativo del progetto (es. PROG-2026-001)",
-            "tags": [
-              "search",
-              "sort"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "description": "Nome o denominazione del progetto/contenitore",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "clientId": {
-            "type": "string",
-            "description": "ID del cliente titolare del progetto",
-            "tags": [
-              "filter:client",
-              "relation:clients"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato del progetto (fase_contrattuale, aperto, in_pausa, completato)",
-            "tags": [
-              "filter:status",
-              "kpi:projects_attivi"
-            ]
-          },
-          "progress": {
-            "type": "number",
-            "description": "Percentuale di avanzamento (0-100)",
-            "tags": [
-              "display",
-              "sort"
-            ]
-          },
-          "estimatedAmount": {
-            "type": "currency",
-            "description": "Importo stimato/preventivato di fallback",
-            "tags": [
-              "kpi:portafoglio_lavori"
-            ]
-          }
-        }
-      }
-    },
-    {
       "id": "products",
       "label": "Gestione Prodotti",
       "description": "Catalogo prodotti, servizi e listini prezzi",
@@ -368,6 +231,143 @@
             "tags": [
               "filter:date",
               "sort:default"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "projects",
+      "label": "Gestione Progetti",
+      "description": "Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.",
+      "icon": "FolderKanban",
+      "requirements": [],
+      "path": "/dashboard/projects",
+      "kpiBridgePath": "/dashboard/projects/projects.kpi.bridge.ts",
+      "clientTabs": [
+        {
+          "id": "projects",
+          "component": "ClientProjectsTab.svelte",
+          "label": "Progetti"
+        }
+      ],
+      "settingsCard": {
+        "title": "Configurazione Progetti",
+        "description": "Denominazione agnostica (Progetto/Cantiere/Commessa/Pratica), prefissi numerazione, stati predefiniti.",
+        "icon": "FolderKanban",
+        "path": "/dashboard/settings/projects"
+      },
+      "clientQuickAction": {
+        "label": "Nuovo Progetto",
+        "title": "Crea un nuovo progetto o contenitore per questo cliente",
+        "tab": "projects"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "projects_attivi",
+          "title": "Progetti Attivi",
+          "subtitle": "Contenitori in corso",
+          "icon": "FolderKanban",
+          "valueKey": "activeProjectsCount",
+          "aggregation": {
+            "collection": "projects",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "startDate",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        },
+        {
+          "id": "portafoglio_lavori",
+          "title": "Portafoglio Lavori",
+          "subtitle": "Valore stimato progetti",
+          "icon": "Briefcase",
+          "valueKey": "totalEstimatedPortfolio",
+          "format": "currency",
+          "aggregation": {
+            "collection": "projects",
+            "type": "sum",
+            "sumFields": [
+              "estimatedAmount",
+              "original.estimatedAmount"
+            ],
+            "dateFields": [
+              "createdAt",
+              "startDate",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
+      "anonymization": {
+        "collectionName": "projects",
+        "linkFieldPath": "clientId",
+        "redactFields": [
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          }
+        ]
+      },
+      "schema": {
+        "fields": {
+          "code": {
+            "type": "string",
+            "description": "Codice identificativo del progetto (es. PROG-2026-001)",
+            "tags": [
+              "search",
+              "sort"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome o denominazione del progetto/contenitore",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "clientId": {
+            "type": "string",
+            "description": "ID del cliente titolare del progetto",
+            "tags": [
+              "filter:client",
+              "relation:clients"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato del progetto (fase_contrattuale, aperto, in_pausa, completato)",
+            "tags": [
+              "filter:status",
+              "kpi:projects_attivi"
+            ]
+          },
+          "progress": {
+            "type": "number",
+            "description": "Percentuale di avanzamento (0-100)",
+            "tags": [
+              "display",
+              "sort"
+            ]
+          },
+          "estimatedAmount": {
+            "type": "currency",
+            "description": "Importo stimato/preventivato di fallback",
+            "tags": [
+              "kpi:portafoglio_lavori"
             ]
           }
         }
