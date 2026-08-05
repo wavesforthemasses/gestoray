@@ -65,12 +65,51 @@ function copyDirRecursive(src, dest) {
   }
 }
 
+function checkRequirements(moduleName) {
+  const jsonPath = path.resolve(__dirname, 'templates/modules', moduleName, 'module.json');
+  if (!fs.existsSync(jsonPath)) return;
+
+  let requirements = [];
+  try {
+    const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    requirements = meta.requirements || [];
+  } catch (e) {
+    return;
+  }
+
+  if (requirements.length === 0) return;
+
+  const installedModules = [];
+  const routesDir = path.resolve(__dirname, '../src/routes/dashboard');
+  if (fs.existsSync(routesDir)) {
+    const entries = fs.readdirSync(routesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        installedModules.push(entry.name);
+      }
+    }
+  }
+
+  const missingReqs = requirements.filter(req => !installedModules.includes(req));
+
+  if (missingReqs.length > 0) {
+    console.error('');
+    console.error(`❌ Impossibile installare il modulo '${moduleName}':`);
+    console.error(`   Prima di installare questo modulo, installa i seguenti moduli richiesti: ${missingReqs.map(m => `'${m}'`).join(', ')}.`);
+    console.error(`   Esegui prima: npm run module:install -- --name ${missingReqs[0]}`);
+    console.error('');
+    process.exit(1);
+  }
+}
+
 function installModule(moduleName) {
   const moduleDir = path.resolve(__dirname, 'templates/modules', moduleName);
   if (!fs.existsSync(moduleDir)) {
     console.error(`❌ Errore: Modulo '${moduleName}' non trovato nel Registro Moduli.`);
     process.exit(1);
   }
+
+  checkRequirements(moduleName);
 
   console.log(`📦 Installazione Modulo Puro '${moduleName}' in corso...`);
 

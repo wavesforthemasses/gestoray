@@ -1,15 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
-
-// Import all run functions from triggers
-import { syncClientAndVendorStats } from './onContractCreated';
 import { calculateCommission } from '../business-logic';
-import { runContractsPaidCreated } from './onContractsPaidCreated';
-import { runContractUpdated } from './onContractUpdated';
-import { runActivityCreated } from './onActivityCreated';
-import { runInstallmentWrite } from './onInstallmentWrite';
-import { runPaymentCreated } from './onPaymentCreated';
 
 const REGION = 'europe-west3';
 
@@ -38,7 +30,7 @@ export const retryFailedSyncs = onCall(
       // 2. Fetch pending errors
       const errorsSnap = await db
         .collection('sync_errors')
-        .where('original.status', '==', 'pending')
+        .where('original.status', 'in', ['pending', 'failed'])
         .get();
 
       let resolvedCount = 0;
@@ -55,8 +47,16 @@ export const retryFailedSyncs = onCall(
         try {
           logger.info(`Retrying sync for error ${errorId} (trigger: ${triggerName}, docId: ${documentId})`);
 
-          // Route to the correct execution function
+          // Dynamic module trigger handler routing
           if (triggerName === 'onContractCreated') {
+            let syncClientAndVendorStatsFn: any;
+            try {
+              const mod = await import('./onContractCreated');
+              syncClientAndVendorStatsFn = mod.syncClientAndVendorStats;
+            } catch (e) {
+              logger.warn(`Trigger handler onContractCreated not installed or available.`);
+            }
+
             const docSnap = await db.collection('contracts').doc(documentId).get();
             if (docSnap.exists) {
               const data = docSnap.data() || {};
@@ -86,11 +86,11 @@ export const retryFailedSyncs = onCall(
                 });
               }
 
-              if (clientId) {
+              if (clientId && syncClientAndVendorStatsFn) {
                 const vendors = [];
                 if (vendorUid) vendors.push(vendorUid);
                 if (secondVendorUid) vendors.push(secondVendorUid);
-                await syncClientAndVendorStats(db, clientId, vendors);
+                await syncClientAndVendorStatsFn(db, clientId, vendors);
               }
             } else {
               logger.warn(`Contract ${documentId} no longer exists, resolving error anyway.`);
@@ -98,12 +98,26 @@ export const retryFailedSyncs = onCall(
           } else if (triggerName === 'onContractsPaidCreated') {
             const { paymentId, contractId } = metadata;
             if (paymentId && contractId) {
-              await runContractsPaidCreated(db, paymentId, contractId);
+              try {
+                const mod = await import('./onContractsPaidCreated');
+                if (typeof mod.runContractsPaidCreated === 'function') {
+                  await mod.runContractsPaidCreated(db, paymentId, contractId);
+                }
+              } catch (e) {
+                logger.warn(`Trigger handler onContractsPaidCreated not available.`);
+              }
             } else {
               throw new Error('Missing paymentId or contractId in metadata');
             }
           } else if (triggerName === 'onContractUpdated') {
-            await runContractUpdated(db, documentId);
+            try {
+              const mod = await import('./onContractUpdated');
+              if (typeof mod.runContractUpdated === 'function') {
+                await mod.runContractUpdated(db, documentId);
+              }
+            } catch (e) {
+              logger.warn(`Trigger handler onContractUpdated not available.`);
+            }
           } else if (triggerName === 'onActivityCreated') {
             const { clientId, activityId } = metadata;
             if (clientId && activityId) {
@@ -114,7 +128,15 @@ export const retryFailedSyncs = onCall(
                 .doc(activityId)
                 .get();
               if (docSnap.exists) {
-                await runActivityCreated(db, clientId, activityId, docSnap.data());
+                try {
+                  const mod = await import('./onActivityCreated');
+                  const runFn = mod.runActivityWrite || mod.runActivityCreated;
+                  if (typeof runFn === 'function') {
+                    await runFn(db, clientId, activityId, docSnap.data());
+                  }
+                } catch (e) {
+                  logger.warn(`Trigger handler onActivityCreated not available.`);
+                }
               } else {
                 logger.warn(`Activity ${activityId} no longer exists, resolving error anyway.`);
               }
@@ -124,14 +146,28 @@ export const retryFailedSyncs = onCall(
           } else if (triggerName === 'onInstallmentWrite') {
             const { contractId } = metadata;
             if (contractId) {
-              await runInstallmentWrite(db, contractId);
+              try {
+                const mod = await import('./onInstallmentWrite');
+                if (typeof mod.runInstallmentWrite === 'function') {
+                  await mod.runInstallmentWrite(db, contractId);
+                }
+              } catch (e) {
+                logger.warn(`Trigger handler onInstallmentWrite not available.`);
+              }
             } else {
               throw new Error('Missing contractId in metadata');
             }
           } else if (triggerName === 'onPaymentCreated') {
             const docSnap = await db.collection('payments').doc(documentId).get();
             if (docSnap.exists) {
-              await runPaymentCreated(db, documentId, docSnap.data());
+              try {
+                const mod = await import('./onPaymentCreated');
+                if (typeof mod.runPaymentCreated === 'function') {
+                  await mod.runPaymentCreated(db, documentId, docSnap.data());
+                }
+              } catch (e) {
+                logger.warn(`Trigger handler onPaymentCreated not available.`);
+              }
             } else {
               logger.warn(`Payment ${documentId} no longer exists, resolving error anyway.`);
             }

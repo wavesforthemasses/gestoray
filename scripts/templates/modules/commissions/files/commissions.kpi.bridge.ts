@@ -48,6 +48,15 @@ export class CommissionsKPIBridge {
     return { adminPendingCommissions, adminFinalizedCommissions };
   }
 
+  static async markCommissionPaid(periodId: string, uid: string) {
+    const { updateDoc, doc } = await import('$lib/firebase');
+    await updateDoc(doc(db, 'commissions_closings', periodId), {
+      isPaid: true,
+      paidAt: new Date().toISOString(),
+      paidBy: uid
+    });
+  }
+
   static async fetchDrillDownItems({ period, tab, role, uid }: DrillDownFetchParams) {
     if (tab !== 'provvigioni_maturate') return [];
 

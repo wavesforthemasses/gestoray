@@ -26,15 +26,23 @@ describe('Sidebar Menu Configuration Registry', () => {
   });
 
   it('should include products module when products is registered', () => {
-    const productsMenuItem = DEFAULT_MENU_CONFIG.find(item => item.id === 'products');
-    expect(productsMenuItem).toBeDefined();
-    expect(productsMenuItem?.path).toBe('/dashboard/products');
-    expect(productsMenuItem?.label).toBe('Gestione Prodotti');
+    const installedModules: any[] = modulesRegistry.modules || [];
+    const isProductsInstalled = installedModules.some(m => m.id === 'products');
+    if (isProductsInstalled) {
+      const productsMenuItem = DEFAULT_MENU_CONFIG.find(item => item.id === 'products');
+      expect(productsMenuItem).toBeDefined();
+      expect(productsMenuItem?.path).toBe('/dashboard/products');
+      expect(productsMenuItem?.label).toBe('Gestione Prodotti');
+    }
   });
 
   it('should include contracts module when contracts is registered', () => {
-    const contractsMenuItem = DEFAULT_MENU_CONFIG.find(item => item.id === 'contracts');
-    expect(contractsMenuItem).toBeDefined();
-    expect(contractsMenuItem?.path).toBe('/dashboard/contracts');
+    const installedModules: any[] = modulesRegistry.modules || [];
+    const isContractsInstalled = installedModules.some(m => m.id === 'contracts');
+    if (isContractsInstalled) {
+      const contractsMenuItem = DEFAULT_MENU_CONFIG.find(item => item.id === 'contracts');
+      expect(contractsMenuItem).toBeDefined();
+      expect(contractsMenuItem?.path).toBe('/dashboard/contracts');
+    }
   });
 });

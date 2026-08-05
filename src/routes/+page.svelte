@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-  <title>{$projectStore?.projectName || 'CRM'}</title>
+  <title>{$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="homepage-redirect-loader">

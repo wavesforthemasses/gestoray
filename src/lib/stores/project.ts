@@ -36,11 +36,11 @@ export function initProjectStore() {
         neutralChroma: data.neutralChroma
       });
     } else {
-      projectStore.update(curr => curr || { projectName: 'CRM', projectEmail: 'admin@app.local' });
+      projectStore.set({ projectName: '', projectEmail: '' });
     }
   }, (err: any) => {
     console.warn('Error fetching project settings (offline/HMR):', err);
-    projectStore.update(curr => curr || { projectName: 'CRM', projectEmail: 'admin@app.local' });
+    // Keep current store state on transient offline socket error
   });
 }
 

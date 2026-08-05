@@ -2,29 +2,15 @@ import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer,
 import { formatDate } from "$lib/utils/formatters";
 
 export interface DashboardKPIs {
-  commContractsCount: number;
-  commTotalSold: number;
-  commApprovedSold: number;
-  commTotalNNCF: number;
-  commMaturate: number;
-  commIncassato: number;
   totalClienti: number;
-  totalVenduto: number;
-  totalIncassato: number;
   totalNNCF: number;
-  totalContratti: number;
-  pendingContratti: number;
-  activityCounts: Record<string, number>;
-  commTotalNA: number;
   usersList: any[];
+  activityCounts: Record<string, number>;
+  [key: string]: any;
 }
 
 export interface AdminTables {
-  adminPendingContracts: any[];
-  adminOverdueInstallments: any[];
-  adminPendingCommissions: any[];
-  adminFinalizedCommissions: any[];
-  adminUndistributedPayments: any[];
+  [key: string]: any[];
 }
 
 export class DashboardService {
@@ -122,11 +108,10 @@ export class DashboardService {
   }
 
   static async markCommissionPaid(periodId: string, uid: string) {
-    await updateDoc(doc(db, 'commissions_closings', periodId), {
-      isPaid: true,
-      paidAt: new Date().toISOString(),
-      paidBy: uid
-    });
+    const bridgeClass = await this.getModuleBridge('commissions');
+    if (bridgeClass && typeof bridgeClass.markCommissionPaid === 'function') {
+      await bridgeClass.markCommissionPaid(periodId, uid);
+    }
   }
 
   static generateChartPeriods(endDateString: string, granularity: 'settimanale' | 'mensile' | 'annuale') {

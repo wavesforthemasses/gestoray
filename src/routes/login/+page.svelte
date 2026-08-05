@@ -63,7 +63,7 @@
 </script>
 
 <svelte:head>
-  <title>Login | {$projectStore?.projectName || 'CRM'}</title>
+  <title>Login | {$projectStore?.projectName || 'ERP'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     rel="preconnect"
@@ -84,7 +84,7 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'CRM'} Logo" class="login-logo" />
+      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'ERP'} Logo" class="login-logo" />
     </div>
 
     {#if errorMessage}

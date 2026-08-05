@@ -27,8 +27,8 @@ const indexesPath = path.resolve(__dirname, '../firestore.indexes.json');
 const functionsIndexPath = path.resolve(__dirname, '../functions/index.ts');
 const autoGenDir = path.resolve(__dirname, '../src/lib/config/auto_generated');
 
-const OPTIONAL_MODULES = ['contracts', 'payments', 'commissions', 'products', 'activities', 'tickets', 'interventi'];
-const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities', 'products'];
+const OPTIONAL_MODULES = ['contracts', 'payments', 'commissions', 'products', 'activities', 'tickets', 'interventi', 'cantieri'];
+const OPTIONAL_SETTINGS = ['interventi', 'tickets', 'activities', 'products', 'contracts'];
 
 function removeFileSync(filePath) {
   if (fs.existsSync(filePath)) {

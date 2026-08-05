@@ -29,7 +29,7 @@
 </script>
 
 <svelte:head>
-  <title>Setup Iniziale | {$projectStore?.projectName || 'CRM'}</title>
+  <title>Setup Iniziale | {$projectStore?.projectName || 'ERP'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     rel="preconnect"
@@ -50,7 +50,7 @@
 
   <div class="card">
     <div class="logo">
-      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'CRM'} Logo" class="setup-logo" />
+      <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'ERP'} Logo" class="setup-logo" />
     </div>
 
     <div class="header">

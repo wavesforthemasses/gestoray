@@ -11,6 +11,5 @@ export { sendLoginPin, verifyLoginPin } from './src/auth';
 export { initSuperAdmin, updateUser } from './src/admin';
 export { updateProfile, updateProfileEmail } from './src/profile';
 export { sendSystemEmail } from './src/email';
-export { getChartAggregations, scheduledReconciliation } from './src/aggregations';
+export { getChartAggregations } from './src/aggregations';
 export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated';
-export { auditLogger } from './src/triggers/auditLogger';
