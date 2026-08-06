@@ -8,7 +8,7 @@
   export const bridgeMetadata = {
     id: 'contracts',
     sourceModule: 'contracts',
-    label: 'Contratti & Preventivi Collegati'
+    label: 'Preventivi & Contratti'
   };
 
   let contractsList = $state<any[]>([]);
@@ -17,12 +17,24 @@
   onMount(async () => {
     try {
       if (projectId) {
-        // Query contracts explicitly linked to this project container
-        const snap = await getDocs(query(collection(db, 'contracts'), where('projectId', '==', projectId)));
-        const list: any[] = [];
-        snap.forEach(d => {
-          list.push({ id: d.id, ...d.data() });
-        });
+        let list: any[] = [];
+        try {
+          const snap = await getDocs(query(collection(db, 'contracts'), where('projectId', '==', projectId)));
+          snap.forEach(d => {
+            list.push({ id: d.id, ...d.data() });
+          });
+        } catch (err) {
+          console.warn('Errore query projectId:', err);
+        }
+
+        if (list.length === 0) {
+          try {
+            const legacySnap = await getDocs(query(collection(db, 'contracts'), where('cantiereId', '==', projectId)));
+            legacySnap.forEach(d => {
+              list.push({ id: d.id, ...d.data() });
+            });
+          } catch (err) {}
+        }
 
         contractsList = list;
       }
@@ -41,8 +53,8 @@
 <div class="project-contracts-bridge-tab">
   <div class="bridge-header-row">
     <div class="bridge-header-info">
-      <h4 class="bridge-title">Preventivi & Contratti del Progetto</h4>
-      <p class="bridge-sub">Gestisci i contratti di lavoro o preventivi legati a questo contenitore.</p>
+      <h4 class="bridge-title">Preventivi & Contratti Collegati</h4>
+      <p class="bridge-sub">Gestisci i contratti di lavoro, accordi e preventivi associati a questo contenitore.</p>
     </div>
     <a 
       href="/dashboard/contracts/add?projectId={projectId || ''}&clientId={clientId || ''}" 
@@ -61,13 +73,13 @@
         <FileText size={32} />
       </div>
       <h5 class="empty-title">Nessun Contratto Collegato</h5>
-      <p class="empty-desc">Non è ancora presente alcun contratto o preventivo associato a questo progetto.</p>
+      <p class="empty-desc">Non è ancora presente alcun contratto o preventivo associato a questo cantiere/progetto.</p>
       <a 
         href="/dashboard/contracts/add?projectId={projectId || ''}&clientId={clientId || ''}" 
         class="btn-create-contract-empty"
       >
         <Plus size={16} />
-        <span>Crea Primo Contratto per questo Progetto</span>
+        <span>Crea Primo Contratto per questo Cantiere</span>
       </a>
     </div>
   {:else}
@@ -129,14 +141,14 @@
   }
 
   .bridge-title {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-md, 15px);
     font-weight: 700;
     color: var(--color-neutral-900);
     margin: 0 0 2px 0;
   }
 
   .bridge-sub {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-xs, 12px);
     color: var(--color-neutral-500);
     margin: 0;
   }
@@ -146,10 +158,10 @@
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md, 8px);
     background-color: var(--color-primary-600);
     color: white;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-xs, 12px);
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
@@ -165,7 +177,7 @@
     width: 100%;
     overflow-x: auto;
     border: 1px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-lg, 10px);
   }
 
   .bridge-table {
@@ -225,7 +237,7 @@
     align-items: center;
     gap: 4px;
     padding: 5px 10px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md, 8px);
     background: var(--color-neutral-100);
     color: var(--color-neutral-700);
     font-size: 12px;
@@ -248,7 +260,7 @@
     text-align: center;
     background: var(--color-neutral-50);
     border: 1px dashed var(--color-neutral-300);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-xl, 12px);
   }
 
   .empty-icon-circle {
@@ -264,14 +276,14 @@
   }
 
   .empty-title {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-md, 15px);
     font-weight: 700;
     color: var(--color-neutral-800);
     margin: 0 0 6px 0;
   }
 
   .empty-desc {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-xs, 12px);
     color: var(--color-neutral-500);
     margin: 0 0 20px 0;
     max-width: 360px;
@@ -282,10 +294,10 @@
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-lg, 10px);
     background-color: var(--color-primary-600);
     color: white;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-xs, 12px);
     font-weight: 700;
     text-decoration: none;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);

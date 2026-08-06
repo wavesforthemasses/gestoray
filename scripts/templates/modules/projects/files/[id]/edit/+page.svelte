@@ -1,15 +1,17 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { ProjectsService } from '../projects.service';
-  import { ProjectSettingsService } from '../projectSettingsService';
-  import type { ProjectSettings, ProjectStatus } from '../schema';
+  import { ProjectsService } from '../../projects.service';
+  import { ProjectSettingsService } from '../../projectSettingsService';
+  import type { ProjectItem, ProjectSettings, ProjectStatus } from '../../schema';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
-  import { authState } from '$lib/auth.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FolderKanban, ArrowLeft, Save, MapPin } from '@lucide/svelte';
+  import { FolderKanban, ArrowLeft, Save, MapPin, Pencil } from '@lucide/svelte';
   import { FormField, Autocomplete } from '$lib';
+
+  const projectId = $page.params.id || '';
 
   let settings = $state<ProjectSettings>({
     entityNaming: 'progetto',
@@ -27,6 +29,7 @@
   let clients = $state<{ id: string; name: string }[]>([]);
   let clientOptions = $derived(clients.map(c => ({ id: c.id, label: c.name })));
 
+  let project = $state<ProjectItem | null>(null);
   let loading = $state(true);
   let saving = $state(false);
 
@@ -36,7 +39,7 @@
   let status = $state<ProjectStatus>('fase_contrattuale');
   let progress = $state(0);
   let estimatedAmount = $state(0);
-  let startDate = $state(new Date().toISOString().slice(0, 10));
+  let startDate = $state('');
   let endDate = $state('');
   let street = $state('');
   let city = $state('');
@@ -46,21 +49,33 @@
 
   onMount(async () => {
     try {
-      const [s, cList] = await Promise.all([
+      const [s, cList, item] = await Promise.all([
         ProjectSettingsService.getSettings(),
-        CacheLookupService.getLookup('clients')
+        CacheLookupService.getLookup('clients'),
+        ProjectsService.getProjectById(projectId)
       ]);
       settings = s;
       clients = cList;
-      status = s.defaultStatus || 'fase_contrattuale';
+      project = item;
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const preClient = urlParams.get('clientId');
-      if (preClient) {
-        clientId = preClient;
+      if (item) {
+        name = item.name || '';
+        clientId = item.clientId || '';
+        status = item.status || 'fase_contrattuale';
+        progress = item.progress || 0;
+        estimatedAmount = item.estimatedAmount || 0;
+        startDate = item.startDate ? item.startDate.slice(0, 10) : '';
+        endDate = item.endDate ? item.endDate.slice(0, 10) : '';
+        notes = item.notes || '';
+        if (item.address) {
+          street = item.address.street || '';
+          city = item.address.city || '';
+          zip = item.address.zip || '';
+          province = item.address.province || '';
+        }
       }
     } catch (e) {
-      console.error('Errore caricamento dati creazione progetto:', e);
+      console.error('Errore caricamento modifica progetto:', e);
     } finally {
       loading = false;
     }
@@ -68,22 +83,28 @@
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
+    if (!project) return;
+
     if (!clientId) {
       toast.error('Seleziona un cliente intestatario obbligatorio');
       return;
     }
 
     if (!name.trim()) {
-      toast.error('Inserisci la denominazione del progetto');
+      toast.error('Inserisci la denominazione del ' + labels.singular.toLowerCase());
       return;
     }
 
     saving = true;
 
     try {
-      const form = {
+      const foundClient = clients.find(c => c.id === clientId);
+      const clientName = foundClient?.name || project.clientName || '';
+
+      const form: Partial<ProjectItem> = {
         name: name.trim(),
         clientId,
+        clientName,
         status,
         progress: Number(progress) || 0,
         estimatedAmount: Number(estimatedAmount) || 0,
@@ -93,12 +114,12 @@
         address: (street || city) ? { street, city, zip, province } : undefined
       };
 
-      const newId = await ProjectsService.createProject(form, authState.user?.uid || '');
-      toast.success(`${labels.singular} creato con successo!`);
-      goto(`/dashboard/projects/${newId}`);
+      await ProjectsService.updateProject(project.id!, form);
+      toast.success(`${labels.singular} aggiornato con successo!`);
+      goto(`/dashboard/projects/${project.id}`);
     } catch (err: any) {
-      console.error('Errore salvataggio progetto:', err);
-      toast.error('Errore durante la creazione: ' + err.message);
+      console.error('Errore aggiornamento progetto:', err);
+      toast.error('Errore durante il salvataggio: ' + err.message);
     } finally {
       saving = false;
     }
@@ -106,28 +127,36 @@
 </script>
 
 <svelte:head>
-  <title>{labels.newBtn} | {$projectStore?.projectName || 'ERP'}</title>
+  <title>Modifica {project ? project.code : labels.singular} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
-<div class="create-project-container">
+<div class="edit-project-container">
   <div class="top-nav-bar">
-    <a href="/dashboard/projects" class="back-link">
-      <ArrowLeft size={16} /> Torna all'Elenco
+    <a href="/dashboard/projects/{projectId}" class="back-link">
+      <ArrowLeft size={16} /> Torna a Dettaglio {labels.singular}
     </a>
   </div>
 
-  <header class="create-header">
+  <header class="edit-header">
     <div class="header-icon">
-      <FolderKanban size={24} color="var(--color-primary-500)" />
+      <Pencil size={24} color="var(--color-primary-500)" />
     </div>
     <div>
-      <h1 class="page-title">{labels.newBtn}</h1>
-      <p class="page-subtitle">Inserisci le informazioni generali del nuovo contenitore / progetto.</p>
+      <h1 class="page-title">Modifica {labels.singular} {project ? project.code : ''}</h1>
+      <p class="page-subtitle">Modifica i dati del contenitore, cliente, stato e ubicazione cantiere.</p>
     </div>
   </header>
 
   {#if loading}
-    <p>Caricamento...</p>
+    <div class="loading-box">
+      <p>Caricamento dati...</p>
+    </div>
+  {:else if !project}
+    <div class="error-box">
+      <h3>{labels.singular} non trovato</h3>
+      <p>Impossibile modificare il contenitore selezionato.</p>
+      <a href="/dashboard/projects" class="btn-cancel">Torna all'Elenco</a>
+    </div>
   {:else}
     <form onsubmit={handleSubmit} class="form-grid-layout">
       <div class="form-card">
@@ -145,12 +174,12 @@
 
         <div class="form-group">
           <label for="name">Denominazione / Titolo {labels.singular} *</label>
-          <input type="text" id="name" bind:value={name} required placeholder="es. Progetto Ristrutturazione Sede" class="form-input" />
+          <input type="text" id="name" bind:value={name} required placeholder="es. Ristrutturazione Sede Principale" class="form-input" />
         </div>
 
         <div class="form-row-2">
           <div class="form-group">
-            <label for="status">Stato Iniziale</label>
+            <label for="status">Stato Attuale</label>
             <select id="status" bind:value={status} class="form-select">
               <option value="fase_contrattuale">Fase Contrattuale / Valutazione</option>
               <option value="aperto">Aperto / In Corso</option>
@@ -167,7 +196,7 @@
 
         <div class="form-row-2">
           <div class="form-group">
-            <label for="startDate">Data Inizio</label>
+            <label for="startDate">Data Inizio Lavori</label>
             <input type="date" id="startDate" bind:value={startDate} class="form-input" />
           </div>
           <div class="form-group">
@@ -211,10 +240,10 @@
         </div>
 
         <div class="actions-row">
-          <a href="/dashboard/projects" class="btn-cancel">Annulla</a>
+          <a href="/dashboard/projects/{project.id}" class="btn-cancel">Annulla</a>
           <button type="submit" class="btn-submit" disabled={saving}>
             <Save size={16} />
-            <span>{saving ? 'Salvataggio...' : 'Crea Progetto'}</span>
+            <span>{saving ? 'Salvataggio...' : 'Salva Modifiche'}</span>
           </button>
         </div>
       </div>
@@ -223,7 +252,7 @@
 </div>
 
 <style>
-  .create-project-container {
+  .edit-project-container {
     padding: 24px;
     width: 100%;
     max-width: none;
@@ -237,7 +266,7 @@
     text-decoration: none;
     font-size: 13px;
   }
-  .create-header {
+  .edit-header {
     display: flex;
     align-items: center;
     gap: 16px;

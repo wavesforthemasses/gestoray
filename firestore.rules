@@ -122,6 +122,16 @@ service cloud.firestore {
       }
     }
 
+    // --- MODULE: projects BEGIN ---
+    // PROJECTS
+match /projects/{projectId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: projects END ---
+
     // --- MODULE: products BEGIN ---
     // PRODUCTS
 match /products/{docId} {
@@ -144,15 +154,5 @@ match /{path=**}/installments/{instId} {
   allow write: if isAuth();
 }
     // --- MODULE: contracts END ---
-
-    // --- MODULE: projects BEGIN ---
-    // PROJECTS
-match /projects/{projectId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: projects END ---
   }
 }

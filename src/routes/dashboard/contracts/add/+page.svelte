@@ -181,27 +181,27 @@
         }
       }
 
-      hasProjectsModule = $menuConfigStore.some(m => m.id === 'projects' || m.id === 'interventi');
-      if (hasProjectsModule) {
+      try {
+        const { ProjectsService } = await import('../../projects/projects.service');
+        const { ProjectSettingsService } = await import('../../projects/projectSettingsService');
+        const [projectsList, settings] = await Promise.all([
+          ProjectsService.getProjects(),
+          ProjectSettingsService.getSettings()
+        ]);
+        projects = projectsList.map((c: any) => ({
+          id: c.id!,
+          name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
+          clientId: c.clientId
+        }));
+        projectLabel = ProjectSettingsService.getLabels(settings).singular;
+        hasProjectsModule = true;
+      } catch (e) {
         try {
-          if ($menuConfigStore.some(m => m.id === 'projects')) {
-            const { ProjectsService } = await import('../../projects/projects.service');
-            const { ProjectSettingsService } = await import('../../projects/projectSettingsService');
-            const [projectsList, settings] = await Promise.all([
-              ProjectsService.getProjects(),
-              ProjectSettingsService.getSettings()
-            ]);
-            projects = projectsList.map((c: any) => ({
-              id: c.id!,
-              name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
-              clientId: c.clientId
-            }));
-            projectLabel = ProjectSettingsService.getLabels(settings).singular;
-          } else {
-            projects = await CacheLookupService.getLookup('projects');
-          }
-        } catch (e) {
+          projects = await CacheLookupService.getLookup('projects');
+          hasProjectsModule = projects.length > 0;
+        } catch (err) {
           projects = [];
+          hasProjectsModule = false;
         }
       }
     } catch (e) {

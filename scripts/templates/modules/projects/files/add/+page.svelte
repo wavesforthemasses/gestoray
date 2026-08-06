@@ -8,7 +8,7 @@
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { authState } from '$lib/auth.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FolderKanban, ArrowLeft, Save } from '@lucide/svelte';
+  import { FolderKanban, ArrowLeft, Save, MapPin } from '@lucide/svelte';
   import { FormField, Autocomplete } from '$lib';
 
   let settings = $state<ProjectSettings>({
@@ -176,9 +176,38 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="notes">Note Generali</label>
-          <textarea id="notes" bind:value={notes} rows="3" class="form-textarea"></textarea>
+        <div class="address-section-card">
+          <div class="section-subtitle-heading">
+            <MapPin size={16} class="text-primary" />
+            <span>Ubicazione & Indirizzo {labels.singular}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="street">Indirizzo e Civico</label>
+            <input type="text" id="street" bind:value={street} placeholder="es. Via Garibaldi 45" class="form-input" />
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="city">Città / Comune</label>
+              <input type="text" id="city" bind:value={city} placeholder="es. Milano" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label for="zip">CAP</label>
+              <input type="text" id="zip" bind:value={zip} placeholder="es. 20121" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label for="province">Provincia (Sigla)</label>
+              <input type="text" id="province" bind:value={province} placeholder="es. MI" maxlength="2" class="form-input uppercase-input" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group margin-top-16">
+          <label for="notes">Note Generali & Istruzioni Cantiere</label>
+          <textarea id="notes" bind:value={notes} rows="3" class="form-textarea" placeholder="Note operative, accesso, referenti..."></textarea>
         </div>
 
         <div class="actions-row">
@@ -196,8 +225,8 @@
 <style>
   .create-project-container {
     padding: 24px;
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
   }
   .top-nav-bar { margin-bottom: 16px; }
   .back-link {
@@ -234,6 +263,26 @@
   .form-card h3 { font-size: 16px; margin: 0 0 16px 0; }
   .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-row-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+  .address-section-card {
+    background: var(--color-neutral-50, #f8fafc);
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 10px);
+    padding: 16px 18px;
+    margin: 16px 0;
+  }
+  .section-subtitle-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-neutral-800, #1e293b);
+    margin-bottom: 14px;
+  }
+  .uppercase-input { text-transform: uppercase; }
+  .margin-top-16 { margin-top: 16px; }
+  .text-primary { color: var(--color-primary-600, #2563eb); }
   .form-input, .form-select, .form-textarea {
     padding: 10px 12px;
     border-radius: 8px;
