@@ -13,7 +13,9 @@ export const DEFAULT_CONTRACT_SETTINGS: ContractSettings = {
   defaultType: 'Non Ricorrente',
   defaultInitialStatus: 'bozza',
   defaultTermsAndConditions: 'Offerta valida 30 giorni dalla data di emissione. Pagamento come da accordi contrattuali.',
-  nonRecurringEndDateMode: 'optional'
+  nonRecurringEndDateMode: 'optional',
+  enableProjectsBridge: true,
+  enablePlacesBridge: true
 };
 
 export class ContractSettingsService {

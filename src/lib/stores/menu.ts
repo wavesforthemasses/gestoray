@@ -15,10 +15,10 @@ export const menuConfigStore = writable<MenuItemConfig[]>([]);
 
 export const BASE_MENU_CONFIG: MenuItemConfig[] = [
   { id: 'todo', label: 'Cose da Fare', icon: 'CheckSquare', path: '/dashboard/todo', rolesView: ['superadmin', 'direzione', 'commerciale', 'amministrazione'] },
-  { id: 'clients', label: 'Gestione Clienti', icon: 'Briefcase', path: '/dashboard/clients', rolesView: ['superadmin', 'direzione', 'commerciale'] },
-  { id: 'contacts', label: 'Gestione Contatti', icon: 'UserCheck', path: '/dashboard/contacts', rolesView: ['superadmin', 'direzione', 'commerciale', 'amministrazione'] },
-  { id: 'qualifications', label: 'Gestione Qualifiche', icon: 'Award', path: '/dashboard/qualifications', rolesView: ['superadmin'] },
-  { id: 'users', label: 'Gestione Utenti', icon: 'Users', path: '/dashboard/users', rolesView: ['superadmin'] },
+  { id: 'clients', label: 'Clienti', icon: 'Briefcase', path: '/dashboard/clients', rolesView: ['superadmin', 'direzione', 'commerciale'] },
+  { id: 'contacts', label: 'Contatti', icon: 'UserCheck', path: '/dashboard/contacts', rolesView: ['superadmin', 'direzione', 'commerciale', 'amministrazione'] },
+  { id: 'qualifications', label: 'Qualifiche', icon: 'Award', path: '/dashboard/qualifications', rolesView: ['superadmin'] },
+  { id: 'users', label: 'Utenti', icon: 'Users', path: '/dashboard/users', rolesView: ['superadmin'] },
   { id: 'settings', label: 'Impostazioni', icon: 'Settings', path: '/dashboard/settings', matchExact: true, rolesView: ['superadmin'] },
 ];
 
@@ -38,6 +38,7 @@ export const DEFAULT_MENU_CONFIG: MenuItemConfig[] = [
 
 let unsubscribeMenu: (() => void) | null = null;
 let unsubscribeProjectsSettings: (() => void) | null = null;
+let unsubscribePlacesSettings: (() => void) | null = null;
 
 export function initMenuStore() {
   if (unsubscribeMenu) return;
@@ -57,7 +58,7 @@ export function initMenuStore() {
       const missingItems = DEFAULT_MENU_CONFIG.filter(item => !savedIds.has(item.id));
       list = [...filteredSaved, ...missingItems];
     }
-    
+
     // Apply initial projects dynamic label if projects module exists
     const projectSettingsRef = doc(db, 'settings', 'projects');
     if (!unsubscribeProjectsSettings) {
@@ -75,7 +76,31 @@ export function initMenuStore() {
         menuConfigStore.update(items =>
           items.map(item =>
             item.id === 'projects'
-              ? { ...item, label: `Gestione ${pluralLabel}` }
+              ? { ...item, label: `${pluralLabel}` }
+              : item
+          )
+        );
+      });
+    }
+
+    // Apply initial places dynamic label if places module exists
+    const placeSettingsRef = doc(db, 'settings', 'places');
+    if (!unsubscribePlacesSettings) {
+      unsubscribePlacesSettings = onSnapshot(placeSettingsRef, (plSnap: any) => {
+        let pluralLabel = 'Luoghi';
+        if (plSnap.exists()) {
+          const d = plSnap.data();
+          const naming = d.entityNaming || 'luogo';
+          if (naming === 'cantiere') pluralLabel = 'Cantieri';
+          else if (naming === 'sede') pluralLabel = 'Sedi Operative';
+          else if (naming === 'destinazione') pluralLabel = 'Destinazioni';
+          else if (naming === 'custom' && d.customPluralLabel) pluralLabel = d.customPluralLabel;
+        }
+
+        menuConfigStore.update(items =>
+          items.map(item =>
+            item.id === 'places'
+              ? { ...item, label: `${pluralLabel}` }
               : item
           )
         );
@@ -94,5 +119,9 @@ export function destroyMenuStore() {
   if (unsubscribeProjectsSettings) {
     unsubscribeProjectsSettings();
     unsubscribeProjectsSettings = null;
+  }
+  if (unsubscribePlacesSettings) {
+    unsubscribePlacesSettings();
+    unsubscribePlacesSettings = null;
   }
 }

@@ -48,15 +48,31 @@
   let agentOptions = $derived(agents.map(a => ({ id: a.id, label: a.name })));
 
   let projects = $state<{ id: string; name: string; clientId?: string }[]>([]);
+  let places = $state<{ id: string; name: string; clientId?: string }[]>([]);
+  let hasProjectsModule = $state(false);
+  let hasPlacesModule = $state(false);
+  let projectLabel = $state('Progetto');
+  let placeLabel = $state('Cantiere / Luogo');
+
   let filteredProjects = $derived.by(() => {
     if (!clientId) return projects;
-    const clientMatches = projects.filter(p => p.clientId === clientId);
-    if (clientMatches.length > 0) return clientMatches;
-    return projects;
+    const matches = projects.filter(p => !p.clientId || p.clientId === clientId);
+    return matches.length > 0 ? matches : projects;
   });
-  let projectOptions = $derived(filteredProjects.map(p => ({ id: p.id, label: p.name })));
-  let hasProjectsModule = $state(false);
-  let projectLabel = $state('Progetto');
+
+  let projectOptions = $derived(
+    filteredProjects.map(p => ({ id: p.id, label: p.name }))
+  );
+
+  let filteredPlaces = $derived.by(() => {
+    if (!clientId) return places;
+    const matches = places.filter(p => !p.clientId || p.clientId === clientId);
+    return matches.length > 0 ? matches : places;
+  });
+
+  let placeOptions = $derived(
+    filteredPlaces.map(p => ({ id: p.id, label: p.name }))
+  );
 
   let productsCatalog = $state<any[]>([]);
   let productOptions = $derived(
@@ -84,6 +100,7 @@
   let clientId = $state('');
   let agentId = $state('');
   let projectId = $state('');
+  let placeId = $state('');
   let type = $state<ContractType>('Non Ricorrente');
   let billingFrequency = $state<RecurringFrequency>('mensile');
   let startDate = $state(new Date().toISOString().slice(0, 10));
@@ -94,6 +111,7 @@
   let adminNotes = $state('');
   let termsAndConditions = $state('');
   let tags = $state<string[]>([]);
+
 
   // Totali e Sconti Documento
   let discountType = $state<'percent' | 'amount'>('percent');
@@ -157,8 +175,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         const paramClientId = urlParams.get('clientId');
         const paramProjectId = urlParams.get('projectId');
+        const paramPlaceId = urlParams.get('placeId');
         if (paramClientId) clientId = paramClientId;
         if (paramProjectId) projectId = paramProjectId;
+        if (paramPlaceId) placeId = paramPlaceId;
       }
 
       // Pre-compila l'agente commerciale con l'utente autenticato
@@ -202,6 +222,30 @@
         } catch (err) {
           projects = [];
           hasProjectsModule = false;
+        }
+      }
+
+      try {
+        const { PlacesService } = await import('../../places/places.service');
+        const { PlaceSettingsService } = await import('../../places/placeSettingsService');
+        const [placesList, pSettings] = await Promise.all([
+          PlacesService.getPlaces(),
+          PlaceSettingsService.getSettings()
+        ]);
+        places = placesList.map((c: any) => ({
+          id: c.id!,
+          name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
+          clientId: c.clientId
+        }));
+        placeLabel = PlaceSettingsService.getLabels(pSettings).singular;
+        hasPlacesModule = true;
+      } catch (e) {
+        try {
+          places = await CacheLookupService.getLookup('places');
+          hasPlacesModule = places.length > 0;
+        } catch (err) {
+          places = [];
+          hasPlacesModule = false;
         }
       }
     } catch (e) {
@@ -283,6 +327,7 @@
       const selectedClient = clients.find(c => c.id === clientId);
       const selectedAgent = agents.find(a => a.id === agentId);
       const selectedProject = projects.find(p => p.id === projectId);
+      const selectedPlace = places.find(p => p.id === placeId);
 
       const contractId = await ContractsService.createContract({
         contractNumber: '',
@@ -293,6 +338,8 @@
         agentName: selectedAgent ? selectedAgent.name : undefined,
         projectId: projectId || undefined,
         projectName: selectedProject ? selectedProject.name : undefined,
+        placeId: placeId || undefined,
+        placeName: selectedPlace ? selectedPlace.name : undefined,
         type,
         billingFrequency,
         startDate,
@@ -362,13 +409,17 @@
           {clientOptions}
           {agentOptions}
           {projectOptions}
+          {placeOptions}
           {hasProjectsModule}
+          {hasPlacesModule}
           {projectLabel}
+          {placeLabel}
           bind:clientId
           bind:title
           bind:agentId
           bind:contractNumber
           bind:projectId
+          bind:placeId
         />
 
         <!-- 2. Dates & Status Section -->

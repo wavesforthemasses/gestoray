@@ -1,6 +1,6 @@
 {
   "id": "products",
-  "label": "Gestione Prodotti",
+  "label": "Prodotti",
   "description": "Catalogo prodotti, servizi e listini prezzi",
   "icon": "Package",
   "requirements": [],

@@ -21,7 +21,8 @@
     Award,
     Wrench,
     Ticket,
-    Shield
+    Shield,
+    MapPin
   } from '@lucide/svelte';
 
   pageTitle.set('Gestione Moduli & Plugin Bridges');
@@ -30,7 +31,7 @@
   const ALL_MODULE_SPECS = [
     {
       id: 'products',
-      label: 'Gestione Prodotti',
+      label: 'Prodotti',
       description: 'Catalogo prodotti, servizi, articoli di magazzino e listini prezzi.',
       icon: Package,
       requirements: []
@@ -83,6 +84,13 @@
       description: 'Contenitore agnostico di progetti, commesse, avanzamento ed integrazione bridge.',
       icon: FolderKanban,
       requirements: []
+    },
+    {
+      id: 'places',
+      label: 'Gestione Luoghi',
+      description: 'Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni.',
+      icon: MapPin,
+      requirements: []
     }
   ];
 
@@ -94,6 +102,13 @@
       sourceModule: 'contracts',
       targetModule: 'projects',
       description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Progetto e deriva l\'importo contrattato.'
+    },
+    {
+      id: 'contracts-places',
+      title: 'Bridge Contratti ➔ Luoghi',
+      sourceModule: 'contracts',
+      targetModule: 'places',
+      description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Luogo/Cantiere.'
     },
     {
       id: 'payments-contracts',
@@ -108,6 +123,13 @@
       sourceModule: 'interventi',
       targetModule: 'projects',
       description: 'Collega i rapportini di lavoro al progetto e aggiorna la percentuale di avanzamento lavori.'
+    },
+    {
+      id: 'interventi-places',
+      title: 'Bridge Interventi ➔ Luoghi',
+      sourceModule: 'interventi',
+      targetModule: 'places',
+      description: 'Collega i rapportini di lavoro e gli interventi sul campo alla destinazione geografica/luogo.'
     },
     {
       id: 'payments-projects',

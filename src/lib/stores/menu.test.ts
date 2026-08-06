@@ -14,7 +14,7 @@ describe('Sidebar Menu Configuration Registry', () => {
 
   it('should dynamically include all installed modules from modules.registry.json', () => {
     const installedModules: any[] = modulesRegistry.modules || [];
-    
+
     for (const mod of installedModules) {
       const foundInMenu = DEFAULT_MENU_CONFIG.find(item => item.id === mod.id);
       expect(foundInMenu).toBeDefined();
@@ -32,7 +32,7 @@ describe('Sidebar Menu Configuration Registry', () => {
       const productsMenuItem = DEFAULT_MENU_CONFIG.find(item => item.id === 'products');
       expect(productsMenuItem).toBeDefined();
       expect(productsMenuItem?.path).toBe('/dashboard/products');
-      expect(productsMenuItem?.label).toBe('Gestione Prodotti');
+      expect(productsMenuItem?.label).toBe('Prodotti');
     }
   });
 

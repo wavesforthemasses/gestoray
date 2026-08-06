@@ -1,33 +1,41 @@
 <script lang="ts">
   import { FormField, Autocomplete } from '$lib';
-  import { Building2, FileText, UserCheck, FolderKanban, Hash } from '@lucide/svelte';
+  import { Building2 } from '@lucide/svelte';
 
   interface Props {
     labels: any;
     clientOptions: { id: string; label: string }[];
     agentOptions: { id: string; label: string }[];
-    projectOptions: { id: string; label: string }[];
-    hasProjectsModule: boolean;
+    projectOptions?: { id: string; label: string }[];
+    placeOptions?: { id: string; label: string }[];
+    hasProjectsModule?: boolean;
+    hasPlacesModule?: boolean;
     projectLabel?: string;
+    placeLabel?: string;
     clientId: string;
     title: string;
     agentId: string;
     contractNumber: string;
-    projectId: string;
+    projectId?: string;
+    placeId?: string;
   }
 
   let {
     labels,
     clientOptions,
     agentOptions,
-    projectOptions,
-    hasProjectsModule,
+    projectOptions = [],
+    placeOptions = [],
+    hasProjectsModule = true,
+    hasPlacesModule = true,
     projectLabel = 'Progetto',
+    placeLabel = 'Cantiere / Luogo',
     clientId = $bindable(''),
     title = $bindable(''),
     agentId = $bindable(''),
     contractNumber = $bindable(''),
-    projectId = $bindable('')
+    projectId = $bindable(''),
+    placeId = $bindable('')
   }: Props = $props();
 </script>
 
@@ -38,12 +46,12 @@
     </div>
     <div class="header-titles">
       <h3 class="card-title">Cliente & Dati Generali</h3>
-      <p class="card-subtitle">Intestazione contratto e associazione {projectLabel.toLowerCase()}</p>
+      <p class="card-subtitle">Intestazione contratto e associazione progetti/luoghi</p>
     </div>
   </div>
 
   <div class="header-grid">
-    <!-- Row 1: Cliente Intestatario (6 cols) & Agente Commerciale (6 cols) -->
+    <!-- Row 1: Cliente Intestatario & Agente Commerciale -->
     <div class="col-client">
       <FormField id="clientId" label="Cliente Intestatario *">
         <Autocomplete
@@ -64,20 +72,10 @@
       </FormField>
     </div>
 
-    <!-- Row 2: Titolo Contratto (5 cols), Progetto Correlato (4 cols) & N° Contratto (3 cols) -->
+    <!-- Row 2: Titolo Contratto & N° Contratto -->
     <div class="col-title">
       <FormField id="title" label={labels.titleLabel}>
         <input type="text" id="title" bind:value={title} placeholder="es. Fornitura e Manutenzione Sede..." />
-      </FormField>
-    </div>
-
-    <div class="col-project">
-      <FormField id="projectId" label="{projectLabel} Correlato">
-        <Autocomplete
-          options={projectOptions}
-          bind:value={projectId}
-          placeholder="Seleziona {projectLabel.toLowerCase()} (opzionale)..."
-        />
       </FormField>
     </div>
 
@@ -94,6 +92,31 @@
         />
       </FormField>
     </div>
+
+    <!-- Row 3: Progetto Correlato & Luogo/Cantiere Correlato -->
+    {#if hasProjectsModule}
+      <div class="col-bridge">
+        <FormField id="projectId" label="{projectLabel} Correlato">
+          <Autocomplete
+            options={projectOptions}
+            bind:value={projectId}
+            placeholder="Seleziona {projectLabel.toLowerCase()} (opzionale)..."
+          />
+        </FormField>
+      </div>
+    {/if}
+
+    {#if hasPlacesModule}
+      <div class="col-bridge">
+        <FormField id="placeId" label="{placeLabel} Correlato">
+          <Autocomplete
+            options={placeOptions}
+            bind:value={placeId}
+            placeholder="Seleziona {placeLabel.toLowerCase()} (opzionale)..."
+          />
+        </FormField>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -166,9 +189,11 @@
   .col-agent { grid-column: span 6; }
 
   /* Row 2 */
-  .col-title { grid-column: span 5; }
-  .col-project { grid-column: span 4; }
-  .col-number { grid-column: span 3; }
+  .col-title { grid-column: span 8; }
+  .col-number { grid-column: span 4; }
+
+  /* Row 3 */
+  .col-bridge { grid-column: span 6; }
 
   .input-readonly {
     background-color: var(--color-neutral-100) !important;
@@ -180,12 +205,8 @@
 
   @media (max-width: 1024px) {
     .col-client, .col-agent { grid-column: span 12; }
-    .col-title { grid-column: span 6; }
-    .col-project { grid-column: span 6; }
+    .col-title { grid-column: span 12; }
     .col-number { grid-column: span 12; }
-  }
-
-  @media (max-width: 640px) {
-    .col-title, .col-project { grid-column: span 12; }
+    .col-bridge { grid-column: span 12; }
   }
 </style>

@@ -1,1 +1,1 @@
-{ id: 'products', label: 'Gestione Prodotti', icon: 'Package', path: '/dashboard/products', rolesView: ['superadmin', 'direzione'] },
+{ id: 'products', label: 'Prodotti', icon: 'Package', path: '/dashboard/products', rolesView: ['superadmin', 'direzione'] },

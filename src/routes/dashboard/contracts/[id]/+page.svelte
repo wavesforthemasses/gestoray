@@ -25,6 +25,7 @@
     UserCheck,
     Building2,
     FolderKanban,
+    MapPin,
     ExternalLink,
     Receipt
   } from '@lucide/svelte';
@@ -283,6 +284,20 @@
               </a>
             {:else}
               <span class="info-val">{contract.projectName}</span>
+            {/if}
+          </div>
+        {/if}
+
+        {#if contract.placeName || contract.placeId}
+          <div class="info-row">
+            <span class="info-label"><MapPin size={14} /> Cantiere / Luogo Correlato</span>
+            {#if contract.placeId}
+              <a href="/dashboard/places/{contract.placeId}" class="project-link-badge" title="Apri Cantiere / Luogo">
+                <span>{contract.placeName || contract.placeId}</span>
+                <ExternalLink size={12} />
+              </a>
+            {:else}
+              <span class="info-val">{contract.placeName}</span>
             {/if}
           </div>
         {/if}

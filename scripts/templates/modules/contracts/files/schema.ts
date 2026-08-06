@@ -40,6 +40,8 @@ export interface ContractSettings {
   defaultInitialStatus?: ContractStatus;
   defaultTermsAndConditions?: string;
   nonRecurringEndDateMode?: NonRecurringEndDateMode;
+  enableProjectsBridge?: boolean;
+  enablePlacesBridge?: boolean;
 }
 
 export interface ContractItem {
@@ -52,6 +54,8 @@ export interface ContractItem {
   agentName?: string;
   projectId?: string;
   projectName?: string;
+  placeId?: string;
+  placeName?: string;
   type: ContractType;
   billingFrequency: RecurringFrequency;
   startDate: string;
