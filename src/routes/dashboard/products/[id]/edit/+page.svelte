@@ -2,7 +2,7 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { ProductsService } from '../../products.service';
   import type { ProductItem } from '../../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
@@ -13,7 +13,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { ArrowLeft, Pencil, Info, SlidersHorizontal, Save, AlertCircle, Zap } from '@lucide/svelte';
 
-  let productId = $derived(page.params.id);
+  let productId = $derived($page.params.id);
   let product = $state<ProductItem | null>(null);
 
   let customFieldsList = $state<CustomFieldDefinition[]>([]);

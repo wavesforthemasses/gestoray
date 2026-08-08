@@ -2,7 +2,8 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { ActivitiesService } from '../../activities.service';
   import type { ActivityItem, ActivityPriority, ActivityStatus } from '../../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
@@ -27,7 +28,7 @@
     Calendar
   } from '@lucide/svelte';
 
-  let activityId = $derived(page.params.id);
+  let activityId = $derived($page.params.id);
   let activity = $state<ActivityItem | null>(null);
 
   let users = $state<CacheLookupItem[]>([]);
@@ -222,7 +223,7 @@
         toast.success('Attività aggiornata con successo!');
       }
 
-      goto(`/dashboard/activities/${activityId}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/activities/${activityId}`);
     } catch (err: any) {
       console.error('Errore salvataggio attività:', err);
       errorMsg = err.message || 'Errore durante il salvataggio delle modifiche.';
@@ -238,9 +239,14 @@
 
 <div class="add-activity-page animate-fade-in">
   <div class="page-top">
-    <a href={`/dashboard/activities/${activityId}`} class="back-link">
-      <ArrowLeft size={14} /> Torna al Dettaglio Attività
-    </a>
+    <button 
+      type="button" 
+      class="back-link btn-back-context" 
+      onclick={() => NavigationService.navigateBack($page.url.searchParams, `/dashboard/activities/${activityId}`)}
+    >
+      <ArrowLeft size={14} /> 
+      <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna al Dettaglio Attività')}</span>
+    </button>
     <h2>
       <Pencil size={22} class="header-icon" /> Modifica Attività #{activityNumber || activityId}
     </h2>

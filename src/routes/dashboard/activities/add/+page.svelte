@@ -2,6 +2,7 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { NavigationService } from '$lib/services/navigationService';
   import { ActivitiesService } from '../activities.service';
   import type { ActivityPriority, ActivityStatus } from '../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
@@ -275,7 +276,7 @@
       }
 
       toast.success(dates.length > 1 ? `Create ${dates.length} attività nel gruppo!` : 'Attività creata con successo!');
-      goto(`/dashboard/activities/${firstActId}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/activities/${firstActId}`);
     } catch (err: any) {
       console.error('Errore salvataggio attività:', err);
       errorMsg = err.message || 'Errore durante la creazione dell\'attività.';
@@ -291,9 +292,16 @@
 
 <div class="add-activity-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/activities" class="back-link">
-      <ArrowLeft size={14} /> Torna alla Gestione Attività
-    </a>
+    <div class="nav-header-actions">
+      <button 
+        type="button" 
+        class="back-link btn-back-context" 
+        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/activities')}
+      >
+        <ArrowLeft size={14} /> 
+        <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna alla Gestione Attività')}</span>
+      </button>
+    </div>
     <h2>
       <ClipboardList size={22} class="header-icon" /> Nuova Attività Operativa
     </h2>

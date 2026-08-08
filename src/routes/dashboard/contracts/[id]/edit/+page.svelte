@@ -2,7 +2,7 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { menuConfigStore } from '$lib/stores/menu';
   import { Card } from '$lib';
   import { ContractsService } from '../../contracts.service';
@@ -20,7 +20,7 @@
   import ContractItemsSection from '../../components/ContractItemsSection.svelte';
   import ContractNotesSection from '../../components/ContractNotesSection.svelte';
 
-  const contractId = page.params.id || '';
+  const contractId = $page.params.id || '';
 
   function parsePriceNumber(val: any): number {
     if (val == null) return 0;

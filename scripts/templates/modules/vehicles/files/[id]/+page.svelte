@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { NavigationService } from '$lib/services/navigationService';
   import { VehiclesService } from '../vehicles.service';
   import { VehicleSettingsService } from '../vehicleSettingsService';
   import type { VehicleItem, VehicleSettings } from '../schema';
@@ -94,9 +95,14 @@
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href="/dashboard/vehicles" class="btn-back" title="Torna alla lista">
+        <button 
+          type="button" 
+          class="btn-back btn-back-context" 
+          onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/vehicles')}
+          title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+        >
           <ArrowLeft size={20} />
-        </a>
+        </button>
         <div class="header-icon">
           <Truck size={24} color="var(--color-primary-500)" />
         </div>
@@ -107,7 +113,7 @@
       </div>
 
       <div class="header-actions">
-        <a href={`/dashboard/vehicles/${vehicle.id}/edit`} class="btn-edit">
+        <a href={NavigationService.preserveParams(`/dashboard/vehicles/${vehicle.id}/edit`, $page.url.searchParams)} class="btn-edit">
           <Edit3 size={16} />
           <span>Modifica</span>
         </a>

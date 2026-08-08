@@ -8,6 +8,8 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { db, collection, getDocs, query, where } from '$lib/firebase';
   import { FileText, Eye, Plus } from '@lucide/svelte';
 
@@ -59,7 +61,7 @@
       <p class="bridge-sub">Gestisci i contratti di lavoro, accordi e preventivi associati a questo luogo/cantiere.</p>
     </div>
     <a 
-      href="/dashboard/contracts/add?placeId={placeId || ''}&clientId={clientId || ''}" 
+      href={NavigationService.buildAddUrl('/dashboard/contracts/add', { placeId, clientId }, $page.url.pathname)} 
       class="btn-create-contract"
     >
       <Plus size={16} />
@@ -77,7 +79,7 @@
       <h5 class="empty-title">Nessun Contratto Collegato</h5>
       <p class="empty-desc">Non è ancora presente alcun contratto o preventivo associato a questo luogo/cantiere.</p>
       <a 
-        href="/dashboard/contracts/add?placeId={placeId || ''}&clientId={clientId || ''}" 
+        href={NavigationService.buildAddUrl('/dashboard/contracts/add', { placeId, clientId }, $page.url.pathname)} 
         class="btn-create-contract-empty"
       >
         <Plus size={16} />

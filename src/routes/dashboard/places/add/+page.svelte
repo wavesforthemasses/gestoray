@@ -2,6 +2,8 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { PlacesService } from '../places.service';
   import { PlaceSettingsService } from '../placeSettingsService';
   import type { PlaceSettings, PlaceStatus } from '../schema';
@@ -91,7 +93,7 @@
 
       const newId = await PlacesService.createPlace(form, authState.user?.uid || '');
       toast.success(`${labels.singular} creato con successo!`);
-      goto(`/dashboard/places/${newId}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/places/${newId}`);
     } catch (err: any) {
       console.error('Errore salvataggio luogo:', err);
       toast.error('Errore durante il salvataggio: ' + (err.message || err));
@@ -108,9 +110,14 @@
 <div class="create-place-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/places" class="btn-back" title="Torna alla lista">
+      <button 
+        type="button" 
+        class="btn-back btn-back-context" 
+        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/places')}
+        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+      >
         <ArrowLeft size={20} />
-      </a>
+      </button>
       <div>
         <h1 class="page-main-title">Nuovo {labels.singular}</h1>
         <p class="page-main-subtitle">Inserisci un nuovo cantiere, luogo fisico o destinazione operativa.</p>

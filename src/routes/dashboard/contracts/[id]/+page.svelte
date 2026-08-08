@@ -1,7 +1,8 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { ContractsService } from '../contracts.service';
   import { ContractSettingsService } from '../contractSettingsService';
   import type { ContractItem, ContractInstallment, ContractStatus, ContractSettings } from '../schema';
@@ -30,7 +31,7 @@
     Receipt
   } from '@lucide/svelte';
 
-  const contractId = page.params.id || '';
+  const contractId = $page.params.id || '';
 
   let settings = $state<ContractSettings>({
     entityNaming: 'contract',
@@ -143,9 +144,14 @@
 </svelte:head>
 
 <div class="contract-detail-page animate-fade-in">
-  <a href="/dashboard/contracts" class="back-link">
-    <ArrowLeft size={16} /> Torna alla Gestione {labels.plural}
-  </a>
+  <button 
+    type="button" 
+    class="back-link btn-back-context" 
+    onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/contracts')}
+  >
+    <ArrowLeft size={16} /> 
+    <span>{NavigationService.getBackLabel($page.url.searchParams, `Torna alla Gestione ${labels.plural}`)}</span>
+  </button>
 
   {#if loading}
     <div class="loader-box">
@@ -181,7 +187,7 @@
         <button type="button" class="btn btn-secondary" onclick={printContract}>
           <Printer size={16} /> Stampa
         </button>
-        <a href="/dashboard/contracts/{contractId}/edit" class="btn btn-secondary">
+        <a href={NavigationService.preserveParams(`/dashboard/contracts/${contractId}/edit`, $page.url.searchParams)} class="btn btn-secondary">
           <Edit size={16} /> {labels.editSingular}
         </a>
       </div>

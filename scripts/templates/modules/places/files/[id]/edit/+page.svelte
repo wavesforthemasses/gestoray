@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { NavigationService } from '$lib/services/navigationService';
   import { PlacesService } from '../../places.service';
   import { PlaceSettingsService } from '../../placeSettingsService';
   import type { PlaceItem, PlaceSettings, PlaceStatus } from '../../schema';
@@ -106,7 +107,7 @@
 
       await PlacesService.updatePlace(place.id!, updatePayload);
       toast.success(`${labels.singular} aggiornato con successo!`);
-      goto(`/dashboard/places/${place.id}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/places/${place.id}`);
     } catch (err: any) {
       console.error('Errore modifica luogo:', err);
       toast.error('Errore durante il salvataggio: ' + (err.message || err));
@@ -123,9 +124,14 @@
 <div class="edit-place-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/places/{placeId}" class="btn-back" title="Torna al dettaglio">
+      <button 
+        type="button" 
+        class="btn-back btn-back-context" 
+        onclick={() => NavigationService.navigateBack($page.url.searchParams, `/dashboard/places/${placeId}`)}
+        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna al dettaglio')}
+      >
         <ArrowLeft size={20} />
-      </a>
+      </button>
       <div>
         <h1 class="page-main-title">Modifica {labels.singular}</h1>
         <p class="page-main-subtitle">Aggiorna le informazioni dell'ubicazione o del cantiere.</p>

@@ -2,7 +2,7 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { InterventiService } from '../../interventi.service';
   import { TeamsService } from '../../teams.service';
   import { VehiclesService } from '../../vehicles.service';

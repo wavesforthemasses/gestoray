@@ -1,6 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { onMount } from 'svelte';
   import { ActivitiesService } from '../activities.service';
   import type { ActivityItem, ActivityStatus, ActivityPriority } from '../schema';
@@ -59,9 +60,14 @@
 </svelte:head>
 
 <div class="activity-detail-page animate-fade-in">
-  <a href="/dashboard/activities" class="back-link">
-    <ArrowLeft size={14} /> Torna alla Gestione Attività
-  </a>
+  <button 
+    type="button" 
+    class="back-link btn-back-context" 
+    onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/activities')}
+  >
+    <ArrowLeft size={14} /> 
+    <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna alla Gestione Attività')}</span>
+  </button>
 
   {#if loading}
     <div class="loader-box">
@@ -90,7 +96,7 @@
         <button type="button" class="btn btn-secondary" onclick={printTask}>
           <Printer size={16} /> Stampa Task
         </button>
-        <a href="/dashboard/activities/{activityId}/edit" class="btn btn-secondary">
+        <a href={NavigationService.preserveParams(`/dashboard/activities/${activityId}/edit`, $page.url.searchParams)} class="btn btn-secondary">
           <Pencil size={16} /> Modifica Attività
         </a>
       </div>

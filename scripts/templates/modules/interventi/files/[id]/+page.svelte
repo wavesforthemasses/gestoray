@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { InterventiService } from '../interventi.service';
   import type { InterventionItem, InterventionConsuntivoItem } from '../schema';
   import { InterventionSettingsService, type InterventionSettingsConfig, DEFAULT_INTERVENTION_SETTINGS } from '$lib/services/interventionSettings';

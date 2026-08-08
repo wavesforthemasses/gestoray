@@ -2,6 +2,8 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { menuConfigStore } from '$lib/stores/menu';
   import { Card } from '$lib';
   import { ContractsService } from '../contracts.service';
@@ -406,7 +408,7 @@
       });
 
       toast.success(`${labels.singular} creato con successo!`);
-      goto(`/dashboard/contracts/${contractId}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/contracts/${contractId}`);
     } catch (err: any) {
       console.error('Errore salvataggio:', err);
       errorMsg = err.message || `Errore durante la creazione del ${labels.singular.toLowerCase()}.`;
@@ -437,9 +439,14 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        <a href="/dashboard/contracts" class="back-link">
-          <ArrowLeft size={14} /> Annulla e Torna all'elenco
-        </a>
+        <button 
+          type="button" 
+          class="back-link btn-back-context" 
+          onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/contracts')}
+        >
+          <ArrowLeft size={14} /> 
+          <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna all\'elenco contratti')}</span>
+        </button>
       {/snippet}
 
       {#if errorMsg}

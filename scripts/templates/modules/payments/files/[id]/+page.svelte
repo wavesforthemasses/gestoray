@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { PaymentsService } from '../payments.service';
   import type { PaymentItem, PaymentStatus } from '../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';

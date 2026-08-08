@@ -8,6 +8,8 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { db, collection, getDocs, query, where, orderBy } from '$lib/firebase';
   import { Calendar, Plus, Users, User, ArrowRight, CheckCircle2, Clock, AlertCircle } from '@lucide/svelte';
 
@@ -101,7 +103,7 @@
     </div>
 
     <a 
-      href="/dashboard/activities/add?placeId={placeId || ''}&clientId={clientId || ''}" 
+      href={NavigationService.buildAddUrl('/dashboard/activities/add', { placeId, clientId }, $page.url.pathname)} 
       class="btn-create-activity"
     >
       <Plus size={16} />

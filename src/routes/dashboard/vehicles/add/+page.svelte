@@ -2,6 +2,8 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { NavigationService } from '$lib/services/navigationService';
   import { VehiclesService } from '../vehicles.service';
   import { VehicleSettingsService } from '../vehicleSettingsService';
   import type { VehicleSettings, VehicleType, VehicleStatus } from '../schema';
@@ -58,7 +60,7 @@
         notes
       });
       toast.success(`${labels.singular} creato con successo!`);
-      goto('/dashboard/vehicles');
+      await NavigationService.submitSuccessReturn($page.url.searchParams, '/dashboard/vehicles');
     } catch (e) {
       console.error('Errore salvataggio mezzo:', e);
       toast.error('Errore durante il salvataggio');
@@ -75,9 +77,14 @@
 <div class="add-vehicle-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/vehicles" class="btn-back" title="Torna alla lista">
+      <button 
+        type="button" 
+        class="btn-back btn-back-context" 
+        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/vehicles')}
+        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+      >
         <ArrowLeft size={20} />
-      </a>
+      </button>
       <div class="header-icon">
         <Truck size={24} color="var(--color-primary-500)" />
       </div>

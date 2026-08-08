@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { NavigationService } from '$lib/services/navigationService';
   import { VehiclesService } from '../../vehicles.service';
   import { VehicleSettingsService } from '../../vehicleSettingsService';
   import type { VehicleSettings, VehicleType, VehicleStatus } from '../../schema';
@@ -76,7 +77,7 @@
         notes
       });
       toast.success(`${labels.singular} aggiornato con successo!`);
-      goto(`/dashboard/vehicles/${vehicleId}`);
+      await NavigationService.submitSuccessReturn($page.url.searchParams, `/dashboard/vehicles/${vehicleId}`);
     } catch (e) {
       console.error('Errore aggiornamento mezzo:', e);
       toast.error('Errore durante il salvataggio');
@@ -96,9 +97,14 @@
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href={`/dashboard/vehicles/${vehicleId}`} class="btn-back" title="Annulla">
+        <button 
+          type="button" 
+          class="btn-back btn-back-context" 
+          onclick={() => NavigationService.navigateBack($page.url.searchParams, `/dashboard/vehicles/${vehicleId}`)}
+          title={NavigationService.getBackLabel($page.url.searchParams, 'Torna al dettaglio')}
+        >
           <ArrowLeft size={20} />
-        </a>
+        </button>
         <div class="header-icon">
           <Truck size={24} color="var(--color-primary-500)" />
         </div>

@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { NavigationService } from '$lib/services/navigationService';
   import { PlacesService } from '../places.service';
   import { PlaceSettingsService } from '../placeSettingsService';
   import type { PlaceItem, PlaceStatus, PlaceSettings, PlaceAddress } from '../schema';
@@ -156,9 +157,14 @@
   {:else}
     <header class="detail-header">
       <div class="header-main">
-        <a href="/dashboard/places" class="btn-back" title="Torna alla lista">
+        <button 
+          type="button" 
+          class="btn-back btn-back-context" 
+          onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/places')}
+          title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+        >
           <ArrowLeft size={20} />
-        </a>
+        </button>
         <div>
           <div class="code-row">
             <span class="place-code">{place.code}</span>
@@ -169,7 +175,7 @@
       </div>
 
       <div class="header-actions">
-        <a href="/dashboard/places/{place.id}/edit" class="btn-secondary-action">
+        <a href={NavigationService.preserveParams(`/dashboard/places/${place.id}/edit`, $page.url.searchParams)} class="btn-secondary-action">
           <Pencil size={15} /> Modifica {labels.singular}
         </a>
         <button class="btn-danger-action" onclick={handleDelete}>

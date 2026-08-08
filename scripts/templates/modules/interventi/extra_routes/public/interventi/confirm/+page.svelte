@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { InterventiService } from '../../../dashboard/interventi/interventi.service';
   import type { InterventionItem } from '../../../dashboard/interventi/schema';
 

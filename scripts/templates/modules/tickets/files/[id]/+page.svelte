@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { TicketsService } from '../tickets.service';
   import type { TicketItem, TicketMessage } from '../schema';
