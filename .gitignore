@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 # Firebase private credentials
 service-account.json
 
+firebase-debug.log
+firestore-debug.log

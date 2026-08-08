@@ -4,15 +4,46 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft, Users, Plus } from '@lucide/svelte';
-  import { Card, SearchToolbar } from '$lib';
+  import { Card, SearchToolbar, UniversalAnalyticsChart } from '$lib';
+  import { DashboardService } from '../dashboard.service';
 
   import ClientAddForm from './components/ClientAddForm.svelte';
-  import ClientsChart from './components/ClientsChart.svelte';
   import ClientsTable from './components/ClientsTable.svelte';
   import { ClientsService } from './clients.service';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Gestione Clienti CRM');
 
+  let activeChartTab = $state<string>('nuove_anagrafiche');
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+  let loadingChart = $state(false);
+  let computedChartPoints = $state<number[]>([]);
+
+  $effect(() => {
+    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
+  });
+
+  async function loadChartData() {
+    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    loadingChart = true;
+    try {
+      const roleToUse = activeRoleState.role || '';
+      const uidToUse = authState.user?.uid || '';
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
+    } catch (e) {
+      console.error("Error loading clients chart data:", e);
+      computedChartPoints = chartPeriods.map(() => 0);
+    } finally {
+      loadingChart = false;
+    }
+  }
+
+  $effect(() => {
+    if (isGraphExpanded || granularity || endDateString || activeChartTab) {
+      loadChartData();
+    }
+  });
 
   $effect(() => {
     const currentRole = activeRoleState.role;
@@ -22,11 +53,9 @@
   });
 
   onMount(() => {
-
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
-
     fetchClients();
   });
 
@@ -85,8 +114,6 @@
   }
 </script>
 
-
-
 <div class="clients-page animate-fade-in">
   {#if !showAddForm}
     <div class="page-top-actions">
@@ -105,12 +132,24 @@
       {/if}
     </div>
 
-    <ClientsChart 
-      bind:isGraphExpanded 
-      onToggle={toggleGraph}
+    <UniversalAnalyticsChart 
+      title="Andamento Nuovi Lead e Performance Clienti"
+      description="Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei clienti in base al periodo selezionato."
+      metrics={[
+        { id: 'nuove_anagrafiche', label: 'Nuove Anagrafiche', shortLabel: 'NA' },
+        { id: 'nncf', label: 'Primi Ordini NNCF', shortLabel: 'NNCF' },
+        { id: 'vss', label: 'Valore Venduto', shortLabel: 'VSS', isCurrency: true },
+        { id: 'gi', label: 'Incassato', shortLabel: 'GI', isCurrency: true }
+      ]}
+      bind:activeMetric={activeChartTab}
+      bind:granularity
+      bind:endDateString
+      {chartPeriods}
+      {computedChartPoints}
       bind:selectedPointIdx
-      onPointSelect={(idx: number | null) => selectedPointIdx = idx}
-      bind:chartPeriods
+      {loadingChart}
+      collapsible={true}
+      bind:isExpanded={isGraphExpanded}
     />
 
     <SearchToolbar

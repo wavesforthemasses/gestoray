@@ -10,6 +10,7 @@ import ConfirmModal from './components/ConfirmModal.svelte';
 import StatusBadge from './components/StatusBadge.svelte';
 import KPITile from './components/KPITile.svelte';
 import TrendChart from './components/TrendChart.svelte';
+import UniversalAnalyticsChart from './components/UniversalAnalyticsChart.svelte';
 import MultiComplete from './components/MultiComplete.svelte';
 import SearchToolbar from './components/SearchToolbar.svelte';
 import FilterSelect from './components/FilterSelect.svelte';
@@ -32,6 +33,7 @@ export {
   StatusBadge,
   KPITile,
   TrendChart,
+  UniversalAnalyticsChart,
   MultiComplete,
   SearchToolbar,
   FilterSelect,
@@ -43,3 +45,4 @@ export {
 };
 
 export { generateSearchTerms } from './search-utils';
+export * from './types/moduleAnalyticsSettings';

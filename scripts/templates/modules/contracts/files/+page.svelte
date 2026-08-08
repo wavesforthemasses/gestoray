@@ -4,7 +4,9 @@
   import { ContractSettingsService } from './contractSettingsService';
   import type { ContractItem, ContractStatus, ContractSettings } from './schema';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Card, SearchToolbar, FilterSelect } from '$lib';
+  import { Card, SearchToolbar, FilterSelect, UniversalAnalyticsChart } from '$lib';
+  import { DashboardService } from '../dashboard.service';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
   import { 
     FileText, 
     Plus, 
@@ -34,6 +36,45 @@
   let loading = $state(true);
   let searchQuery = $state('');
   let activeStatusTab = $state<'tutti' | ContractStatus>('tutti');
+
+  let activeChartTab = $state<string>('vss');
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+  let isGraphExpanded = $state(false);
+  let selectedPointIdx = $state<number | null>(null);
+  let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
+  let loadingChart = $state(false);
+  let computedChartPoints = $state<number[]>([]);
+
+  $effect(() => {
+    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
+  });
+
+  async function loadChartData() {
+    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    loadingChart = true;
+    try {
+      const roleToUse = activeRoleState.role || '';
+      const uidToUse = authState.user?.uid || '';
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
+    } catch (e) {
+      console.error("Error loading contracts chart data:", e);
+      computedChartPoints = chartPeriods.map(() => 0);
+    } finally {
+      loadingChart = false;
+    }
+  }
+
+  $effect(() => {
+    if (isGraphExpanded || granularity || endDateString || activeChartTab) {
+      loadChartData();
+    }
+  });
+
+  function toggleGraph() {
+    isGraphExpanded = !isGraphExpanded;
+  }
 
   onMount(async () => {
     try {
@@ -155,6 +196,24 @@
       </div>
     </div>
   </div>
+
+  <UniversalAnalyticsChart 
+    title={`Andamento ${labels.plural} e Provvigioni`}
+    description={`Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei ${labels.plural.toLowerCase()} in base al periodo selezionato.`}
+    metrics={[
+      { id: 'vss', label: 'Valore Venduto (VSS)', shortLabel: 'VSS', isCurrency: true },
+      { id: 'provvigioni_maturate', label: 'Provvigioni Maturate', shortLabel: 'PM', isCurrency: true }
+    ]}
+    bind:activeMetric={activeChartTab}
+    bind:granularity
+    bind:endDateString
+    {chartPeriods}
+    {computedChartPoints}
+    bind:selectedPointIdx
+    {loadingChart}
+    collapsible={true}
+    bind:isExpanded={isGraphExpanded}
+  />
 
   <!-- FILTERS & SEARCH TOOLBAR -->
   <SearchToolbar
