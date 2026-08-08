@@ -439,3 +439,135 @@ a.btn-create:active {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
+
+/* ==========================================================================
+   UNIFIED CONTEXTUAL BACK BUTTON (PREMIUM SLEEK PILL)
+   ========================================================================== */
+.back-link,
+.btn-back-context,
+.btn-back,
+.back-link-btn,
+button.back-link,
+button.btn-back-context,
+button.btn-back,
+a.back-link,
+a.btn-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  background: #ffffff !important;
+  border: 1px solid var(--color-neutral-300) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--color-neutral-700) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: var(--shadow-sm) !important;
+  width: fit-content !important;
+  max-width: fit-content !important;
+  margin-bottom: 16px !important;
+  outline: none !important;
+}
+
+.back-link:hover,
+.btn-back-context:hover,
+.btn-back:hover,
+.back-link-btn:hover,
+button.back-link:hover,
+button.btn-back-context:hover,
+button.btn-back:hover,
+a.back-link:hover,
+a.btn-back:hover {
+  background: var(--color-neutral-100) !important;
+  border-color: var(--color-primary-400) !important;
+  color: var(--color-primary-600) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   UNIFIED SECONDARY BUTTONS & ACTION LINKS
+   ========================================================================== */
+.btn-secondary,
+.btn-secondary-action,
+.btn-neutral,
+.action-link,
+a.btn-secondary,
+button.btn-secondary,
+a.action-link,
+button.btn-secondary-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 8px 14px !important;
+  background: #ffffff !important;
+  border: 1px solid var(--color-neutral-300) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--color-neutral-700) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: var(--shadow-sm) !important;
+  outline: none !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary-action:hover,
+.btn-neutral:hover,
+.action-link:hover,
+a.btn-secondary:hover,
+button.btn-secondary:hover,
+a.action-link:hover,
+button.btn-secondary-action:hover {
+  background: var(--color-neutral-100) !important;
+  border-color: var(--color-primary-400) !important;
+  color: var(--color-primary-600) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   UNIFIED DANGER BUTTONS
+   ========================================================================== */
+.btn-danger,
+.btn-danger-action,
+button.btn-danger,
+button.btn-danger-action,
+a.btn-danger {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 8px 14px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: var(--radius-md) !important;
+  color: #dc2626 !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.btn-danger:hover,
+.btn-danger-action:hover,
+button.btn-danger:hover,
+button.btn-danger-action:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px) !important;
+}

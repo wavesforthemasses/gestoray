@@ -527,8 +527,30 @@
 <style>
   .add-activity-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
   .page-top { display: flex; flex-direction: column; gap: 0.4rem; }
-  .back-link { color: var(--color-neutral-500); font-size: 0.85rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-  .back-link:hover { color: var(--color-primary-600); }
+  .back-link { 
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    padding: 8px 16px;
+    color: var(--color-neutral-700);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+  .back-link:hover {
+    background: var(--color-neutral-100);
+    border-color: var(--color-primary-400);
+    color: var(--color-primary-600);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
   h2 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 8px; }
   :global(.header-icon) { color: var(--color-primary-500); }
 

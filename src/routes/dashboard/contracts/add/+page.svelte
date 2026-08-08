@@ -558,6 +558,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    cursor: pointer;
+    width: fit-content;
   }
 
   .back-link:hover {
