@@ -232,7 +232,7 @@
   .filter-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1rem; }
   
   .search-box { position: relative; width: 100%; display: flex; align-items: center; }
-  :global(.search-icon) { position: absolute; left: 12px; color: var(--color-neutral-400); }
+  :global(.search-icon) { position: absolute; left: 12px; color: var(--color-neutral-400); top: 50%; transform: translateY(-50%); }
   .search-input { width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.4rem; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); font-size: 0.9rem; outline: none; box-sizing: border-box; }
 
   .table-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }

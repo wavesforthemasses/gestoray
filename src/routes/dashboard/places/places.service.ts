@@ -1,15 +1,15 @@
-import { 
-  db, 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
+import {
+  db,
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
   where,
-  orderBy 
+  orderBy
 } from '$lib/firebase';
 import type { PlaceItem } from './schema';
 import { PlaceSettingsService } from './placeSettingsService';
@@ -82,7 +82,7 @@ export class PlacesService {
         const clientSnap = await getDoc(doc(db, 'clients', data.clientId));
         if (clientSnap.exists()) {
           const cd = clientSnap.data();
-          clientName = cd.name || cd.companyName || cd.original?.name || cd.original?.ragioneSociale || '';
+          clientName = cd.name || cd.nome || cd.companyName || cd.original?.name || cd.original?.nome || cd.original?.ragioneSociale || '';
         }
       } catch (e) {
         console.warn('Errore lettura clientName:', e);
@@ -135,7 +135,7 @@ export class PlacesService {
         const clientSnap = await getDoc(doc(db, 'clients', cid));
         if (clientSnap.exists()) {
           const cd = clientSnap.data();
-          clientName = cd.name || cd.companyName || cd.original?.name || cd.original?.ragioneSociale || '';
+          clientName = cd.name || cd.nome || `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.companyName || cd.ragioneSociale || cd.denominazione || cd.original?.name || cd.original?.nome || cd.original?.ragioneSociale || '';
         }
       } catch (e) {
         console.warn('Errore lettura clientName update:', e);

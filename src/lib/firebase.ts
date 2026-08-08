@@ -102,5 +102,6 @@ export {
   or,
   onSnapshot,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';

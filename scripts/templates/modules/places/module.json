@@ -19,11 +19,6 @@
     "icon": "MapPin",
     "path": "/dashboard/settings/places"
   },
-  "clientQuickAction": {
-    "label": "Nuovo Luogo",
-    "title": "Crea un nuovo luogo per questo cliente",
-    "tab": "places"
-  },
   "rolesView": [
     "superadmin",
     "direzione",

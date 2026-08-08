@@ -6,5 +6,8 @@ export const KPI_LEGEND: Record<string, { label: string; description: string }> 
   TF: { label: 'Telefonate Fatte', description: 'Numero totale di telefonate loggate a sistema.' },
   IF: { label: 'Incontri Fatti', description: 'Numero totale di incontri loggati a sistema.' },
   AF: { label: 'Appuntamenti Fissati', description: 'Numero totale di appuntamenti loggati a sistema.' },
-  PM: { label: 'Provvigioni Maturate', description: 'Totale delle provvigioni calcolate sui contratti incassati.' }
+  PM: { label: 'Provvigioni Maturate', description: 'Totale delle provvigioni calcolate sui contratti incassati.' },
+  PORTAFOGLIO_LAVORI: { label: 'Portafoglio Lavori', description: 'Valore economico totale stimato delle commesse/progetti in corso.' },
+  PROJECTS_ATTIVI: { label: 'Progetti Attivi', description: 'Numero totale di progetti o commesse attualmente in corso.' },
+  PLACES_ATTIVI: { label: 'Luoghi / Cantieri Attivi', description: 'Numero totale di luoghi fisici o cantieri operativi attivi.' }
 };

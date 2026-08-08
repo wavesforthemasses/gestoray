@@ -58,8 +58,7 @@
 
   let filteredProjects = $derived.by(() => {
     if (!clientId) return projects;
-    const matches = projects.filter(p => !p.clientId || p.clientId === clientId);
-    return matches.length > 0 ? matches : projects;
+    return projects.filter(p => !p.clientId || p.clientId === clientId);
   });
 
   let projectOptions = $derived(
@@ -68,13 +67,38 @@
 
   let filteredPlaces = $derived.by(() => {
     if (!clientId) return places;
-    const matches = places.filter(p => !p.clientId || p.clientId === clientId);
-    return matches.length > 0 ? matches : places;
+    return places.filter(p => !p.clientId || p.clientId === clientId);
   });
 
   let placeOptions = $derived(
     filteredPlaces.map(p => ({ id: p.id, label: p.name }))
   );
+
+  $effect(() => {
+    if (placeId) {
+      const currentPlace = places.find(p => p.id === placeId);
+      if (currentPlace && currentPlace.clientId) {
+        if (!clientId) {
+          clientId = currentPlace.clientId;
+        } else if (currentPlace.clientId !== clientId) {
+          placeId = '';
+        }
+      }
+    }
+  });
+
+  $effect(() => {
+    if (projectId) {
+      const currentProj = projects.find(p => p.id === projectId);
+      if (currentProj && currentProj.clientId) {
+        if (!clientId) {
+          clientId = currentProj.clientId;
+        } else if (currentProj.clientId !== clientId) {
+          projectId = '';
+        }
+      }
+    }
+  });
 
   let productsCatalog = $state<any[]>([]);
   let productOptions = $derived(
@@ -206,8 +230,14 @@
 
       if ($menuConfigStore.some(m => m.id === 'products')) {
         try {
-          const { ProductsService } = await import('../../../products/products.service');
-          productsCatalog = await ProductsService.getProducts();
+          const servicePath = '../../../products/products.service';
+          // @ts-ignore
+          const mod = await import(/* @vite-ignore */ servicePath);
+          if (mod?.ProductsService) {
+            productsCatalog = await mod.ProductsService.getProducts();
+          } else {
+            productsCatalog = await CacheLookupService.getLookup('products');
+          }
         } catch (e) {
           console.warn('Fallback cache prodotti:', e);
           productsCatalog = await CacheLookupService.getLookup('products');
@@ -215,19 +245,27 @@
       }
 
       try {
-        const { ProjectsService } = await import('../../../projects/projects.service');
-        const { ProjectSettingsService } = await import('../../../projects/projectSettingsService');
-        const [projectsList, settings] = await Promise.all([
-          ProjectsService.getProjects(),
-          ProjectSettingsService.getSettings()
-        ]);
-        projects = projectsList.map((c: any) => ({
-          id: c.id!,
-          name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
-          clientId: c.clientId
-        }));
-        projectLabel = ProjectSettingsService.getLabels(settings).singular;
-        hasProjectsModule = true;
+        const sPath = '../../../projects/projects.service';
+        const setPath = '../../../projects/projectSettingsService';
+        // @ts-ignore
+        const modProj = await import(/* @vite-ignore */ sPath);
+        // @ts-ignore
+        const modSet = await import(/* @vite-ignore */ setPath);
+        if (modProj?.ProjectsService && modSet?.ProjectSettingsService) {
+          const [projectsList, settings] = await Promise.all([
+            modProj.ProjectsService.getProjects(),
+            modSet.ProjectSettingsService.getSettings()
+          ]);
+          projects = projectsList.map((c: any) => ({
+            id: c.id!,
+            name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
+            clientId: c.clientId
+          }));
+          projectLabel = modSet.ProjectSettingsService.getLabels(settings).singular;
+          hasProjectsModule = true;
+        } else {
+          throw new Error('Projects module non disponibile');
+        }
       } catch (e) {
         try {
           projects = await CacheLookupService.getLookup('projects');
@@ -239,19 +277,27 @@
       }
 
       try {
-        const { PlacesService } = await import('../../../places/places.service');
-        const { PlaceSettingsService } = await import('../../../places/placeSettingsService');
-        const [placesList, pSettings] = await Promise.all([
-          PlacesService.getPlaces(),
-          PlaceSettingsService.getSettings()
-        ]);
-        places = placesList.map((c: any) => ({
-          id: c.id!,
-          name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
-          clientId: c.clientId
-        }));
-        placeLabel = PlaceSettingsService.getLabels(pSettings).singular;
-        hasPlacesModule = true;
+        const plPath = '../../../places/places.service';
+        const plSetPath = '../../../places/placeSettingsService';
+        // @ts-ignore
+        const modPl = await import(/* @vite-ignore */ plPath);
+        // @ts-ignore
+        const modPlSet = await import(/* @vite-ignore */ plSetPath);
+        if (modPl?.PlacesService && modPlSet?.PlaceSettingsService) {
+          const [placesList, pSettings] = await Promise.all([
+            modPl.PlacesService.getPlaces(),
+            modPlSet.PlaceSettingsService.getSettings()
+          ]);
+          places = placesList.map((c: any) => ({
+            id: c.id!,
+            name: `${c.code || ''} - ${c.name || ''}`.replace(/^ - /, ''),
+            clientId: c.clientId
+          }));
+          placeLabel = modPlSet.PlaceSettingsService.getLabels(pSettings).singular;
+          hasPlacesModule = true;
+        } else {
+          throw new Error('Places module non disponibile');
+        }
       } catch (e) {
         try {
           places = await CacheLookupService.getLookup('places');

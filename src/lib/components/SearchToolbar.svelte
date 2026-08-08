@@ -81,7 +81,7 @@
     position: absolute;
     left: 12px;
     color: var(--color-neutral-400, #9ca3af);
-    pointer-events: none;
+    pointer-events: none; top: 50%; transform: translateY(-50%);
   }
 
   .search-box input {

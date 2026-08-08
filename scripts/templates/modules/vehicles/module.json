@@ -1,0 +1,94 @@
+{
+  "id": "vehicles",
+  "label": "Mezzi & Attrezzature",
+  "description": "Anagrafica dei mezzi aziendali, furgoni, macchinari e strumenti di lavoro.",
+  "icon": "Truck",
+  "requirements": [],
+  "path": "/dashboard/vehicles",
+  "kpiBridgePath": "/dashboard/vehicles/vehicles.kpi.bridge.ts",
+  "clientTabs": [],
+  "settingsCard": {
+    "title": "Configurazione Mezzi & Attrezzature",
+    "description": "Denominazione agnostica (Mezzo/Furgone/Macchinario/Strumento), prefissi numerazione, stati predefiniti.",
+    "icon": "Truck",
+    "path": "/dashboard/settings/vehicles"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione",
+    "commerciale",
+    "tecnico"
+  ],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "vehicles_disponibili",
+      "title": "Mezzi Disponibili",
+      "subtitle": "Parco mezzi operativo pronto",
+      "icon": "Truck",
+      "valueKey": "availableVehiclesCount",
+      "aggregation": {
+        "collection": "vehicles",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    }
+  ],
+  "anonymization": {
+    "collectionName": "vehicles",
+    "linkFieldPath": "id",
+    "redactFields": [
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      }
+    ]
+  },
+  "schema": {
+    "fields": {
+      "code": {
+        "type": "string",
+        "description": "Codice identificativo del mezzo (es. VEH-2026-001)",
+        "tags": [
+          "search",
+          "sort"
+        ]
+      },
+      "name": {
+        "type": "string",
+        "description": "Marca, modello o nome identificativo del mezzo",
+        "tags": [
+          "search",
+          "display"
+        ]
+      },
+      "licensePlate": {
+        "type": "string",
+        "description": "Targa del veicolo o numero seriale dello strumento",
+        "tags": [
+          "search"
+        ]
+      },
+      "type": {
+        "type": "string",
+        "description": "Tipologia (furgone, autocarro, macchinario, attrezzatura, altro)",
+        "tags": [
+          "filter:type"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato operativo (disponibile, in_uso, manutenzione, dismesso)",
+        "tags": [
+          "filter:status",
+          "kpi:vehicles_disponibili"
+        ]
+      }
+    }
+  }
+}

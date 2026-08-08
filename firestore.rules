@@ -89,6 +89,12 @@ service cloud.firestore {
       allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
     }
 
+    // UNITS OF MEASURE
+    match /units_of_measure/{unitId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+    }
+
     // LOGIN PINS
     match /login_pins/{email} {
       allow read, write: if false;
@@ -122,26 +128,6 @@ service cloud.firestore {
       }
     }
 
-    // --- MODULE: places BEGIN ---
-    // PLACES
-match /places/{placeId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: places END ---
-
-    // --- MODULE: projects BEGIN ---
-    // PROJECTS
-match /projects/{projectId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: projects END ---
-
     // --- MODULE: products BEGIN ---
     // PRODUCTS
 match /products/{docId} {
@@ -164,5 +150,61 @@ match /{path=**}/installments/{instId} {
   allow write: if isAuth();
 }
     // --- MODULE: contracts END ---
+
+    // --- MODULE: activities BEGIN ---
+    // ACTIVITIES
+match /activities/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+match /activity_types/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: activities END ---
+
+    // --- MODULE: places BEGIN ---
+    // PLACES
+match /places/{placeId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: places END ---
+
+    // --- MODULE: vehicles BEGIN ---
+    // VEHICLES
+match /vehicles/{vehicleId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: vehicles END ---
+
+    // --- MODULE: teams BEGIN ---
+    // TEAMS
+match /teams/{teamId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: teams END ---
+
+    // --- MODULE: scheduling BEGIN ---
+    match /scheduling/{scheduleId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (hasRole('superadmin') || hasRole('direzione') || hasRole('amministrazione'));
+}
+    // --- MODULE: scheduling END ---
+
+    // --- MODULE: deadlines BEGIN ---
+    match /deadlines/{deadlineId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+    // --- MODULE: deadlines END ---
   }
 }

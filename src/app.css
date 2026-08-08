@@ -62,6 +62,8 @@
 
   /* Neutral scale (between white and black) generated dynamically using saturation */
   --color-white: #ffffff;
+  --color-surface: #ffffff;
+  --color-card-border: hsl(var(--brand-h), var(--neutral-s), 90%);
   --color-neutral-50: hsl(var(--brand-h), var(--neutral-s), 98%);
   /* Overall screen background */
   --color-neutral-100: hsl(var(--brand-h), var(--neutral-s), 96%);
@@ -339,7 +341,9 @@ a:hover {
 }
 
 @media (max-width: 768px) {
-  .grid-cols-2, .grid-cols-3 {
+
+  .grid-cols-2,
+  .grid-cols-3 {
     grid-template-columns: 1fr;
   }
 }
@@ -360,4 +364,78 @@ a:hover {
 
 .export-btn:active {
   transform: translateY(1px);
+}
+
+/* ==========================================================================
+   STANDARD TOP HEADER ACTION BUTTONS (MANDATORY UNIFIED DESIGN)
+   ========================================================================== */
+.btn-create,
+.btn-create-activity,
+.btn-create-vehicle,
+.btn-create-team,
+.btn-create-place,
+.btn-primary,
+a.btn-create,
+button.btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-neutral-900) !important;
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-create:hover,
+.btn-create-activity:hover,
+.btn-create-vehicle:hover,
+.btn-create-team:hover,
+.btn-create-place:hover,
+.btn-primary:hover,
+a.btn-create:hover,
+button.btn-create:hover {
+  background: var(--color-neutral-800) !important;
+  transform: translateY(-1px);
+  color: #ffffff !important;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-create:active,
+a.btn-create:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   UNIFIED CARD & TOOLBAR CONTAINER STYLING (MANDATORY SOLID WHITE BACKGROUND)
+   ========================================================================== */
+.card,
+.app-card,
+.form-card,
+.table-card,
+.filter-card,
+.toolbar-card,
+.stat-card,
+.list-card,
+.search-toolbar-card,
+.contact-card,
+.team-card,
+.vehicle-card,
+.place-card,
+.client-card,
+.user-card,
+.empty-card,
+.empty-state,
+.loader-box,
+.loading-state {
+  background: #ffffff !important;
+  border: 1px solid var(--color-neutral-200) !important;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }

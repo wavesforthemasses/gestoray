@@ -1,0 +1,4 @@
+match /deadlines/{deadlineId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}

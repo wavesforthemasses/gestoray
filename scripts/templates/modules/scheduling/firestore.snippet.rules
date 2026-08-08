@@ -1,0 +1,4 @@
+match /scheduling/{scheduleId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (hasRole('superadmin') || hasRole('direzione') || hasRole('amministrazione'));
+}

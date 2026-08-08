@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   
   import { UsersService, type UserData } from './users.service';
+  import { TeamsService } from '../teams/teams.service';
   import { QualificationsService, type Qualification } from '$lib/services/qualifications';
   import UsersTable from './components/UsersTable.svelte';
   import UserAddForm from './components/UserAddForm.svelte';
@@ -27,6 +28,7 @@
   let showAddForm = $state(false);
   let registeredUsers = $state<UserData[]>([]);
   let qualificationsList = $state<Qualification[]>([]);
+  let userTeams = $state<Record<string, { id: string, name: string }>>({});
 
   // Search & Filter state
   let searchVal = $state('');
@@ -79,14 +81,25 @@
 
   async function fetchUsers() {
     try {
-      const [users, quals] = await Promise.all([
+      const [users, quals, teamsList] = await Promise.all([
         UsersService.getUsers(searchVal, filterStatus, filterRole),
-        QualificationsService.getAll()
+        QualificationsService.getAll(),
+        TeamsService.getTeams()
       ]);
       registeredUsers = users;
       qualificationsList = quals;
+
+      const map: Record<string, { id: string, name: string }> = {};
+      for (const t of teamsList) {
+        if (t.members) {
+          for (const m of t.members) {
+            map[m.userId] = { id: t.id, name: t.name };
+          }
+        }
+      }
+      userTeams = map;
     } catch (e) {
-      console.error('Error fetching users/qualifications:', e);
+      console.error('Error fetching users/qualifications/teams:', e);
     }
   }
 
@@ -162,6 +175,7 @@
 
     <UsersTable 
       users={registeredUsers} 
+      {userTeams}
       activeRole={activeRoleState.role} 
       onAddClick={() => showAddForm = true} 
       onAnonymizeClick={handleAnonymizeClick}
@@ -261,7 +275,7 @@
   :global(.search-icon) {
     position: absolute;
     left: 12px;
-    color: var(--color-neutral-400, #9ca3af);
+    color: var(--color-neutral-400, #9ca3af); top: 50%; transform: translateY(-50%);
   }
 
   .search-box input {

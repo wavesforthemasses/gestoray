@@ -1,15 +1,17 @@
+<script module lang="ts">
+  export const bridgeMetadata = {
+    id: 'contracts',
+    sourceModule: 'contracts',
+    label: 'Preventivi & Contratti'
+  };
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import { db, collection, getDocs, query, where } from '$lib/firebase';
   import { FileText, Eye, Plus } from '@lucide/svelte';
 
   let { placeId, clientId }: { placeId?: string; clientId?: string } = $props();
-
-  export const bridgeMetadata = {
-    id: 'contracts',
-    sourceModule: 'contracts',
-    label: 'Preventivi & Contratti'
-  };
 
   let contractsList = $state<any[]>([]);
   let loading = $state(true);

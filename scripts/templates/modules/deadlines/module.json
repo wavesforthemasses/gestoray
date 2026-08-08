@@ -1,0 +1,95 @@
+{
+  "id": "deadlines",
+  "label": "Scadenzario & Allarmi",
+  "description": "Motore di allarmi ed avvisi automatici per scadenze furgoni, visite mediche, corsi sicurezza, contratti e certificazioni.",
+  "icon": "AlertTriangle",
+  "requirements": [],
+  "path": "/dashboard/deadlines",
+  "kpiBridgePath": "/dashboard/deadlines/deadlines.kpi.bridge.ts",
+  "clientTabs": [],
+  "settingsCard": {
+    "title": "Configurazione Scadenzario & Allarmi",
+    "description": "Giorni di preavviso allarmi, categorie abilitate, numerazione ed automatismi notifiche.",
+    "icon": "AlertTriangle",
+    "path": "/dashboard/settings/deadlines"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione",
+    "commerciale",
+    "tecnico"
+  ],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "deadlines_in_scadenza",
+      "title": "Scadenze Imminenti",
+      "subtitle": "Prossimi 30 giorni",
+      "icon": "AlertTriangle",
+      "valueKey": "upcomingDeadlinesCount",
+      "aggregation": {
+        "collection": "deadlines",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    }
+  ],
+  "anonymization": {
+    "collectionName": "deadlines",
+    "linkFieldPath": "linkedEntityId",
+    "redactFields": [
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      }
+    ]
+  },
+  "schema": {
+    "fields": {
+      "code": {
+        "type": "string",
+        "description": "Codice scadenza (es. DDL-2026-0001)",
+        "tags": [
+          "search",
+          "sort"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "description": "Titolo o oggetto della scadenza",
+        "tags": [
+          "search",
+          "display"
+        ]
+      },
+      "category": {
+        "type": "string",
+        "description": "Categoria scadenza (vehicle_inspection, medical_checkup, safety_course, contract_expiry, ecc.)",
+        "tags": [
+          "filter:category"
+        ]
+      },
+      "expiryDate": {
+        "type": "date",
+        "description": "Data di scadenza (YYYY-MM-DD)",
+        "tags": [
+          "filter:date",
+          "sort:default"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato alert (attiva, in_scadenza, scaduta, rinnovata, archiviata)",
+        "tags": [
+          "filter:status",
+          "kpi:deadlines_in_scadenza"
+        ]
+      }
+    }
+  }
+}

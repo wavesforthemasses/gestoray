@@ -6,13 +6,14 @@
 
   interface Props {
     users: UserData[];
+    userTeams: Record<string, { id: string, name: string }>;
     activeRole: string;
     onAddClick: () => void;
     onAnonymizeClick?: (uid: string) => void;
     onToggleStatusClick?: (uid: string, currentIsActive: boolean) => void;
   }
 
-  let { users, activeRole, onAddClick, onAnonymizeClick, onToggleStatusClick } = $props();
+  let { users, userTeams, activeRole, onAddClick, onAnonymizeClick, onToggleStatusClick } = $props();
 
   let currentPage = $state(1);
   const itemsPerPage = 5;
@@ -26,6 +27,7 @@
     { key: 'cognome', header: 'Cognome' },
     { key: 'email', header: 'Indirizzo Email' },
     { key: 'roles', header: 'Ruoli Assegnati' },
+    { key: 'squadra', header: 'Squadra' },
     { key: 'status', header: 'Stato' },
     { key: 'azioni', header: 'Azioni' }
   ];
@@ -58,6 +60,16 @@
           <span class="status-pill status-active">✓ Attivo</span>
         {:else}
           <span class="status-pill status-inactive">✕ Disattivato</span>
+        {/if}
+      {:else if col.key === 'squadra'}
+        {#if userTeams[row.uid]}
+          <a href={`/dashboard/teams/${userTeams[row.uid].id}`} class="team-link" onclick={(e) => e.stopPropagation()}>
+            <span class="team-tag">{userTeams[row.uid].name}</span>
+          </a>
+        {:else if row.roles.includes('tecnico') || row.roles.includes('operaio')}
+          <span class="team-unassigned">Non Assegnato</span>
+        {:else}
+          <span class="team-na">-</span>
         {/if}
       {:else if col.key === 'azioni'}
         {#if activeRole === 'superadmin'}
@@ -232,5 +244,34 @@
   .btn-danger-icon:hover {
     background: var(--color-red-50);
     color: var(--color-red-700);
+  }
+
+  .team-link {
+    text-decoration: none;
+  }
+  .team-link:hover .team-tag {
+    background: #D1FAE5;
+  }
+  .team-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    background: #ECFDF5;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #10B981;
+    display: inline-block;
+    transition: background 0.2s;
+  }
+  .team-unassigned {
+    font-size: 11px;
+    font-weight: 500;
+    color: #D97706;
+    background: #FEF3C7;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .team-na {
+    color: var(--color-neutral-400);
   }
 </style>

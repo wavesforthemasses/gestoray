@@ -70,9 +70,13 @@
 
       if (c && c.projectId) {
         try {
-          const { ProjectSettingsService } = await import('../../projects/projectSettingsService');
-          const ps = await ProjectSettingsService.getSettings();
-          projectLabel = ProjectSettingsService.getLabels(ps).singular;
+          const setPath = '../../projects/projectSettingsService';
+          // @ts-ignore
+          const modSet = await import(/* @vite-ignore */ setPath);
+          if (modSet?.ProjectSettingsService) {
+            const ps = await modSet.ProjectSettingsService.getSettings();
+            projectLabel = modSet.ProjectSettingsService.getLabels(ps).singular;
+          }
         } catch (e) {}
       }
 

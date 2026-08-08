@@ -15,7 +15,8 @@ import {
 import type { 
   InterventionItem, 
   LocationItem, 
-  InterventionConsuntivoItem 
+  InterventionConsuntivoItem,
+  WorkOrderPhase
 } from './schema';
 import { InterventionSettingsService } from '$lib/services/interventionSettings';
 
@@ -74,6 +75,35 @@ export class InterventiService {
     };
   }
 
+  static async getInterventionsByPhase(phases?: WorkOrderPhase[]): Promise<InterventionItem[]> {
+    const all = await this.getInterventions();
+    if (!phases || phases.length === 0) return all;
+    return all.filter(item => {
+      const p = item.phase || (item.status as WorkOrderPhase) || 'pianificato';
+      return phases.includes(p);
+    });
+  }
+
+  static async promotePhase(id: string, nextPhase: WorkOrderPhase, extraData?: Partial<InterventionItem>): Promise<void> {
+    const item = await this.getInterventionById(id);
+    if (!item) throw new Error('Intervento non trovato');
+
+    const updatePayload: Partial<InterventionItem> & Record<string, any> = {
+      phase: nextPhase,
+      status: (nextPhase === 'bozza' ? 'pianificato' : nextPhase === 'firmato' ? 'completato' : nextPhase) as any,
+      ...extraData,
+      updatedAt: serverTimestamp()
+    };
+
+    if (nextPhase === 'in_lavorazione' && !item.executedStartAt) {
+      updatePayload.executedStartAt = new Date().toISOString();
+    } else if (nextPhase === 'completato' && !item.executedEndAt) {
+      updatePayload.executedEndAt = new Date().toISOString();
+    }
+
+    await updateDoc(doc(db, this.COLLECTION_NAME, id), updatePayload);
+  }
+
   static async createIntervention(data: Partial<InterventionItem>, userUid?: string): Promise<string> {
     const settings = await InterventionSettingsService.getSettings();
     const unitPrice = data.unitPriceSnapshot ?? data.hourlyRateSnapshot ?? settings.defaultHourlyRate;
@@ -83,6 +113,14 @@ export class InterventiService {
     if (data.mode === 'a_bolla') {
       totalEstimated = estQty * unitPrice;
     }
+
+    const assignedEntities = data.assignedEntities || [];
+    const derivedVehicleIds = assignedEntities.filter(a => a.entityType === 'vehicle').map(a => a.entityId);
+    const derivedOperatorUids = assignedEntities.filter(a => a.entityType === 'user').map(a => a.entityId);
+    const derivedTeam = assignedEntities.find(a => a.entityType === 'team');
+
+    const scheduledDate = data.scheduledDate || (data.scheduledStartAt ? data.scheduledStartAt.slice(0, 10) : undefined);
+    const defaultPhase: WorkOrderPhase = data.phase || (scheduledDate || data.scheduledStartAt ? 'pianificato' : 'bozza');
 
     const payload: Partial<InterventionItem> = {
       title: data.title || `${data.type || 'Intervento'} - ${data.clientName || 'Cliente'}`,
@@ -95,24 +133,37 @@ export class InterventiService {
       contractTitle: data.contractTitle || '',
       ticketId: data.ticketId || '',
       ticketSubject: data.ticketSubject || '',
-      teamId: data.teamId || '',
-      teamName: data.teamName || '',
-      assignedOperatorUids: data.assignedOperatorUids || [],
-      vehicleIds: data.vehicleIds || [],
+
+      phase: defaultPhase,
+      category: data.category || 'intervention',
+      priority: data.priority || 'media',
+      dueDate: data.dueDate || '',
+
+      assignedEntities: assignedEntities,
+      teamId: data.teamId || derivedTeam?.entityId || '',
+      teamName: data.teamName || derivedTeam?.entityName || '',
+      assignedOperatorUids: data.assignedOperatorUids && data.assignedOperatorUids.length > 0 ? data.assignedOperatorUids : derivedOperatorUids,
+      vehicleIds: data.vehicleIds && data.vehicleIds.length > 0 ? data.vehicleIds : derivedVehicleIds,
       type: data.type || 'Manutenzione',
       pricingUnit: data.pricingUnit || 'ora',
       unitPriceSnapshot: unitPrice,
       hourlyRateSnapshot: unitPrice,
       mode: data.mode || 'a_bolla',
-      status: data.status || 'pianificato',
-      scheduledStartAt: data.scheduledStartAt || new Date().toISOString(),
-      scheduledEndAt: data.scheduledEndAt || new Date(Date.now() + 7200000).toISOString(),
+      status: (data.status || (defaultPhase === 'bozza' ? 'pianificato' : defaultPhase)) as any,
+
+      scheduledDate: scheduledDate,
+      scheduledSlot: data.scheduledSlot || 'giornata_intera',
+      scheduledCustomStart: data.scheduledCustomStart,
+      scheduledCustomEnd: data.scheduledCustomEnd,
+      scheduledStartAt: data.scheduledStartAt || (scheduledDate ? `${scheduledDate}T08:00:00.000Z` : new Date().toISOString()),
+      scheduledEndAt: data.scheduledEndAt || (scheduledDate ? `${scheduledDate}T17:00:00.000Z` : new Date(Date.now() + 7200000).toISOString()),
       estimatedQuantity: estQty,
       estimatedHours: estQty,
       actualQuantityWorked: data.actualQuantityWorked || 0,
       actualHoursWorked: data.actualHoursWorked || 0,
       totalAmount: totalEstimated,
-      items: data.items || [],
+      workLogEntries: data.workLogEntries || data.items || [],
+      items: data.items || data.workLogEntries || [],
       relatedEntities: data.relatedEntities || [],
       createdBy: userUid || 'system',
       createdAt: serverTimestamp(),

@@ -6,6 +6,12 @@
   "requirements": [],
   "path": "/dashboard/activities",
   "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
+  "settingsCard": {
+    "title": "Configurazione Attività & Task",
+    "description": "Configura tipologie attività (chiamate, email, visite, ferie, corsi sicurezza, ecc.), priorità e regole riassegnazione.",
+    "icon": "ClipboardList",
+    "path": "/dashboard/settings/activities"
+  },
   "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione"],
   "enabled": true,
   "kpiTiles": [

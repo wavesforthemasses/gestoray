@@ -22,7 +22,10 @@
     Wrench,
     Ticket,
     Shield,
-    MapPin
+    MapPin,
+    Truck,
+    Users,
+    Calendar
   } from '@lucide/svelte';
 
   pageTitle.set('Gestione Moduli & Plugin Bridges');
@@ -90,6 +93,34 @@
       label: 'Gestione Luoghi',
       description: 'Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni.',
       icon: MapPin,
+      requirements: []
+    },
+    {
+      id: 'vehicles',
+      label: 'Mezzi & Attrezzature',
+      description: 'Anagrafica e parco mezzi aziendali, furgoni, macchinari e strumentazione.',
+      icon: Truck,
+      requirements: []
+    },
+    {
+      id: 'teams',
+      label: 'Squadre & Risorse',
+      description: 'Gestione squadre di lavoro, operatori di campo e composizione team.',
+      icon: Users,
+      requirements: []
+    },
+    {
+      id: 'scheduling',
+      label: 'Pianificazione & Agenda',
+      description: 'Assegnazione e pianificazione giornaliera/settimanale di squadre, operatori e mezzi nei vari luoghi di lavoro.',
+      icon: Calendar,
+      requirements: []
+    },
+    {
+      id: 'deadlines',
+      label: 'Scadenzario & Allarmi',
+      description: 'Motore di allarmi ed avvisi automatici per scadenze furgoni, visite mediche, corsi sicurezza, contratti e certificazioni.',
+      icon: AlertTriangle,
       requirements: []
     }
   ];

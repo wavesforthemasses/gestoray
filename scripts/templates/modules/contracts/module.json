@@ -19,11 +19,6 @@
     "icon": "FileText",
     "path": "/dashboard/settings/contracts"
   },
-  "clientQuickAction": {
-    "label": "Nuovo Preventivo",
-    "title": "Nuovo Preventivo per questo cliente",
-    "tab": "quotes"
-  },
   "rolesView": ["superadmin", "direzione", "amministrazione"],
   "enabled": true,
   "kpiTiles": [

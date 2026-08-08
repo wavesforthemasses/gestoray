@@ -29,7 +29,7 @@
 </script>
 
 <div class="form-group {className}">
-  <label for={id}>{label}</label>
+  <label for={id}>{label}{#if required}<span class="required"> *</span>{/if}</label>
   {#if children}
     {@render children()}
   {:else}

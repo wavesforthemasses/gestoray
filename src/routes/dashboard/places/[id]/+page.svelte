@@ -6,9 +6,12 @@
   import { PlacesService } from '../places.service';
   import { PlaceSettingsService } from '../placeSettingsService';
   import type { PlaceItem, PlaceStatus, PlaceSettings, PlaceAddress } from '../schema';
+  import PlaceCommercialInsights from '../components/PlaceCommercialInsights.svelte';
+  import PlaceTeamsInsights from '../components/PlaceTeamsInsights.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
+  import { db, doc, getDoc } from '$lib/firebase';
   import { 
     MapPin, 
     ArrowLeft, 
@@ -50,11 +53,11 @@
         const meta = mod.bridgeMetadata || mod.default?.bridgeMetadata || {};
         let defaultLabel = 'Tab Collegata';
         if (path.includes('Contract')) defaultLabel = 'Preventivi & Contratti';
-        if (path.includes('Interventi')) defaultLabel = 'Interventi & Rapportini';
+        if (path.includes('Activities') || path.includes('Activit') || path.includes('Interventi')) defaultLabel = 'Attività & Task';
         if (path.includes('Ticket')) defaultLabel = 'Ticket & Supporto';
         return {
           id: meta.id || path.split('/').pop()?.replace('.svelte', '').toLowerCase() || 'tab',
-          sourceModule: meta.sourceModule || (path.includes('Contract') ? 'contracts' : ''),
+          sourceModule: meta.sourceModule || (path.includes('Contract') ? 'contracts' : path.includes('Activit') ? 'activities' : ''),
           label: meta.label || defaultLabel,
           component: mod.default
         };
@@ -76,6 +79,17 @@
       place = item;
       if (item) {
         pageTitle.set(`${labels.singular} ${item.code}`);
+        if (item.clientId && (!item.clientName || item.clientName === 'N/D')) {
+          try {
+            const clientSnap = await getDoc(doc(db, 'clients', item.clientId));
+            if (clientSnap.exists()) {
+              const cd = clientSnap.data();
+              item.clientName = `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.ragioneSociale || cd.denominazione || cd.name || '';
+            }
+          } catch (err) {
+            console.warn('Errore recupero cliente per luogo:', err);
+          }
+        }
       }
     } catch (e) {
       console.error('Errore caricamento dettaglio luogo:', e);
@@ -195,7 +209,13 @@
                 <span class="info-label">Cliente Intestatario</span>
                 <span class="info-value highlight">
                   <User size={15} />
-                  {place.clientName || 'N/D'}
+                  {#if place.clientId}
+                    <a href={`/dashboard/clients/${place.clientId}`} class="client-link">
+                      {place.clientName || 'Cliente #' + place.clientId}
+                    </a>
+                  {:else}
+                    {place.clientName || 'N/D'}
+                  {/if}
                 </span>
               </div>
 
@@ -227,6 +247,12 @@
               <p class="notes-content">{place.notes}</p>
             </div>
           {/if}
+
+          <!-- Commercial Insights Bridge -->
+          <PlaceCommercialInsights placeId={place.id || ''} />
+
+          <!-- Teams Operational Insights Bridge -->
+          <PlaceTeamsInsights placeId={place.id || ''} />
         </div>
 
         <div class="side-column">
@@ -330,6 +356,8 @@
   .info-label { font-size: 12px; color: var(--color-neutral-500); }
   .info-value { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .info-value.highlight { color: var(--color-primary-700); }
+  .client-link { color: var(--color-primary-600); text-decoration: underline; font-weight: 700; }
+  .client-link:hover { color: var(--color-primary-800); }
   .notes-content { font-size: 14px; color: var(--color-neutral-700); line-height: 1.5; white-space: pre-wrap; margin: 0; }
   .status-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
   .status-btn { flex: 1; min-width: 80px; padding: 8px; border-radius: 6px; border: 1px solid var(--color-neutral-300); background: white; font-size: 12px; font-weight: 600; cursor: pointer; }
