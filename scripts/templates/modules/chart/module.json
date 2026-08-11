@@ -1,0 +1,15 @@
+{
+  "id": "chart",
+  "name": "Analytics & Grafici BI",
+  "version": "1.0.0",
+  "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
+  "category": "analytics",
+  "icon": "TrendingUp",
+  "menuItem": null,
+  "settingsCard": {
+    "path": "/dashboard/settings/chart",
+    "title": "Configurazione Analytics & Grafici",
+    "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
+    "icon": "TrendingUp"
+  }
+}

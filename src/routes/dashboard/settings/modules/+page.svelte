@@ -25,7 +25,8 @@
     MapPin,
     Truck,
     Users,
-    Calendar
+    Calendar,
+    TrendingUp
   } from '@lucide/svelte';
 
   pageTitle.set('Gestione Moduli & Plugin Bridges');
@@ -121,6 +122,13 @@
       label: 'Scadenzario & Allarmi',
       description: 'Motore di allarmi ed avvisi automatici per scadenze furgoni, visite mediche, corsi sicurezza, contratti e certificazioni.',
       icon: AlertTriangle,
+      requirements: []
+    },
+    {
+      id: 'chart',
+      label: 'Analytics & Grafici BI',
+      description: 'Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali.',
+      icon: TrendingUp,
       requirements: []
     }
   ];

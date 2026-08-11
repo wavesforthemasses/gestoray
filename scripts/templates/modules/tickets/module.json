@@ -1,21 +1,39 @@
 {
   "id": "tickets",
-  "label": "Ticket & Assistenza",
+  "label": "Ticket",
   "description": "Gestione ticket e richieste clienti",
   "icon": "Ticket",
   "requirements": [],
   "path": "/dashboard/tickets",
   "kpiBridgePath": "/dashboard/tickets/tickets.kpi.bridge.ts",
-  "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione", "tecnico"],
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "commerciale",
+    "amministrazione",
+    "tecnico"
+  ],
   "enabled": true,
   "anonymization": {
     "collectionName": "tickets",
     "linkFieldPath": "clientId",
     "redactFields": [
-      { "fieldPath": "description", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "contactName", "replacement": "ANONIMIZZATO" },
-      { "fieldPath": "contactPhone", "replacement": "" }
+      {
+        "fieldPath": "description",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "contactName",
+        "replacement": "ANONIMIZZATO"
+      },
+      {
+        "fieldPath": "contactPhone",
+        "replacement": ""
+      }
     ]
   },
   "schema": {
@@ -23,27 +41,48 @@
       "ticketNumber": {
         "type": "string",
         "description": "Numero progressivo del ticket assistenziale",
-        "tags": ["search", "sort"]
+        "tags": [
+          "search",
+          "sort"
+        ]
       },
       "subject": {
         "type": "string",
         "description": "Oggetto sintesi della richiesta di assistenza",
-        "tags": ["search", "display"]
+        "tags": [
+          "search",
+          "display"
+        ]
       },
       "clientId": {
         "type": "string",
         "description": "ID del cliente richiedente",
-        "tags": ["filter:client", "relation:clients"]
+        "tags": [
+          "filter:client",
+          "relation:clients"
+        ]
       },
       "status": {
         "type": "string",
         "description": "Stato ticket (aperto, in_lavorazione, risolto, chiuso)",
-        "tags": ["filter:status", "kpi:tickets_open"]
+        "tags": [
+          "filter:status",
+          "kpi:tickets_open"
+        ]
       },
       "priority": {
         "type": "string",
         "description": "Livello di priorità (bassa, media, alta, urgente)",
-        "tags": ["filter:priority"]
+        "tags": [
+          "filter:priority"
+        ]
+      },
+      "resolutionTimeHours": {
+        "type": "number",
+        "description": "Tempo in ore impiegato per la risoluzione",
+        "tags": [
+          "kpi:tmr"
+        ]
       }
     }
   }

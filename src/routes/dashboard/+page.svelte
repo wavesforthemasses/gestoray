@@ -12,7 +12,7 @@
   import { DashboardService } from "./dashboard.service";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { Card, TrendChart } from "$lib";
+  import { Card, UniversalAnalyticsChart } from "$lib";
   import { KPI_LEGEND } from "$lib/kpiLegend";
   import { formatCurrency } from "$lib/utils/formatters";
 
@@ -70,8 +70,32 @@
 
   let loadingAdminTables = $state(true);
 
+  import { ChartSettingsService } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
   import { Users, Briefcase, CheckSquare, Settings, ArrowRight } from '@lucide/svelte';
+
+  let dashboardChartConfig = $state(ChartSettingsService.getEntityConfigSync('dashboard'));
+
+  let dashboardMetrics = $derived.by(() => {
+    if (!dashboardChartConfig) return [];
+    return dashboardChartConfig.kpis
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }));
+  });
+
+  $effect(() => {
+    if (dashboardMetrics.length > 0) {
+      const exists = dashboardMetrics.some(m => m.id === activeChartTab);
+      if (!exists) {
+        activeChartTab = dashboardMetrics[0].id;
+      }
+    }
+  });
 
   // Active module flags derived from menuConfigStore
   let activeModuleIds = $derived($menuConfigStore.map(m => m.id));
@@ -244,31 +268,21 @@
           </div>
         {:else}
           {#if hasFinancialChart}
-            <div class="dashboard-main-split">
-              <div class="dashboard-left-col">
-                <TrendChart
-                  bind:isChartFullscreen
-                  bind:activeChartTab
-                  bind:selectedPointIdx
-                  bind:granularity
-                  bind:endDateString
-                  bind:clientFilter
-                  bind:vendorFilter
-                  bind:productFilter
-                  {loadingChart}
-                  {loadingDrillDown}
-                  {computedChartPoints}
-                  {chartPeriods}
-                  {drillDownItems}
-                  {usersList}
-                  activeRole={activeRoleState.role || ''}
-                  {formatCurrency}
-                  activitiesConfig={[]}
-                  {hasActivities}
-                />
-              </div>
-
-              <div class="dashboard-right-col">
+            <UniversalAnalyticsChart
+              title="Trend e Andamento Storico"
+              description="Visualizza il trend dinamico delle metriche di performance aziendali. Clicca su un punto per analizzare i dettagli del periodo."
+              metrics={dashboardMetrics}
+              bind:activeMetric={activeChartTab}
+              bind:granularity
+              bind:endDateString
+              {chartPeriods}
+              {computedChartPoints}
+              bind:selectedPointIdx
+              {loadingChart}
+              collapsible={false}
+              kpisPosition="right"
+            >
+              {#snippet kpisSnippet()}
                 {#if activeRoleState.role === "commerciale"}
                   <CommercialKPIs 
                     kpis={rawKpis}
@@ -299,8 +313,8 @@
                     {hasActivities}
                   />
                 {/if}
-              </div>
-            </div>
+              {/snippet}
+            </UniversalAnalyticsChart>
           {:else}
             <!-- CLEAN CORE DASHBOARD UI (No financial/contract modules installed) -->
             <div class="clean-core-grid">

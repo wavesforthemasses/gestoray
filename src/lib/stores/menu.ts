@@ -11,6 +11,7 @@ export interface MenuItemConfig {
   rolesView: string[];
   kpiTiles?: any[];
   settingsCard?: any;
+  showInSidebar?: boolean;
 }
 
 export const menuConfigStore = writable<MenuItemConfig[]>([]);
@@ -24,14 +25,16 @@ export const BASE_MENU_CONFIG: MenuItemConfig[] = [
   { id: 'settings', label: 'Impostazioni', icon: 'Settings', path: '/dashboard/settings', matchExact: true, rolesView: ['superadmin'] },
 ];
 
-const MODULE_MENU_ITEMS: MenuItemConfig[] = (modulesRegistry.modules || []).map((m: any) => ({
-  ...m,
-  id: m.id,
-  label: m.label,
-  icon: m.icon,
-  path: m.path,
-  rolesView: m.rolesView || ['superadmin', 'direzione']
-}));
+const MODULE_MENU_ITEMS: MenuItemConfig[] = (modulesRegistry.modules || [])
+  .map((m: any) => ({
+    ...m,
+    id: m.id,
+    label: m.menuItem?.label || m.label || m.name,
+    icon: m.menuItem?.icon || m.icon,
+    path: m.menuItem?.route || m.path || `/dashboard/${m.id}`,
+    rolesView: m.menuItem?.roles || m.rolesView || ['superadmin', 'direzione'],
+    showInSidebar: m.menuItem !== null
+  }));
 
 export const DEFAULT_MENU_CONFIG: MenuItemConfig[] = [
   ...BASE_MENU_CONFIG,

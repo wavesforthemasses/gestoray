@@ -7,7 +7,7 @@
   import { onMount } from 'svelte';
   import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText, WifiOff } from '@lucide/svelte';
   import { iconMap } from '$lib/utils/iconMap';
-  import { KPI_LEGEND } from '$lib/kpiLegend';
+  import { ChartSettingsService } from '$lib';
   import ProjectSetupBlocker from '$lib/components/ProjectSetupBlocker.svelte';
   import { projectStore } from '$lib/stores/project';
   import { pageTitle } from '$lib/stores/page';
@@ -22,6 +22,10 @@
   let isCollapsed = $state(false);
   let isMobileOpen = $state(false);
   let showLegend = $state(false);
+
+  let dynamicLegendKpis = $derived.by(() => {
+    return ChartSettingsService.getAllKpisMasterListSync().filter(k => k.enabled);
+  });
 
   onMount(() => {
     initNetworkStateListener();
@@ -168,12 +172,12 @@
             </button>
           </div>
           <div class="legend-body">
-            {#each Object.entries(KPI_LEGEND) as [key, value]}
+            {#each dynamicLegendKpis as kpi}
               <div class="legend-item">
-                <span class="legend-key">{key}</span>
+                <span class="legend-key">{kpi.acronym}</span>
                 <div class="legend-desc">
-                  <strong>{value.label}</strong>
-                  <p>{value.description}</p>
+                  <strong>{kpi.name}</strong>
+                  <p>{kpi.description}</p>
                 </div>
               </div>
             {/each}

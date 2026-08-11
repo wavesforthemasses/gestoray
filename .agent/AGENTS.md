@@ -12,3 +12,5 @@
 - **MANDATORY LESSONS REVIEW**: Before executing any task or editing code, ALWAYS consult `decisions_and_lessons.md` to ensure complete adherence to architectural principles and prevent regression.
 - **DYNAMIC PLUGIN BRIDGES**: Never statically import optional module services in Core or other modules. Always use dynamic conditional imports (`if ($menuConfigStore.some(...)) { const { Service } = await import('...'); }`) to guarantee 100% Core stability when optional modules are uninstalled.
 
+## Fact-Based Verification
+- **MANDATORY VISUAL VERIFICATION**: Every time you make a modification that affects the UI or frontend behavior, you MUST verify the outcome using factual, visual tools (like `node scripts/screenshot-live.js`) BEFORE telling the user the task is complete. Never assume it works. If you cannot verify it visually, you must find another factual way to confirm the change (e.g. API responses, DOM inspection) and document the proof.

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { KPITile } from "$lib";
-  import { KPI_LEGEND } from "$lib/kpiLegend";
+  import { KPITile, ChartSettingsService } from "$lib";
   import { DollarSign, FileText, Phone, Users, Calendar, Wallet, Award, CreditCard, ActivitySquare, MessageSquare, CheckCircle, Mail, Briefcase } from "@lucide/svelte";
   import { menuConfigStore } from "$lib/stores/menu";
   import { activeRoleState } from "$lib/auth.svelte";
@@ -52,16 +51,24 @@
       .filter((m: any) => m.kpiTiles && Array.isArray(m.kpiTiles))
       .flatMap((m: any) => m.kpiTiles)
   );
+
+  const getKpiInfo = (id: string) => {
+    const kpi = ChartSettingsService.getAllKpisMasterListSync().find(k => k.id === id);
+    if (!kpi) return { acronym: id?.toUpperCase() || '', name: id || '', description: '' };
+    return kpi;
+  };
+
+  const naKpi = $derived(getKpiInfo('nuove_anagrafiche'));
 </script>
 
 <section class="kpi-deck">
   <KPITile 
     theme="info" 
     icon={Users} 
-    title="NA" 
+    title={naKpi.acronym} 
     value={totalClienti} 
-    subtitle="Lead totali" 
-    titleAttr={`${KPI_LEGEND.NA?.label || 'Nuove Anagrafiche'} - ${KPI_LEGEND.NA?.description || ''}`} 
+    subtitle={naKpi.name} 
+    titleAttr={`${naKpi.name} - ${naKpi.description}`} 
     onclick={() => onTabSelect("nuove_anagrafiche")} 
     inlineSubtitle={true}
   />
@@ -82,16 +89,17 @@
   {/if}
 
   {#each activeKPITiles as tile}
+    {@const kpiInfo = getKpiInfo(tile.id)}
     {@const rawVal = kpisValuesMap[tile.valueKey] || 0}
     {@const displayVal = tile.format === 'currency' ? `€ ${Number(rawVal).toFixed(2)}` : rawVal}
-    {@const subtitleVal = tile.id === 'vss' ? `Approvati: ${totalContratti - pendingContratti}` : tile.id === 'gi' ? `Attesa: ${pendingContratti}` : tile.subtitle}
+    {@const subtitleVal = tile.id === 'vss' ? `Approvati: ${totalContratti - pendingContratti}` : tile.id === 'gi' ? `Attesa: ${pendingContratti}` : kpiInfo.name}
     <KPITile 
       theme="info" 
       icon={iconMap[tile.icon] || FileText} 
-      title={tile.title} 
+      title={kpiInfo.acronym} 
       value={displayVal} 
       subtitle={subtitleVal} 
-      titleAttr={`${(KPI_LEGEND as any)[tile.id?.toUpperCase()]?.label || tile.title}`} 
+      titleAttr={`${kpiInfo.name} - ${kpiInfo.description}`} 
       onclick={() => onTabSelect(tile.id)} 
       inlineSubtitle={true}
     />

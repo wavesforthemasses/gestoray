@@ -4,7 +4,7 @@
   import { ContractSettingsService } from './contractSettingsService';
   import type { ContractItem, ContractStatus, ContractSettings } from './schema';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Card, SearchToolbar, FilterSelect, UniversalAnalyticsChart } from '$lib';
+  import { Card, SearchToolbar, FilterSelect, UniversalAnalyticsChart, ChartSettingsService } from '$lib';
   import { DashboardService } from '../dashboard.service';
   import { activeRoleState, authState } from '$lib/auth.svelte';
   import { 
@@ -45,6 +45,16 @@
   let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
   let loadingChart = $state(false);
   let computedChartPoints = $state<number[]>([]);
+
+  let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('contracts'));
+  let availableChartMetrics = $derived(
+    (activeEntityConfig?.kpis || []).map(k => ({
+      id: k.id,
+      label: k.name,
+      shortLabel: k.acronym,
+      isCurrency: k.isCurrency
+    }))
+  );
 
   $effect(() => {
     chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
@@ -198,11 +208,11 @@
   </div>
 
   <UniversalAnalyticsChart 
-    title={`Andamento ${labels.plural} e Provvigioni`}
+    title={`Andamento ${labels.plural} e KPI`}
     description={`Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei ${labels.plural.toLowerCase()} in base al periodo selezionato.`}
-    metrics={[
+    metrics={availableChartMetrics.length > 0 ? availableChartMetrics : [
       { id: 'vss', label: 'Valore Venduto (VSS)', shortLabel: 'VSS', isCurrency: true },
-      { id: 'provvigioni_maturate', label: 'Provvigioni Maturate', shortLabel: 'PM', isCurrency: true }
+      { id: 'nncf', label: 'Primi Ordini (NNCF)', shortLabel: 'NNCF', isCurrency: false }
     ]}
     bind:activeMetric={activeChartTab}
     bind:granularity

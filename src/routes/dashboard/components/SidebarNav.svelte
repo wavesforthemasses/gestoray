@@ -10,6 +10,7 @@
     icon: string;
     rolesView: string[];
     matchExact?: boolean;
+    showInSidebar?: boolean;
   }
 
   interface Props {
@@ -28,7 +29,7 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    {#each menuConfig.filter(item => item.rolesView.includes(activeRole || '')) as item (item.id)}
+    {#each menuConfig.filter(item => item.rolesView.includes(activeRole || '') && item.showInSidebar !== false) as item (item.id)}
       {@const IconComponent = iconMap[item.icon] || FileText}
       <a href={item.path} class="nav-item" 
          class:active={item.matchExact ? $page.url.pathname === item.path : $page.url.pathname.startsWith(item.path)} 

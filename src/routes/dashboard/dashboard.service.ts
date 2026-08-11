@@ -1,5 +1,6 @@
 import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy, functions, httpsCallable, updateDoc } from "$lib/firebase";
 import { formatDate } from "$lib/utils/formatters";
+import { ChartSettingsService } from "$lib";
 
 export interface DashboardKPIs {
   totalClienti: number;
@@ -144,6 +145,30 @@ export class DashboardService {
   }
 
   static async fetchChartAggregations(periods: any[], role: string, myUid: string, activeChartTab: string) {
+    // Lookup the KPI to find its requiredModule
+    const kpiList = ChartSettingsService.getAllKpisMasterListSync();
+    const kpiSpec = kpiList.find(k => k.id === activeChartTab);
+    console.log("fetchChartAggregations KPI SPEC:", kpiSpec);
+
+    // Try module bridge first
+    if (kpiSpec?.requiredModule) {
+      const bridgeClass = await this.getModuleBridge(kpiSpec.requiredModule);
+      console.log("fetchChartAggregations BRIDGE CLASS for", kpiSpec.requiredModule, ":", !!bridgeClass, "TYPE:", typeof bridgeClass?.fetchChartAggregations);
+      if (bridgeClass && typeof bridgeClass.fetchChartAggregations === 'function') {
+        try {
+          const modRes = await bridgeClass.fetchChartAggregations({
+            periods, role, uid: myUid, tab: activeChartTab
+          });
+          console.log("fetchChartAggregations MOD RES:", modRes);
+          if (Array.isArray(modRes) && modRes.length === periods.length) {
+            return modRes;
+          }
+        } catch (err) {
+          console.error(`Error in bridge fetchChartAggregations for module ${kpiSpec.requiredModule}:`, err);
+        }
+      }
+    }
+
     const isComm = role === 'commerciale';
     const getChartAggregations = httpsCallable(functions, 'getChartAggregations');
     
@@ -158,7 +183,7 @@ export class DashboardService {
       }
     }
     
-    const isActivity = !['vss', 'vsa', 'nuove_anagrafiche', 'nncf', 'gi', 'provvigioni_maturate'].includes(activeChartTab);
+    const isActivity = !['vss', 'vsa', 'nuove_anagrafiche', 'nncf', 'gi', 'provvigioni_maturate'].includes(activeChartTab) && (!kpiSpec || kpiSpec.requiredModule === 'activities');
     if (isActivity) {
       filters.type = activeChartTab; 
     }

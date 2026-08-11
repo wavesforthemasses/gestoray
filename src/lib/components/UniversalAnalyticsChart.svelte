@@ -2,6 +2,8 @@
   import { Card, LineChart } from '$lib';
   import { TrendingUp, ChevronUp, ChevronDown, Maximize2, Minimize2 } from '@lucide/svelte';
   import type { MetricOption } from '$lib/types/moduleAnalyticsSettings';
+  import { menuConfigStore } from '$lib/stores/menu';
+  import type { Snippet } from 'svelte';
 
   interface Props {
     title?: string;
@@ -17,6 +19,8 @@
     collapsible?: boolean;
     isExpanded?: boolean;
     showFullscreenToggle?: boolean;
+    kpisPosition?: 'right' | 'top' | 'bottom' | 'none';
+    kpisSnippet?: Snippet;
     
     // Callbacks
     onToggle?: (expanded?: boolean) => void;
@@ -44,6 +48,8 @@
     collapsible = true,
     isExpanded = $bindable(true),
     showFullscreenToggle = true,
+    kpisPosition = 'right',
+    kpisSnippet,
 
     onToggle,
     onMetricSelect,
@@ -51,6 +57,10 @@
     onEndDateChange,
     onPointSelect
   }: Props = $props();
+
+  let isModuleChartActive = $derived(
+    $menuConfigStore.length === 0 || $menuConfigStore.some(m => m.id === 'chart')
+  );
 
   let isFullscreen = $state(false);
   let chartWrapperW = $state(0);
@@ -94,104 +104,213 @@
   }
 </script>
 
-{#if collapsible}
-  <div class="subpage-chart-control">
-    <button type="button" onclick={toggleExpand} class="toggle-chart-btn">
-      <TrendingUp size={16} /> 
-      <span>{isExpanded ? 'Nascondi Grafico Andamento' : 'Mostra Grafico Andamento'}</span>
-      {#if isExpanded}
-        <ChevronUp size={14} />
-      {:else}
-        <ChevronDown size={14} />
-      {/if}
-    </button>
-  </div>
-{/if}
-
-{#if !collapsible || isExpanded}
-  <div class="universal-chart-card animate-fade-in" class:fullscreen-mode={isFullscreen}>
-    <Card {title} {description}>
-      {#snippet icon()}
-        <TrendingUp size={20} class="icon-accent" />
-      {/snippet}
-
-      <div class="chart-controls-box controls-layout">
-        <!-- Metric Tab Switcher -->
-        {#if metrics && metrics.length > 0}
-          <div class="chart-tab-switcher tab-switcher-bg">
-            {#each metrics as m}
-              <button
-                type="button"
-                class="chart-tab-btn tab-btn-style"
-                class:active={activeMetric === m.id}
-                onclick={() => handleMetricClick(m.id)}
-                title={m.label}
-              >
-                {m.shortLabel || m.label}
-              </button>
-            {/each}
-          </div>
+{#if isModuleChartActive}
+  {#if collapsible}
+    <div class="subpage-chart-control">
+      <button type="button" onclick={toggleExpand} class="toggle-chart-btn">
+        <TrendingUp size={16} /> 
+        <span>{isExpanded ? 'Nascondi Grafico Andamento' : 'Mostra Grafico Andamento'}</span>
+        {#if isExpanded}
+          <ChevronUp size={14} />
+        {:else}
+          <ChevronDown size={14} />
         {/if}
+      </button>
+    </div>
+  {/if}
 
-        <!-- Granularity & Date Picker -->
-        <div class="chart-granularity-picker flex-row-gap16-align">
-          <div class="picker-item flex-row-gap8-align">
-            <span class="picker-lbl label-style">Dettaglio</span>
-            <select value={granularity} onchange={handleGranularityChange} class="sub-chart-select">
-              <option value="settimanale">Settimanale</option>
-              <option value="mensile">Mensile</option>
-              <option value="annuale">Annuale</option>
-            </select>
-          </div>
+  {#if !collapsible || isExpanded}
+    <div class="universal-chart-card animate-fade-in" class:fullscreen-mode={isFullscreen}>
+      {#if kpisSnippet && (kpisPosition === 'right' || kpisPosition === 'top' || kpisPosition === 'bottom')}
+        <div class="chart-split-layout position-{kpisPosition}">
+          {#if kpisPosition === 'top'}
+            <div class="kpi-banner-wrapper">
+              {@render kpisSnippet()}
+            </div>
+          {/if}
 
-          <div class="picker-item flex-row-gap8-align">
-            <span class="picker-lbl label-style">Fino al</span>
-            <input type="date" value={endDateString} onchange={handleEndDateChange} class="sub-chart-date-picker" />
-          </div>
+          <div class="chart-main-col">
+            <Card {title} {description}>
+              {#snippet icon()}
+                <TrendingUp size={20} class="icon-accent" />
+              {/snippet}
 
-          {#if showFullscreenToggle}
-            <div class="picker-item">
-              <button type="button" onclick={() => isFullscreen = !isFullscreen} class="fs-btn">
-                {#if isFullscreen}
-                  <Minimize2 size={16} /> <span class="fs-btn-text">Riduci</span>
-                {:else}
-                  <Maximize2 size={16} /> <span class="fs-btn-text">Espandi</span>
+              <div class="chart-controls-box controls-layout">
+                {#if metrics && metrics.length > 0}
+                  <div class="chart-tab-switcher tab-switcher-bg">
+                    {#each metrics as m}
+                      <button
+                        type="button"
+                        class="chart-tab-btn tab-btn-style"
+                        class:active={activeMetric === m.id}
+                        onclick={() => handleMetricClick(m.id)}
+                        title={m.label}
+                      >
+                        {m.shortLabel || m.label}
+                      </button>
+                    {/each}
+                  </div>
                 {/if}
-              </button>
+
+                <div class="chart-granularity-picker flex-row-gap16-align">
+                  <div class="picker-item flex-row-gap8-align">
+                    <span class="picker-lbl label-style">Dettaglio</span>
+                    <select value={granularity} onchange={handleGranularityChange} class="sub-chart-select">
+                      <option value="settimanale">Settimanale</option>
+                      <option value="mensile">Mensile</option>
+                      <option value="annuale">Annuale</option>
+                    </select>
+                  </div>
+
+                  <div class="picker-item flex-row-gap8-align">
+                    <span class="picker-lbl label-style">Fino al</span>
+                    <input type="date" value={endDateString} onchange={handleEndDateChange} class="sub-chart-date-picker" />
+                  </div>
+
+                  {#if showFullscreenToggle}
+                    <div class="picker-item">
+                      <button type="button" onclick={() => isFullscreen = !isFullscreen} class="fs-btn">
+                        {#if isFullscreen}
+                          <Minimize2 size={16} /> <span class="fs-btn-text">Riduci</span>
+                        {:else}
+                          <Maximize2 size={16} /> <span class="fs-btn-text">Espandi</span>
+                        {/if}
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+
+              {#if loadingChart}
+                <div class="loader-box no-border-padded">
+                  <span class="spinner"></span>
+                  Caricamento andamento in corso...
+                </div>
+              {:else}
+                <div 
+                  class="chart-flex-wrapper chart-container-layout" 
+                  class:fullscreen-canvas={isFullscreen}
+                  bind:clientWidth={chartWrapperW}
+                  bind:clientHeight={chartWrapperH}
+                >
+                  {#if chartWrapperW > 0}
+                    <LineChart
+                      data={computedChartPoints}
+                      labels={chartPeriods.map(p => p.label)}
+                      selectedIdx={selectedPointIdx}
+                      onSelect={handlePointSelect}
+                      width={Math.max(chartWrapperW - 34, 300)}
+                      height={isFullscreen ? Math.max(chartWrapperH - 50, 250) : 250}
+                      xPadding={50}
+                      yPadding={30}
+                      isCurrency={Boolean(currentMetricObj?.isCurrency)}
+                    />
+                  {/if}
+                </div>
+              {/if}
+            </Card>
+          </div>
+
+          {#if kpisPosition === 'right'}
+            <div class="kpi-side-col">
+              {@render kpisSnippet()}
+            </div>
+          {/if}
+
+          {#if kpisPosition === 'bottom'}
+            <div class="kpi-banner-wrapper">
+              {@render kpisSnippet()}
             </div>
           {/if}
         </div>
-      </div>
-
-      <!-- Chart Canvas Wrapper -->
-      {#if loadingChart}
-        <div class="loader-box no-border-padded">
-          <span class="spinner"></span>
-          Caricamento andamento in corso...
-        </div>
       {:else}
-        <div 
-          class="chart-flex-wrapper chart-container-layout" 
-          class:fullscreen-canvas={isFullscreen}
-          bind:clientWidth={chartWrapperW}
-          bind:clientHeight={chartWrapperH}
-        >
-          {#if chartWrapperW > 0}
-            <LineChart
-              data={computedChartPoints}
-              labels={chartPeriods.map(p => p.label)}
-              selectedIdx={selectedPointIdx}
-              onSelect={handlePointSelect}
-              width={Math.max(chartWrapperW - 34, 300)}
-              height={isFullscreen ? Math.max(chartWrapperH - 50, 250) : 250}
-              xPadding={50}
-              yPadding={30}
-              isCurrency={Boolean(currentMetricObj?.isCurrency)}
-            />
+        <!-- Standalone chart without KPI side snippet -->
+        <Card {title} {description}>
+          {#snippet icon()}
+            <TrendingUp size={20} class="icon-accent" />
+          {/snippet}
+
+          <div class="chart-controls-box controls-layout">
+            {#if metrics && metrics.length > 0}
+              <div class="chart-tab-switcher tab-switcher-bg">
+                {#each metrics as m}
+                  <button
+                    type="button"
+                    class="chart-tab-btn tab-btn-style"
+                    class:active={activeMetric === m.id}
+                    onclick={() => handleMetricClick(m.id)}
+                    title={m.label}
+                  >
+                    {m.shortLabel || m.label}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
+            <div class="chart-granularity-picker flex-row-gap16-align">
+              <div class="picker-item flex-row-gap8-align">
+                <span class="picker-lbl label-style">Dettaglio</span>
+                <select value={granularity} onchange={handleGranularityChange} class="sub-chart-select">
+                  <option value="settimanale">Settimanale</option>
+                  <option value="mensile">Mensile</option>
+                  <option value="annuale">Annuale</option>
+                </select>
+              </div>
+
+              <div class="picker-item flex-row-gap8-align">
+                <span class="picker-lbl label-style">Fino al</span>
+                <input type="date" value={endDateString} onchange={handleEndDateChange} class="sub-chart-date-picker" />
+              </div>
+
+              {#if showFullscreenToggle}
+                <div class="picker-item">
+                  <button type="button" onclick={() => isFullscreen = !isFullscreen} class="fs-btn">
+                    {#if isFullscreen}
+                      <Minimize2 size={16} /> <span class="fs-btn-text">Riduci</span>
+                    {:else}
+                      <Maximize2 size={16} /> <span class="fs-btn-text">Espandi</span>
+                    {/if}
+                  </button>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          {#if loadingChart}
+            <div class="loader-box no-border-padded">
+              <span class="spinner"></span>
+              Caricamento andamento in corso...
+            </div>
+          {:else}
+            <div 
+              class="chart-flex-wrapper chart-container-layout" 
+              class:fullscreen-canvas={isFullscreen}
+              bind:clientWidth={chartWrapperW}
+              bind:clientHeight={chartWrapperH}
+            >
+              {#if chartWrapperW > 0}
+                <LineChart
+                  data={computedChartPoints}
+                  labels={chartPeriods.map(p => p.label)}
+                  selectedIdx={selectedPointIdx}
+                  onSelect={handlePointSelect}
+                  width={Math.max(chartWrapperW - 34, 300)}
+                  height={isFullscreen ? Math.max(chartWrapperH - 50, 250) : 250}
+                  xPadding={50}
+                  yPadding={30}
+                  isCurrency={Boolean(currentMetricObj?.isCurrency)}
+                />
+              {/if}
+            </div>
           {/if}
-        </div>
+        </Card>
       {/if}
-    </Card>
+    </div>
+  {/if}
+{:else if kpisSnippet}
+  <!-- Fallback: if chart module is uninstalled, render the KPI snippet full-width cleanly -->
+  <div class="kpi-standalone-fullwidth animate-fade-in">
+    {@render kpisSnippet()}
   </div>
 {/if}
 
@@ -241,6 +360,43 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border-radius: var(--radius-lg);
     overflow: auto;
+  }
+
+  .chart-split-layout {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .chart-split-layout.position-right {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+  }
+
+  @media (max-width: 1024px) {
+    .chart-split-layout.position-right {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .chart-split-layout.position-top,
+  .chart-split-layout.position-bottom {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chart-main-col {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .kpi-side-col, .kpi-banner-wrapper {
+    width: 100%;
+  }
+
+  .kpi-standalone-fullwidth {
+    width: 100%;
+    margin-bottom: 24px;
   }
 
   .controls-layout {

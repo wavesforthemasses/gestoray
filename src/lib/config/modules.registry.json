@@ -1,6 +1,21 @@
 {
   "modules": [
     {
+      "id": "chart",
+      "name": "Analytics & Grafici BI",
+      "version": "1.0.0",
+      "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
+      "category": "analytics",
+      "icon": "TrendingUp",
+      "menuItem": null,
+      "settingsCard": {
+        "path": "/dashboard/settings/chart",
+        "title": "Configurazione Analytics & Grafici",
+        "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
+        "icon": "TrendingUp"
+      }
+    },
+    {
       "id": "products",
       "label": "Prodotti",
       "description": "Catalogo prodotti, servizi e listini prezzi",
@@ -232,169 +247,56 @@
       }
     },
     {
-      "id": "activities",
-      "label": "Attività & Task",
-      "description": "Tracciamento attività commerciali e operative",
-      "icon": "ClipboardList",
+      "id": "tickets",
+      "label": "Ticket",
+      "description": "Gestione ticket e richieste clienti",
+      "icon": "Ticket",
       "requirements": [],
-      "path": "/dashboard/activities",
-      "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
-      "settingsCard": {
-        "title": "Configurazione Attività & Task",
-        "description": "Configura tipologie attività (chiamate, email, visite, ferie, corsi sicurezza, ecc.), priorità e regole riassegnazione.",
-        "icon": "ClipboardList",
-        "path": "/dashboard/settings/activities"
-      },
+      "path": "/dashboard/tickets",
+      "kpiBridgePath": "/dashboard/tickets/tickets.kpi.bridge.ts",
       "rolesView": [
         "superadmin",
         "direzione",
         "commerciale",
-        "amministrazione"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "activities",
-          "title": "Attività",
-          "subtitle": "Attività Svolte",
-          "icon": "ActivitySquare",
-          "aggregation": {
-            "collectionGroup": "activities",
-            "type": "count",
-            "dateFields": [
-              "edits.createdAt",
-              "createdAt",
-              "original.createdAt"
-            ],
-            "typeFilterField": "original.type",
-            "loggedByFilterField": "original.loggedBy"
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "activities",
-        "linkFieldPath": "clientId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "type": {
-            "type": "string",
-            "description": "Tipologia dell'attività (chiamata, riunione, email, nota)",
-            "tags": [
-              "kpi:activity_counts",
-              "filter:type"
-            ]
-          },
-          "loggedBy": {
-            "type": "string",
-            "description": "UID dell'utente che ha registrato l'attività",
-            "tags": [
-              "filter:user",
-              "kpi:user_activities"
-            ]
-          },
-          "clientId": {
-            "type": "string",
-            "description": "ID del cliente correlato",
-            "tags": [
-              "filter:client",
-              "relation:clients"
-            ]
-          },
-          "date": {
-            "type": "date",
-            "description": "Data di svolgimento dell'attività",
-            "tags": [
-              "filter:date"
-            ]
-          },
-          "createdAt": {
-            "type": "datetime",
-            "description": "Data di inserimento a sistema ISO 8601",
-            "tags": [
-              "filter:date",
-              "sort:default"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": "places",
-      "label": "Gestione Luoghi",
-      "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
-      "icon": "MapPin",
-      "requirements": [],
-      "path": "/dashboard/places",
-      "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
-      "clientTabs": [
-        {
-          "id": "places",
-          "component": "ClientPlacesTab.svelte",
-          "label": "Luoghi"
-        }
-      ],
-      "settingsCard": {
-        "title": "Configurazione Luoghi",
-        "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
-        "icon": "MapPin",
-        "path": "/dashboard/settings/places"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
         "amministrazione",
-        "commerciale",
         "tecnico"
       ],
       "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "places_attivi",
-          "title": "Luoghi Attivi",
-          "subtitle": "Destinazioni operative attive",
-          "icon": "MapPin",
-          "valueKey": "activePlacesCount",
-          "aggregation": {
-            "collection": "places",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
       "anonymization": {
-        "collectionName": "places",
+        "collectionName": "tickets",
         "linkFieldPath": "clientId",
         "redactFields": [
           {
+            "fieldPath": "description",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          },
+          {
             "fieldPath": "notes",
             "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          },
+          {
+            "fieldPath": "contactName",
+            "replacement": "ANONIMIZZATO"
+          },
+          {
+            "fieldPath": "contactPhone",
+            "replacement": ""
           }
         ]
       },
       "schema": {
         "fields": {
-          "code": {
+          "ticketNumber": {
             "type": "string",
-            "description": "Codice identificativo del luogo (es. LUG-2026-001)",
+            "description": "Numero progressivo del ticket assistenziale",
             "tags": [
               "search",
               "sort"
             ]
           },
-          "name": {
+          "subject": {
             "type": "string",
-            "description": "Nome o denominazione del luogo/cantiere",
+            "description": "Oggetto sintesi della richiesta di assistenza",
             "tags": [
               "search",
               "display"
@@ -402,7 +304,7 @@
           },
           "clientId": {
             "type": "string",
-            "description": "ID del cliente proprietario/titolare del luogo",
+            "description": "ID del cliente richiedente",
             "tags": [
               "filter:client",
               "relation:clients"
@@ -410,381 +312,24 @@
           },
           "status": {
             "type": "string",
-            "description": "Stato del luogo (attivo, inattivo)",
+            "description": "Stato ticket (aperto, in_lavorazione, risolto, chiuso)",
             "tags": [
               "filter:status",
-              "kpi:places_attivi"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": "vehicles",
-      "label": "Mezzi & Attrezzature",
-      "description": "Anagrafica dei mezzi aziendali, furgoni, macchinari e strumenti di lavoro.",
-      "icon": "Truck",
-      "requirements": [],
-      "path": "/dashboard/vehicles",
-      "kpiBridgePath": "/dashboard/vehicles/vehicles.kpi.bridge.ts",
-      "clientTabs": [],
-      "settingsCard": {
-        "title": "Configurazione Mezzi & Attrezzature",
-        "description": "Denominazione agnostica (Mezzo/Furgone/Macchinario/Strumento), prefissi numerazione, stati predefiniti.",
-        "icon": "Truck",
-        "path": "/dashboard/settings/vehicles"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "vehicles_disponibili",
-          "title": "Mezzi Disponibili",
-          "subtitle": "Parco mezzi operativo pronto",
-          "icon": "Truck",
-          "valueKey": "availableVehiclesCount",
-          "aggregation": {
-            "collection": "vehicles",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "vehicles",
-        "linkFieldPath": "id",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice identificativo del mezzo (es. VEH-2026-001)",
-            "tags": [
-              "search",
-              "sort"
+              "kpi:tickets_open"
             ]
           },
-          "name": {
+          "priority": {
             "type": "string",
-            "description": "Marca, modello o nome identificativo del mezzo",
+            "description": "Livello di priorità (bassa, media, alta, urgente)",
             "tags": [
-              "search",
-              "display"
+              "filter:priority"
             ]
           },
-          "licensePlate": {
-            "type": "string",
-            "description": "Targa del veicolo o numero seriale dello strumento",
+          "resolutionTimeHours": {
+            "type": "number",
+            "description": "Tempo in ore impiegato per la risoluzione",
             "tags": [
-              "search"
-            ]
-          },
-          "type": {
-            "type": "string",
-            "description": "Tipologia (furgone, autocarro, macchinario, attrezzatura, altro)",
-            "tags": [
-              "filter:type"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato operativo (disponibile, in_uso, manutenzione, dismesso)",
-            "tags": [
-              "filter:status",
-              "kpi:vehicles_disponibili"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": "teams",
-      "label": "Squadre & Risorse",
-      "description": "Gestione squadre di lavoro, operatori di campo, caposquadra e composizione team.",
-      "icon": "Users",
-      "requirements": [],
-      "path": "/dashboard/teams",
-      "clientTabs": [],
-      "settingsCard": {
-        "title": "Configurazione Squadre & Risorse",
-        "description": "Denominazione agnostica (Squadra/Team/Gruppo/Risorsa), prefissi numerazione, stati predefiniti.",
-        "icon": "Users",
-        "path": "/dashboard/settings/teams"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "teams_attivi",
-          "title": "Squadre Attive",
-          "subtitle": "Team di lavoro operativi sul campo",
-          "icon": "Users",
-          "valueKey": "activeTeamsCount",
-          "aggregation": {
-            "collection": "teams",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "teams",
-        "linkFieldPath": "id",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice identificativo della squadra (es. SQD-2026-001)",
-            "tags": [
-              "search",
-              "sort"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "description": "Nome della squadra o identificativo del team",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "leaderId": {
-            "type": "string",
-            "description": "UID dell'operatore caposquadra / responsabile",
-            "tags": [
-              "filter:leader"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato operativo (attiva, inattiva, in_servizio)",
-            "tags": [
-              "filter:status",
-              "kpi:teams_attivi"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": "scheduling",
-      "label": "Pianificazione & Agenda",
-      "description": "Assegnazione e pianificazione giornaliera/settimanale di squadre, operatori e mezzi nei vari luoghi di lavoro.",
-      "icon": "Calendar",
-      "requirements": [],
-      "path": "/dashboard/scheduling",
-      "kpiBridgePath": "/dashboard/scheduling/scheduling.kpi.bridge.ts",
-      "clientTabs": [],
-      "settingsCard": {
-        "title": "Configurazione Pianificazione & Agenda",
-        "description": "Fasce orarie (Mattina, Pomeriggio, Giornata Intera, Personalizzati), stati predefiniti e permessi.",
-        "icon": "Calendar",
-        "path": "/dashboard/settings/scheduling"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico",
-        "operaio"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "scheduling_in_corso",
-          "title": "Attività In Corso",
-          "subtitle": "Pianificazioni oggi",
-          "icon": "Calendar",
-          "valueKey": "activeSchedulingCount",
-          "aggregation": {
-            "collection": "scheduling",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "scheduling",
-        "linkFieldPath": "clientId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice pianificazione (es. SCH-2026-0001)",
-            "tags": [
-              "search",
-              "sort"
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Titolo o motivo della pianificazione",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "date": {
-            "type": "date",
-            "description": "Data programmata (YYYY-MM-DD)",
-            "tags": [
-              "filter:date",
-              "sort:default"
-            ]
-          },
-          "slot": {
-            "type": "string",
-            "description": "Fascia oraria (mattina, pomeriggio, giornata_intera, custom)",
-            "tags": [
-              "filter:slot"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato operativo (pianificato, confermato, in_corso, completato, annullato)",
-            "tags": [
-              "filter:status",
-              "kpi:scheduling_in_corso"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": "deadlines",
-      "label": "Scadenzario & Allarmi",
-      "description": "Motore di allarmi ed avvisi automatici per scadenze furgoni, visite mediche, corsi sicurezza, contratti e certificazioni.",
-      "icon": "AlertTriangle",
-      "requirements": [],
-      "path": "/dashboard/deadlines",
-      "kpiBridgePath": "/dashboard/deadlines/deadlines.kpi.bridge.ts",
-      "clientTabs": [],
-      "settingsCard": {
-        "title": "Configurazione Scadenzario & Allarmi",
-        "description": "Giorni di preavviso allarmi, categorie abilitate, numerazione ed automatismi notifiche.",
-        "icon": "AlertTriangle",
-        "path": "/dashboard/settings/deadlines"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "deadlines_in_scadenza",
-          "title": "Scadenze Imminenti",
-          "subtitle": "Prossimi 30 giorni",
-          "icon": "AlertTriangle",
-          "valueKey": "upcomingDeadlinesCount",
-          "aggregation": {
-            "collection": "deadlines",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "deadlines",
-        "linkFieldPath": "linkedEntityId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice scadenza (es. DDL-2026-0001)",
-            "tags": [
-              "search",
-              "sort"
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Titolo o oggetto della scadenza",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "category": {
-            "type": "string",
-            "description": "Categoria scadenza (vehicle_inspection, medical_checkup, safety_course, contract_expiry, ecc.)",
-            "tags": [
-              "filter:category"
-            ]
-          },
-          "expiryDate": {
-            "type": "date",
-            "description": "Data di scadenza (YYYY-MM-DD)",
-            "tags": [
-              "filter:date",
-              "sort:default"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato alert (attiva, in_scadenza, scaduta, rinnovata, archiviata)",
-            "tags": [
-              "filter:status",
-              "kpi:deadlines_in_scadenza"
+              "kpi:tmr"
             ]
           }
         }

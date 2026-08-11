@@ -52,9 +52,37 @@
     }
   });
 
-  onMount(() => {
+  import { ChartSettingsService } from '$lib';
+
+  let clientChartConfig = $state(ChartSettingsService.getEntityConfig('clients'));
+
+  let isChartEnabled = $derived(clientChartConfig ? clientChartConfig.enabled : true);
+  let sideKpisPosition = $derived<"right" | "none">(
+    clientChartConfig && clientChartConfig.showSideKpis ? 'right' : 'none'
+  );
+
+  let activeMetrics = $derived.by(() => {
+    if (!clientChartConfig) return [];
+    return clientChartConfig.kpis
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }));
+  });
+
+  onMount(async () => {
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
+    }
+    try {
+      await ChartSettingsService.getSettings();
+      const c = ChartSettingsService.getEntityConfigSync('clients');
+      if (c) clientChartConfig = c;
+    } catch (e) {
+      console.error('Errore caricamento impostazioni grafico clienti:', e);
     }
     fetchClients();
   });
@@ -132,25 +160,23 @@
       {/if}
     </div>
 
-    <UniversalAnalyticsChart 
-      title="Andamento Nuovi Lead e Performance Clienti"
-      description="Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei clienti in base al periodo selezionato."
-      metrics={[
-        { id: 'nuove_anagrafiche', label: 'Nuove Anagrafiche', shortLabel: 'NA' },
-        { id: 'nncf', label: 'Primi Ordini NNCF', shortLabel: 'NNCF' },
-        { id: 'vss', label: 'Valore Venduto', shortLabel: 'VSS', isCurrency: true },
-        { id: 'gi', label: 'Incassato', shortLabel: 'GI', isCurrency: true }
-      ]}
-      bind:activeMetric={activeChartTab}
-      bind:granularity
-      bind:endDateString
-      {chartPeriods}
-      {computedChartPoints}
-      bind:selectedPointIdx
-      {loadingChart}
-      collapsible={true}
-      bind:isExpanded={isGraphExpanded}
-    />
+    {#if isChartEnabled}
+      <UniversalAnalyticsChart 
+        title="Andamento Nuovi Lead e Performance Clienti"
+        description="Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei clienti in base al periodo selezionato."
+        metrics={activeMetrics}
+        bind:activeMetric={activeChartTab}
+        bind:granularity
+        bind:endDateString
+        {chartPeriods}
+        {computedChartPoints}
+        bind:selectedPointIdx
+        {loadingChart}
+        collapsible={true}
+        bind:isExpanded={isGraphExpanded}
+        kpisPosition={sideKpisPosition}
+      />
+    {/if}
 
     <SearchToolbar
       bind:searchQuery

@@ -9,7 +9,6 @@ import ToastContainer from './components/ToastContainer.svelte';
 import ConfirmModal from './components/ConfirmModal.svelte';
 import StatusBadge from './components/StatusBadge.svelte';
 import KPITile from './components/KPITile.svelte';
-import TrendChart from './components/TrendChart.svelte';
 import UniversalAnalyticsChart from './components/UniversalAnalyticsChart.svelte';
 import MultiComplete from './components/MultiComplete.svelte';
 import SearchToolbar from './components/SearchToolbar.svelte';
@@ -32,7 +31,6 @@ export {
   ConfirmModal,
   StatusBadge,
   KPITile,
-  TrendChart,
   UniversalAnalyticsChart,
   MultiComplete,
   SearchToolbar,
@@ -46,3 +44,4 @@ export {
 
 export { generateSearchTerms } from './search-utils';
 export * from './types/moduleAnalyticsSettings';
+export { ChartSettingsService } from './services/chartSettingsService';

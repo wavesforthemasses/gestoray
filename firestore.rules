@@ -89,12 +89,6 @@ service cloud.firestore {
       allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
     }
 
-    // UNITS OF MEASURE
-    match /units_of_measure/{unitId} {
-      allow read: if isAuth();
-      allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
-    }
-
     // LOGIN PINS
     match /login_pins/{email} {
       allow read, write: if false;
@@ -151,60 +145,14 @@ match /{path=**}/installments/{instId} {
 }
     // --- MODULE: contracts END ---
 
-    // --- MODULE: activities BEGIN ---
-    // ACTIVITIES
-match /activities/{docId} {
+    // --- MODULE: tickets BEGIN ---
+    // TICKETS
+match /tickets/{docId} {
   allow read: if isAuth();
-  allow write: if isAuth();
+  allow create: if isAuth();
+  allow update: if isAuth();
+  allow delete: if hasRole('superadmin');
 }
-match /activity_types/{docId} {
-  allow read: if isAuth();
-  allow write: if isAdmin();
-}
-    // --- MODULE: activities END ---
-
-    // --- MODULE: places BEGIN ---
-    // PLACES
-match /places/{placeId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: places END ---
-
-    // --- MODULE: vehicles BEGIN ---
-    // VEHICLES
-match /vehicles/{vehicleId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: vehicles END ---
-
-    // --- MODULE: teams BEGIN ---
-    // TEAMS
-match /teams/{teamId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: teams END ---
-
-    // --- MODULE: scheduling BEGIN ---
-    match /scheduling/{scheduleId} {
-  allow read: if isAuth();
-  allow write: if isAuth() && (hasRole('superadmin') || hasRole('direzione') || hasRole('amministrazione'));
-}
-    // --- MODULE: scheduling END ---
-
-    // --- MODULE: deadlines BEGIN ---
-    match /deadlines/{deadlineId} {
-  allow read: if isAuth();
-  allow write: if isAuth();
-}
-    // --- MODULE: deadlines END ---
+    // --- MODULE: tickets END ---
   }
 }

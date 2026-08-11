@@ -18,7 +18,3 @@ export { onClientCreated, onClientUpdated } from './src/triggers/onClientCreated
 export { onContractCreated } from './src/triggers/onContractCreated';
 export { onInstallmentWrite } from './src/triggers/onInstallmentWrite';
 // --- MODULE FUNCTIONS: contracts END ---
-
-// --- MODULE FUNCTIONS: activities BEGIN ---
-export { onActivityCreated } from './src/triggers/onActivityCreated';
-// --- MODULE FUNCTIONS: activities END ---

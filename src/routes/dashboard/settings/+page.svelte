@@ -2,7 +2,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { activeRoleState } from '$lib/auth.svelte';
   import { goto } from '$app/navigation';
-  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package, Briefcase, FileText } from '@lucide/svelte';
+  import { Settings, Building, Menu, Palette, Shield, Ticket, Wrench, FileSpreadsheet, Ruler, ClipboardList, Package, Briefcase, FileText, TrendingUp } from '@lucide/svelte';
   import SettingsNavCard from './components/SettingsNavCard.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -17,7 +17,7 @@
   });
 
   const iconMap: Record<string, any> = {
-    Ticket, Wrench, ClipboardList, Package, FileText, Settings, Shield, Building, Menu, Palette, FileSpreadsheet, Ruler, Briefcase
+    Ticket, Wrench, ClipboardList, Package, FileText, Settings, Shield, Building, Menu, Palette, FileSpreadsheet, Ruler, Briefcase, TrendingUp
   };
 
   // Dynamic Module Settings Cards

@@ -90,6 +90,7 @@ export {
   getCountFromServer, 
   getAggregateFromServer, 
   sum, 
+  average,
   count, 
   orderBy, 
   limit, 
