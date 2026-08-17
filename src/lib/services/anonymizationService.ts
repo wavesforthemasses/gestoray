@@ -197,5 +197,62 @@ export class AnonymizationService {
     } catch (e) {
       console.warn(`Impossibile pulire i log storici per l'entità ${collectionName}/${id}`, e);
     }
+
+    // Scrub System Ledger Entries for GDPR Oblivion
+    try {
+      await this.scrubLedgerForAnonymization(id, authorUid);
+    } catch (e) {
+      console.warn(`Impossibile bonificare system_ledger per l'entità ${id}`, e);
+    }
+  }
+
+  /**
+   * Pulisce e redige i record di system_ledger per un'entità anonimizzata (GDPR Oblivion).
+   */
+  static async scrubLedgerForAnonymization(entityId: string, authorUid: string = 'system'): Promise<number> {
+    try {
+      const { collection, getDocs, query, where, updateDoc } = await import('$lib/firebase');
+      const q = query(collection(db, 'system_ledger'), where('entityId', '==', entityId));
+      const snap = await getDocs(q);
+      let count = 0;
+
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        const scrubbedMutations: Record<string, any> = {};
+
+        if (data.mutations && typeof data.mutations === 'object') {
+          for (const [key, mut] of Object.entries(data.mutations as Record<string, any>)) {
+            scrubbedMutations[key] = {
+              ...mut,
+              old: typeof mut.old === 'string' ? '[GDPR OBLIVION]' : mut.old,
+              new: typeof mut.new === 'string' ? '[GDPR OBLIVION]' : mut.new
+            };
+          }
+        }
+
+        const updates: Record<string, any> = {
+          entityLabel: '[DATO PERSONALE CANCELLATO]',
+          mutations: scrubbedMutations,
+          reason: '[GDPR OBLIVION]',
+          performedByName: '[OPERATORE ANONIMIZZATO]',
+          anonymizedAt: new Date().toISOString(),
+          anonymizedBy: authorUid,
+          anonymizationReason: "Diritto all'Oblio (GDPR Art. 17)"
+        };
+
+        if (data.sourceDoc) {
+          updates['sourceDoc.label'] = '[DOCUMENTO ANONIMIZZATO]';
+          updates['sourceDoc.docNumber'] = '[MASKED]';
+        }
+
+        await updateDoc(doc(db, 'system_ledger', docSnap.id), updates);
+        count++;
+      }
+
+      return count;
+    } catch (e) {
+      console.warn('Errore durante la bonifica GDPR di system_ledger:', e);
+      return 0;
+    }
   }
 }

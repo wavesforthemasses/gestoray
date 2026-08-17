@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { Loader2, X, ChevronDown } from '@lucide/svelte';
 
   export interface AutocompleteOption {
     id: string;
@@ -142,11 +143,17 @@
       oninput={handleInputText}
     />
     {#if loadingRemote}
-      <span class="loading-spinner">⏳</span>
+      <span class="loading-spinner">
+        <Loader2 size={15} />
+      </span>
     {:else if value && !disabled}
-      <button type="button" class="btn-clear" onclick={handleClear}>✕</button>
+      <button type="button" class="btn-clear" onclick={handleClear} aria-label="Cancella">
+        <X size={14} />
+      </button>
     {/if}
-    <span class="dropdown-arrow">▼</span>
+    <span class="dropdown-arrow">
+      <ChevronDown size={14} />
+    </span>
   </div>
 
   {#if isOpen && !disabled}

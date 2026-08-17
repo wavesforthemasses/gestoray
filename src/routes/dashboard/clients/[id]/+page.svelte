@@ -143,6 +143,8 @@
   let quotesList = $state<any[]>([]);
   let activitiesList = $state<any[]>([]);
   let historyList = $state<any[]>([]);
+  let timelineList = $state<any[]>([]);
+  let aggregateVersion = $state<number>(0);
   let contractsList = $state<any[]>([]);
   let usersList = $state<any[]>([]);
 
@@ -185,6 +187,8 @@
       productsList = payload.productsList;
       activitiesList = payload.activitiesList;
       historyList = payload.historyList;
+      timelineList = payload.timelineList || [];
+      aggregateVersion = payload.aggregateVersion || 0;
       contractsList = payload.contractsList;
       quotesList = payload.quotesList;
       usersList = payload.usersList;
@@ -335,12 +339,14 @@
         assignedAdminId: clientAssignedAdminId
       };
 
+      const tenantId = (authState.user as any)?.tenantId || 'default';
       const newOriginal = await ClientDetailService.updateProfile(
         clientId, 
         activeRoleState.role, 
         originalProfile, 
         newProfile, 
-        { uid: authState.user.uid, email: authState.user.email! }
+        { uid: authState.user.uid, email: authState.user.email!, tenantId },
+        aggregateVersion
       );
 
       toast.success('Profilo cliente aggiornato con successo!');
@@ -595,6 +601,9 @@
           bind:clientShippingCountry
           usersList={usersList}
           historyList={historyList}
+          timelineList={timelineList}
+          clientId={clientId}
+          currentUid={authState.user?.uid || ''}
           submittingProfile={submittingProfile}
           activeRole={activeRoleState.role}
           originalProfile={originalProfile}
@@ -602,6 +611,7 @@
           onUpdateProfile={handleUpdateProfile}
           onDeleteClient={handleDeleteClient}
           onOpenAnonymize={() => showAnonymizeModal = true}
+          onreloaded={loadAllData}
         />
       {:else if activeTab === 'contacts'}
         <ClientContactsTab

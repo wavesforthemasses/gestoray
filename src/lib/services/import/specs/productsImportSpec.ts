@@ -1,5 +1,6 @@
 import { db, collection, writeBatch, doc } from '$lib/firebase';
 import type { ImportModuleSpec, ConflictStrategy } from '$lib/types/importTypes';
+import type { ProductType, BillingType } from '../../../../routes/dashboard/products/schema';
 export interface MinimoFatturabileConfig {
   enabled: boolean;
   minQuantity?: number | null;
@@ -17,6 +18,34 @@ import { uuidv7 } from 'uuidv7';
 export function normalizeUnitOfMeasure(rawUnit: string): string {
   const res = UnitsOfMeasureService.resolveUnitSync(rawUnit);
   return res.canonicalCode;
+}
+
+export function parseProductType(raw: any): { type: ProductType; error?: string } {
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return { type: 'product' };
+  }
+  const clean = String(raw).trim().toLowerCase();
+  if (['prodotto', 'prod', 'product', 'bene', 'fisico', 'materiale', 'merce', 'articolo'].includes(clean)) {
+    return { type: 'product' };
+  }
+  if (['servizio', 'serv', 'service', 'prestazione', 'manodopera', 'consulenza'].includes(clean)) {
+    return { type: 'service' };
+  }
+  if (['digitale', 'dig', 'digital', 'licenza', 'software', 'download'].includes(clean)) {
+    return { type: 'digital' };
+  }
+  return { 
+    type: 'product', 
+    error: `Tipo articolo non riconosciuto: "${raw}". Valori ammessi: prodotto, servizio, digitale.` 
+  };
+}
+
+export function parseBillingType(raw: any): BillingType {
+  if (!raw) return 'one_off';
+  const clean = String(raw).trim().toLowerCase();
+  if (['hourly', 'ora', 'orario', 'a ore', 'all\'ora'].includes(clean)) return 'hourly';
+  if (['recurring', 'ricorrente', 'abbonamento', 'canone', 'periodico'].includes(clean)) return 'recurring';
+  return 'one_off';
 }
 
 export function parseMinimoFatturabile(raw: any): MinimoFatturabileConfig | undefined {
@@ -71,7 +100,16 @@ export const productsImportSpec: ImportModuleSpec = {
       label: 'Nome Prodotto / Servizio',
       type: 'string',
       required: true,
-      aliases: ['nome', 'titolo', 'prodotto', 'servizio', 'nome prodotto', 'descrizione']
+      aliases: ['nome', 'titolo', 'prodotto', 'servizio', 'nome prodotto', 'nome servizio', 'descrizione']
+    },
+    {
+      key: 'type',
+      label: 'Tipo Articolo',
+      type: 'string',
+      required: false,
+      defaultValue: 'product',
+      aliases: ['tipo', 'type', 'natura', 'tipologia', 'bene/servizio', 'tipo articolo', 'tipo_articolo'],
+      description: 'Valori accettati: prodotto (bene fisico), servizio, digitale.'
     },
     {
       key: 'sku',
@@ -102,7 +140,7 @@ export const productsImportSpec: ImportModuleSpec = {
       type: 'currency',
       required: false,
       defaultValue: 0,
-      aliases: ['prezzo', 'prezzo unitario', 'prezzo suggerito', 'listino', 'importo', 'costo']
+      aliases: ['prezzo', 'prezzo unitario', 'prezzo suggerito', 'listino', 'importo', 'costo', 'tariffa']
     },
     {
       key: 'unit',
@@ -111,15 +149,48 @@ export const productsImportSpec: ImportModuleSpec = {
       required: false,
       defaultValue: 'pz',
       aliases: ['unita', 'unità', 'unita di misura', 'unità di misura', 'um', 'u.m.'],
-      description: 'Normalizza automatica di valori tipo Pezzi -> pz, Kili -> kg, Metri -> m, Ore -> ora'
+      description: 'Normalizzazione automatica di valori tipo Pezzi -> pz, Kili -> kg, Metri -> m, Ore -> ora'
+    },
+    {
+      key: 'trackStock',
+      label: 'Monitoraggio Giacenza',
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      aliases: ['gestisci giacenza', 'traccia stock', 'track stock', 'gestione magazzino', 'track_stock'],
+      description: 'Se disattivato, l\'articolo non viene monitorato a magazzino (default per servizi).'
     },
     {
       key: 'stockQty',
-      label: 'Giacenza / Quantità',
+      label: 'Giacenza / Quantità Iniziale',
       type: 'number',
       required: false,
       defaultValue: 0,
-      aliases: ['giacenza', 'quantita', 'quantità', 'stock', 'qta', 'qtà']
+      aliases: ['giacenza', 'quantita', 'quantità', 'stock', 'qta', 'qtà', 'giacenza iniziale']
+    },
+    {
+      key: 'minStockThreshold',
+      label: 'Soglia Scorta Minima',
+      type: 'number',
+      required: false,
+      defaultValue: 0,
+      aliases: ['scorta minima', 'soglia minima', 'min stock', 'scorta_minima', 'min_stock_threshold', 'sottoscorta']
+    },
+    {
+      key: 'allowOutOfStockSale',
+      label: 'Vendita Sottoscorta (Backorder)',
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      aliases: ['vendibile sottoscorta', 'backorder', 'preordine', 'allow_out_of_stock_sale']
+    },
+    {
+      key: 'billingType',
+      label: 'Modello Tariffazione',
+      type: 'string',
+      required: false,
+      defaultValue: 'one_off',
+      aliases: ['tipo fatturazione', 'tariffazione', 'billing type', 'billing_type', 'tipo tariffazione', 'ricorrenza']
     },
     {
       key: 'minimoFatturabile',
@@ -153,6 +224,12 @@ export const productsImportSpec: ImportModuleSpec = {
 
     rows.forEach((row, idx) => {
       try {
+        const typeResult = parseProductType(row.type);
+        if (typeResult.error) {
+          throw new Error(typeResult.error);
+        }
+        const productType = typeResult.type;
+
         const legacySku = row.sku || row.name;
         const explicitId = String(row.id || '').trim();
         const targetId = explicitId || ((conflictStrategy === 'upsert' && legacySku) ? String(legacySku).trim() : uuidv7());
@@ -160,11 +237,25 @@ export const productsImportSpec: ImportModuleSpec = {
         const docRef = doc(collection(db, 'products'), targetId);
         const name = String(row.name || '').trim();
         const sku = String(row.sku || '').trim();
-        const unit = normalizeUnitOfMeasure(row.unit);
+        const unit = normalizeUnitOfMeasure(row.unit || (productType === 'service' ? 'ora' : 'pz'));
 
+        // Smart stock determination
+        const hasExplicitTrackStock = row.trackStock !== undefined && row.trackStock !== null && row.trackStock !== '';
+        const trackStock = hasExplicitTrackStock 
+          ? Boolean(row.trackStock === true || String(row.trackStock).toLowerCase() === 'true' || String(row.trackStock) === '1' || String(row.trackStock).toLowerCase() === 'si' || String(row.trackStock).toLowerCase() === 'sì')
+          : (productType === 'product');
 
         const rawStock = typeof row.stockQty === 'number' ? row.stockQty : parseFloat(String(row.stockQty || 0).replace(',', '.'));
         const cleanStock = isNaN(rawStock) ? 0 : UnitsOfMeasureService.roundQuantity(rawStock, unit);
+
+        const rawMinStock = typeof row.minStockThreshold === 'number' ? row.minStockThreshold : parseFloat(String(row.minStockThreshold || 0).replace(',', '.'));
+        const cleanMinStock = isNaN(rawMinStock) ? 0 : UnitsOfMeasureService.roundQuantity(rawMinStock, unit);
+
+        const allowOutOfStockSale = row.allowOutOfStockSale !== undefined && row.allowOutOfStockSale !== null && row.allowOutOfStockSale !== ''
+          ? Boolean(row.allowOutOfStockSale === true || String(row.allowOutOfStockSale).toLowerCase() === 'true' || String(row.allowOutOfStockSale) === '1' || String(row.allowOutOfStockSale).toLowerCase() === 'si' || String(row.allowOutOfStockSale).toLowerCase() === 'sì')
+          : true;
+
+        const billingType = parseBillingType(row.billingType || (productType === 'service' ? 'hourly' : 'one_off'));
 
         const rawPrice = typeof row.price === 'number' ? row.price : parseFloat(String(row.price || 0).replace(',', '.'));
         const cleanPrice = isNaN(rawPrice) ? 0 : UnitsOfMeasureService.roundQuantity(rawPrice, 'eur');
@@ -175,14 +266,19 @@ export const productsImportSpec: ImportModuleSpec = {
           sku,
           name,
           category: row.category || 'Generale',
+          type: productType,
           price: cleanPrice,
           unit,
-          stockQty: cleanStock,
+          trackStock,
+          stockQty: trackStock ? cleanStock : 0,
+          minStockThreshold: cleanMinStock,
+          allowOutOfStockSale,
+          billingType,
           description: row.description || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           derived: {
-            textSearch: [name.toLowerCase(), sku.toLowerCase(), (row.category || '').toLowerCase()].filter(Boolean)
+            textSearch: [name.toLowerCase(), sku.toLowerCase(), (row.category || '').toLowerCase(), productType].filter(Boolean)
           }
         };
 
@@ -198,16 +294,17 @@ export const productsImportSpec: ImportModuleSpec = {
         }
       } catch (err: any) {
         failed++;
-        errors.push({ row: idx, error: err.message || 'Errore salvataggio prodotto' });
+        errors.push({ row: idx + 1, error: err.message || 'Errore salvataggio prodotto' });
       }
     });
 
-    await batch.commit();
-
-    try {
-      await CacheLookupService.rebuildCacheForType('products');
-    } catch (e) {
-      console.warn('[productsImportSpec] Cache rebuild warning:', e);
+    if (succeeded > 0) {
+      await batch.commit();
+      try {
+        await CacheLookupService.rebuildCacheForType('products');
+      } catch (e) {
+        console.warn('[productsImportSpec] Cache rebuild warning:', e);
+      }
     }
 
     return { succeeded, failed, errors, createdMap };

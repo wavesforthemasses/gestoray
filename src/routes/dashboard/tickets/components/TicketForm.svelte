@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TicketSchema } from '../schema';
   import { authState } from '$lib/auth.svelte';
+  import { User } from '@lucide/svelte';
 
   let {
     formData = $bindable(),
@@ -85,7 +86,7 @@
       <option value="bassa">Bassa</option>
       <option value="media">Media</option>
       <option value="alta">Alta</option>
-      <option value="urgente">Urgente 🔥</option>
+      <option value="urgente">Urgente</option>
     </select>
   </div>
 
@@ -113,7 +114,9 @@
     <div class="label-row">
       <label for="requesterName" class="form-label">Nome Richiedente</label>
       {#if authState.user}
-        <button type="button" class="btn-self" onclick={fillSelfData}>👤 Sono Io</button>
+        <button type="button" class="btn-self" onclick={fillSelfData}>
+          <User size={13} /> Sono Io
+        </button>
       {/if}
     </div>
     <input

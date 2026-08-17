@@ -2,6 +2,9 @@
   import { formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from '$lib';
   import { User, Clock, Trash2, Building2, CreditCard, Truck, UserCheck, Copy, Save, ShieldAlert, Notebook } from '@lucide/svelte';
+  import VersionTimeline from '$lib/components/versioning/VersionTimeline.svelte';
+  import { CLIENT_FIELD_LABELS } from '../../clients.versioning.bridge';
+  import type { SystemLedgerEntry } from '$lib/services/versioningService';
 
   interface Props {
     clientName: string;
@@ -69,6 +72,9 @@
 
     usersList: any[];
     historyList: any[];
+    timelineList?: SystemLedgerEntry[];
+    clientId?: string;
+    currentUid?: string;
     submittingProfile: boolean;
     activeRole: string | null;
     originalProfile: any;
@@ -77,6 +83,7 @@
     onUpdateProfile: (e: Event) => void;
     onDeleteClient: () => void;
     onOpenAnonymize?: () => void;
+    onreloaded?: () => void;
   }
 
   let {
@@ -137,6 +144,9 @@
 
     usersList,
     historyList,
+    timelineList = [],
+    clientId = '',
+    currentUid = '',
     submittingProfile,
     activeRole,
     originalProfile,
@@ -144,7 +154,8 @@
 
     onUpdateProfile,
     onDeleteClient,
-    onOpenAnonymize
+    onOpenAnonymize,
+    onreloaded
   }: Props = $props();
 
   let activeSubTab = $state<'general' | 'banking' | 'credit' | 'addresses' | 'admin'>('general');
@@ -410,7 +421,7 @@
           <div class="form-grid-columns">
             <FormField id="c-crif" label="Controllo CRIF">
               <select id="c-crif" bind:value={crifCheck} disabled={submittingProfile || activeRole === 'direzione'}>
-                <option value="ESEGUITO & VALIDO">✓ ESEGUITO & VALIDO</option>
+                <option value="ESEGUITO & VALIDO">ESEGUITO & VALIDO</option>
                 <option value="IN ATTESA">IN ATTESA</option>
                 <option value="FALLITO">FALLITO</option>
                 <option value="NON ESEGUITO">NON ESEGUITO</option>
@@ -529,40 +540,21 @@
           </div>
         </Card>
 
-        <Card title="Audit Trail Storico Modifiche" description="Visualizza cronologicamente chi ha modificato la scheda e quali campi sono variati.">
+        <Card title="Audit Trail & Versioning Storico" description="Visualizza cronologicamente chi ha modificato la scheda, quali campi sono variati e permette il ripristino sicuro (Superadmin).">
           {#snippet icon()}
             <Clock size={20} class="icon-accent" />
           {/snippet}
 
-          {#if historyList.length === 0}
-            <div class="empty-panel">Nessuna modifica registrata per questa anagrafica.</div>
-          {:else}
-            <div class="audit-history-list">
-              {#each historyList as log}
-                <div class="audit-log-item">
-                  <div class="audit-log-meta">
-                    <span class="audit-author">{log.updatedEmail}</span>
-                    <span class="audit-time">{log.edits?.createdAt ? formatDateTime(log.edits.createdAt) : 'N/D'}</span>
-                  </div>
-                  
-                  <div class="audit-log-changes">
-                    {#if log.changes && Object.keys(log.changes).length > 0}
-                      <ul class="changes-list">
-                        {#each Object.keys(log.changes) as field}
-                          <li>
-                            Campo <strong>{field}</strong>: 
-                            <span class="old-val">"{log.changes[field].oldVal || 'N/D'}"</span> 
-                            &rarr; 
-                            <span class="new-val">"{log.changes[field].newVal || 'N/D'}"</span>
-                          </li>
-                        {/each}
-                      </ul>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/if}
+          <VersionTimeline
+            timelineList={timelineList}
+            entityId={clientId}
+            entityCollection="clients"
+            entityLabel={clientName || 'Cliente'}
+            activeRole={activeRole || ''}
+            currentUid={currentUid}
+            fieldLabelMap={CLIENT_FIELD_LABELS}
+            onreverted={onreloaded}
+          />
         </Card>
 
         {#if activeRole === 'superadmin'}

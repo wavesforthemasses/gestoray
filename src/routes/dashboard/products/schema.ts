@@ -1,3 +1,7 @@
+export type ProductType = 'product' | 'service' | 'digital';
+export type BillingType = 'one_off' | 'hourly' | 'recurring';
+export type RecurrenceInterval = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
 export interface MinimoFatturabileConfig {
   enabled: boolean;
   minQuantity?: number | null; // Quantità soglia (es. 20)
@@ -10,9 +14,20 @@ export interface ProductItem {
   sku: string;
   name: string;
   category: string;
+  type?: ProductType; // 'product' (default) | 'service' | 'digital'
   price: number;
-  unit: string; // 'pz', 'kg', 'm', 'l', 'ora', 'mc', 'mq', etc.
-  stockQty: number;
+  unit: string; // 'pz', 'kg', 'm', 'l', 'ora', 'mc', 'mq', 'giorno', 'mese', 'forfait', etc.
+  
+  // Gestione Giacenza & Scorte (Disaccoppiata)
+  trackStock?: boolean;             // Se false, nessun monitoraggio di giacenza (default true per product, false per service/digital)
+  stockQty: number;                 // Giacenza numerica (può essere <= 0 con backorder)
+  minStockThreshold?: number;       // Soglia scorta minima per alert
+  allowOutOfStockSale?: boolean;    // true: vendibile anche se <= 0 (backorder); false: bloccato se esaurito
+  
+  // Modello di Tariffazione
+  billingType?: BillingType;        // 'one_off' | 'hourly' | 'recurring'
+  recurrenceInterval?: RecurrenceInterval; // 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  
   description?: string;
   minimoFatturabile?: MinimoFatturabileConfig;
   customFields?: Record<string, any>;
@@ -21,5 +36,6 @@ export interface ProductItem {
   derived?: {
     textSearch?: string[];
     cacheChunkId?: string;
+    deleted?: boolean;
   };
 }

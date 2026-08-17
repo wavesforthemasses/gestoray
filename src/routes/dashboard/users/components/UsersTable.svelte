@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, Table, Pagination } from '$lib';
-  import { Database, UserPlus, UserX, UserCheck } from '@lucide/svelte';
+  import { Database, UserPlus, UserX, UserCheck, Check, X } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import type { UserData } from '../users.service';
 
@@ -57,9 +57,13 @@
         <span class="email-cell">{row.email}</span>
       {:else if col.key === 'status'}
         {#if row.isActive !== false}
-          <span class="status-pill status-active">✓ Attivo</span>
+          <span class="status-pill status-active">
+            <Check size={12} /> Attivo
+          </span>
         {:else}
-          <span class="status-pill status-inactive">✕ Disattivato</span>
+          <span class="status-pill status-inactive">
+            <X size={12} /> Disattivato
+          </span>
         {/if}
       {:else if col.key === 'squadra'}
         {#if userTeams[row.uid]}

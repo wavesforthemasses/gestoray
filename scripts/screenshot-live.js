@@ -68,12 +68,18 @@ function parseArgs() {
   console.log(`🔌 Connessione a Google Chrome CDP (${opts.cdpUrl})...`);
 
   let browser;
+  let isCdp = true;
   try {
     browser = await chromium.connectOverCDP(opts.cdpUrl);
   } catch (err) {
-    console.error(`❌ Impossibile connettersi a Chrome su ${opts.cdpUrl}.`);
-    console.error(`💡 Assicurati che Chrome sia avviato con: google-chrome --remote-debugging-port=9222 --user-data-dir=$HOME/.chrome-debug-profile`);
-    process.exit(1);
+    console.log(`ℹ️ Chrome CDP (${opts.cdpUrl}) non attivo, avvio istanza headless Chromium...`);
+    try {
+      browser = await chromium.launch({ headless: true });
+      isCdp = false;
+    } catch (launchErr) {
+      console.error(`❌ Impossibile avviare Chromium:`, launchErr.message);
+      process.exit(1);
+    }
   }
 
   const contexts = browser.contexts();
@@ -85,6 +91,31 @@ function parseArgs() {
   if (opts.url) {
     console.log(`🌐 Navigazione a: ${opts.url}`);
     await page.goto(opts.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  }
+
+  // Wait a moment for any client-side auth redirects
+  await page.waitForTimeout(1000);
+
+  // Check if login form is present and auto-authenticate
+  const isLoginForm = await page.$('#email');
+  if (isLoginForm) {
+    console.log(`🔑 Rilevata schermata di login (#email), esecuzione auto-login con test-super@app.local...`);
+    try {
+      await page.fill('#email', 'test-super@app.local');
+      await page.click('button[type="submit"]');
+      await page.waitForSelector('.pin-code', { timeout: 10000 });
+      const pin = await page.innerText('.pin-code');
+      console.log(`🔑 PIN rilevato: ${pin}, inserimento per verifica...`);
+      await page.fill('#pin', pin.trim());
+      await page.click('button[type="submit"]');
+      await page.waitForURL(url => !url.href.includes('/login'), { timeout: 15000 });
+      console.log(`✅ Login effettuato con successo. Navigazione alla destinazione: ${opts.url}`);
+      if (opts.url && !page.url().includes(opts.url)) {
+        await page.goto(opts.url, { waitUntil: 'networkidle', timeout: 30000 });
+      }
+    } catch (authErr) {
+      console.warn(`⚠️ Auto-login non completato:`, authErr.message);
+    }
   }
 
   // Wait for rendering / Svelte hydration

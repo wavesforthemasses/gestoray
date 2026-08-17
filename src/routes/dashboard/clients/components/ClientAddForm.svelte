@@ -232,7 +232,8 @@
       };
 
       const isCommerciale = !['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '');
-      const res = await ClientsService.createClient(newClient, historyData, computedFiscalId, isCommerciale, authState.user.uid);
+      const tenantId = (authState.user as any)?.tenantId || 'default';
+      const res = await ClientsService.createClient(newClient, historyData, computedFiscalId, isCommerciale, authState.user.uid, tenantId);
 
       if (!res.success) {
         throw new Error(res.error || "Errore sconosciuto durante il salvataggio.");

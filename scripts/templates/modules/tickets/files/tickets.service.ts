@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy } from '$lib/firebase';
+import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot } from '$lib/firebase';
 import type { TicketItem, TicketMessage, TicketKPIs } from './schema';
 import { TicketSettingsService } from '$lib/services/ticketSettings';
 
@@ -20,6 +20,30 @@ function cleanUndefined(obj: any): any {
 const COLLECTION_NAME = 'tickets';
 
 export const TicketsService = {
+  subscribeToActiveTicketsCount(userUid: string, isExecutive: boolean, callback: (count: number) => void): () => void {
+    try {
+      const q = isExecutive || !userUid
+        ? query(collection(db, COLLECTION_NAME))
+        : query(collection(db, COLLECTION_NAME), where('assignedTo', '==', userUid));
+
+      return onSnapshot(q, (snap) => {
+        const activeCount = snap.docs.filter((d: any) => {
+          const data = d.data();
+          if (data?.derived?.deleted) return false;
+          const status = data?.status || 'aperto';
+          return status === 'aperto' || status === 'in_lavorazione' || status === 'in_attesa_cliente';
+        }).length;
+        callback(activeCount);
+      }, (error) => {
+        console.warn('Errore snapshot active tickets count:', error);
+        callback(0);
+      });
+    } catch (e) {
+      console.warn('Impossibile iscriversi ad active tickets count:', e);
+      callback(0);
+      return () => {};
+    }
+  },
   async getTickets(isExecutive: boolean = false, userUid?: string, userEmail?: string): Promise<TicketItem[]> {
     try {
       if (isExecutive || (!userUid && !userEmail)) {

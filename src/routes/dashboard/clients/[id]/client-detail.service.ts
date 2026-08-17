@@ -3,6 +3,8 @@ import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib/search-utils';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { AuditHistoryService } from '$lib/services/auditHistoryService';
+import { VersioningService, computeDiff, type SystemLedgerEntry } from '$lib/services/versioningService';
+import { ClientsVersioningBridge } from '../clients.versioning.bridge';
 
 export interface ClientDataPayload {
   clientDerived: any;
@@ -11,6 +13,8 @@ export interface ClientDataPayload {
   productsList: any[];
   activitiesList: any[];
   historyList: any[];
+  timelineList: SystemLedgerEntry[];
+  aggregateVersion: number;
   contractsList: any[];
   quotesList: any[];
   usersList: any[];
@@ -26,6 +30,8 @@ export class ClientDetailService {
       productsList: [],
       activitiesList: [],
       historyList: [],
+      timelineList: [],
+      aggregateVersion: 0,
       contractsList: [],
       quotesList: [],
       usersList: [],
@@ -133,6 +139,8 @@ export class ClientDetailService {
     payload.activitiesList = acts.sort((a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime());
 
     payload.historyList = await AuditHistoryService.getEntityHistory('clients', clientId);
+    payload.timelineList = await VersioningService.getEntityTimeline(clientId);
+    payload.aggregateVersion = (data.edits?.aggregateVersion as number) || 0;
 
     const uList: any[] = [];
     if (usersSnap.forEach) {
@@ -146,7 +154,7 @@ export class ClientDetailService {
     return payload;
   }
 
-  static async updateProfile(clientId: string, activeRole: string, originalProfile: any, newProfile: any, authObj: { uid: string, email: string }) {
+  static async updateProfile(clientId: string, activeRole: string, originalProfile: any, newProfile: any, authObj: { uid: string, email: string, tenantId?: string }, expectedBaseVersion?: number) {
     const isDirezione = activeRole === 'direzione';
 
     if (!isDirezione && newProfile.fiscalId && newProfile.fiscalId.trim()) {
@@ -181,17 +189,48 @@ export class ClientDetailService {
     const fullClientName = `${newOriginal.nome || ''} ${newOriginal.cognome || ''}`.trim();
     const updatedTerms = generateSearchTerms(fullClientName, newOriginal.partitaIva || '', newOriginal.codiceFiscale || '', newOriginal.email || '');
 
-    const updatePayload: Record<string, any> = {
-      'derived.textSearch': updatedTerms,
-      'edits.modifiedAt': now,
-      'edits.modifiedBy': authObj.uid
+    const clientRef = doc(db, 'clients', clientId);
+    const clientSnap = await getDoc(clientRef);
+    const currentData = clientSnap.exists() ? clientSnap.data() : {};
+
+    const nextEntityData = {
+      ...currentData,
+      original: {
+        ...(currentData.original || {}),
+        ...newOriginal
+      },
+      derived: {
+        ...(currentData.derived || {}),
+        textSearch: updatedTerms
+      }
     };
 
-    fields.forEach(f => {
-      updatePayload[`original.${f}`] = newOriginal[f];
+    const diff = computeDiff(currentData, nextEntityData, {
+      semanticsMap: ClientsVersioningBridge.getSemanticsMap()
     });
 
-    await updateDoc(doc(db, 'clients', clientId), updatePayload);
+    if (diff.keysChanged.length > 0) {
+      await VersioningService.executeDualWriteTransaction(
+        db,
+        clientRef,
+        nextEntityData,
+        {
+          tenantId: authObj.tenantId || 'default',
+          module: 'clients',
+          entityType: 'client',
+          entityId: clientId,
+          entityLabel: fullClientName,
+          eventType: 'FIELD_MUTATION',
+          keysChanged: diff.keysChanged,
+          mutations: diff.mutations,
+          performedBy: authObj.uid,
+          performedByName: authObj.email,
+          actorType: 'USER',
+          reason: 'Modifica scheda anagrafica cliente'
+        },
+        expectedBaseVersion !== undefined ? expectedBaseVersion : (currentData.edits?.aggregateVersion ?? 0)
+      );
+    }
 
     await CacheLookupService.updateClientCache(clientId, fullClientName);
 

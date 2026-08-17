@@ -3,7 +3,7 @@ import { CsvParser } from './csvParser';
 import { ImportRegistry } from './importRegistry';
 import { EntityResolutionService } from './entityResolutionService';
 import { ImportEngineService } from './importEngineService';
-import { normalizeUnitOfMeasure, parseMinimoFatturabile, productsImportSpec } from './specs/productsImportSpec';
+import { normalizeUnitOfMeasure, parseMinimoFatturabile, parseProductType, parseBillingType, productsImportSpec } from './specs/productsImportSpec';
 import type { ImportModuleSpec } from '$lib/types/importTypes';
 
 describe('Universal Import Engine Unit Tests', () => {
@@ -181,8 +181,35 @@ describe('Universal Import Engine Unit Tests', () => {
       expect(states[1].mappedData.price).toBe(270);
     });
 
+    it('should parse Product Types and validate unknown types strictly', () => {
+      expect(parseProductType('Prodotto')).toEqual({ type: 'product' });
+      expect(parseProductType('Merce')).toEqual({ type: 'product' });
+      expect(parseProductType('Servizio')).toEqual({ type: 'service' });
+      expect(parseProductType('Manodopera')).toEqual({ type: 'service' });
+      expect(parseProductType('Consulenza')).toEqual({ type: 'service' });
+      expect(parseProductType('Software')).toEqual({ type: 'digital' });
+      expect(parseProductType('Licenza')).toEqual({ type: 'digital' });
+      expect(parseProductType('Digitale')).toEqual({ type: 'digital' });
+      expect(parseProductType('')).toEqual({ type: 'product' });
+      expect(parseProductType(undefined)).toEqual({ type: 'product' });
+      
+      const invalidResult = parseProductType('TipoNonEsistente');
+      expect(invalidResult.error).toBeDefined();
+      expect(invalidResult.error).toContain('non riconosciuto');
+    });
+
+    it('should parse Billing Types correctly', () => {
+      expect(parseBillingType('a corpo')).toBe('one_off');
+      expect(parseBillingType('una tantum')).toBe('one_off');
+      expect(parseBillingType('a ore')).toBe('hourly');
+      expect(parseBillingType('orario')).toBe('hourly');
+      expect(parseBillingType('ricorrente')).toBe('recurring');
+      expect(parseBillingType('abbonamento')).toBe('recurring');
+      expect(parseBillingType('')).toBe('one_off');
+    });
+
     it('should automatically map headers like Prezzo, Descrizione, Gruppo Prodotto using field aliases', () => {
-      const csvHeaders = ['Descrizione', 'Descrizione Lunga', 'Prezzo', 'Unità', 'Gruppo prodotto', 'Minimo Fatturabile'];
+      const csvHeaders = ['Descrizione', 'Descrizione Lunga', 'Prezzo', 'Unità', 'Gruppo prodotto', 'Minimo Fatturabile', 'Tipo', 'Giacenza', 'Scorta Minima'];
       const autoMapping = ImportEngineService.autoMapHeaders(csvHeaders, productsImportSpec.fields);
 
       expect(autoMapping.price).toBe('Prezzo');
@@ -190,6 +217,9 @@ describe('Universal Import Engine Unit Tests', () => {
       expect(autoMapping.category).toBe('Gruppo prodotto');
       expect(autoMapping.unit).toBe('Unità');
       expect(autoMapping.minimoFatturabile).toBe('Minimo Fatturabile');
+      expect(autoMapping.type).toBe('Tipo');
+      expect(autoMapping.stockQty).toBe('Giacenza');
+      expect(autoMapping.minStockThreshold).toBe('Scorta Minima');
     });
   });
 });

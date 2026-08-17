@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { Ticket, Send } from '@lucide/svelte';
   import { TicketsService } from '../../dashboard/tickets/tickets.service';
   import { TicketSettingsService, type TicketCategoryConfig } from '$lib/services/ticketSettings';
 
@@ -58,7 +59,9 @@
 
 <div class="public-ticket-container animate-fade-in">
   <div class="ticket-card card">
-    <h2 class="title">🎫 Portale Assistenza Clienti</h2>
+    <h2 class="title flex-title">
+      <Ticket size={24} class="title-icon" /> Portale Assistenza Clienti
+    </h2>
     <p class="subtitle">Invia una richiesta di supporto ed il nostro team tecnico se ne prenderà cura.</p>
 
     {#if successMsg}
@@ -95,7 +98,11 @@
       </div>
 
       <button type="submit" disabled={loading} class="btn-submit">
-        {loading ? 'Invio in corso...' : '📩 Invia Richiesta Assistenza'}
+        {#if loading}
+          Invio in corso...
+        {:else}
+          <Send size={16} /> Invia Richiesta Assistenza
+        {/if}
       </button>
     </form>
   </div>

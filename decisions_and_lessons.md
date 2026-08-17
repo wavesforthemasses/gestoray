@@ -31,8 +31,8 @@
 
 ---
 
-### 5. Modolarità Agnostica e Template First
-- **Lezione**: I componenti ed i trigger core non devono mai contenere nomi di collezione o logiche rigide di moduli opzionali (es. `tickets`, `activities`, `contracts`).
+### 5. Modularità Agnostica e Template First
+- **Lezione**: I componenti ed i trigger core non devono mai contenere nomi di collezione o logiche rigide di moduli opzionali (es. `tickets`, `activities`, `contracts`, `products`).
 - **Regola**: Modifiche ai moduli si scrivono sempre prima in `scripts/templates/modules/<modulo>/`. I file core iterano sui registri generati o installati, garantendo che l'aggiunta o rimozione di un modulo non richieda mai modifiche manuali ai file del core.
 
 ---
@@ -43,37 +43,33 @@
 
 ---
 
----
-
-### 8. Reversibilità e Ciclo di Vita Simmetrico dello Stato `derived` (`Azione ➔ Reversione = Stato 0`)
+### 7. Reversibilità e Ciclo di Vita Simmetrico dello Stato `derived` (`Azione ➔ Reversione = Stato 0`)
 - **Lezione**: Ogni mutazione di uno stato calcolato (`derived.*`) deve avere un ciclo di vita completo e simmetrico. Se un'azione incrementa o aggiorna un contatore o uno stato (es. creazione di un'attività o di una rata), l'azione opposta (eliminazione o annullamento) deve riportare lo stato calcolato esattamente allo stato iniziale zero, senza lasciare residui orfani.
 - **Regola**: Tutti i trigger di sincronizzazione dati devono gestire la scrittura completa via `onDocumentWritten` e ricalcolare gli aggregati in modo simmetrico (es. alla cancellazione dell'ultima attività, `activitiesCount` torna a 0 e `lastActivityDate` viene azzerato o ripristinato alla data precedente).
 
 ---
 
-### 9. Scritture System Cache Esclusivamente Server-Side (Zero Cache Poisoning)
+### 8. Scritture System Cache Esclusivamente Server-Side (Zero Cache Poisoning)
 - **Lezione**: Consentire al client frontend di scrivere direttamente nella collezione di cache di sistema (`system_cache`) espone l'infrastruttura al rischio di *Cache Poisoning*, ovvero alla manomissione maliziosa o accidentale delle mappe di lookup (es. ID/Nomi clienti) condivise tra utenti.
 - **Regola**: Le raccolte di cache di sistema (`system_cache`) sono in sola lettura per il client frontend (`allow read: if isAuth(); allow write: if false;`). L'aggiornamento dei chunk di cache viene guidato dai trigger backend o da ruoli Admin autorizzati.
 
 ---
 
-### 10. Maturazione Provvigionale Basata su Incassi Reali (`Realized Payments`)
+### 9. Maturazione Provvigionale Basata su Incassi Reali (`Realized Payments`)
 - **Lezione**: Calcolare o maturare provvigioni su contratti puramente teorici o non ancora incassati espone la PMI al rischio di pagare commissioni su crediti inesigibili o contratti successivamente annullati.
 - **Regola**: Il calcolo ed il ricalcolo delle provvigioni si esegue in tempo reale al salvataggio o incasso effettivo delle rate (`onContractCreated` e `onInstallmentWrite`), tracciando la maturazione provvigionale in modo coerente tra incassi effettivi e liquidazione commissioni.
 
 ---
 
-### 11. Guardia Anti-Loop Infinito Obbligatoria per Trigger Firestore (`isDerivedOnlyChange`)
+### 10. Guardia Anti-Loop Infinito Obbligatoria per Trigger Firestore (`isDerivedOnlyChange`)
 - **Lezione**: I trigger `onDocumentWritten` che aggiornano i campi calcolati (`derived.*`) sullo stesso documento o su entità collegate rischiano di riattivare sé stessi all'infinito se non verificano che le modifiche riguardino solo lo stato `derived`.
 - **Regola**: Tutti i trigger di scrittura (`onDocumentWritten`) devono includere tassativamente la guardia `if (before && after && isDerivedOnlyChange(before, after)) return;` prima di effettuare qualsiasi aggiornamento. Ogni piano d'implementazione e suite di test deve contenere un test unitario/di integrazione che certifichi l'assenza di loop infiniti.
 
 ---
 
-### 12. Divieto Assoluto di Hardcoding di Regole o Trigger di Moduli Non Installati (Template-First)
+### 11. Divieto Assoluto di Hardcoding di Regole o Trigger di Moduli Non Installati (Template-First)
 - **Lezione**: Inserire manualmente nel codice core (es. `firestore.rules` o `functions/index.ts`) regole o export riferiti a moduli opzionali non ancora installati (es. `contracts`, `tickets`, `interventi`) viola l'architettura modulare agnostica di Gestoray ed altera lo stato dei moduli non attivi.
 - **Regola**: Le regole Firestore, le Cloud Functions ed i componenti dei moduli opzionali devono risiedere **esclusivamente** nella directory dei loro template (`scripts/templates/modules/<modulo>/`). L'iniezione nei file core deve avvenire **unicamente** all'atto dell'installazione del modulo tramite CLI (`npm run module:install -- --name <modulo>`).
-
----
 
 ---
 
@@ -84,7 +80,9 @@
   2. **Centralized Search Toolbar (`SearchToolbar.svelte`)**: Posizionata sempre SUBITO SOTTO il titolo della pagina e PRIMA dei dati, composta da Input di ricerca a sinistra con icona integrata e reset `(X)`, e Filtri dinamici a tendina a destra.
   3. **Data Card (Table o Cards Grid)**: Contiene solo l'elenco/tabella dei dati e gli eventuali pulsanti di esportazione (CSV/Excel/PDF).
 
-### 13. CacheLookupService Restituisce Solo `{ id, name }` — Mai Usare per Dati Completi
+---
+
+### 13. CacheLookupService Restituisce Solo `{ id, name }` — Mai Usare per Dati Completi (Dynamic Bridges)
 - **Lezione**: `CacheLookupService.getLookup('products')` è un cache leggero chunked che restituisce esclusivamente `{ id: string; name: string }`. **Non contiene** campi come `price`, `unit`, `description`, `minimoFatturabile`, `sku`, ecc. Usarlo per popolare form di selezione prodotti con prezzo causa campi a `0` o vuoti.
 - **Regola**: Quando un modulo necessita dei dati completi di un'entità di un altro modulo opzionale (es. `contracts` necessita dei prodotti completi con prezzo da `products`), utilizzare un **Dynamic Plugin Bridge** che importa condizionalmente il service del modulo sorgente:
   ```ts
@@ -115,7 +113,7 @@
 ### 16. Contratti di Schema TypeScript & Prevenzione Disallineamento Chiavi (Zero Arbitrary Strings)
 - **Lezione**: Accedere a nomi di proprietà liberi in stringhe o presupporre strutture annidate arbitrarie (es. `original.totalPrice` o `edits.createdAt`) quando un modulo definisce uno schema tipo `ContractItem` con campi a livello root (`totalAmount`, `createdAt`, `status`, `agentId`) crea silenziosamente disallineamenti in cui le query restituiscono `0` o array vuoti.
 - **Regola**: 
-  1. Ogni modulo deve definire ed esportare la propria interfaccia TypeScript di riferimento per i documenti Firestore (es. `ContractItem`, `ClientItem`).
+  1. Ogni modulo deve definire ed esportare la propria interfaccia TypeScript di riferimento per i documenti Firestore (es. `ContractItem`, `ClientItem`, `ProductItem`).
   2. I servizi di dashboard, aggregazione ed analytics (sia client-side che Cloud Functions) DEVONO importare ed utilizzare i tipi ed helper di estrazione oppure supportare esplicitamente la lettura resiliente dei campi dichiarati negli schemi di modulo.
   3. È fatto divieto di scrivere query aggregate Firestore o filtri su stringhe rigide non verificate contro lo schema ufficiale del modulo. In fase di sviluppo, verificare sempre che i nomi campo nelle query coincidano esattamente con le chiavi salvate dal `Service.create` del modulo.
 
@@ -157,4 +155,28 @@
      - L'icona passa ad un contenitore in vetro smerigliato translucido (`rgba(255, 255, 255, 0.24)`) con icona Lucide bianca.
      - L'elevazione visiva è gestita tramite uno spostamento tridimensionale morbido (`translateY(-4px)`) e un'ombra d'ambiente profonda.
 
+---
 
+### 21. Standardizzazione Iconografia Vettoriale (MANDATORY LUCIDE ICONS, Zero Raw Emojis)
+- **Lezione**: L'uso di emoji Unicode di sistema (es. 📋, 🔄, 📌, 🛠️, 🎫, 📄, 🌐, ➕, ✏️, 🗑️, 📱, 🖨️) genera incongruenze grafiche evidenti tra piattaforme (Windows, macOS, Linux, iOS, Android), non supporta l'ereditarietà cromatica CSS (`currentColor` / `--color-primary`) e degrada l'esperienza visiva premium dell'ERP.
+- **Regola**:
+  1. **Solo Icone Vettoriali Lucide**: Tutti i pulsanti, badge, intestazioni di navigazione, placeholder di stato vuoto, indicatori di stato e metriche KPI devono utilizzare esclusivamente icone vettoriali da `@lucide/svelte`.
+  2. **Divieto Assoluto di Emojis Raw**: È tassativamente vietato l'uso di emoji testuali OS all'interno dei template Svelte per elementi di interfaccia utente.
+
+---
+
+### 22. Invarianti Inviolabili di Versioning Transazionale & Audit Trail Immutabile (I1–I10)
+- **Lezione**: Tracciare le modifiche tramite trigger asincroni (Cloud Functions v2) o permettere toggle UI per disabilitare l'audit trail crea falle critiche: perdita del contesto utente autenticato (`auth.uid`), race conditions senza Optimistic Concurrency Control (OCC) e buchi irreparabili nella tracciabilità legale (GDPR / ISO 27001).
+- **Regola (10 Invarianti Formali)**:
+  1. **I1 (Monotonic Version Numbering)**: Ogni mutazione incrementa `aggregateVersion` esattamente di `+1` rispetto a `baseVersion`. Versioni non contigue o backward sono respinte dalle Firestore Security Rules.
+  2. **I2 (Identity & Hash Parity)**: Il documento dell'entità (`edits.lastLedgerId`) e la voce di ledger (`system_ledger/{id}`) mantengono un puntamento bidirezionale atomico immutabile.
+  3. **I3 (Optimistic Concurrency Control - OCC)**: Ogni mutazione verifica transazionalmente che `currentAggregateVersion === expectedBaseVersion`. In caso di conflitto concorrente, la transazione fallisce immediatamente con `OptimisticConcurrencyError`.
+  4. **I4 (Transactional ACID Dual-Write)**: L'aggiornamento dell'entità e la creazione della voce di ledger avvengono nella stessa `runTransaction(db, ...)` Firestore con garanzia ACID totale (entrambi scrivono o entrambi falliscono).
+  5. **I5 (Dual-Semantic Rollback Engine)**: I rollback supportano sia campi assoluti (`ABSOLUTE`, con rilevamento atomico transazionale dei conflitti a valle `currentVal === mutation.new`) sia grandezze cumulative (`ADDITIVE`, delta compensativo `delta = old - new`).
+  6. **I6 (Deep Value-Equality Differencing)**: Il diff engine calcola le variazioni reali tramite ricorsione strutturale (`deepEqual`), ignorando metadati tecnici e garantendo integrità su oggetti annidati e array.
+  7. **I7 (Multi-Tenant Fail-Closed Isolation)**: Tutte le voci di ledger sono vincolate a `tenantId`. Letture e scritture cross-tenant sono bloccate a livello di Firestore Rules.
+  8. **I8 (GDPR Right to be Forgotten with Legal Audit Preservation)**: In caso di oblìo GDPR, i dati identificativi dell'entità vengono anonimizzati, mentre le voci di ledger storiche conservano la traccia dell'evento con payload oscurato (`[CONTENUTO ANONIMIZZATO GDPR]`) in conformità all'Art. 17(3)(b) GDPR.
+  9. **I9 (Server-Enforced Immutability)**: Le collezioni `system_ledger` e `system_ledger_reversals` hanno `allow update, delete: if false;` a livello di Firestore Rules. Nessun client (nemmeno Superadmin) può alterare o cancellare voci storiche.
+  10. **I10 (Always-On Enterprise Audit Trail)**: L'audit trail è sempre attivo su tutte le entità di business (`clients`, `products`, `contracts`, `tickets`, `places`, `activities`). È vietata qualsiasi opzione UI o backdoor per disabilitare la registrazione.
+
+---

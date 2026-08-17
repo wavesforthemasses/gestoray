@@ -1,5 +1,7 @@
 import { db, doc, getDoc, collection, getDocs, query, where, limit, startAfter, orderBy, setDoc, updateDoc } from '$lib/firebase';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import { VersioningService, computeDiff } from '$lib/services/versioningService';
+import { ClientsVersioningBridge } from './clients.versioning.bridge';
 
 export interface ClientsFetchResult {
   list: any[];
@@ -47,7 +49,7 @@ export class ClientsService {
     }
   }
 
-  static async createClient(clientData: any, historyData: any, computedFiscalId: string, isCommerciale: boolean, uid: string): Promise<{ success: boolean, error?: string, id?: string }> {
+  static async createClient(clientData: any, historyData: any, computedFiscalId: string, isCommerciale: boolean, uid: string, tenantId: string = 'default'): Promise<{ success: boolean, error?: string, id?: string }> {
     try {
       if (computedFiscalId) {
         let checkQuery;
@@ -64,10 +66,42 @@ export class ClientsService {
       }
 
       const clientId = clientData.id;
-      const historyId = historyData.id;
+      const clientRef = doc(db, 'clients', clientId);
 
-      await setDoc(doc(db, 'clients', clientId), clientData);
-      await setDoc(doc(db, 'clients', clientId, 'history', historyId), historyData);
+      const diff = computeDiff(null, clientData, {
+        semanticsMap: ClientsVersioningBridge.getSemanticsMap()
+      });
+
+      const fullClientName = ClientsVersioningBridge.getEntityLabel(clientData);
+
+      await VersioningService.executeDualWriteTransaction(
+        db,
+        clientRef,
+        clientData,
+        {
+          tenantId,
+          module: 'clients',
+          entityType: 'client',
+          entityId: clientId,
+          entityLabel: fullClientName,
+          eventType: 'FIELD_MUTATION',
+          keysChanged: diff.keysChanged,
+          mutations: diff.mutations,
+          performedBy: uid,
+          actorType: 'USER',
+          reason: 'Creazione anagrafica cliente'
+        },
+        0
+      );
+
+      // Compatibilità legacy history se presente
+      if (historyData && historyData.id) {
+        try {
+          await setDoc(doc(db, 'clients', clientId, 'history', historyData.id), historyData);
+        } catch (e) {
+          console.warn('Scrittura legacy history secondaria non riuscita:', e);
+        }
+      }
       
       return { success: true, id: clientId };
     } catch (e: any) {

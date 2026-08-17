@@ -1,72 +1,6 @@
 {
     "modules": [
         {
-            "id": "products",
-            "label": "Prodotti",
-            "description": "Catalogo prodotti, servizi e listini prezzi",
-            "icon": "Package",
-            "requirements": [],
-            "path": "/dashboard/products",
-            "kpiBridgePath": "/dashboard/products/products.kpi.bridge.ts",
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "amministrazione",
-                "commerciale",
-                "tecnico"
-            ],
-            "enabled": true,
-            "anonymization": {
-                "collectionName": "products",
-                "linkFieldPath": "id",
-                "redactFields": []
-            },
-            "schema": {
-                "fields": {
-                    "name": {
-                        "type": "string",
-                        "description": "Nome del prodotto o servizio",
-                        "tags": [
-                            "search",
-                            "display",
-                            "sort"
-                        ]
-                    },
-                    "sku": {
-                        "type": "string",
-                        "description": "Codice SKU articolo univoco",
-                        "tags": [
-                            "search",
-                            "filter:sku"
-                        ]
-                    },
-                    "category": {
-                        "type": "string",
-                        "description": "Categoria merceologica del prodotto",
-                        "tags": [
-                            "filter:category"
-                        ]
-                    },
-                    "price": {
-                        "type": "currency",
-                        "description": "Prezzo di vendita unitario",
-                        "tags": [
-                            "kpi:products_price",
-                            "filter:price",
-                            "sort"
-                        ]
-                    },
-                    "unit": {
-                        "type": "string",
-                        "description": "Unità di misura (es. pz, kg, ora, m)",
-                        "tags": [
-                            "display"
-                        ]
-                    }
-                }
-            }
-        },
-        {
             "id": "chart",
             "name": "Analytics & Grafici BI",
             "version": "1.0.0",
@@ -275,6 +209,72 @@
                         "description": "Tempo in ore impiegato per la risoluzione",
                         "tags": [
                             "kpi:tmr"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "products",
+            "label": "Prodotti",
+            "description": "Catalogo prodotti, servizi e listini prezzi",
+            "icon": "Package",
+            "requirements": [],
+            "path": "/dashboard/products",
+            "kpiBridgePath": "/dashboard/products/products.kpi.bridge.ts",
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "anonymization": {
+                "collectionName": "products",
+                "linkFieldPath": "id",
+                "redactFields": []
+            },
+            "schema": {
+                "fields": {
+                    "name": {
+                        "type": "string",
+                        "description": "Nome del prodotto o servizio",
+                        "tags": [
+                            "search",
+                            "display",
+                            "sort"
+                        ]
+                    },
+                    "sku": {
+                        "type": "string",
+                        "description": "Codice SKU articolo univoco",
+                        "tags": [
+                            "search",
+                            "filter:sku"
+                        ]
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Categoria merceologica del prodotto",
+                        "tags": [
+                            "filter:category"
+                        ]
+                    },
+                    "price": {
+                        "type": "currency",
+                        "description": "Prezzo di vendita unitario",
+                        "tags": [
+                            "kpi:products_price",
+                            "filter:price",
+                            "sort"
+                        ]
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "Unità di misura (es. pz, kg, ora, m)",
+                        "tags": [
+                            "display"
                         ]
                     }
                 }
