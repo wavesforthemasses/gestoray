@@ -15,9 +15,9 @@
     ClipboardList,
     Database
   } from '@lucide/svelte';
-  import { db, collection, getDocs, query, orderBy, limit } from '$lib/firebase';
   import { ImportRegistry } from '$lib/services/import/importRegistry';
   import { initImportRegistry } from '$lib/services/import/initImportRegistry';
+  import { ImportLogsService } from '$lib/services/import/importLogsService';
   import type { ImportModuleSpec, ImportBatchReport } from '$lib/types/importTypes';
   import ImportWizardModal from '$lib/components/import/ImportWizardModal.svelte';
 
@@ -34,23 +34,8 @@
 
   async function fetchImportLogs() {
     loadingLogs = true;
-    try {
-      const q = query(
-        collection(db, 'system_import_logs'),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-      const snap = await getDocs(q);
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      importLogs = list;
-    } catch (err) {
-      console.warn('[ImportSettingsPage] Could not load import logs:', err);
-    } finally {
-      loadingLogs = false;
-    }
+    importLogs = await ImportLogsService.getRecentLogs(20);
+    loadingLogs = false;
   }
 
   function getModuleIcon(entityType: string) {

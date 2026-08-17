@@ -6,6 +6,7 @@
     DEFAULT_UNITS
   } from '$lib/services/unitsOfMeasureService';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import {
     Ruler,
     Plus,
@@ -112,7 +113,8 @@
   }
 
   async function handleResetDefaults() {
-    if (confirm('Ripristinare il catalogo predefinito di sistema su Firestore? Eventuali unità personalizzate verranno rimosse.')) {
+    const confirmed = await confirmStore.prompt('Ripristinare il catalogo predefinito di sistema su Firestore? Eventuali unità personalizzate verranno rimosse.');
+    if (confirmed) {
       try {
         loading = true;
         await UnitsOfMeasureService.resetDefaults();

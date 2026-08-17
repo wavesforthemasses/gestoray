@@ -3,8 +3,8 @@
   import { menuConfigStore } from '$lib/stores/menu';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { db, collection, getDocs } from '$lib/firebase';
   import { TeamsService } from '../teams.service';
+  import { UsersService } from '../../users/users.service';
   import { TeamSettingsService } from '../teamSettingsService';
   import type { TeamSettings, TeamStatus, TeamMember } from '../schema';
   import { pageTitle } from '$lib/stores/page';
@@ -55,24 +55,22 @@
 
   onMount(async () => {
     try {
-      const [s, usersSnap] = await Promise.all([
+      const [s, rawUsers] = await Promise.all([
         TeamSettingsService.getSettings(),
-        getDocs(collection(db, 'users'))
+        UsersService.getUsers()
       ]);
       settings = s;
       status = settings.defaultStatus || 'attiva';
       pageTitle.set(`Nuova ${labels.singular}`);
 
-      availableUsers = usersSnap.docs.map(docSnap => {
-        const d = docSnap.data() || {};
-        const orig = d.original || d || {};
-        const nome = orig.nome || d.nome || '';
-        const cognome = orig.cognome || d.cognome || '';
-        const email = orig.email || d.email || '';
-        const fullName = `${nome} ${cognome}`.trim() || d.displayName || d.name || email || docSnap.id;
+      availableUsers = (rawUsers || []).map(u => {
+        const nome = u.nome || '';
+        const cognome = u.cognome || '';
+        const email = u.email || '';
+        const fullName = `${nome} ${cognome}`.trim() || email || u.uid;
 
         return {
-          id: docSnap.id,
+          id: u.uid,
           name: fullName,
           email
         };

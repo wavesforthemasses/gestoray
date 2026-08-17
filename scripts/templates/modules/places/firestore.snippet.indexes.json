@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "projects",
+      "collectionGroup": "places",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "clientId", "order": "ASCENDING" },
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "projects",
+      "collectionGroup": "places",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },

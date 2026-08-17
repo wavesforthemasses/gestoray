@@ -190,6 +190,13 @@ export class CacheLookupService {
   }
 
   /**
+   * Removes an entity from the chunked cache system.
+   */
+  static async removeEntityFromCache(type: string, id: string, existingChunkId?: string): Promise<void> {
+    await this.updateEntityCache(type, id, undefined, true, existingChunkId);
+  }
+
+  /**
    * Backward-compatible update helper for clients.
    */
   static async updateClientCache(

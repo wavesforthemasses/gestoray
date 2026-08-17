@@ -60,6 +60,7 @@ export class ContactsService {
 
     snap.forEach((docSnap) => {
       const data: any = docSnap.data();
+      if (data?.derived?.deleted) return;
       const orig = data.original || {};
 
       const item: ContactItem = {
@@ -118,7 +119,9 @@ export class ContactsService {
   static async getContact(contactId: string): Promise<ContactItem | null> {
     const docSnap = await getDoc(doc(db, 'contacts', contactId));
     if (!docSnap.exists()) return null;
-    return this.mapDocToItem(docSnap.id, docSnap.data());
+    const data = docSnap.data();
+    if (data?.derived?.deleted) return null;
+    return this.mapDocToItem(docSnap.id, data);
   }
 
 
@@ -286,10 +289,14 @@ export class ContactsService {
   }
 
   /**
-   * Deletes a contact.
+   * Deletes (soft delete) a contact.
    */
-  static async deleteContact(contactId: string): Promise<void> {
-    await deleteDoc(doc(db, 'contacts', contactId));
+  static async deleteContact(contactId: string, userId?: string): Promise<void> {
+    await updateDoc(doc(db, 'contacts', contactId), {
+      'derived.deleted': true,
+      'edits.deletedAt': new Date().toISOString(),
+      'edits.deletedBy': userId || 'system'
+    });
   }
 
   /**

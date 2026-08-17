@@ -44,13 +44,18 @@
   let computedChartPoints = $state<number[]>([]);
 
   let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('tickets'));
+  let sideKpisPosition = $derived<'right' | 'none'>(
+    activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
+  );
   let availableChartMetrics = $derived(
-    (activeEntityConfig?.kpis || []).map(k => ({
-      id: k.id,
-      label: k.name,
-      shortLabel: k.acronym,
-      isCurrency: k.isCurrency
-    }))
+    (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }))
   );
 
   $effect(() => {
@@ -209,7 +214,7 @@
     </div>
   </div>
 
-  {#if activeEntityConfig?.enabled}
+  {#if activeEntityConfig?.enabled && availableChartMetrics.length > 0}
     <UniversalAnalyticsChart
       metrics={availableChartMetrics}
       bind:activeMetric={activeChartTab}
@@ -221,6 +226,7 @@
       {loadingChart}
       collapsible={true}
       bind:isExpanded={isGraphExpanded}
+      kpisPosition={sideKpisPosition}
     />
   {/if}
 
@@ -248,9 +254,9 @@
     bind:searchQuery
     placeholder="Cerca per oggetto, cliente, operatore, richiedente..."
   >
-    {#snippet filters()}
+    {#snippet filtersSnippet()}
       <FilterSelect
-        label="Stato"
+        ariaLabel="Stato"
         bind:value={filterStatus}
         options={[
           { value: 'tutti', label: 'Tutti gli stati' },
@@ -262,7 +268,7 @@
         ]}
       />
       <FilterSelect
-        label="Priorità"
+        ariaLabel="Priorità"
         bind:value={filterPriority}
         options={[
           { value: 'tutti', label: 'Tutte le priorità' },

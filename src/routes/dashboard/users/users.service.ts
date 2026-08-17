@@ -1,4 +1,4 @@
-import { db, doc, setDoc, updateDoc, collection, getDocs, getDoc } from '$lib/firebase';
+import { db, doc, getDoc, collection, getDocs, query, where, orderBy, setDoc, updateDoc } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
@@ -16,6 +16,18 @@ export interface UserData {
 }
 
 export class UsersService {
+  static async getUser(uid: string): Promise<any | null> {
+    try {
+      const docSnap = await getDoc(doc(db, 'users', uid));
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return null;
+    } catch (e) {
+      console.error('Errore get user:', e);
+      return null;
+    }
+  }
   static async getUsers(
     searchVal?: string,
     filterStatus?: 'all' | 'active' | 'inactive',

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { db, collection, getDocs, query, where } from '$lib/firebase';
+  import { PlacesService } from '../places.service';
   import { Users, Activity, CheckCircle2, History, BarChart3, Calendar } from '@lucide/svelte';
 
   let { placeId }: { placeId?: string } = $props();
@@ -26,9 +26,7 @@
     try {
       if (!placeId) return;
 
-      const activitiesSnap = await getDocs(
-        query(collection(db, 'activities'), where('placeId', '==', placeId))
-      ).catch(() => null);
+      const activitiesSnap = await PlacesService.getTeamsInsights(placeId);
 
       if (activitiesSnap && !activitiesSnap.empty) {
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -43,7 +41,7 @@
           isActiveNow: boolean;
         }>();
 
-        activitiesSnap.forEach(d => {
+        activitiesSnap.forEach((d: any) => {
           const act = d.data();
           const actDate = act.scheduledDate || act.executionDate || act.createdAt || '';
           const isCompleted = act.status === 'completata' || act.status === 'completato';
@@ -57,10 +55,10 @@
                 id: e.id || e.entityId || '',
                 name: e.name || e.entityName || ''
               }))
-              .filter(t => t.id && t.name);
+              .filter((t: any) => t.id && t.name);
           }
 
-          teamsInAct.forEach(t => {
+          teamsInAct.forEach((t: any) => {
             if (!map.has(t.id)) {
               map.set(t.id, {
                 id: t.id,

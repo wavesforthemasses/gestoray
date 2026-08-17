@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { db, doc, onSnapshot } from '$lib/firebase';
+import { SettingsService } from '$lib/services/settingsService';
 
 export interface ProjectSettings {
   projectName: string;
@@ -20,10 +20,8 @@ let unsubscribe: (() => void) | null = null;
 
 export function initProjectStore() {
   if (unsubscribe) return;
-  const docRef = doc(db, 'settings', 'project');
-  unsubscribe = onSnapshot(docRef, (snap: any) => {
-    if (snap.exists()) {
-      const data = snap.data();
+  unsubscribe = SettingsService.subscribeToProjectConfig((data: any) => {
+    if (data) {
       projectStore.set({
         projectName: data.projectName || '',
         projectEmail: data.projectEmail || '',
@@ -38,9 +36,6 @@ export function initProjectStore() {
     } else {
       projectStore.set({ projectName: '', projectEmail: '' });
     }
-  }, (err: any) => {
-    console.warn('Error fetching project settings (offline/HMR):', err);
-    // Keep current store state on transient offline socket error
   });
 }
 

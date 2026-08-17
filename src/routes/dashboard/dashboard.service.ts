@@ -1,6 +1,6 @@
 import { db, getDoc, doc, getDocs, collection, query, where, getCountFromServer, getAggregateFromServer, sum, collectionGroup, orderBy, functions, httpsCallable, updateDoc } from "$lib/firebase";
 import { formatDate } from "$lib/utils/formatters";
-import { ChartSettingsService } from "$lib";
+import { ChartSettingsService } from "$lib/services/chartSettingsService";
 
 export interface DashboardKPIs {
   totalClienti: number;

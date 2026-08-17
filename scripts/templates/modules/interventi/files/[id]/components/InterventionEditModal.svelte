@@ -6,6 +6,8 @@
   import { TeamsService } from '../../teams.service';
   import { VehiclesService } from '../../vehicles.service';
   import type { TeamItem, VehicleItem } from '../../schema';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { Pencil, X } from '@lucide/svelte';
 
   interface Props {
     intervention: InterventionItem;
@@ -160,7 +162,7 @@
       });
       onClose();
     } catch (err: any) {
-      alert('Errore durante la modifica dell\'intervento: ' + err.message);
+      toast.error('Errore durante la modifica dell\'intervento: ' + err.message);
     } finally {
       isSubmitting = false;
     }
@@ -171,8 +173,10 @@
   <div class="modal-backdrop animate-fade-in" onclick={onClose} role="presentation">
     <div class="modal-card card" onclick={(e) => e.stopPropagation()} role="presentation">
       <div class="modal-header">
-        <h3>✏️ Modifica Dettagli Intervento</h3>
-        <button type="button" class="btn-close" onclick={onClose}>✕</button>
+        <h3 class="modal-title"><Pencil size={18} /> Modifica Dettagli Intervento</h3>
+        <button type="button" class="btn-close" onclick={onClose} aria-label="Chiudi">
+          <X size={18} />
+        </button>
       </div>
 
       <form onsubmit={handleSubmit} class="modal-body">

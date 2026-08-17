@@ -3,6 +3,8 @@
   import { onMount } from 'svelte';
   import { VehiclesService } from '../vehicles.service';
   import type { VehicleItem } from '../schema';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
 
   let vehicles = $state<VehicleItem[]>([]);
   let loading = $state(true);
@@ -78,7 +80,7 @@
       showModal = false;
       await loadVehicles();
     } catch (err: any) {
-      alert('Errore salvataggio mezzo: ' + err.message);
+      toast.error('Errore salvataggio mezzo: ' + err.message);
     } finally {
       saving = false;
     }
@@ -88,19 +90,23 @@
     if (!v.id) return;
     try {
       await VehiclesService.updateVehicle(v.id, { status: newStatus });
+      toast.success('Stato mezzo aggiornato');
       await loadVehicles();
     } catch (e: any) {
-      alert('Errore aggiornamento stato mezzo: ' + e.message);
+      toast.error('Errore aggiornamento stato mezzo: ' + e.message);
     }
   }
 
   async function handleDeleteVehicle(id?: string) {
-    if (!id || !confirm('Sei sicuro di voler eliminare questo mezzo?')) return;
+    if (!id) return;
+    const confirmed = await confirmStore.prompt('Sei sicuro di voler eliminare questo mezzo?');
+    if (!confirmed) return;
     try {
       await VehiclesService.deleteVehicle(id);
+      toast.success('Mezzo eliminato con successo');
       await loadVehicles();
     } catch (e: any) {
-      alert('Errore eliminazione mezzo: ' + e.message);
+      toast.error('Errore eliminazione mezzo: ' + e.message);
     }
   }
 

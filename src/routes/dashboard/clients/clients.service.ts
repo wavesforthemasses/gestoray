@@ -1,4 +1,4 @@
-import { db, collection, getDocs, query, where, limit, startAfter, orderBy } from '$lib/firebase';
+import { db, doc, getDoc, collection, getDocs, query, where, limit, startAfter, orderBy, setDoc, updateDoc } from '$lib/firebase';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 
 export interface ClientsFetchResult {
@@ -8,6 +8,73 @@ export interface ClientsFetchResult {
 }
 
 export class ClientsService {
+  static async getClient(id: string): Promise<any | null> {
+    try {
+      const snap = await getDoc(doc(db, 'clients', id));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.derived?.deleted) return null;
+        return { id: snap.id, ...data };
+      }
+    } catch (e) {
+      console.warn('Errore recupero cliente:', e);
+    }
+    return null;
+  }
+
+  static async getClients(): Promise<any[]> {
+    try {
+      const snap = await getDocs(collection(db, 'clients'));
+      return snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((c: any) => !c.derived?.deleted);
+    } catch (e) {
+      console.warn('Errore recupero lista clienti:', e);
+      return [];
+    }
+  }
+
+  static async deleteClient(id: string, uid?: string): Promise<{ success: boolean, error?: string }> {
+    try {
+      await updateDoc(doc(db, 'clients', id), {
+        'derived.deleted': true,
+        'edits.deletedAt': new Date().toISOString(),
+        'edits.deletedBy': uid || 'system'
+      });
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  static async createClient(clientData: any, historyData: any, computedFiscalId: string, isCommerciale: boolean, uid: string): Promise<{ success: boolean, error?: string, id?: string }> {
+    try {
+      if (computedFiscalId) {
+        let checkQuery;
+        if (!isCommerciale) {
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId));
+        } else {
+          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId), where('original.createdBy', '==', uid));
+        }
+        const snap = await getDocs(checkQuery);
+        const activeMatches = snap.docs.filter(d => !d.data()?.derived?.deleted);
+        if (activeMatches.length > 0) {
+          return { success: false, error: 'Un cliente con questa Partita IVA o Codice Fiscale è già registrato.' };
+        }
+      }
+
+      const clientId = clientData.id;
+      const historyId = historyData.id;
+
+      await setDoc(doc(db, 'clients', clientId), clientData);
+      await setDoc(doc(db, 'clients', clientId, 'history', historyId), historyData);
+      
+      return { success: true, id: clientId };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
   static async fetchClients(
     searchVal: string | undefined,
     activeRole: string,
@@ -41,6 +108,7 @@ export class ClientsService {
 
     snap.forEach((doc: any) => {
       const data = doc.data();
+      if (data.derived?.deleted) return;
       const orig = data.original || {};
 
       clList.push({

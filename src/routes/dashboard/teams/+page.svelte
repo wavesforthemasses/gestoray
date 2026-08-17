@@ -277,40 +277,6 @@
     gap: 24px;
     width: 100%;
   }
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .header-title-box {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .header-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-lg);
-    background: var(--color-primary-50);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .page-main-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin: 0;
-  }
-  .page-main-subtitle {
-    font-size: 13px;
-    color: var(--color-neutral-500);
-    margin: 2px 0 0 0;
-  }
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
   .stats {
     display: flex;
     gap: 12px;
@@ -451,7 +417,7 @@
     align-items: center;
     gap: 8px;
   }
-  .drag-handle {
+  :global(.drag-handle) {
     color: var(--color-neutral-400);
     cursor: grab;
   }
@@ -539,7 +505,7 @@
     color: var(--color-neutral-600);
     font-weight: 600;
   }
-  .empty-unassigned {
+  :global(.empty-unassigned) {
     padding: 32px;
     text-align: center;
     color: var(--color-neutral-500);

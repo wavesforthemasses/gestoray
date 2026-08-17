@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { ContactsService, type ContactItem } from '$lib/services/contacts.service';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { UserCheck, Plus, Link, Unlink, Phone, Mail, UserX, Check, Edit, Trash2 } from '@lucide/svelte';
 
   interface Props {
@@ -73,7 +74,8 @@
   }
 
   async function handleUnlinkContact(contactId: string) {
-    if (!confirm('Vuoi scollegare questo referente da questo cliente?')) return;
+    const confirmed = await confirmStore.prompt('Vuoi scollegare questo referente da questo cliente?');
+    if (!confirmed) return;
     try {
       await ContactsService.unlinkContactFromClient(contactId, clientId, userId);
       toast.success('Referente scollegato dal cliente.');

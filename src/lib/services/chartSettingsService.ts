@@ -82,11 +82,11 @@ const DEFAULT_CONFIG: ChartGlobalSettings = {
       label: 'Cantieri & Luoghi',
       isCore: false,
       enabled: true,
-      showSideKpis: false,
-      exportToDashboard: false,
+      showSideKpis: true,
+      exportToDashboard: true,
       kpis: [
-        { id: 'total_places', name: 'Destinazioni Operative', acronym: 'DO', description: 'Anagrafiche dei luoghi fisici, sedi e cantieri registrati.', enabled: false, exportToDashboard: false, requiredModule: 'places' },
-        { id: 'active_places', name: 'Cantieri Attivi', acronym: 'CA', description: 'Cantieri attualmente operativi sul campo.', enabled: false, exportToDashboard: false, requiredModule: 'places' }
+        { id: 'active_places', name: 'Cantieri Attivi', acronym: 'CA', description: 'Cantieri e sedi attualmente operativi sul campo.', enabled: true, exportToDashboard: true, requiredModule: 'places' },
+        { id: 'new_places', name: 'Nuove Aperture', acronym: 'NL', description: 'Nuovi cantieri e luoghi registrati nel periodo selezionato.', enabled: true, exportToDashboard: true, requiredModule: 'places' }
       ]
     },
     products: {
@@ -123,6 +123,40 @@ const DEFAULT_CONFIG: ChartGlobalSettings = {
         { id: 'tmr', name: 'Tempo Medio Risoluzione', acronym: 'TMR', description: 'Tempo medio di risoluzione (in ore) dei ticket chiusi.', enabled: true, exportToDashboard: true, requiredModule: 'tickets' }
       ]
     },
+    teams: {
+      id: 'teams',
+      label: 'Squadre & Risorse',
+      isCore: false,
+      enabled: true,
+      showSideKpis: false,
+      exportToDashboard: false,
+      kpis: [
+        { id: 'teams_attivi', name: 'Squadre Attive', acronym: 'SQD', description: 'Team e squadre di lavoro operativi sul campo.', enabled: false, exportToDashboard: false, requiredModule: 'teams' }
+      ]
+    },
+    projects: {
+      id: 'projects',
+      label: 'Gestione Progetti',
+      isCore: false,
+      enabled: true,
+      showSideKpis: false,
+      exportToDashboard: false,
+      kpis: [
+        { id: 'projects_attivi', name: 'Progetti Attivi', acronym: 'PRG', description: 'Progetti e commesse attualmente in corso.', enabled: false, exportToDashboard: false, requiredModule: 'projects' },
+        { id: 'portafoglio_lavori', name: 'Portafoglio Lavori', acronym: 'PL', description: 'Valore totale stimato dei progetti a portafoglio.', isCurrency: true, enabled: false, exportToDashboard: false, requiredModule: 'projects' }
+      ]
+    },
+    interventi: {
+      id: 'interventi',
+      label: 'Interventi Operativi',
+      isCore: false,
+      enabled: true,
+      showSideKpis: false,
+      exportToDashboard: false,
+      kpis: [
+        { id: 'interventi_pending', name: 'Interventi in Corso', acronym: 'INT', description: 'Interventi tecnici pianificati o in lavorazione.', enabled: false, exportToDashboard: false, requiredModule: 'interventi' }
+      ]
+    },
     dashboard: {
       id: 'dashboard',
       label: 'Dashboard Principale',
@@ -133,12 +167,17 @@ const DEFAULT_CONFIG: ChartGlobalSettings = {
       kpis: [
         { id: 'nuove_anagrafiche', name: 'Nuove Anagrafiche Aziendali', acronym: 'NA', description: 'Panoramica storica delle nuove anagrafiche sul totale aziendale.', enabled: true, exportToDashboard: true, requiredModule: null },
         { id: 'vss', name: 'Valore Venduto Aziendale', acronym: 'VSS', description: 'Andamento del valore economico totale venduto dall\'azienda.', isCurrency: true, enabled: true, exportToDashboard: true, requiredModule: 'contracts' },
-        { id: 'gi', name: 'Incassato Aziendale', acronym: 'GI', description: 'Andamento del flusso di cassa ed incassi effettivi.', isCurrency: true, enabled: true, exportToDashboard: true, requiredModule: 'payments' },
         { id: 'nncf', name: 'Primi Ordini Aziendali', acronym: 'NNCF', description: 'Andamento dei primi ordini e conversioni nuovi clienti.', enabled: true, exportToDashboard: true, requiredModule: 'contracts' },
-        { id: 'ticket_aperti', name: 'Ticket Aperti', acronym: 'TA', description: 'Numero totale di ticket attualmente aperti o in lavorazione.', enabled: false, exportToDashboard: true, requiredModule: 'tickets' },
-        { id: 'tmr', name: 'Tempo Medio Risoluzione', acronym: 'TMR', description: 'Tempo medio di risoluzione (in ore) dei ticket chiusi.', enabled: false, exportToDashboard: true, requiredModule: 'tickets' },
-        { id: 'total_products', name: 'Articoli a Catalogo', acronym: 'PRD', description: 'Numero totale di prodotti e servizi attivi.', enabled: false, exportToDashboard: true, requiredModule: 'products' },
-        { id: 'total_vehicles', name: 'Mezzi Totali', acronym: 'MT', description: 'Numero totale di veicoli e attrezzature aziendali.', enabled: false, exportToDashboard: true, requiredModule: 'vehicles' }
+        { id: 'total_products', name: 'Articoli a Catalogo', acronym: 'PRD', description: 'Numero totale di prodotti e servizi a catalogo.', enabled: true, exportToDashboard: true, requiredModule: 'products' },
+        { id: 'ticket_aperti', name: 'Ticket Aperti', acronym: 'TA', description: 'Numero totale di ticket attualmente aperti o in lavorazione.', enabled: true, exportToDashboard: true, requiredModule: 'tickets' },
+        { id: 'tmr', name: 'Tempo Medio Risoluzione', acronym: 'TMR', description: 'Tempo medio di risoluzione (in ore) dei ticket chiusi.', enabled: true, exportToDashboard: true, requiredModule: 'tickets' },
+        { id: 'active_places', name: 'Cantieri Attivi', acronym: 'CA', description: 'Cantieri e sedi attualmente operativi sul campo.', enabled: true, exportToDashboard: true, requiredModule: 'places' },
+        { id: 'new_places', name: 'Nuove Aperture', acronym: 'NL', description: 'Nuovi cantieri e luoghi registrati nel periodo selezionato.', enabled: true, exportToDashboard: true, requiredModule: 'places' },
+        { id: 'teams_attivi', name: 'Squadre Attive', acronym: 'SQD', description: 'Team e squadre di lavoro operativi sul campo.', enabled: true, exportToDashboard: true, requiredModule: 'teams' },
+        { id: 'projects_attivi', name: 'Progetti Attivi', acronym: 'PRG', description: 'Progetti e commesse attualmente in corso.', enabled: true, exportToDashboard: true, requiredModule: 'projects' },
+        { id: 'portafoglio_lavori', name: 'Portafoglio Lavori', acronym: 'PL', description: 'Valore totale stimato dei progetti a portafoglio.', isCurrency: true, enabled: true, exportToDashboard: true, requiredModule: 'projects' },
+        { id: 'interventi_pending', name: 'Interventi in Corso', acronym: 'INT', description: 'Interventi tecnici pianificati o in lavorazione.', enabled: true, exportToDashboard: true, requiredModule: 'interventi' },
+        { id: 'gi', name: 'Incassato Aziendale', acronym: 'GI', description: 'Andamento del flusso di cassa ed incassi effettivi.', isCurrency: true, enabled: true, exportToDashboard: true, requiredModule: 'payments' }
       ]
     }
   }
@@ -159,7 +198,8 @@ export class ChartSettingsService {
         if (savedEnt) {
           const mergedKpis = [...defaultEnt.kpis];
           for (let i = 0; i < mergedKpis.length; i++) {
-            const sKpi = savedEnt.kpis?.find(k => k.id === mergedKpis[i].id);
+            const currentId = mergedKpis[i].id;
+            const sKpi = savedEnt.kpis?.find(k => k.id === currentId || (currentId === 'active_places' && k.id === 'places_attivi'));
             if (sKpi) {
               mergedKpis[i] = {
                 ...mergedKpis[i],
@@ -297,11 +337,72 @@ export class ChartSettingsService {
     return this.getEntityConfigSync(entityId);
   }
 
-  static getActiveEntities(): EntityChartConfig[] {
-    return this.getActiveEntitiesSync();
+  static getKpiDescriptionSync(kpiId: string): string | undefined {
+    const master = this.getAllKpisMasterListSync();
+    const found = master.find(k => k.id === kpiId);
+    return found?.description;
   }
 
-  static getAllKpisMasterList(): KPISettingSpec[] {
-    return this.getAllKpisMasterListSync();
+  static getDashboardChartMetricsSync(): Array<{ id: string; label: string; shortLabel: string; description?: string; isCurrency?: boolean }> {
+    const activeEntities = this.getActiveEntitiesSync();
+    const metricsMap = new Map<string, any>();
+
+    // 1. Process dashboard core entity
+    const dashboardEnt = activeEntities.find(e => e.id === 'dashboard');
+    if (dashboardEnt && dashboardEnt.enabled) {
+      for (const kpi of dashboardEnt.kpis) {
+        if (kpi.enabled) {
+          metricsMap.set(kpi.id, {
+            id: kpi.id,
+            label: kpi.name,
+            shortLabel: kpi.acronym,
+            description: kpi.description,
+            isCurrency: kpi.isCurrency
+          });
+        }
+      }
+    }
+
+    // 2. Process all other exported entities
+    for (const ent of activeEntities) {
+      if (ent.id === 'dashboard') continue;
+      if (ent.enabled && ent.exportToDashboard) {
+        for (const kpi of ent.kpis) {
+          if (kpi.enabled) {
+            if (!metricsMap.has(kpi.id)) {
+              metricsMap.set(kpi.id, {
+                id: kpi.id,
+                label: kpi.name,
+                shortLabel: kpi.acronym,
+                description: kpi.description,
+                isCurrency: kpi.isCurrency
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return Array.from(metricsMap.values());
+  }
+
+  static getDashboardEnabledKpiIdsSync(): Set<string> {
+    const metrics = this.getDashboardChartMetricsSync();
+    const ids = new Set<string>(metrics.map(m => m.id));
+
+    // Also include any KPI that is enabled in an active entity with exportToDashboard or dashboard
+    const activeEntities = this.getActiveEntitiesSync();
+    for (const ent of activeEntities) {
+      if (ent.enabled && (ent.id === 'dashboard' || ent.exportToDashboard)) {
+        for (const kpi of ent.kpis) {
+          if (kpi.enabled) {
+            ids.add(kpi.id);
+          }
+        }
+      }
+    }
+
+    return ids;
   }
 }
+

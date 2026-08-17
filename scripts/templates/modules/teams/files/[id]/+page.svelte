@@ -9,6 +9,7 @@
   import { Card, StatusBadge, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Users, ArrowLeft, Edit3, Trash2, UserCheck, Truck } from '@lucide/svelte';
 
   let teamId = $derived($page.params.id || '');
@@ -52,7 +53,8 @@
 
   async function handleDelete() {
     if (!team) return;
-    if (!confirm(`Sei sicuro di voler eliminare questa ${labels.singular.toLowerCase()}?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare questa ${labels.singular.toLowerCase()}?`);
+    if (!confirmed) return;
 
     deleting = true;
     try {

@@ -2,6 +2,7 @@ export interface MetricOption {
   id: string;          // e.g. 'vss', 'nncf', 'nuove_anagrafiche', 'total_count'
   label: string;       // e.g. 'Valore Venduto'
   shortLabel: string;  // e.g. 'VSS'
+  description?: string; // Informative description / FAQ tooltip
   isCurrency?: boolean;
   color?: string;
 }

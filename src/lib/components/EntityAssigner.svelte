@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { menuConfigStore } from '$lib/stores/menu';
-  import { db, collection, getDocs } from '$lib/firebase';
+  import { UsersService } from '../../routes/dashboard/users/users.service';
   import type { AssignedEntityRef, EntityType } from '$lib/types/assignments';
   import { toast } from '$lib/stores/toast.svelte';
   import { User, Users, Truck, Plus, Trash2, Shield, Tag, UserPlus, RefreshCw, Layers } from '@lucide/svelte';
@@ -51,16 +51,12 @@
     try {
       // 1. Fetch Users
       if (allowedTypes.includes('user')) {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        userOptions = usersSnap.docs.map(docSnap => {
-          const d = docSnap.data() || {};
-          const orig = d.original || d || {};
-          const nome = orig.nome || d.nome || '';
-          const cognome = orig.cognome || d.cognome || '';
-          const email = orig.email || d.email || '';
-          const fullName = `${nome} ${cognome}`.trim() || d.displayName || d.name || email || docSnap.id;
-          return { id: docSnap.id, name: fullName, type: 'user' as EntityType };
-        }).sort((a, b) => a.name.localeCompare(b.name));
+        const usersSnap = await UsersService.getUsers();
+        userOptions = usersSnap.map((u: any) => ({
+          id: u.id,
+          name: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Utente',
+          type: 'user' as EntityType
+        })).sort((a, b) => a.name.localeCompare(b.name));
       }
 
       // 2. Fetch Teams dynamically if module is active
@@ -234,13 +230,13 @@
         <label for="entityTypeSelect">Tipo Assegnazione</label>
         <select id="entityTypeSelect" bind:value={selectedType} class="form-control">
           {#if allowedTypes.includes('user')}
-            <option value="user">👤 Persona / Operatore</option>
+            <option value="user">Persona / Operatore</option>
           {/if}
           {#if allowedTypes.includes('team') && hasTeamsModule}
-            <option value="team">👥 Squadra / Team</option>
+            <option value="team">Squadra / Team</option>
           {/if}
           {#if allowedTypes.includes('vehicle') && hasVehiclesModule}
-            <option value="vehicle">🚛 Mezzo / Attrezzatura</option>
+            <option value="vehicle">Mezzo / Attrezzatura</option>
           {/if}
         </select>
       </div>

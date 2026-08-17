@@ -7,8 +7,8 @@
   import type { TicketSchema } from '../schema';
   import { TicketSettingsService, type TicketCategoryConfig } from '$lib/services/ticketSettings';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
-  import { db, collection, getDocs } from '$lib/firebase';
   import { authState } from '$lib/auth.svelte';
+  import { ArrowLeft, Plus } from '@lucide/svelte';
 
   let formData = $state<TicketSchema>({
     subject: '',
@@ -80,8 +80,10 @@
 
 <div class="add-ticket-page">
   <div class="page-header">
-    <a href="/dashboard/tickets" class="back-link">← Torna all'elenco ticket</a>
-    <h1 class="page-title">➕ Apri Nuovo Ticket di Assistenza</h1>
+    <a href="/dashboard/tickets" class="back-link">
+      <ArrowLeft size={16} /> Torna all'elenco ticket
+    </a>
+    <h1 class="page-title">Apri Nuovo Ticket di Assistenza</h1>
   </div>
 
   {#if errorMsg}

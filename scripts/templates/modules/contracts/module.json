@@ -54,7 +54,7 @@
   ],
   "anonymization": {
     "collectionName": "contracts",
-    "linkFieldPath": "original.clientId",
+    "linkFieldPath": "clientId",
     "redactFields": [
       { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
       { "fieldPath": "clientNotes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }

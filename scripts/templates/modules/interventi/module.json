@@ -1,19 +1,19 @@
 {
   "id": "interventi",
   "label": "Interventi Operativi",
-  "description": "Gestione interventi tecnici",
+  "description": "Gestione interventi tecnici, squadre e consuntivi di campo",
   "icon": "Wrench",
   "requirements": [],
   "path": "/dashboard/interventi",
   "kpiBridgePath": "/dashboard/interventi/interventi.kpi.bridge.ts",
-  "rolesView": ["superadmin", "direzione", "tecnico", "operaio"],
+  "rolesView": ["superadmin", "direzione", "amministrazione", "tecnico", "operaio"],
   "enabled": true,
   "anonymization": {
-    "collectionName": "interventi",
+    "collectionName": "interventions",
     "linkFieldPath": "clientId",
     "redactFields": [
       { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "dettaglio", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+      { "fieldPath": "description", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
     ]
   },
   "schema": {

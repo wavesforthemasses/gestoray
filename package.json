@@ -12,6 +12,7 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:api": "node scripts/verify-api-pattern.js",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"emulators": "firebase emulators:start",
 		"push": "git pull && git add . && git commit -m 'update' && git push -u origin main",

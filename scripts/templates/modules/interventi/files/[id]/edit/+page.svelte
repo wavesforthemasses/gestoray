@@ -260,7 +260,7 @@
       newLocAddress = '';
       newLocCity = '';
     } catch (err: any) {
-      alert('Errore creazione destinazione: ' + err.message);
+      toast.error('Errore creazione destinazione: ' + err.message);
     }
   }
 

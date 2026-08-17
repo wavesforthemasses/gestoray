@@ -10,9 +10,10 @@
   import PlaceCommercialInsights from '../components/PlaceCommercialInsights.svelte';
   import PlaceTeamsInsights from '../components/PlaceTeamsInsights.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
-  import { db, doc, getDoc } from '$lib/firebase';
+  import { ClientsService } from '../../clients/clients.service';
   import { 
     MapPin, 
     ArrowLeft, 
@@ -82,9 +83,8 @@
         pageTitle.set(`${labels.singular} ${item.code}`);
         if (item.clientId && (!item.clientName || item.clientName === 'N/D')) {
           try {
-            const clientSnap = await getDoc(doc(db, 'clients', item.clientId));
-            if (clientSnap.exists()) {
-              const cd = clientSnap.data();
+            const cd = await ClientsService.getClient(item.clientId);
+            if (cd) {
               item.clientName = `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.ragioneSociale || cd.denominazione || cd.name || '';
             }
           } catch (err) {
@@ -112,7 +112,8 @@
 
   async function handleDelete() {
     if (!place) return;
-    if (!confirm(`Sei sicuro di voler eliminare il ${labels.singular.toLowerCase()} "${place.name}"?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare il ${labels.singular.toLowerCase()} "${place.name}"?`);
+    if (!confirmed) return;
 
     try {
       await PlacesService.deletePlace(place.id!);

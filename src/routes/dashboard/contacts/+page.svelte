@@ -3,6 +3,7 @@
   import { authState } from '$lib/auth.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { ContactsService, type ContactItem, type CreateContactInput } from '$lib/services/contacts.service';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { 
@@ -187,7 +188,8 @@
   }
 
   async function handleDeleteContact(c: ContactItem) {
-    if (!confirm(`Sei sicuro di voler eliminare il contatto "${c.fullName}"?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare il contatto "${c.fullName}"?`);
+    if (!confirmed) return;
     try {
       await ContactsService.deleteContact(c.id);
       toast.success(`Contatto "${c.fullName}" eliminato.`);
@@ -200,20 +202,18 @@
   // --- Anonymization Modal State ---
   import AnonymizeModal from '$lib/components/AnonymizeModal.svelte';
   import { AnonymizationService, CONTACTS_ANONYMIZATION_SPEC } from '$lib/services/anonymizationService';
-  import { db, doc, getDoc } from '$lib/firebase';
 
   let anonymizeModalOpen = $state(false);
   let selectedContactForAnonymization = $state<Record<string, any> | null>(null);
 
   async function handleAnonymizeClick(id: string) {
     try {
-      const docSnap = await getDoc(doc(db, 'contacts', id));
-      if (!docSnap.exists()) {
+      const data = await ContactsService.getContact(id);
+      if (!data) {
         toast.error('Contatto non trovato nel database.');
         return;
       }
-      const data = docSnap.data();
-      data.id = id;
+      // data.id is already present since ContactsService maps it
       selectedContactForAnonymization = data;
       anonymizeModalOpen = true;
     } catch (e: any) {

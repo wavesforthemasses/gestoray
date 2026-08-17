@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { db, doc, getDoc, setDoc } from '$lib/firebase';
+  import { SettingsService } from '$lib/services/settingsService';
   import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
@@ -26,10 +26,8 @@
 
   onMount(async () => {
     try {
-      const docRef = doc(db, 'settings', 'project');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      const data = await SettingsService.getProjectConfig();
+      if (data) {
         projectName = data.projectName || '';
         projectEmail = data.projectEmail || '';
         resendApiKey = data.resendApiKey || '';
@@ -46,14 +44,13 @@
     e.preventDefault();
     submitting = true;
     try {
-      const docRef = doc(db, 'settings', 'project');
-      await setDoc(docRef, {
+      await SettingsService.saveProjectConfig({
         projectName,
         projectEmail,
         resendApiKey,
         enableHistoryLogs,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      });
       toast.success('Impostazioni di progetto salvate con successo');
     } catch (e: any) {
       toast.error('Errore durante il salvataggio: ' + e.message);

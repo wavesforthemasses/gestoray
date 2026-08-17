@@ -19,6 +19,8 @@ import EntityAssigner from './components/EntityAssigner.svelte';
 import EmptyState from './components/EmptyState.svelte';
 import PageHeader from './components/PageHeader.svelte';
 
+import Tooltip from './components/Tooltip.svelte';
+
 export {
   Card,
   Pagination,
@@ -32,6 +34,7 @@ export {
   StatusBadge,
   KPITile,
   UniversalAnalyticsChart,
+  Tooltip,
   MultiComplete,
   SearchToolbar,
   FilterSelect,

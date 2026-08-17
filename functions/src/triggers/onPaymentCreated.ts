@@ -10,7 +10,7 @@ export async function runPaymentCreated(
   paymentId: string,
   paymentData: any
 ) {
-  const amount = paymentData.original?.amount || 0;
+  const amount = paymentData?.amount ?? paymentData?.original?.amount ?? 0;
   const paymentRef = db.collection('payments').doc(paymentId);
   await paymentRef.update({
     'derived.distributedAmount': 0,

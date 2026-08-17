@@ -6,8 +6,6 @@
   pageTitle.set('Dashboard');
   import { auth as clientAuth } from "$lib/firebase";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
-  import CommercialKPIs from "$lib/components/Dashboard/CommercialKPIs.svelte";
-  import AdminKPIs from '$lib/components/Dashboard/AdminKPIs.svelte';
   import AdminTablesWidget from "./components/AdminTablesWidget.svelte";
   import { DashboardService } from "./dashboard.service";
   import { goto } from "$app/navigation";
@@ -74,19 +72,34 @@
   import { menuConfigStore } from '$lib/stores/menu';
   import { Users, Briefcase, CheckSquare, Settings, ArrowRight } from '@lucide/svelte';
 
-  let dashboardChartConfig = $state(ChartSettingsService.getEntityConfigSync('dashboard'));
-
   let dashboardMetrics = $derived.by(() => {
-    if (!dashboardChartConfig) return [];
-    return dashboardChartConfig.kpis
-      .filter(k => k.enabled)
-      .map(k => ({
-        id: k.id,
-        label: k.name,
-        shortLabel: k.acronym,
-        isCurrency: k.isCurrency
-      }));
+    const baseMetrics = ChartSettingsService.getDashboardChartMetricsSync();
+    return baseMetrics.map(m => {
+      let val: any = 0;
+      if (activeRoleState.role === 'commerciale') {
+        if (m.id === 'nuove_anagrafiche') val = commTotalNA;
+        else if (m.id === 'vss') val = commTotalSold;
+        else if (m.id === 'nncf') val = commTotalNNCF;
+        else if (m.id === 'gi') val = commIncassato;
+        else val = rawKpis[m.id] ?? 0;
+      } else {
+        if (m.id === 'nuove_anagrafiche') val = totalClienti;
+        else if (m.id === 'vss') val = totalVenduto;
+        else if (m.id === 'nncf') val = totalNNCF;
+        else if (m.id === 'gi') val = totalIncassato;
+        else val = rawKpis[m.id] ?? 0;
+      }
+      return {
+        ...m,
+        value: val,
+        description: m.description || ChartSettingsService.getKpiDescriptionSync(m.id)
+      };
+    });
   });
+  let dashboardEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('dashboard'));
+  let sideKpisPosition = $derived<'right' | 'none'>(
+    dashboardEntityConfig && dashboardEntityConfig.showSideKpis !== false ? 'right' : 'none'
+  );
 
   $effect(() => {
     if (dashboardMetrics.length > 0) {
@@ -280,41 +293,8 @@
               bind:selectedPointIdx
               {loadingChart}
               collapsible={false}
-              kpisPosition="right"
-            >
-              {#snippet kpisSnippet()}
-                {#if activeRoleState.role === "commerciale"}
-                  <CommercialKPIs 
-                    kpis={rawKpis}
-                    {commTotalNA}
-                    {commContractsCount}
-                    {commTotalSold}
-                    {commMaturate}
-                    {commTotalNNCF}
-                    {commIncassato}
-                    {activityCounts}
-                    activitiesConfig={[]}
-                    onTabSelect={(tab: string) => { activeChartTab = tab as any; selectedPointIdx = null; }}
-                    {hasActivities}
-                  />
-                {:else}
-                  <AdminKPIs 
-                    kpis={rawKpis}
-                    {totalClienti}
-                    {totalVenduto}
-                    {totalContratti}
-                    {pendingContratti}
-                    {totalIncassato}
-                    {totalNNCF}
-                    {commMaturate}
-                    {activityCounts}
-                    activitiesConfig={[]}
-                    onTabSelect={(tab: string) => { activeChartTab = tab as any; selectedPointIdx = null; }}
-                    {hasActivities}
-                  />
-                {/if}
-              {/snippet}
-            </UniversalAnalyticsChart>
+              kpisPosition={sideKpisPosition}
+            />
           {:else}
             <!-- CLEAN CORE DASHBOARD UI (No financial/contract modules installed) -->
             <div class="clean-core-grid">

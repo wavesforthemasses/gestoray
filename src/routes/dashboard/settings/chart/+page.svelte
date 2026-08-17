@@ -275,7 +275,7 @@
             </div>
 
             <!-- SELEZIONE KPI ATTIVI PER QUESTA ENTITA' -->
-            {#if config.entities[ent.id]?.enabled && ent.kpis?.length > 0}
+            {#if config.entities[ent.id]?.enabled && config.entities[ent.id]?.kpis?.length > 0}
               <div class="kpis-management-box">
                 <div class="kpis-box-header">
                   <BarChart2 size={16} class="icon-accent" />
@@ -283,18 +283,16 @@
                 </div>
 
                 <div class="kpis-checks-flex">
-                  {#each ent.kpis as entKpi (entKpi.id)}
-                    {@const kpi = config.entities[ent.id].kpis.find(k => k.id === entKpi.id)}
-                    {#if kpi}
-                      <label class="kpi-check-pill" class:active={kpi.enabled}>
-                        <input 
-                          type="checkbox" 
-                          bind:checked={kpi.enabled}
-                        />
-                        <span class="acronym-sub">{kpi.acronym}</span>
-                        <span>{kpi.name}</span>
-                      </label>
-                    {/if}
+                  {#each ent.kpis as kpi (kpi.id)}
+                    <label class="kpi-check-pill" class:active={kpi.enabled}>
+                      <input 
+                        type="checkbox" 
+                        checked={kpi.enabled}
+                        onchange={() => toggleKpiEnabled(ent.id, kpi.id)}
+                      />
+                      <span class="acronym-sub">{kpi.acronym}</span>
+                      <span>{kpi.name}</span>
+                    </label>
                   {/each}
                 </div>
               </div>

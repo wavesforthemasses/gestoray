@@ -1,3 +1,449 @@
 {
-    "modules": []
+    "modules": [
+        {
+            "id": "products",
+            "label": "Prodotti",
+            "description": "Catalogo prodotti, servizi e listini prezzi",
+            "icon": "Package",
+            "requirements": [],
+            "path": "/dashboard/products",
+            "kpiBridgePath": "/dashboard/products/products.kpi.bridge.ts",
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "anonymization": {
+                "collectionName": "products",
+                "linkFieldPath": "id",
+                "redactFields": []
+            },
+            "schema": {
+                "fields": {
+                    "name": {
+                        "type": "string",
+                        "description": "Nome del prodotto o servizio",
+                        "tags": [
+                            "search",
+                            "display",
+                            "sort"
+                        ]
+                    },
+                    "sku": {
+                        "type": "string",
+                        "description": "Codice SKU articolo univoco",
+                        "tags": [
+                            "search",
+                            "filter:sku"
+                        ]
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Categoria merceologica del prodotto",
+                        "tags": [
+                            "filter:category"
+                        ]
+                    },
+                    "price": {
+                        "type": "currency",
+                        "description": "Prezzo di vendita unitario",
+                        "tags": [
+                            "kpi:products_price",
+                            "filter:price",
+                            "sort"
+                        ]
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "Unità di misura (es. pz, kg, ora, m)",
+                        "tags": [
+                            "display"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "chart",
+            "name": "Analytics & Grafici BI",
+            "version": "1.0.0",
+            "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
+            "category": "analytics",
+            "icon": "TrendingUp",
+            "menuItem": null,
+            "settingsCard": {
+                "path": "/dashboard/settings/chart",
+                "title": "Configurazione Analytics & Grafici",
+                "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
+                "icon": "TrendingUp"
+            }
+        },
+        {
+            "id": "places",
+            "label": "Gestione Luoghi",
+            "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
+            "icon": "MapPin",
+            "requirements": [],
+            "path": "/dashboard/places",
+            "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
+            "clientTabs": [
+                {
+                    "id": "places",
+                    "component": "ClientPlacesTab.svelte",
+                    "label": "Luoghi"
+                }
+            ],
+            "settingsCard": {
+                "title": "Configurazione Luoghi",
+                "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
+                "icon": "MapPin",
+                "path": "/dashboard/settings/places"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "active_places",
+                    "title": "Cantieri Attivi",
+                    "subtitle": "Destinazioni operative attive",
+                    "icon": "CheckCircle2",
+                    "valueKey": "active_places",
+                    "aggregation": {
+                        "collection": "places",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                },
+                {
+                    "id": "new_places",
+                    "title": "Nuove Aperture",
+                    "subtitle": "Nuovi cantieri e luoghi aperti",
+                    "icon": "CalendarPlus",
+                    "valueKey": "new_places",
+                    "aggregation": {
+                        "collection": "places",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
+            "anonymization": {
+                "collectionName": "places",
+                "linkFieldPath": "clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "code": {
+                        "type": "string",
+                        "description": "Codice identificativo del luogo (es. LUG-2026-001)",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Nome o denominazione del luogo/cantiere",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "ID del cliente proprietario/titolare del luogo",
+                        "tags": [
+                            "filter:client",
+                            "relation:clients"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato del luogo (attivo, inattivo)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:places_attivi"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "tickets",
+            "label": "Ticket",
+            "description": "Gestione ticket e richieste clienti",
+            "icon": "Ticket",
+            "requirements": [],
+            "path": "/dashboard/tickets",
+            "kpiBridgePath": "/dashboard/tickets/tickets.kpi.bridge.ts",
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "commerciale",
+                "amministrazione",
+                "tecnico"
+            ],
+            "enabled": true,
+            "anonymization": {
+                "collectionName": "tickets",
+                "linkFieldPath": "clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "description",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "contactName",
+                        "replacement": "ANONIMIZZATO"
+                    },
+                    {
+                        "fieldPath": "contactPhone",
+                        "replacement": ""
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "ticketNumber": {
+                        "type": "string",
+                        "description": "Numero progressivo del ticket assistenziale",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Oggetto sintesi della richiesta di assistenza",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "ID del cliente richiedente",
+                        "tags": [
+                            "filter:client",
+                            "relation:clients"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato ticket (aperto, in_lavorazione, risolto, chiuso)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:tickets_open"
+                        ]
+                    },
+                    "priority": {
+                        "type": "string",
+                        "description": "Livello di priorità (bassa, media, alta, urgente)",
+                        "tags": [
+                            "filter:priority"
+                        ]
+                    },
+                    "resolutionTimeHours": {
+                        "type": "number",
+                        "description": "Tempo in ore impiegato per la risoluzione",
+                        "tags": [
+                            "kpi:tmr"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "contracts",
+            "label": "Contratti",
+            "description": "Gestione contratti e ordini",
+            "icon": "FileText",
+            "requirements": [
+                "products"
+            ],
+            "path": "/dashboard/contracts",
+            "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
+            "clientTabs": [
+                {
+                    "id": "quotes",
+                    "component": "ClientQuotesTab.svelte",
+                    "label": "Preventivi & Contratti"
+                }
+            ],
+            "settingsCard": {
+                "title": "Configurazione Contratti & Preventivi",
+                "description": "Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza.",
+                "icon": "FileText",
+                "path": "/dashboard/settings/contracts"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "nncf",
+                    "title": "NNCF",
+                    "subtitle": "Conversioni",
+                    "icon": "FileText",
+                    "valueKey": "totalNNCF",
+                    "commValueKey": "commTotalNNCF",
+                    "aggregation": {
+                        "collection": "clients",
+                        "type": "count",
+                        "dateFields": [
+                            "derived.nncfDate"
+                        ]
+                    }
+                },
+                {
+                    "id": "vss",
+                    "title": "VSS",
+                    "subtitle": "Venduto Netto",
+                    "icon": "DollarSign",
+                    "valueKey": "totalVenduto",
+                    "commValueKey": "commTotalSold",
+                    "format": "currency",
+                    "aggregation": {
+                        "collection": "contracts",
+                        "type": "sum",
+                        "sumFields": [
+                            "totalAmount",
+                            "original.totalPrice"
+                        ],
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ],
+                        "vendorFields": [
+                            "agentId",
+                            "original.vendorUid",
+                            "original.secondVendorUid"
+                        ]
+                    }
+                }
+            ],
+            "anonymization": {
+                "collectionName": "contracts",
+                "linkFieldPath": "clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "clientNotes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "contractNumber": {
+                        "type": "string",
+                        "description": "Numero sequenziale del contratto (es. CTR-2026-0001)",
+                        "tags": [
+                            "filter:number",
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Oggetto o descrizione sintetica del contratto",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "ID del cliente intestatario del contratto",
+                        "tags": [
+                            "filter:client",
+                            "relation:clients"
+                        ]
+                    },
+                    "clientName": {
+                        "type": "string",
+                        "description": "Ragione sociale / nome del cliente al momento del salvataggio",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "agentId": {
+                        "type": "string",
+                        "description": "UID dell'agente responsabile del contratto",
+                        "tags": [
+                            "filter:agent",
+                            "kpi:user_sales"
+                        ]
+                    },
+                    "totalAmount": {
+                        "type": "currency",
+                        "description": "Valore totale del contratto al netto degli sconti",
+                        "tags": [
+                            "kpi:vss",
+                            "filter:amount",
+                            "chart:aggregate"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato operativo (bozza, inviato, attivo, accettato, in_scadenza, scaduto)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:pending_contracts"
+                        ]
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Tipologia contrattuale (Ricorrente, Non Ricorrente)",
+                        "tags": [
+                            "filter:type"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "datetime",
+                        "description": "Data ISO 8601 di creazione del contratto",
+                        "tags": [
+                            "filter:date",
+                            "sort:default"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
 }

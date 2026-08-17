@@ -8,6 +8,9 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Package, Euro, Search, Plus, Eye, Pencil, Trash2, Zap, Sliders } from '@lucide/svelte';
+  import { UniversalAnalyticsChart, ChartSettingsService } from '$lib';
+  import { DashboardService } from '../dashboard.service';
+  import { activeRoleState, authState } from '$lib/auth.svelte';
 
   let products = $state<ProductItem[]>([]);
   let loading = $state(true);
@@ -54,6 +57,56 @@
       toast.error('Errore eliminazione prodotto: ' + err.message);
     }
   }
+
+  let activeChartTab = $state('total_products');
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+  let isGraphExpanded = $state(false);
+  let selectedPointIdx = $state<number | null>(null);
+  let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
+  let loadingChart = $state(false);
+  let computedChartPoints = $state<number[]>([]);
+
+  let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('products'));
+  let sideKpisPosition = $derived<'right' | 'none'>(
+    activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
+  );
+  let availableChartMetrics = $derived(
+    (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }))
+  );
+
+  $effect(() => {
+    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
+  });
+
+  async function loadChartData() {
+    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    loadingChart = true;
+    try {
+      const roleToUse = activeRoleState.role || '';
+      const uidToUse = authState.user?.uid || '';
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
+    } catch (e) {
+      console.error('Errore caricamento dati grafico prodotti:', e);
+      computedChartPoints = chartPeriods.map(() => 0);
+    } finally {
+      loadingChart = false;
+    }
+  }
+
+  $effect(() => {
+    if (isGraphExpanded && (granularity || endDateString || activeChartTab)) {
+      loadChartData();
+    }
+  });
 </script>
 
 <svelte:head>
@@ -99,6 +152,24 @@
       </div>
     {/if}
   </div>
+
+  {#if activeEntityConfig?.enabled && availableChartMetrics.length > 0}
+    <UniversalAnalyticsChart 
+      title="Andamento Prodotti & Catalogo"
+      description="Visualizza il trend degli articoli in catalogo nel tempo."
+      metrics={availableChartMetrics}
+      bind:activeMetric={activeChartTab}
+      bind:granularity
+      bind:endDateString
+      {chartPeriods}
+      {computedChartPoints}
+      bind:selectedPointIdx
+      {loadingChart}
+      collapsible={true}
+      bind:isExpanded={isGraphExpanded}
+      kpisPosition={sideKpisPosition}
+    />
+  {/if}
 
   <!-- SEARCH -->
   <div class="filter-card">

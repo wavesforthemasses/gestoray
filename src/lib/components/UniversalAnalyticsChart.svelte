@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Card, LineChart } from '$lib';
-  import { TrendingUp, ChevronUp, ChevronDown, Maximize2, Minimize2 } from '@lucide/svelte';
+  import { Card, LineChart, KPITile, Tooltip, ChartSettingsService } from '$lib';
+  import { TrendingUp, ChevronUp, ChevronDown, Maximize2, Minimize2, DollarSign, FileText, Package, Ticket, Clock, MapPin, Building, Users, Briefcase, Wrench, Wallet } from '@lucide/svelte';
   import type { MetricOption } from '$lib/types/moduleAnalyticsSettings';
   import { menuConfigStore } from '$lib/stores/menu';
   import type { Snippet } from 'svelte';
@@ -70,6 +70,34 @@
     metrics.find(m => m.id === activeMetric) || metrics[0]
   );
 
+  const iconMap: Record<string, any> = {
+    'nuove_anagrafiche': Users,
+    'vss': DollarSign,
+    'nncf': FileText,
+    'total_products': Package,
+    'ticket_aperti': Ticket,
+    'tmr': Clock,
+    'places_attivi': MapPin,
+    'total_places': Building,
+    'teams_attivi': Users,
+    'projects_attivi': Briefcase,
+    'portafoglio_lavori': Briefcase,
+    'interventi_pending': Wrench,
+    'gi': Wallet
+  };
+
+  function getMetricIcon(id: string) {
+    return iconMap[id] || FileText;
+  }
+
+  function getMetricDisplayVal(m: MetricOption) {
+    const raw = (m as any).value ?? 0;
+    if (m.isCurrency) {
+      return `€ ${Number(raw).toFixed(2)}`;
+    }
+    return raw;
+  }
+
   function handleMetricClick(metricId: string) {
     activeMetric = metricId;
     selectedPointIdx = null;
@@ -121,11 +149,29 @@
 
   {#if !collapsible || isExpanded}
     <div class="universal-chart-card animate-fade-in" class:fullscreen-mode={isFullscreen}>
-      {#if kpisSnippet && (kpisPosition === 'right' || kpisPosition === 'top' || kpisPosition === 'bottom')}
+      {#if (kpisPosition === 'right' || kpisPosition === 'top' || kpisPosition === 'bottom') && (kpisSnippet || (metrics && metrics.length > 0))}
         <div class="chart-split-layout position-{kpisPosition}">
           {#if kpisPosition === 'top'}
             <div class="kpi-banner-wrapper">
-              {@render kpisSnippet()}
+              {#if kpisSnippet}
+                {@render kpisSnippet()}
+              {:else if metrics && metrics.length > 0}
+                <div class="kpi-deck horizontal">
+                  {#each metrics as m (m.id)}
+                    <KPITile 
+                      theme="info" 
+                      icon={getMetricIcon(m.id)} 
+                      title={m.shortLabel || m.label} 
+                      value={getMetricDisplayVal(m)} 
+                      subtitle={m.label} 
+                      description={m.description || ChartSettingsService.getKpiDescriptionSync(m.id)}
+                      isActive={activeMetric === m.id}
+                      onclick={() => handleMetricClick(m.id)} 
+                      inlineSubtitle={true}
+                    />
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
 
@@ -138,16 +184,17 @@
               <div class="chart-controls-box controls-layout">
                 {#if metrics && metrics.length > 0}
                   <div class="chart-tab-switcher tab-switcher-bg">
-                    {#each metrics as m}
-                      <button
-                        type="button"
-                        class="chart-tab-btn tab-btn-style"
-                        class:active={activeMetric === m.id}
-                        onclick={() => handleMetricClick(m.id)}
-                        title={m.label}
-                      >
-                        {m.shortLabel || m.label}
-                      </button>
+                    {#each metrics as m (m.id)}
+                      <Tooltip text={m.description || ChartSettingsService.getKpiDescriptionSync(m.id) || m.label} position="top">
+                        <button
+                          type="button"
+                          class="chart-tab-btn tab-btn-style"
+                          class:active={activeMetric === m.id}
+                          onclick={() => handleMetricClick(m.id)}
+                        >
+                          {m.shortLabel || m.label}
+                        </button>
+                      </Tooltip>
                     {/each}
                   </div>
                 {/if}
@@ -213,13 +260,49 @@
 
           {#if kpisPosition === 'right'}
             <div class="kpi-side-col">
-              {@render kpisSnippet()}
+              {#if kpisSnippet}
+                {@render kpisSnippet()}
+              {:else if metrics && metrics.length > 0}
+                <div class="kpi-deck">
+                  {#each metrics as m (m.id)}
+                    <KPITile 
+                      theme="info" 
+                      icon={getMetricIcon(m.id)} 
+                      title={m.shortLabel || m.label} 
+                      value={getMetricDisplayVal(m)} 
+                      subtitle={m.label} 
+                      description={m.description || ChartSettingsService.getKpiDescriptionSync(m.id)}
+                      isActive={activeMetric === m.id}
+                      onclick={() => handleMetricClick(m.id)} 
+                      inlineSubtitle={true}
+                    />
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
 
           {#if kpisPosition === 'bottom'}
             <div class="kpi-banner-wrapper">
-              {@render kpisSnippet()}
+              {#if kpisSnippet}
+                {@render kpisSnippet()}
+              {:else if metrics && metrics.length > 0}
+                <div class="kpi-deck horizontal">
+                  {#each metrics as m (m.id)}
+                    <KPITile 
+                      theme="info" 
+                      icon={getMetricIcon(m.id)} 
+                      title={m.shortLabel || m.label} 
+                      value={getMetricDisplayVal(m)} 
+                      subtitle={m.label} 
+                      description={m.description || ChartSettingsService.getKpiDescriptionSync(m.id)}
+                      isActive={activeMetric === m.id}
+                      onclick={() => handleMetricClick(m.id)} 
+                      inlineSubtitle={true}
+                    />
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
         </div>
@@ -233,16 +316,17 @@
           <div class="chart-controls-box controls-layout">
             {#if metrics && metrics.length > 0}
               <div class="chart-tab-switcher tab-switcher-bg">
-                {#each metrics as m}
-                  <button
-                    type="button"
-                    class="chart-tab-btn tab-btn-style"
-                    class:active={activeMetric === m.id}
-                    onclick={() => handleMetricClick(m.id)}
-                    title={m.label}
-                  >
-                    {m.shortLabel || m.label}
-                  </button>
+                {#each metrics as m (m.id)}
+                  <Tooltip text={m.description || ChartSettingsService.getKpiDescriptionSync(m.id) || m.label} position="top">
+                    <button
+                      type="button"
+                      class="chart-tab-btn tab-btn-style"
+                      class:active={activeMetric === m.id}
+                      onclick={() => handleMetricClick(m.id)}
+                    >
+                      {m.shortLabel || m.label}
+                    </button>
+                  </Tooltip>
                 {/each}
               </div>
             {/if}

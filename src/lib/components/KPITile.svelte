@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { ComponentType } from 'svelte';
   import type { Icon } from '@lucide/svelte';
+  import Tooltip from './Tooltip.svelte';
 
   interface Props {
     title: string;
     value: string | number;
     subtitle?: string;
+    description?: string;
+    tooltip?: string;
     theme?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'teal' | 'indigo';
     icon?: any;
     onclick?: () => void;
@@ -18,6 +21,8 @@
     title, 
     value, 
     subtitle, 
+    description,
+    tooltip,
     theme = 'primary', 
     icon: IconComponent, 
     onclick,
@@ -25,6 +30,8 @@
     isActive = false,
     inlineSubtitle = false
   }: Props = $props();
+
+  let tipText = $derived(tooltip || description || (!onclick && titleAttr ? titleAttr : ''));
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -32,7 +39,7 @@
   class="kpi-tile border-{theme}" 
   class:clickable={!!onclick}
   class:active={isActive}
-  title={titleAttr}
+  title={tipText ? undefined : titleAttr}
   onclick={onclick}
   role={onclick ? "button" : undefined}
   tabindex={onclick ? 0 : undefined}
@@ -44,19 +51,42 @@
     </div>
   {/if}
   <div class="kpi-text">
-    <span class="kpi-lbl">{title}</span>
-    {#if inlineSubtitle}
-      <div class="kpi-val-row">
-        <span class="kpi-val">{value}</span>
-        {#if subtitle}
-          <span class="kpi-sub">{subtitle}</span>
+    {#if tipText}
+      <Tooltip text={tipText} position="top">
+        <div class="kpi-text-inner">
+          <span class="kpi-lbl">{title}</span>
+          {#if inlineSubtitle}
+            <div class="kpi-val-row">
+              <span class="kpi-val">{value}</span>
+              {#if subtitle}
+                <span class="kpi-sub">{subtitle}</span>
+              {/if}
+            </div>
+          {:else}
+            <span class="kpi-val">{value}</span>
+            {#if subtitle}
+              <span class="kpi-sub">{subtitle}</span>
+            {/if}
+          {/if}
+        </div>
+      </Tooltip>
+    {:else}
+      <div class="kpi-text-inner">
+        <span class="kpi-lbl">{title}</span>
+        {#if inlineSubtitle}
+          <div class="kpi-val-row">
+            <span class="kpi-val">{value}</span>
+            {#if subtitle}
+              <span class="kpi-sub">{subtitle}</span>
+            {/if}
+          </div>
+        {:else}
+          <span class="kpi-val">{value}</span>
+          {#if subtitle}
+            <span class="kpi-sub">{subtitle}</span>
+          {/if}
         {/if}
       </div>
-    {:else}
-      <span class="kpi-val">{value}</span>
-      {#if subtitle}
-        <span class="kpi-sub">{subtitle}</span>
-      {/if}
     {/if}
   </div>
 </div>
@@ -76,7 +106,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), inset 0 2px 0 rgba(255, 255, 255, 0.8);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
   
   .kpi-tile.clickable {
@@ -84,8 +114,73 @@
   }
 
   .kpi-tile.active {
-    box-shadow: 0 0 0 2px var(--color-primary-500);
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     transform: translateY(-4px);
+  }
+
+  .kpi-tile.active.border-info {
+    background: linear-gradient(135deg, var(--color-secondary-400), var(--color-secondary-600));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active.border-indigo {
+    background: linear-gradient(135deg, var(--color-secondary-500), var(--color-secondary-700));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active.border-success {
+    background: linear-gradient(135deg, var(--color-success, #16a34a), hsl(142, 76%, 30%));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active.border-warning {
+    background: linear-gradient(135deg, var(--color-warning, #f59e0b), hsl(38, 92%, 40%));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active.border-error {
+    background: linear-gradient(135deg, var(--color-error, #dc2626), hsl(346, 84%, 40%));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active.border-teal {
+    background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600));
+    color: #ffffff;
+  }
+
+  .kpi-tile.active::before {
+    opacity: 0;
+  }
+
+  .kpi-tile.active .kpi-icon {
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .kpi-tile.active .kpi-lbl {
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .kpi-tile.active .kpi-val {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .kpi-tile.active .kpi-sub {
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .kpi-tile.active:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
 
   .kpi-tile::before {
@@ -95,6 +190,8 @@
     height: 4px;
     background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600));
     opacity: 0.8;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
   }
   .kpi-tile.border-success::before { background: linear-gradient(90deg, var(--color-success-400), var(--color-success-600)); }
   .kpi-tile.border-warning::before { background: linear-gradient(90deg, var(--color-warning-400), var(--color-warning-600)); }
@@ -132,6 +229,14 @@
     flex-direction: column;
     gap: 2px;
     flex: 1;
+    min-width: 0;
+  }
+
+  .kpi-text-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
   }
 
   .kpi-lbl {

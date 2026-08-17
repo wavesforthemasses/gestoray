@@ -7,6 +7,7 @@
     DEFAULT_ACTIVITY_TYPES 
   } from '$lib/services/activityTypesService';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { 
     ClipboardList, 
@@ -162,7 +163,8 @@
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Sei sicuro di voler eliminare la tipologia "${name}"?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare la tipologia "${name}"?`);
+    if (!confirmed) return;
     try {
       await ActivityTypesService.deleteActivityType(id);
       toast.success('Tipo di attività eliminato.');
@@ -174,7 +176,8 @@
   }
 
   async function handleResetDefaults() {
-    if (!confirm('Vuoi ripristinare ed inserire i Tipi di Attività predefiniti di sistema?')) return;
+    const confirmed = await confirmStore.prompt('Vuoi ripristinare ed inserire i Tipi di Attività predefiniti di sistema?');
+    if (!confirmed) return;
     loading = true;
     try {
       await ActivityTypesService.resetDefaults();

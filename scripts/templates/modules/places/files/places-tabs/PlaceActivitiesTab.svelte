@@ -10,7 +10,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { NavigationService } from '$lib/services/navigationService';
-  import { db, collection, getDocs, query, where, orderBy } from '$lib/firebase';
+  import { PlacesService } from '../places.service';
   import { Calendar, Plus, Users, User, ArrowRight, CheckCircle2, Clock, AlertCircle } from '@lucide/svelte';
 
   let { placeId, clientId }: { placeId?: string; clientId?: string } = $props();
@@ -22,15 +22,7 @@
   onMount(async () => {
     try {
       if (placeId) {
-        let list: any[] = [];
-        try {
-          const snap = await getDocs(query(collection(db, 'activities'), where('placeId', '==', placeId)));
-          snap.forEach(d => {
-            list.push({ id: d.id, ...d.data() });
-          });
-        } catch (err) {
-          console.warn('Errore query activities placeId:', err);
-        }
+        let list: any[] = await PlacesService.getPlaceActivities(placeId);
 
         // Sort by date / createdAt desc
         list.sort((a, b) => {

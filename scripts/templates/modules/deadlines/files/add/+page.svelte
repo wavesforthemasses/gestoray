@@ -215,11 +215,11 @@
             <div class="linked-entity-grid">
               <select id="entityTypeSelect" bind:value={linkedEntityType} class="form-control">
                 {#if hasVehiclesModule}
-                  <option value="vehicle">🚚 Mezzo / Furgone</option>
+                  <option value="vehicle">Mezzo / Furgone</option>
                 {/if}
-                <option value="user">👤 Utente / Dipendente</option>
+                <option value="user">Utente / Dipendente</option>
                 {#if hasContractsModule}
-                  <option value="contract">📄 Contratto</option>
+                  <option value="contract">Contratto</option>
                 {/if}
                 <option value="other">Altro / Testo Libero</option>
               </select>

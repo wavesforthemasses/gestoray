@@ -4,6 +4,7 @@
   import type { ContractSettings, ContractType, NonRecurringEndDateMode } from '../../contracts/schema';
 
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Card, FormField, Button } from '$lib';
   import { FileText, Save, RefreshCw, Hash, Settings, Calendar, Tag } from '@lucide/svelte';
 
@@ -80,8 +81,9 @@
     }
   }
 
-  function handleResetCounter() {
-    if (confirm('Sei sicuro di voler azzerare il contatore numerico progressivo a 0?')) {
+  async function handleResetCounter() {
+    const confirmed = await confirmStore.prompt('Sei sicuro di voler azzerare il contatore numerico progressivo a 0?');
+    if (confirmed) {
       settings.lastNumber = 0;
       toast.info('Contatore azzerato. Salva le impostazioni per confermare.');
     }

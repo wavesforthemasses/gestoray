@@ -3,6 +3,7 @@
   import { TenantFeaturesService, DEFAULT_TENANT_FEATURES } from '$lib/services/tenantFeaturesService';
   import { tenantFeaturesStore } from '$lib/stores/tenantFeatures';
   import { projectStore } from '$lib/stores/project';
+  import { toast } from '$lib/stores/toast.svelte';
   import { Plug } from '@lucide/svelte';
 
   let features = $state<Record<string, boolean>>({});
@@ -24,8 +25,9 @@
       await TenantFeaturesService.updateTenantFeature(key, newVal);
       features = { ...features, [key]: newVal };
       tenantFeaturesStore.update(s => ({ ...s, [key]: newVal }));
+      toast.success(newVal ? 'Modulo attivato con successo.' : 'Modulo disattivato.');
     } catch (e: any) {
-      alert('Errore aggiornamento modulo: ' + e.message);
+      toast.error('Errore aggiornamento modulo: ' + e.message);
     } finally {
       savingKey = null;
     }
@@ -79,7 +81,7 @@
 </div>
 
 <style>
-  .tenant-features-page { max-width: 900px; margin: 0 auto; }
+  .tenant-features-page { width: 100%; box-sizing: border-box; }
   .page-header { margin-bottom: 24px; }
   .page-title { font-size: 24px; font-weight: 700; margin: 0 0 4px 0; color: var(--color-neutral-800); }
   .page-subtitle { margin: 0; font-size: 14px; color: var(--color-neutral-500); }

@@ -7,6 +7,7 @@
   import { ProjectSettingsService } from '../projectSettingsService';
   import type { ProjectItem, ProjectStatus, ProjectSettings, ProjectAddress } from '../schema';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Card, Button, StatusBadge } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
@@ -113,7 +114,8 @@
 
   async function handleDelete() {
     if (!project) return;
-    if (!confirm(`Sei sicuro di voler eliminare definitivamente il ${labels.singular.toLowerCase()} ${project.code}?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare definitivamente il ${labels.singular.toLowerCase()} ${project.code}?`);
+    if (!confirmed) return;
     try {
       await ProjectsService.deleteProject(project.id!);
       toast.success(`${labels.singular} eliminato.`);

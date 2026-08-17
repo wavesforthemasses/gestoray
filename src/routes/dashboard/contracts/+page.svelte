@@ -4,6 +4,7 @@
   import { ContractSettingsService } from './contractSettingsService';
   import type { ContractItem, ContractStatus, ContractSettings } from './schema';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Card, SearchToolbar, FilterSelect, UniversalAnalyticsChart, ChartSettingsService } from '$lib';
   import { DashboardService } from '../dashboard.service';
   import { activeRoleState, authState } from '$lib/auth.svelte';
@@ -47,13 +48,18 @@
   let computedChartPoints = $state<number[]>([]);
 
   let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('contracts'));
+  let sideKpisPosition = $derived<'right' | 'none'>(
+    activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
+  );
   let availableChartMetrics = $derived(
-    (activeEntityConfig?.kpis || []).map(k => ({
-      id: k.id,
-      label: k.name,
-      shortLabel: k.acronym,
-      isCurrency: k.isCurrency
-    }))
+    (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }))
   );
 
   $effect(() => {
@@ -119,7 +125,9 @@
   let totalValue = $derived(contracts.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0));
 
   async function handleDelete(id?: string) {
-    if (!id || !confirm(`Sei sicuro di voler eliminare questo ${labels.singular.toLowerCase()}?`)) return;
+    if (!id) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare questo ${labels.singular.toLowerCase()}?`);
+    if (!confirmed) return;
     try {
       await ContractsService.deleteContract(id);
       contracts = contracts.filter(c => c.id !== id);
@@ -207,23 +215,23 @@
     </div>
   </div>
 
-  <UniversalAnalyticsChart 
-    title={`Andamento ${labels.plural} e KPI`}
-    description={`Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei ${labels.plural.toLowerCase()} in base al periodo selezionato.`}
-    metrics={availableChartMetrics.length > 0 ? availableChartMetrics : [
-      { id: 'vss', label: 'Valore Venduto (VSS)', shortLabel: 'VSS', isCurrency: true },
-      { id: 'nncf', label: 'Primi Ordini (NNCF)', shortLabel: 'NNCF', isCurrency: false }
-    ]}
-    bind:activeMetric={activeChartTab}
-    bind:granularity
-    bind:endDateString
-    {chartPeriods}
-    {computedChartPoints}
-    bind:selectedPointIdx
-    {loadingChart}
-    collapsible={true}
-    bind:isExpanded={isGraphExpanded}
-  />
+  {#if activeEntityConfig?.enabled && availableChartMetrics.length > 0}
+    <UniversalAnalyticsChart 
+      title={`Andamento ${labels.plural} e KPI`}
+      description={`Visualizza il trend e clicca su un punto del grafico per filtrare l'elenco dei ${labels.plural.toLowerCase()} in base al periodo selezionato.`}
+      metrics={availableChartMetrics}
+      bind:activeMetric={activeChartTab}
+      bind:granularity
+      bind:endDateString
+      {chartPeriods}
+      {computedChartPoints}
+      bind:selectedPointIdx
+      {loadingChart}
+      collapsible={true}
+      bind:isExpanded={isGraphExpanded}
+      kpisPosition={sideKpisPosition}
+    />
+  {/if}
 
   <!-- FILTERS & SEARCH TOOLBAR -->
   <SearchToolbar

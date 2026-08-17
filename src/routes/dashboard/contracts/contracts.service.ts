@@ -46,14 +46,18 @@ export class ContractsService {
       orderBy('createdAt', 'desc')
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as ContractItem));
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as ContractItem))
+      .filter(c => !(c as any).derived?.deleted);
   }
 
   static async getContractById(id: string): Promise<ContractItem | null> {
     const ref = doc(db, this.COLLECTION_NAME, id);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as ContractItem;
+    const data = snap.data();
+    if (data?.derived?.deleted) return null;
+    return { id: snap.id, ...data } as ContractItem;
   }
 
   /**
@@ -171,8 +175,17 @@ export class ContractsService {
     await updateDoc(doc(db, this.COLLECTION_NAME, id), finalSanitized);
   }
 
-  static async deleteContract(id: string): Promise<void> {
-    await deleteDoc(doc(db, this.COLLECTION_NAME, id));
+  static async deleteContract(id: string, uid?: string): Promise<void> {
+    await updateDoc(doc(db, this.COLLECTION_NAME, id), {
+      'derived.deleted': true,
+      'edits.deletedAt': new Date().toISOString(),
+      'edits.deletedBy': uid || 'system'
+    });
+    try {
+      await CacheLookupService.removeEntityFromCache('contracts', id);
+    } catch (e) {
+      console.warn('Errore rimozione cache contratto:', e);
+    }
   }
 
   /**

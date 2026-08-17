@@ -130,6 +130,26 @@ match /products/{docId} {
 }
     // --- MODULE: products END ---
 
+    // --- MODULE: places BEGIN ---
+    // PLACES
+match /places/{placeId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: places END ---
+
+    // --- MODULE: tickets BEGIN ---
+    // TICKETS
+match /tickets/{docId} {
+  allow read: if isAuth();
+  allow create: if isAuth();
+  allow update: if isAuth();
+  allow delete: if hasRole('superadmin');
+}
+    // --- MODULE: tickets END ---
+
     // --- MODULE: contracts BEGIN ---
     // CONTRACTS & INSTALLMENTS
 match /contracts/{contractId} {
@@ -144,15 +164,5 @@ match /{path=**}/installments/{instId} {
   allow write: if isAuth();
 }
     // --- MODULE: contracts END ---
-
-    // --- MODULE: tickets BEGIN ---
-    // TICKETS
-match /tickets/{docId} {
-  allow read: if isAuth();
-  allow create: if isAuth();
-  allow update: if isAuth();
-  allow delete: if hasRole('superadmin');
-}
-    // --- MODULE: tickets END ---
   }
 }

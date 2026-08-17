@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { db, collection, getDocs, query, where } from '$lib/firebase';
   import { FileText, Eye, Plus, ExternalLink } from '@lucide/svelte';
 
   let { projectId, clientId }: { projectId?: string; clientId?: string } = $props();
@@ -19,22 +18,13 @@
       if (projectId) {
         let list: any[] = [];
         try {
-          const snap = await getDocs(query(collection(db, 'contracts'), where('projectId', '==', projectId)));
-          snap.forEach(d => {
-            list.push({ id: d.id, ...d.data() });
-          });
+          const mod = await import('../../../../contracts/files/ContractService');
+          if (mod?.ContractService) {
+            list = await mod.ContractService.getProjectContracts(projectId);
+          }
         } catch (err) {
-          console.warn('Errore query projectId:', err);
-        }
-
-        if (list.length === 0) {
-          try {
-            const legacySnap = await getDocs(query(collection(db, 'contracts'), where('cantiereId', '==', projectId)));
-            legacySnap.forEach(d => {
-              list.push({ id: d.id, ...d.data() });
-            });
-          } catch (err) {}
-        }
+            console.warn('Modulo contracts non disponibile per ProjectContractsTab', err);
+          }
 
         contractsList = list;
       }

@@ -31,6 +31,14 @@
       }
     }
   ],
+  "anonymization": {
+    "collectionName": "payments",
+    "linkFieldPath": "clientId",
+    "redactFields": [
+      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
+      { "fieldPath": "clientName", "replacement": "Cliente Anonimizzato" }
+    ]
+  },
   "schema": {
     "fields": {
       "paymentNumber": {

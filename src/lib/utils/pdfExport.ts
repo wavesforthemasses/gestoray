@@ -1,4 +1,5 @@
 import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
+import { toast } from '$lib/stores/toast.svelte';
 
 export interface PrintableDocumentData {
   title: string;
@@ -20,7 +21,7 @@ export class PdfExportService {
   static exportDocumentToPdf(data: PrintableDocumentData) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Consentire i popup per stampare o scaricare il PDF.');
+      toast.error('Consentire i popup del browser per stampare o scaricare il PDF.');
       return;
     }
 

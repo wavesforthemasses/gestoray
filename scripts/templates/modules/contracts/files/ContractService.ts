@@ -7,11 +7,43 @@ import {
   collectionGroup,
   query,
   where,
-  getDocs
+  getDocs,
+  collection
 } from "$lib/firebase";
 import { generateId } from "$lib/utils/helpers";
 
 export class ContractService {
+  static async getClientContracts(clientId: string): Promise<any[]> {
+    try {
+      const snap1 = await getDocs(query(collection(db, 'contracts'), where('clientId', '==', clientId)));
+      const snap2 = await getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId)));
+      
+      const map = new Map();
+      snap1.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+      snap2.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+      return Array.from(map.values());
+    } catch (e) {
+      console.error('Errore getClientContracts:', e);
+      return [];
+    }
+  }
+
+  static async getProjectContracts(projectId: string): Promise<any[]> {
+    try {
+      let list: any[] = [];
+      const snap = await getDocs(query(collection(db, 'contracts'), where('projectId', '==', projectId)));
+      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+
+      if (list.length === 0) {
+        const legacySnap = await getDocs(query(collection(db, 'contracts'), where('cantiereId', '==', projectId)));
+        legacySnap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      }
+      return list;
+    } catch (e) {
+      console.error('Errore getProjectContracts:', e);
+      return [];
+    }
+  }
   /**
    * Approves a contract, marking its status as approved.
    */

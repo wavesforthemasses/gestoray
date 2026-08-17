@@ -9,6 +9,7 @@
   import { Card, StatusBadge, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { AlertTriangle, ArrowLeft, Edit3, Trash2, Calendar, Link, CheckCircle2 } from '@lucide/svelte';
 
   let deadlineId = $derived($page.params.id || '');
@@ -70,7 +71,8 @@
 
   async function handleDelete() {
     if (!deadline) return;
-    if (!confirm(`Sei sicuro di voler eliminare questa ${labels.singular.toLowerCase()}?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare questa ${labels.singular.toLowerCase()}?`);
+    if (!confirmed) return;
 
     deleting = true;
     try {

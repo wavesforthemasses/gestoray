@@ -4,7 +4,9 @@
   import { TeamsService } from '../teams.service';
   import { VehiclesService } from '../vehicles.service';
   import type { TeamItem, VehicleItem } from '../schema';
-  import { db, collection, getDocs } from '$lib/firebase';
+  import { CacheLookupService } from '$lib/services/cacheLookupService';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
 
   let teams = $state<TeamItem[]>([]);
   let vehicles = $state<VehicleItem[]>([]);
@@ -37,16 +39,7 @@
     teams = await TeamsService.getTeams();
     vehicles = await VehiclesService.getVehicles();
 
-    const snapUsers = await getDocs(collection(db, 'users'));
-    users = snapUsers.docs.map((d: any) => {
-      const data = d.data();
-      const orig = data.original || data;
-      const nome = orig.nome || orig.firstName || orig.name || '';
-      const cognome = orig.cognome || orig.lastName || '';
-      const fullName = `${nome} ${cognome}`.trim();
-      const name = fullName || orig.displayName || orig.email || 'Utente ' + d.id;
-      return { id: d.id, name };
-    });
+    users = await CacheLookupService.getLookup('users');
   }
 
   function openCreateModal() {
@@ -104,19 +97,22 @@
       showModal = false;
       await loadData();
     } catch (err: any) {
-      alert('Errore salvataggio squadra: ' + err.message);
+      toast.error('Errore salvataggio squadra: ' + err.message);
     } finally {
       saving = false;
     }
   }
 
   async function handleDeleteTeam(id?: string) {
-    if (!id || !confirm('Sei sicuro di voler eliminare questa squadra?')) return;
+    if (!id) return;
+    const confirmed = await confirmStore.prompt('Sei sicuro di voler eliminare questa squadra?');
+    if (!confirmed) return;
     try {
       await TeamsService.deleteTeam(id);
+      toast.success('Squadra eliminata con successo');
       await loadData();
     } catch (e: any) {
-      alert('Errore eliminazione squadra: ' + e.message);
+      toast.error('Errore eliminazione squadra: ' + e.message);
     }
   }
 

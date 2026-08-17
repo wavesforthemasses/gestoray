@@ -38,16 +38,6 @@
       }
     }
   ],
-  "anonymization": {
-    "collectionName": "teams",
-    "linkFieldPath": "id",
-    "redactFields": [
-      {
-        "fieldPath": "notes",
-        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-      }
-    ]
-  },
   "schema": {
     "fields": {
       "code": {

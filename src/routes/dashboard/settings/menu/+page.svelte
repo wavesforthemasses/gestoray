@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { db, doc, getDoc, setDoc } from '$lib/firebase';
+  import { SettingsService } from '$lib/services/settingsService';
   import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
@@ -48,9 +48,8 @@
 
   async function loadSettings() {
     try {
-      const docSnap = await getDoc(doc(db, 'settings', 'menu'));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      const data = await SettingsService.getMenuConfig();
+      if (data) {
         if (data.list && Array.isArray(data.list) && data.list.length > 0) {
           const savedList: MenuItemConfig[] = data.list;
           const validIds = new Set(DEFAULT_MENU_CONFIG.map(item => item.id));
@@ -93,10 +92,7 @@
   async function saveSettings() {
     submitting = true;
     try {
-      await setDoc(doc(db, 'settings', 'menu'), {
-        list: menuItems
-      }, { merge: true });
-      
+      await SettingsService.saveMenuConfig(menuItems);
       toast.success('Impostazioni menu salvate con successo.');
     } catch (e: any) {
       toast.error(e.message || "Errore nel salvataggio");

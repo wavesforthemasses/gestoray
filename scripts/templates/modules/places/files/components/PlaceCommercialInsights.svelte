@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { db, collection, getDocs, query, where } from '$lib/firebase';
+  import { PlacesService } from '../places.service';
   import { UserCheck, Award, Clock, Briefcase, UserX } from '@lucide/svelte';
 
   let { placeId }: { placeId?: string } = $props();
@@ -15,16 +15,13 @@
     try {
       if (!placeId) return;
 
-      const [contractsSnap, activitiesSnap] = await Promise.all([
-        getDocs(query(collection(db, 'contracts'), where('placeId', '==', placeId))).catch(() => null),
-        getDocs(query(collection(db, 'activities'), where('placeId', '==', placeId))).catch(() => null)
-      ]);
+      const { contractsSnap, activitiesSnap } = await PlacesService.getCommercialInsights(placeId);
 
       const events: { agentName: string; date: string; amount: number; source: 'contract' | 'activity' }[] = [];
       const agentTotals: Record<string, { totalAmount: number; count: number }> = {};
 
       if (contractsSnap && !contractsSnap.empty) {
-        contractsSnap.forEach(d => {
+        contractsSnap.forEach((d: any) => {
           const data = d.data();
           const agentName = data.agentName || (data.agentId ? `Agente #${data.agentId}` : '');
           if (agentName) {
@@ -42,7 +39,7 @@
       }
 
       if (activitiesSnap && !activitiesSnap.empty) {
-        activitiesSnap.forEach(d => {
+        activitiesSnap.forEach((d: any) => {
           const data = d.data();
           let agentName = data.assignedName || '';
           if (!agentName && Array.isArray(data.assignedEntities)) {

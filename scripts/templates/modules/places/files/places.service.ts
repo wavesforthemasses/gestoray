@@ -48,9 +48,16 @@ export class PlacesService {
       }
       const list: PlaceItem[] = [];
       snap.forEach(d => {
-        list.push({ id: d.id, ...d.data() } as PlaceItem);
+        const data = d.data();
+        if (!data?.derived?.deleted) {
+          list.push({ id: d.id, ...data } as PlaceItem);
+        }
       });
-      return list;
+      return list.sort((a, b) => {
+        const dA = a.createdAt || '';
+        const dB = b.createdAt || '';
+        return dB.localeCompare(dA);
+      });
     } catch (e) {
       console.error('Errore getPlaces:', e);
       return [];
@@ -62,7 +69,9 @@ export class PlacesService {
       const ref = doc(db, this.COLLECTION, id);
       const snap = await getDoc(ref);
       if (!snap.exists()) return null;
-      return { id: snap.id, ...snap.data() } as PlaceItem;
+      const data = snap.data();
+      if (data?.derived?.deleted) return null;
+      return { id: snap.id, ...data } as PlaceItem;
     } catch (e) {
       console.error('Errore getPlaceById:', e);
       return null;
@@ -160,8 +169,63 @@ export class PlacesService {
     }
   }
 
-  static async deletePlace(id: string): Promise<void> {
+  static async deletePlace(id: string, uid?: string): Promise<void> {
     const ref = doc(db, this.COLLECTION, id);
-    await deleteDoc(ref);
+    await updateDoc(ref, {
+      'derived.deleted': true,
+      'edits.deletedAt': new Date().toISOString(),
+      'edits.deletedBy': uid || 'system'
+    });
+    try {
+      await CacheLookupService.removeEntityFromCache('places', id);
+    } catch (e) {
+      console.warn('Errore rimozione cache luogo:', e);
+    }
+  }
+
+  static async getPlaceContracts(placeId: string): Promise<any[]> {
+    try {
+      const snap = await getDocs(query(collection(db, 'contracts'), where('placeId', '==', placeId)));
+      const list: any[] = [];
+      snap.forEach((d: any) => list.push({ id: d.id, ...d.data() }));
+      return list;
+    } catch (e) {
+      console.warn('Errore getPlaceContracts:', e);
+      return [];
+    }
+  }
+
+  static async getPlaceActivities(placeId: string): Promise<any[]> {
+    try {
+      const snap = await getDocs(query(collection(db, 'activities'), where('placeId', '==', placeId)));
+      const list: any[] = [];
+      snap.forEach((d: any) => list.push({ id: d.id, ...d.data() }));
+      return list;
+    } catch (e) {
+      console.warn('Errore getPlaceActivities:', e);
+      return [];
+    }
+  }
+
+  static async getCommercialInsights(placeId: string): Promise<{ contractsSnap: any; activitiesSnap: any }> {
+    try {
+      const [contractsSnap, activitiesSnap] = await Promise.all([
+        getDocs(query(collection(db, 'contracts'), where('placeId', '==', placeId))),
+        getDocs(query(collection(db, 'activities'), where('placeId', '==', placeId)))
+      ]);
+      return { contractsSnap, activitiesSnap };
+    } catch (e) {
+      console.warn('Errore getCommercialInsights:', e);
+      return { contractsSnap: { empty: true, forEach: () => {} }, activitiesSnap: { empty: true, forEach: () => {} } };
+    }
+  }
+
+  static async getTeamsInsights(placeId: string): Promise<any> {
+    try {
+      return await getDocs(query(collection(db, 'activities'), where('placeId', '==', placeId)));
+    } catch (e) {
+      console.warn('Errore getTeamsInsights:', e);
+      return { empty: true, forEach: () => {} };
+    }
   }
 }

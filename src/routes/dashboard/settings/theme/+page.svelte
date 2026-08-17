@@ -7,7 +7,7 @@
   import { Card, FormField } from '$lib';
   import { Palette, ArrowLeft, RefreshCcw, Save, Pipette } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project';
-  import { db, doc, getDoc, setDoc } from '$lib/firebase';
+  import { SettingsService } from '$lib/services/settingsService';
   import { toast } from '$lib/stores/toast.svelte';
 
   pageTitle.set('Tema e Branding');
@@ -153,8 +153,7 @@
 
   onMount(async () => {
     try {
-      const docSnap = await getDoc(doc(db, 'settings', 'project'));
-      let settings = docSnap.exists() ? docSnap.data() : null;
+      let settings = await SettingsService.getProjectConfig();
       if (!settings && $projectStore) {
         settings = $projectStore;
       }
@@ -228,7 +227,7 @@
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'settings', 'project'), payload, { merge: true });
+      await SettingsService.saveProjectConfig(payload);
 
       // Synchronize in-memory projectStore for immediate global reactivity across the entire app
       projectStore.update((curr) => ({

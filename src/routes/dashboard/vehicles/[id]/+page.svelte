@@ -10,6 +10,7 @@
   import { Card, StatusBadge, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
   import { Truck, ArrowLeft, Edit3, Trash2 } from '@lucide/svelte';
 
   let vehicleId = $derived($page.params.id || '');
@@ -53,7 +54,8 @@
 
   async function handleDelete() {
     if (!vehicle) return;
-    if (!confirm(`Sei sicuro di voler eliminare questo ${labels.singular.toLowerCase()}?`)) return;
+    const confirmed = await confirmStore.prompt(`Sei sicuro di voler eliminare questo ${labels.singular.toLowerCase()}?`);
+    if (!confirmed) return;
 
     deleting = true;
     try {

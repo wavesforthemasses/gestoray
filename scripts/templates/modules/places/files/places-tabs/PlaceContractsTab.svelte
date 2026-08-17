@@ -10,7 +10,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { NavigationService } from '$lib/services/navigationService';
-  import { db, collection, getDocs, query, where } from '$lib/firebase';
+  import { PlacesService } from '../places.service';
   import { FileText, Eye, Plus } from '@lucide/svelte';
 
   let { placeId, clientId }: { placeId?: string; clientId?: string } = $props();
@@ -21,26 +21,7 @@
   onMount(async () => {
     try {
       if (placeId) {
-        let list: any[] = [];
-        try {
-          const snap = await getDocs(query(collection(db, 'contracts'), where('placeId', '==', placeId)));
-          snap.forEach(d => {
-            list.push({ id: d.id, ...d.data() });
-          });
-        } catch (err) {
-          console.warn('Errore query placeId:', err);
-        }
-
-        if (list.length === 0) {
-          try {
-            const legacySnap = await getDocs(query(collection(db, 'contracts'), where('projectId', '==', placeId)));
-            legacySnap.forEach(d => {
-              list.push({ id: d.id, ...d.data() });
-            });
-          } catch (err) {}
-        }
-
-        contractsList = list;
+        contractsList = await PlacesService.getPlaceContracts(placeId);
       }
     } catch (e) {
       console.error('Errore caricamento contratti collegati al luogo:', e);

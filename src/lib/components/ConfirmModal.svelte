@@ -30,7 +30,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if confirmStore.isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->

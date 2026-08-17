@@ -7,7 +7,7 @@ export class ProductsKPIBridge {
 
     try {
       const snap = await getDocs(collection(db, 'products'));
-      productsCount = snap.size;
+      productsCount = snap.docs.filter(d => !d.data()?.derived?.deleted).length;
     } catch (e) {
       console.error('Error fetching products KPIs in bridge:', e);
     }
@@ -21,10 +21,11 @@ export class ProductsKPIBridge {
       const prods: any[] = [];
       snap.forEach((d: any) => {
         const p = d.data()?.original || d.data();
+        if (p?.derived?.deleted) return;
         prods.push({
           id: d.id,
           name: p.name,
-          listPrice: p.price ?? p.listPrice ?? p.unitPrice ?? 0,
+          price: p.price ?? 0,
           minPrice: p.minPrice
         });
       });

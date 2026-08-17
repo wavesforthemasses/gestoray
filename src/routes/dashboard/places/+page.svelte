@@ -4,14 +4,18 @@
   import { PlacesService } from './places.service';
   import { PlaceSettingsService } from './placeSettingsService';
   import type { PlaceItem, PlaceSettings } from './schema';
-  import { Card, StatusBadge } from '$lib';
+  import { Card, StatusBadge, UniversalAnalyticsChart, ChartSettingsService } from '$lib';
+  import { DashboardService } from '../dashboard.service';
   import { pageTitle } from '$lib/stores/page';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
   import { 
     MapPin, 
     Plus, 
     Search, 
     User, 
     CheckCircle2, 
+    CalendarPlus,
+    Activity,
     Eye
   } from '@lucide/svelte';
 
@@ -50,6 +54,77 @@
   let activePlacesCount = $derived(
     places.filter(p => p.status === 'attivo').length
   );
+
+  let newPlacesThisMonth = $derived.by(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return places.filter(p => {
+      const dt = (p as any).createdAt || (p as any).edits?.createdAt || (p as any).original?.createdAt;
+      let ms = 0;
+      if (dt) {
+        if (typeof dt === 'string') ms = new Date(dt).getTime();
+        else if (typeof dt.toDate === 'function') ms = dt.toDate().getTime();
+        else if (typeof dt.seconds === 'number') ms = dt.seconds * 1000;
+        else if (dt instanceof Date) ms = dt.getTime();
+      }
+      return ms >= startOfMonth;
+    }).length;
+  });
+
+  let activeRate = $derived(
+    places.length > 0 ? Math.round((activePlacesCount / places.length) * 100) : 0
+  );
+
+  // --- CHART STATE ---
+  let activeChartTab = $state<string>('active_places');
+  let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
+  let endDateString = $state(new Date().toISOString().split('T')[0]);
+  let isGraphExpanded = $state(false);
+  let selectedPointIdx = $state<number | null>(null);
+  let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
+  let loadingChart = $state(false);
+  let computedChartPoints = $state<number[]>([]);
+
+  let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('places'));
+  let sideKpisPosition = $derived<'right' | 'none'>(
+    activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
+  );
+  let availableChartMetrics = $derived(
+    (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
+      .filter(k => k.enabled)
+      .map(k => ({
+        id: k.id,
+        label: k.name,
+        shortLabel: k.acronym,
+        isCurrency: k.isCurrency
+      }))
+  );
+
+  $effect(() => {
+    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
+  });
+
+  async function loadChartData() {
+    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    loadingChart = true;
+    try {
+      const roleToUse = activeRoleState.role || '';
+      const uidToUse = authState.user?.uid || '';
+      const results = await DashboardService.fetchChartAggregations(chartPeriods, roleToUse, uidToUse, activeChartTab);
+      computedChartPoints = results || chartPeriods.map(() => 0);
+    } catch (e) {
+      console.error('Error loading places chart data:', e);
+      computedChartPoints = chartPeriods.map(() => 0);
+    } finally {
+      loadingChart = false;
+    }
+  }
+
+  $effect(() => {
+    if (isGraphExpanded || granularity || endDateString || activeChartTab) {
+      loadChartData();
+    }
+  });
 
   onMount(async () => {
     try {
@@ -90,31 +165,67 @@
     </a>
   </header>
 
+  <!-- Top KPI Grid -->
   <div class="kpi-grid">
-    <Card class="stat-card">
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper active">
-          <MapPin size={20} />
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">{labels.plural} Totali</span>
-          <span class="kpi-value">{places.length}</span>
-        </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper kpi-primary">
+        <MapPin size={22} />
       </div>
-    </Card>
+      <div>
+        <div class="kpi-value">{places.length}</div>
+        <div class="kpi-label">{labels.plural} Totali</div>
+      </div>
+    </div>
 
-    <Card class="stat-card">
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper success">
-          <CheckCircle2 size={20} />
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">{labels.plural} Attivi</span>
-          <span class="kpi-value">{activePlacesCount}</span>
-        </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper kpi-success">
+        <CheckCircle2 size={22} />
       </div>
-    </Card>
+      <div>
+        <div class="kpi-value">{activePlacesCount}</div>
+        <div class="kpi-label">{labels.plural} Attivi</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper kpi-warning">
+        <CalendarPlus size={22} />
+      </div>
+      <div>
+        <div class="kpi-value">{newPlacesThisMonth}</div>
+        <div class="kpi-label">Nuove Aperture (Mese)</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper kpi-info">
+        <Activity size={22} />
+      </div>
+      <div>
+        <div class="kpi-value">{activeRate}%</div>
+        <div class="kpi-label">Tasso di Attività</div>
+      </div>
+    </div>
   </div>
+
+  <!-- Collapsible Analytics Chart -->
+  {#if activeEntityConfig?.enabled && availableChartMetrics.length > 0}
+    <div class="chart-wrapper">
+      <UniversalAnalyticsChart
+        metrics={availableChartMetrics}
+        bind:activeMetric={activeChartTab}
+        bind:granularity
+        bind:endDateString
+        {chartPeriods}
+        {computedChartPoints}
+        bind:selectedPointIdx
+        {loadingChart}
+        collapsible={true}
+        bind:isExpanded={isGraphExpanded}
+        kpisPosition={sideKpisPosition}
+      />
+    </div>
+  {/if}
 
   <div class="filter-bar">
     <div class="search-box">
@@ -258,6 +369,11 @@
     text-decoration: none;
     font-weight: 600;
     font-size: 14px;
+    transition: background 0.15s ease;
+  }
+
+  .btn-create-place:hover {
+    background: var(--color-primary-700);
   }
 
   .kpi-grid {
@@ -268,36 +384,46 @@
   }
 
   .kpi-card {
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
     gap: 16px;
   }
 
   .kpi-icon-wrapper {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
-  .kpi-icon-wrapper.active { background: #e0f2fe; color: #0284c7; }
-  .kpi-icon-wrapper.success { background: #dcfce7; color: #16a34a; }
+  .kpi-primary { background: #eff6ff; color: #2563eb; }
+  .kpi-success { background: #f0fdf4; color: #16a34a; }
+  .kpi-warning { background: #fefce8; color: #ca8a04; }
+  .kpi-info { background: #eef2ff; color: #4f46e5; }
 
-  .kpi-content {
-    display: flex;
-    flex-direction: column;
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-neutral-900, #0f172a);
+    line-height: 1.2;
   }
 
   .kpi-label {
     font-size: 12px;
-    color: var(--color-neutral-500);
+    font-weight: 500;
+    color: var(--color-neutral-500, #64748b);
+    margin-top: 2px;
   }
 
-  .kpi-value {
-    font-size: 20px;
-    font-weight: 700;
+  .chart-wrapper {
+    margin-bottom: 24px;
   }
 
   .filter-bar {
@@ -315,12 +441,26 @@
     min-width: 280px;
   }
 
+  :global(.search-icon) {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-neutral-400);
+    pointer-events: none;
+  }
+
   .search-input {
     width: 100%;
     padding: 10px 14px 10px 40px;
     border-radius: 8px;
     border: 1px solid var(--color-neutral-300);
     font-size: 14px;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
   }
 
   .status-filters {
@@ -334,7 +474,9 @@
     border: 1px solid var(--color-neutral-300);
     background: white;
     font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    transition: all 0.15s ease;
   }
 
   .filter-chip.active {
@@ -343,12 +485,46 @@
     border-color: var(--color-primary-600);
   }
 
+  .loading-box {
+    text-align: center;
+    padding: 40px;
+    color: var(--color-neutral-500);
+  }
+
   .empty-state {
     text-align: center;
     padding: 60px 20px;
     background: white;
     border-radius: 12px;
     border: 1px dashed var(--color-neutral-300);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .empty-state h3 {
+    margin: 16px 0 8px;
+    font-size: 18px;
+    color: var(--color-neutral-800);
+  }
+
+  .empty-state p {
+    color: var(--color-neutral-500);
+    font-size: 14px;
+    margin: 0 0 20px;
+  }
+
+  .btn-create-place-empty {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-primary-600);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
   }
 
   .places-grid {
@@ -364,6 +540,12 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .place-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
 
   .place-card-header {
@@ -378,6 +560,9 @@
     font-weight: 700;
     font-size: 13px;
     color: var(--color-primary-700);
+    background: var(--color-primary-50);
+    padding: 2px 8px;
+    border-radius: 4px;
   }
 
   .status-badge {
@@ -387,12 +572,24 @@
     padding: 3px 8px;
     border-radius: 6px;
     background: var(--color-neutral-100);
+    color: var(--color-neutral-700);
+  }
+
+  .status-badge.attivo {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  .status-badge.inattivo {
+    background: #fee2e2;
+    color: #b91c1c;
   }
 
   .place-title {
     font-size: 16px;
     font-weight: 700;
     margin: 0 0 12px 0;
+    color: var(--color-neutral-900);
   }
 
   .place-meta {
@@ -427,5 +624,10 @@
     text-decoration: none;
     font-size: 13px;
     font-weight: 600;
+    transition: background 0.15s ease;
+  }
+
+  .btn-detail:hover {
+    background: var(--color-neutral-200);
   }
 </style>

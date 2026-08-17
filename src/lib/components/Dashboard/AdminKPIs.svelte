@@ -1,7 +1,6 @@
 <script lang="ts">
   import { KPITile, ChartSettingsService } from "$lib";
-  import { DollarSign, FileText, Phone, Users, Calendar, Wallet, Award, CreditCard, ActivitySquare, MessageSquare, CheckCircle, Mail, Briefcase } from "@lucide/svelte";
-  import { menuConfigStore } from "$lib/stores/menu";
+  import { DollarSign, FileText, Phone, Users, Calendar, Wallet, Award, CreditCard, ActivitySquare, MessageSquare, CheckCircle, Mail, Briefcase, Package, Ticket, Clock, MapPin, Building, Wrench } from "@lucide/svelte";
   import { activeRoleState } from "$lib/auth.svelte";
 
   let { 
@@ -32,7 +31,20 @@
     'ActivitySquare': ActivitySquare,
     'CheckCircle': CheckCircle,
     'Briefcase': Briefcase,
-    'Mail': Mail
+    'Mail': Mail,
+    'nuove_anagrafiche': Users,
+    'vss': DollarSign,
+    'nncf': FileText,
+    'total_products': Package,
+    'ticket_aperti': Ticket,
+    'tmr': Clock,
+    'places_attivi': MapPin,
+    'total_places': Building,
+    'teams_attivi': Users,
+    'projects_attivi': Briefcase,
+    'portafoglio_lavori': Briefcase,
+    'interventi_pending': Wrench,
+    'gi': Wallet
   };
 
   const allowedActivities = $derived((activitiesConfig || []).filter((a: any) => a.rolesView.includes(activeRoleState.role || 'superadmin')));
@@ -42,15 +54,14 @@
     totalVenduto,
     totalIncassato,
     commMaturate,
+    nuove_anagrafiche: totalClienti,
+    vss: totalVenduto,
+    nncf: totalNNCF,
+    gi: totalIncassato,
     ...kpis
   });
 
-  // Dynamic KPI Tiles from active modules
-  const activeKPITiles = $derived(
-    $menuConfigStore
-      .filter((m: any) => m.kpiTiles && Array.isArray(m.kpiTiles))
-      .flatMap((m: any) => m.kpiTiles)
-  );
+  const dashboardMetrics = $derived(ChartSettingsService.getDashboardChartMetricsSync());
 
   const getKpiInfo = (id: string) => {
     const kpi = ChartSettingsService.getAllKpisMasterListSync().find(k => k.id === id);
@@ -58,20 +69,42 @@
     return kpi;
   };
 
-  const naKpi = $derived(getKpiInfo('nuove_anagrafiche'));
+  function getMetricValue(id: string, isCurrency?: boolean): string | number {
+    if (id === 'nuove_anagrafiche') return totalClienti;
+    if (id === 'vss') return isCurrency ? `€ ${Number(totalVenduto).toFixed(2)}` : totalVenduto;
+    if (id === 'nncf') return totalNNCF;
+    if (id === 'gi') return isCurrency ? `€ ${Number(totalIncassato).toFixed(2)}` : totalIncassato;
+
+    const raw = kpisValuesMap[id] ?? kpis[id] ?? 0;
+    if (isCurrency) {
+      return `€ ${Number(raw).toFixed(2)}`;
+    }
+    return raw;
+  }
+
+  function getMetricSubtitle(metric: { id: string; label: string }, kpiInfo: any): string {
+    if (metric.id === 'vss') return `Approvati: ${totalContratti - pendingContratti}`;
+    if (metric.id === 'gi') return `Attesa: ${pendingContratti}`;
+    return kpiInfo.name || metric.label;
+  }
 </script>
 
 <section class="kpi-deck">
-  <KPITile 
-    theme="info" 
-    icon={Users} 
-    title={naKpi.acronym} 
-    value={totalClienti} 
-    subtitle={naKpi.name} 
-    titleAttr={`${naKpi.name} - ${naKpi.description}`} 
-    onclick={() => onTabSelect("nuove_anagrafiche")} 
-    inlineSubtitle={true}
-  />
+  {#each dashboardMetrics as m (m.id)}
+    {@const kpiInfo = getKpiInfo(m.id)}
+    {@const displayVal = getMetricValue(m.id, m.isCurrency)}
+    {@const subtitleVal = getMetricSubtitle(m, kpiInfo)}
+    <KPITile 
+      theme="info" 
+      icon={iconMap[m.id] || FileText} 
+      title={m.shortLabel || kpiInfo.acronym} 
+      value={displayVal} 
+      subtitle={subtitleVal} 
+      titleAttr={`${kpiInfo.name || m.label} - ${kpiInfo.description || ''}`} 
+      onclick={() => onTabSelect(m.id)} 
+      inlineSubtitle={true}
+    />
+  {/each}
 
   {#if hasActivities}
     {#each allowedActivities as act}
@@ -87,23 +120,6 @@
       />
     {/each}
   {/if}
-
-  {#each activeKPITiles as tile}
-    {@const kpiInfo = getKpiInfo(tile.id)}
-    {@const rawVal = kpisValuesMap[tile.valueKey] || 0}
-    {@const displayVal = tile.format === 'currency' ? `€ ${Number(rawVal).toFixed(2)}` : rawVal}
-    {@const subtitleVal = tile.id === 'vss' ? `Approvati: ${totalContratti - pendingContratti}` : tile.id === 'gi' ? `Attesa: ${pendingContratti}` : kpiInfo.name}
-    <KPITile 
-      theme="info" 
-      icon={iconMap[tile.icon] || FileText} 
-      title={kpiInfo.acronym} 
-      value={displayVal} 
-      subtitle={subtitleVal} 
-      titleAttr={`${kpiInfo.name} - ${kpiInfo.description}`} 
-      onclick={() => onTabSelect(tile.id)} 
-      inlineSubtitle={true}
-    />
-  {/each}
 </section>
 
 <style>

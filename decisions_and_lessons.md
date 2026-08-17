@@ -134,3 +134,27 @@
 ### 18. Dynamic Service Delegation across Core Services (Zero Optional Query Leaks in Core)
 - **Lezione**: Inserire interrogazioni dirette a collezioni di moduli opzionali dentro servizi trasversali del Core come `client-detail.service.ts` (scheda cliente) o `todo.service.ts` (cose da fare) provoca errori di esecuzione e letture fallite se i moduli non sono installati.
 - **Regola**: Servizi trasversali del Core NON devono interrogare direttamente le collezioni dei moduli opzionali. Devono sempre verificare che il modulo sia attivo in `$menuConfigStore` / `modules.registry.json` ed importare condizionalmente il bridge o il service fornito dal modulo medesimo via `import()` dinamici con blocco `try/catch`.
+
+---
+
+### 19. Unificazione Architetturale del Sistema KPI a Lato & Tooltip Glassmorfici (Zero Discrepanze UI)
+- **Lezione**: Creare snippet ad-hoc o componenti separati (es. `AdminKPIs`, `CommercialKPIs`) per renderizzare i KPI a lato del grafico nella homepage con `titleAttr` o layout duplicati ha generato discrepanze visive, spaziatura non sincronizzata e la comparsa di tooltip nativi sgradevoli del browser invece dell'overlay custom.
+- **Regola**:
+  1. **Single Source of Truth**: Tutte le pagine (homepage `/dashboard` e tutte le sottopagine di modulo come `places`, `contracts`, `products`, `tickets`) DEVONO utilizzare il medesimo componente centralizzato `UniversalAnalyticsChart` e `KPITile`.
+  2. **Tooltip Glassmorfico Unificato**: È severamente vietato l'uso di tooltip nativi HTML (`title` attribute) che confliggono con l'interfaccia. Tutte le etichette, bottoni tab e tessere KPI utilizzano il componente centralizzato Svelte 5 `$lib/components/Tooltip.svelte` con tema scuro glassmorfico, freccia geometrica di puntamento e ritardo controllato.
+  3. **Zero Snippet Duplicati**: La colonna laterale dei KPI in `UniversalAnalyticsChart` calcola e visualizza automaticamente le metriche passate tramite `metrics`, ereditando `isActive`, `icon`, `title`, `value`, `subtitle` e `description` in modo identico e coerente in tutta l'applicazione.
+
+---
+
+### 20. Active KPI Tile Inverted Theme Switch (Zero Ring/Border Outlines)
+- **Lezione**: L'uso di contorni o anelli di selezione netti (`box-shadow: 0 0 0 2px ...`) per identificare la tessera KPI attiva/selezionata risulta visivamente pesante e poco elegante. Inoltre, un'inversione di colori statica fallisce se l'utente cambia la palette di colori del brand.
+- **Regola**:
+  1. **Zero Border Ring Outlines**: Le card KPI selezionate non devono avere bordi o anelli spessi evidenziatori.
+  2. **Inverted Dynamic Theme Switch**: Nello stato attivo, la tessera effettua un'inversione elegante dei colori:
+     - Il background passa da bianco traslucido al gradiente dinamico del tema della tessera (`--color-primary-500` / `--color-primary-600`, `--color-secondary-400` / `--color-secondary-600`, ecc.).
+     - La striscia superiore decorativa (`::before`) viene disattivata (`opacity: 0`).
+     - I testi (etichetta, valore numerico e sottotitolo) passano a bianco ad alto contrasto (`#ffffff` / `rgba(255, 255, 255, 0.92)`).
+     - L'icona passa ad un contenitore in vetro smerigliato translucido (`rgba(255, 255, 255, 0.24)`) con icona Lucide bianca.
+     - L'elevazione visiva è gestita tramite uno spostamento tridimensionale morbido (`translateY(-4px)`) e un'ombra d'ambiente profonda.
+
+

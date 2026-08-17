@@ -2,6 +2,21 @@ import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, que
 import type { TicketItem, TicketMessage, TicketKPIs } from './schema';
 import { TicketSettingsService } from '$lib/services/ticketSettings';
 
+function cleanUndefined(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  const cleaned: Record<string, any> = Array.isArray(obj) ? [] : {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === undefined) {
+      continue;
+    } else if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+      cleaned[key] = cleanUndefined(val);
+    } else {
+      cleaned[key] = val;
+    }
+  }
+  return cleaned;
+}
+
 const COLLECTION_NAME = 'tickets';
 
 export const TicketsService = {
@@ -10,7 +25,9 @@ export const TicketsService = {
       if (isExecutive || (!userUid && !userEmail)) {
         const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
-        const items = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as TicketItem));
+        const items = snap.docs
+          .map((d: any) => ({ id: d.id, ...d.data() } as TicketItem))
+          .filter((t: any) => !t.derived?.deleted);
         return items.sort((a: TicketItem, b: TicketItem) => (b.createdAt > a.createdAt ? 1 : -1));
       }
 
@@ -20,7 +37,10 @@ export const TicketsService = {
         const qAssigned = query(collection(db, COLLECTION_NAME), where('assignedTo', '==', userUid));
         const snapAssigned = await getDocs(qAssigned);
         snapAssigned.docs.forEach((d: any) => {
-          ticketsMap.set(d.id, { id: d.id, ...d.data() } as TicketItem);
+          const data = d.data();
+          if (!data?.derived?.deleted) {
+            ticketsMap.set(d.id, { id: d.id, ...data } as TicketItem);
+          }
         });
       }
 
@@ -28,7 +48,10 @@ export const TicketsService = {
         const qRequested = query(collection(db, COLLECTION_NAME), where('requesterEmail', '==', userEmail));
         const snapRequested = await getDocs(qRequested);
         snapRequested.docs.forEach((d: any) => {
-          ticketsMap.set(d.id, { id: d.id, ...d.data() } as TicketItem);
+          const data = d.data();
+          if (!data?.derived?.deleted) {
+            ticketsMap.set(d.id, { id: d.id, ...data } as TicketItem);
+          }
         });
       }
 
@@ -45,7 +68,9 @@ export const TicketsService = {
       const docRef = doc(db, COLLECTION_NAME, id);
       const snap = await getDoc(docRef);
       if (!snap.exists()) return null;
-      return { id: snap.id, ...snap.data() } as TicketItem;
+      const data = snap.data();
+      if (data?.derived?.deleted) return null;
+      return { id: snap.id, ...data } as TicketItem;
     } catch (e) {
       console.error('Errore getTicket:', e);
       return null;
@@ -74,7 +99,7 @@ export const TicketsService = {
     const hours = (settings.slaHours && settings.slaHours[priority]) || 24;
     const slaDueDate = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 
-    const docData = {
+    const docData = cleanUndefined({
       ...data,
       status: data.status || 'aperto',
       priority,
@@ -85,7 +110,7 @@ export const TicketsService = {
       messages: data.messages || [],
       createdAt: now,
       updatedAt: now
-    };
+    });
     const ref = await addDoc(collection(db, COLLECTION_NAME), docData);
     return ref.id;
   },
@@ -127,7 +152,7 @@ export const TicketsService = {
       updatePayload.resolutionTimeHours = 0;
     }
 
-    await updateDoc(docRef, updatePayload);
+    await updateDoc(docRef, cleanUndefined(updatePayload));
   },
 
   async addMessageToTicket(id: string, message: TicketMessage): Promise<void> {
@@ -171,9 +196,13 @@ export const TicketsService = {
     }
   },
 
-  async deleteTicket(id: string): Promise<void> {
+  async deleteTicket(id: string, uid?: string): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
+    await updateDoc(docRef, {
+      'derived.deleted': true,
+      'edits.deletedAt': new Date().toISOString(),
+      'edits.deletedBy': uid || 'system'
+    });
   },
 
   computeKPIs(tickets: TicketItem[]): TicketKPIs {

@@ -11,9 +11,9 @@
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
-  import { db, collection, getDocs } from '$lib/firebase';
   import Autocomplete from '$lib/components/Autocomplete.svelte';
   import MultiComplete from '$lib/components/MultiComplete.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   
   import InterventionItemsForm from './components/InterventionItemsForm.svelte';
 
@@ -232,7 +232,7 @@
       newLocAddress = '';
       newLocCity = '';
     } catch (err: any) {
-      alert('Errore creazione nuovo luogo: ' + err.message);
+      toast.error('Errore creazione nuovo luogo: ' + err.message);
     }
   }
 

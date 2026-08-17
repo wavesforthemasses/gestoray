@@ -65,8 +65,8 @@ describe('ContactsService', () => {
   });
 
   it('should delete a contact', async () => {
-    await ContactsService.deleteContact('cnt_1');
-    expect(deleteDoc).toHaveBeenCalledOnce();
+    await ContactsService.deleteContact('cnt_1', 'user_admin');
+    expect(updateDoc).toHaveBeenCalledOnce();
   });
 
   it('should link to existing contact when creating with matching email', async () => {

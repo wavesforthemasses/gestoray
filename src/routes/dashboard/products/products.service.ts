@@ -44,14 +44,18 @@ export class ProductsService {
       orderBy('createdAt', 'desc')
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as ProductItem));
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as ProductItem))
+      .filter(p => !(p as any).derived?.deleted);
   }
 
   static async getProductById(id: string): Promise<ProductItem | null> {
     const ref = doc(db, this.COLLECTION_NAME, id);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as ProductItem;
+    const data = snap.data();
+    if (data?.derived?.deleted) return null;
+    return { id: snap.id, ...data } as ProductItem;
   }
 
   static parseMinimoFatturabile(raw: any): MinimoFatturabileConfig | undefined {
@@ -140,7 +144,16 @@ export class ProductsService {
     await updateDoc(doc(db, this.COLLECTION_NAME, id), sanitized);
   }
 
-  static async deleteProduct(id: string): Promise<void> {
-    await deleteDoc(doc(db, this.COLLECTION_NAME, id));
+  static async deleteProduct(id: string, uid?: string): Promise<void> {
+    await updateDoc(doc(db, this.COLLECTION_NAME, id), {
+      'derived.deleted': true,
+      'edits.deletedAt': new Date().toISOString(),
+      'edits.deletedBy': uid || 'system'
+    });
+    try {
+      await CacheLookupService.removeEntityFromCache('products', id);
+    } catch (e) {
+      console.warn('Errore rimozione cache prodotto:', e);
+    }
   }
 }

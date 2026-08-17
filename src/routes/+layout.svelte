@@ -5,11 +5,9 @@
   import { onMount } from "svelte";
   import {
     auth as clientAuth,
-    db,
-    onAuthStateChanged,
-    doc,
-    getDoc,
+    onAuthStateChanged
   } from "$lib/firebase";
+  import { UsersService } from "./dashboard/users/users.service";
   import { authState, activeRoleState } from "$lib/auth.svelte";
   import { initProjectStore, destroyProjectStore, projectStore } from "$lib/stores/project";
   import { initMenuStore, destroyMenuStore } from "$lib/stores/menu";
@@ -35,9 +33,9 @@
       async (firebaseUser: any) => {
         if (firebaseUser) {
           try {
-            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data() || {};
+            const data = await UsersService.getUser(firebaseUser.uid);
+            if (data) {
+              const uStatus = data.status || data.original?.status || "active";
               const original = data.original || data || {};
               const roles = original.roles || [];
               authState.user = {

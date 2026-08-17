@@ -1,18 +1,22 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
+  import { onMount } from 'svelte';
   import { authState, activeRoleState } from '$lib/auth.svelte';
-  import { db, doc, setDoc, collection, getDocs, query, where } from '$lib/firebase';
   import { generateId } from '$lib/utils/helpers';
   import { generateSearchTerms } from '$lib/search-utils';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { ContactsService } from '$lib/services/contacts.service';
+  import { ClientsService } from '../clients.service';
   import { ClientSettingsService, DEFAULT_CLIENT_FIELDS_SETTINGS, type ClientFieldsSettings } from '$lib/services/clientSettingsService';
 
   import { toast } from '$lib/stores/toast.svelte';
   import { FormField } from '$lib';
   import { Building, FileText, UserCheck, ShieldAlert, Notebook } from '@lucide/svelte';
 
-  const dispatch = createEventDispatcher();
+  interface Props {
+    oncreated?: () => void;
+  }
+
+  let { oncreated }: Props = $props();
 
   let fieldSettings = $state<ClientFieldsSettings>(DEFAULT_CLIENT_FIELDS_SETTINGS);
 
@@ -105,21 +109,6 @@
     try {
       const computedFiscalId = partitaIva.trim() || codiceFiscale.trim();
 
-      // Uniqueness check for fiscal identifier if provided
-      if (computedFiscalId) {
-        let checkQuery;
-        if (['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '')) {
-          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId));
-        } else {
-          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId), where('original.createdBy', '==', authState.user.uid));
-        }
-        
-        const checkSnap = await getDocs(checkQuery);
-        if (!checkSnap.empty) {
-          throw new Error("L'Identificativo Fiscale inserito è già associato a un'altra anagrafica.");
-        }
-      }
-
       // Auto copy from Sede Operativa if enabled in settings
       const copyLegale = fieldSettings.sediConfig?.sedi?.legale?.autoCopyFromDefault;
       const copySpedizione = fieldSettings.sediConfig?.sedi?.spedizione?.autoCopyFromDefault;
@@ -207,8 +196,6 @@
         }
       };
 
-      await setDoc(doc(db, 'clients', clientId), newClient);
-
       // Automatically create linked Contact for Referente if provided
       if (referenteTecnico.trim() || emailContatto.trim() || telReferente.trim()) {
         try {
@@ -233,22 +220,26 @@
       
       const historyId = generateId('audit');
 
-      await setDoc(doc(db, 'clients', clientId, 'history', historyId), {
+      const historyData = {
         original: {
           clientId,
           updatedBy: authState.user.uid,
           updatedEmail: authState.user.email,
-          changes: {
-            creation: { oldVal: null, newVal: 'created' }
-          }
-        },
-        edits: {
-          createdAt: now
+          timestamp: now,
+          changeType: 'created',
+          changes: 'Creazione Anagrafica Cliente'
         }
-      });
+      };
 
-      toast.success(`Anagrafica per "${nome}" creata con successo!`);
-      dispatch('created');
+      const isCommerciale = !['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '');
+      const res = await ClientsService.createClient(newClient, historyData, computedFiscalId, isCommerciale, authState.user.uid);
+
+      if (!res.success) {
+        throw new Error(res.error || "Errore sconosciuto durante il salvataggio.");
+      }
+
+      toast.success('Cliente salvato con successo!');
+      oncreated?.();
     } catch (err: any) {
       toast.error(err.message || 'Errore durante la creazione del cliente.');
     } finally {

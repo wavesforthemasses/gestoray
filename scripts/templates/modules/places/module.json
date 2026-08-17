@@ -29,11 +29,27 @@
   "enabled": true,
   "kpiTiles": [
     {
-      "id": "places_attivi",
-      "title": "Luoghi Attivi",
+      "id": "active_places",
+      "title": "Cantieri Attivi",
       "subtitle": "Destinazioni operative attive",
-      "icon": "MapPin",
-      "valueKey": "activePlacesCount",
+      "icon": "CheckCircle2",
+      "valueKey": "active_places",
+      "aggregation": {
+        "collection": "places",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    },
+    {
+      "id": "new_places",
+      "title": "Nuove Aperture",
+      "subtitle": "Nuovi cantieri e luoghi aperti",
+      "icon": "CalendarPlus",
+      "valueKey": "new_places",
       "aggregation": {
         "collection": "places",
         "type": "count",

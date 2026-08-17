@@ -41,7 +41,7 @@ const logger = __importStar(require("firebase-functions/logger"));
 const utils_1 = require("../utils");
 const REGION = 'europe-west3';
 async function runPaymentCreated(db, paymentId, paymentData) {
-    const amount = paymentData.original?.amount || 0;
+    const amount = paymentData?.amount ?? paymentData?.original?.amount ?? 0;
     const paymentRef = db.collection('payments').doc(paymentId);
     await paymentRef.update({
         'derived.distributedAmount': 0,

@@ -7,8 +7,24 @@
   import type { TicketItem, TicketMessage } from '../schema';
   import { can } from '$lib/services/roles.service';
   import { activeRoleState } from '$lib/auth.svelte';
-  import { db, collection, getDocs } from '$lib/firebase';
+  import { db } from '$lib/firebase';
   import { TicketSettingsService, type CannedResponseConfig } from '$lib/services/ticketSettings';
+  import { UsersService } from '../../users/users.service';
+  import { confirmStore } from '$lib/stores/confirm.svelte';
+  import { 
+    ArrowLeft, 
+    CheckCircle2, 
+    AlertTriangle, 
+    Clock, 
+    Folder, 
+    Building, 
+    User, 
+    Calendar, 
+    MessageSquare, 
+    Lock, 
+    Trash2, 
+    Zap 
+  } from '@lucide/svelte';
 
   let ticketId = $derived($page.params.id || '');
   let ticket = $state<TicketItem | null>(null);
@@ -37,17 +53,12 @@
 
   async function loadUsersData() {
     try {
-      const snapUsers = await getDocs(collection(db, 'users'));
-      users = snapUsers.docs.map((d: any) => {
-        const data = d.data();
-        const orig = data.original || data;
-        const nome = orig.nome || orig.firstName || orig.name || '';
-        const cognome = orig.cognome || orig.lastName || '';
-        const fullName = `${nome} ${cognome}`.trim();
-        const name = fullName || orig.displayName || orig.email || 'Utente ' + d.id;
-        const role = (orig.roles && orig.roles[0]) || orig.role || '';
-        return { id: d.id, name, role };
-      });
+      const snapUsers = await UsersService.getUsers();
+      users = snapUsers.map((u: any) => ({
+        id: u.id,
+        name: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Utente',
+        role: u.role || ''
+      }));
     } catch (e) {
       console.error('Errore caricamento utenti per dettaglio ticket:', e);
     }
@@ -115,7 +126,8 @@
   }
 
   async function handleDeleteTicket() {
-    if (!confirm('Sei sicuro di voler eliminare definitivamente questo ticket?')) return;
+    const confirmed = await confirmStore.prompt('Sei sicuro di voler eliminare definitivamente questo ticket?');
+    if (!confirmed) return;
     await TicketsService.deleteTicket(ticketId);
     goto('/dashboard/tickets');
   }
@@ -141,7 +153,9 @@
 
 <div class="ticket-detail-page">
   <div class="page-header">
-    <a href="/dashboard/tickets" class="back-link">← Torna all'elenco ticket</a>
+    <a href="/dashboard/tickets" class="back-link">
+      <ArrowLeft size={16} /> Torna all'elenco ticket
+    </a>
   </div>
 
   {#if successToast}
@@ -160,30 +174,34 @@
           <h1 class="ticket-title">{ticket.subject}</h1>
           <div class="badges-row">
             <span class="priority-badge priority-{ticket.priority}">
-              {#if ticket.priority === 'urgente'}🔥 URGENTE
-              {:else if ticket.priority === 'alta'}⚡ ALTA
-              {:else if ticket.priority === 'media'}🔷 MEDIA
-              {:else}⚪ BASSA
+              {#if ticket.priority === 'urgente'}
+                <AlertTriangle size={12} /> URGENTE
+              {:else if ticket.priority === 'alta'}
+                <Zap size={12} /> ALTA
+              {:else if ticket.priority === 'media'}
+                MEDIA
+              {:else}
+                BASSA
               {/if}
             </span>
 
             {#if ticket.status === 'risolto' || ticket.status === 'chiuso'}
-              <span class="sla-badge sla-ok">✅ Risolto</span>
+              <span class="sla-badge sla-ok"><CheckCircle2 size={13} /> Risolto</span>
             {:else if isSlaBreached}
-              <span class="sla-badge sla-breached">⚠️ SLA Superato</span>
+              <span class="sla-badge sla-breached"><AlertTriangle size={13} /> SLA Superato</span>
             {:else if ticket.slaDueDate}
-              <span class="sla-badge sla-pending">⏱️ Scadenza SLA: {new Date(ticket.slaDueDate).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span class="sla-badge sla-pending"><Clock size={13} /> Scadenza SLA: {new Date(ticket.slaDueDate).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
             {/if}
           </div>
         </div>
 
         <div class="meta-row">
-          <span class="meta-item">📁 Categoria: <strong>{ticket.category}</strong></span>
-          <span class="meta-item">🏢 Cliente: <strong>{ticket.clientName || 'Generico'}</strong></span>
+          <span class="meta-item"><Folder size={14} /> Categoria: <strong>{ticket.category}</strong></span>
+          <span class="meta-item"><Building size={14} /> Cliente: <strong>{ticket.clientName || 'Generico'}</strong></span>
           {#if ticket.requesterName}
-            <span class="meta-item">👤 Richiedente: <strong>{ticket.requesterName} ({ticket.requesterEmail || 'No email'})</strong></span>
+            <span class="meta-item"><User size={14} /> Richiedente: <strong>{ticket.requesterName} ({ticket.requesterEmail || 'No email'})</strong></span>
           {/if}
-          <span class="meta-item">📅 Aperto il: <strong>{new Date(ticket.createdAt).toLocaleString('it-IT')}</strong></span>
+          <span class="meta-item"><Calendar size={14} /> Aperto il: <strong>{new Date(ticket.createdAt).toLocaleString('it-IT')}</strong></span>
         </div>
 
         <div class="description-box">
@@ -193,7 +211,7 @@
 
         <!-- Cronologia Messaggi / Note -->
         <div class="timeline-section">
-          <h3 class="box-title">💬 Cronologia Risposte e Note Interne</h3>
+          <h3 class="box-title"><MessageSquare size={16} /> Cronologia Risposte e Note Interne</h3>
 
           {#if !ticket.messages || ticket.messages.length === 0}
             <p class="no-messages">Nessuna risposta o nota ancora registrata per questo ticket.</p>
@@ -205,7 +223,7 @@
                     <span class="sender-name">
                       {msg.senderName} ({msg.senderRole})
                       {#if msg.isInternal}
-                        <span class="internal-badge">🔒 Nota Interna</span>
+                        <span class="internal-badge"><Lock size={11} /> Nota Interna</span>
                       {/if}
                     </span>
                     <span class="message-time">{new Date(msg.createdAt).toLocaleString('it-IT')}</span>
@@ -225,7 +243,7 @@
                 {#if cannedResponses.length > 0}
                   <div class="canned-picker">
                     <select value={selectedCannedId} onchange={handleSelectCanned}>
-                      <option value="">⚡ Inserisci Risposta Rapida...</option>
+                      <option value="">Inserisci Risposta Rapida...</option>
                       {#each cannedResponses as r}
                         <option value={r.id}>{r.title}</option>
                       {/each}
@@ -270,11 +288,11 @@
               onchange={(e) => handleStatusChange((e.target as HTMLSelectElement).value)}
               disabled={updatingStatus}
             >
-              <option value="aperto">🔵 Aperto</option>
-              <option value="in_lavorazione">🟡 In Lavorazione</option>
-              <option value="in_attesa_cliente">🟣 In Attesa Cliente</option>
-              <option value="risolto">🟢 Risolto</option>
-              <option value="chiuso">⚪ Chiuso</option>
+              <option value="aperto">Aperto</option>
+              <option value="in_lavorazione">In Lavorazione</option>
+              <option value="in_attesa_cliente">In Attesa Cliente</option>
+              <option value="risolto">Risolto</option>
+              <option value="chiuso">Chiuso</option>
             </select>
           {:else}
             <div class="status-badge-large">{ticket.status.replace(/_/g, ' ').toUpperCase()}</div>
@@ -304,7 +322,7 @@
         {#if can('tickets:delete', activeRoleState.role)}
           <div class="danger-zone">
             <button onclick={handleDeleteTicket} class="btn btn-danger full-width">
-              🗑️ Elimina Ticket
+              <Trash2 size={14} /> Elimina Ticket
             </button>
           </div>
         {/if}

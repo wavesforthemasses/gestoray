@@ -178,8 +178,8 @@
 <style>
   .settings-page-container {
     padding: 24px;
-    max-width: 1000px;
-    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
   .settings-header {
     display: flex;

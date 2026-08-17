@@ -4,9 +4,10 @@
   import { Card, FormField, Button } from '$lib';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
-  import { activeRoleState, authState } from '$lib/auth.svelte';
-  import { ClientDetailService } from '../../../../../src/routes/dashboard/clients/[id]/client-detail.service';
-  import { db, collection, getDocs, query, where } from '$lib/firebase';
+  import { authState, activeRoleState } from '$lib/auth.svelte';
+  import { ContractService } from '../ContractService';
+  import { UsersService } from '../../users/users.service';
+  import { ClientDetailService } from '../../clients/[id]/client-detail.service';
   import { toast } from '$lib/stores/toast.svelte';
 
   interface Props {
@@ -40,28 +41,32 @@
 
   async function loadTabData() {
     try {
-      const pSnap = await getDocs(collection(db, 'products'));
-      productsList = pSnap.docs.map(d => {
-        const p = d.data()?.original || d.data();
-        return { id: d.id, name: p.name, listPrice: p.price ?? p.listPrice ?? p.unitPrice ?? 0, minPrice: p.minPrice };
-      });
+      try {
+        const mod = await import('../../products/products.service');
+        if (mod?.ProductsService) {
+          const pList = await mod.ProductsService.getProducts();
+          productsList = pList.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            listPrice: p.price ?? p.listPrice ?? p.unitPrice ?? 0,
+            minPrice: p.minPrice
+          }));
+        }
+      } catch (e) {
+        console.warn('Modulo products non disponibile per ClientQuotesTab');
+      }
 
-      const uSnap = await getDocs(collection(db, 'users'));
-      usersList = uSnap.docs.map(d => ({ id: d.id, ...d.data()?.original }));
+      const uList = await UsersService.getUsers();
+      usersList = uList.map((u: any) => ({ id: u.id, ...u }));
 
-      const cSnap1 = await getDocs(query(collection(db, 'contracts'), where('clientId', '==', clientId)));
-      const cSnap2 = await getDocs(query(collection(db, 'contracts'), where('original.clientId', '==', clientId)));
+      const cList = await ContractService.getClientContracts(clientId);
       
       const contracts: any[] = [];
       const quotes: any[] = [];
-      const processedContractIds = new Set<string>();
 
-      const processContractDoc = (d: any) => {
-        if (processedContractIds.has(d.id)) return;
-        processedContractIds.add(d.id);
-        const c = d.data();
+      cList.forEach((c: any) => {
         const docData = { 
-          id: d.id, 
+          id: c.id, 
           ...c.original, 
           ...c,
           edits: c.edits || { createdAt: c.createdAt }, 
@@ -73,10 +78,7 @@
         } else {
           contracts.push(docData);
         }
-      };
-
-      cSnap1.forEach(processContractDoc);
-      cSnap2.forEach(processContractDoc);
+      });
 
       contractsList = contracts.sort((a, b) => new Date(b.createdAt || b.edits?.createdAt || 0).getTime() - new Date(a.createdAt || a.edits?.createdAt || 0).getTime());
       quotesList = quotes.sort((a, b) => new Date(b.createdAt || b.edits?.createdAt || 0).getTime() - new Date(a.createdAt || a.edits?.createdAt || 0).getTime());

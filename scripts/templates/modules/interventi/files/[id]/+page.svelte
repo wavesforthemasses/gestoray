@@ -8,7 +8,6 @@
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import type { CustomFieldDefinition } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
-  import { db, collection, getDocs } from '$lib/firebase';
   import { toast } from '$lib/stores/toast.svelte';
 
   let interventionId = $derived(page.params.id);
@@ -40,16 +39,18 @@
       settings = await InterventionSettingsService.getSettings();
       customFieldsList = await CustomFieldsService.getFieldsForModule('interventi');
       await loadIntervention();
-
-      // Load products for consuntivo materials
       try {
-        const snap = await getDocs(collection(db, 'products'));
-        products = snap.docs.map((d: any) => {
-          const data = d.data();
-          return { id: d.id, name: data.name || data.title || 'Prodotto ' + d.id, price: data.price || data.unitPrice || 0 };
-        });
+        const mod = await import('../../products/files/products.service');
+        if (mod?.ProductsService) {
+          const pList = await mod.ProductsService.getProducts();
+          products = pList.map((p: any) => ({
+            id: p.id,
+            name: p.name || p.code,
+            price: p.price ?? p.listPrice ?? p.unitPrice ?? 0
+          }));
+        }
       } catch (e) {
-        console.warn('Nessun prodotto catalogo caricato:', e);
+        console.warn('Modulo products non disponibile, caricamento manuale prodotti disabilitato in consuntivazione.');
       }
     } catch (e) {
       console.error('Errore caricamento dettaglio intervento:', e);
@@ -158,7 +159,7 @@
       showConsuntivoModal = false;
       await loadIntervention();
     } catch (e: any) {
-      alert('Errore consuntivazione: ' + e.message);
+      toast.error('Errore consuntivazione: ' + e.message);
     } finally {
       savingConsuntivo = false;
     }

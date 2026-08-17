@@ -3,11 +3,10 @@
   import { activeRoleState, authState } from '$lib/auth.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, Users, Plus } from '@lucide/svelte';
-  import { Card, SearchToolbar, UniversalAnalyticsChart } from '$lib';
+  import { Users, Plus } from '@lucide/svelte';
+  import { SearchToolbar, UniversalAnalyticsChart } from '$lib';
   import { DashboardService } from '../dashboard.service';
 
-  import ClientAddForm from './components/ClientAddForm.svelte';
   import ClientsTable from './components/ClientsTable.svelte';
   import { ClientsService } from './clients.service';
   import { pageTitle } from '$lib/stores/page';
@@ -93,7 +92,6 @@
   let hasMore = $state(true);
   let lastVisible = $state<any>(null);
   
-  let showAddForm = $state(false);
   let searchQuery = $state('');
 
   let isGraphExpanded = $state(false);
@@ -143,8 +141,7 @@
 </script>
 
 <div class="clients-page animate-fade-in">
-  {#if !showAddForm}
-    <div class="page-top-actions">
+  <div class="page-top-actions">
       <div>
         <h2 class="title-header">
           <Users size={28} color="var(--color-primary-600)" />
@@ -154,9 +151,9 @@
       </div>
 
       {#if activeRoleState.role !== 'direzione'}
-        <button class="btn-primary" onclick={() => showAddForm = true}>
+        <a href="/dashboard/clients/add" class="btn-primary">
           <Plus size={18} /> Aggiungi Cliente
-        </button>
+        </a>
       {/if}
     </div>
 
@@ -196,11 +193,10 @@
         bind:searchQuery
         onSearch={(q: string) => fetchClients(q, true)}
         onReset={() => { searchQuery = ''; fetchClients(undefined, true); }}
-        onAddClick={() => showAddForm = true}
+        onAddClick={() => goto('/dashboard/clients/add')}
         {selectedPeriod}
       />
 
-      
       {#if hasMore}
         <div class="load-more-container">
           <button class="btn-load-more" onclick={() => fetchClients(searchQuery, false)} disabled={loadingMore}>
@@ -213,21 +209,6 @@
         </div>
       {/if}
     {/if}
-  {:else}
-    <Card
-      title="Aggiungi Nuova Anagrafica"
-      description="Crea una nuova scheda cliente. Nome Azienda, Identificativo Fiscale e almeno un recapito (Email o Telefono) sono obbligatori."
-      class="form-card"
-    >
-      {#snippet headerSnippet()}
-        <button onclick={() => { showAddForm = false; }} class="back-link">
-          <ArrowLeft size={14} /> Annulla e torna all'elenco
-        </button>
-      {/snippet}
-
-      <ClientAddForm on:created={() => { showAddForm = false; fetchClients(); }} />
-    </Card>
-  {/if}
 </div>
 
 <style>

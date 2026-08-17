@@ -139,6 +139,9 @@ exports.getChartAggregations = (0, https_1.onCall)({ region: 'europe-west3', cor
             const endMs = new Date(period.end).getTime();
             let periodTotal = 0;
             for (const data of docs) {
+                // Skip soft-deleted documents
+                if (data.derived?.deleted || data.deleted)
+                    continue;
                 // 1. Resolve date from specified candidate dateFields
                 let dateMs = 0;
                 if (Array.isArray(spec.dateFields)) {

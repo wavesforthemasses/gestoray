@@ -4,8 +4,7 @@
   import { InterventiService } from './interventi.service';
   import type { InterventionItem } from './schema';
   import { InterventionSettingsService, type InterventionSettingsConfig, DEFAULT_INTERVENTION_SETTINGS } from '$lib/services/interventionSettings';
-  import { db, collection, getDocs } from '$lib/firebase';
-  
+
   import InterventiHeader from './components/InterventiHeader.svelte';
   import InterventiFilters from './components/InterventiFilters.svelte';
   import InterventiTable from './components/InterventiTable.svelte';

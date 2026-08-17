@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { db, doc, setDoc } from '$lib/firebase';
   import { projectStore } from '$lib/stores/project';
   import { activeRoleState } from '$lib/auth.svelte';
   import { hasAccess } from '$lib/utils/authCheck';
+  import { SettingsService } from '$lib/services/settingsService';
   import Button from '$lib/components/Button.svelte';
 
   import { isOnlineStore } from '$lib/stores/networkState';
@@ -26,10 +26,10 @@
     saving = true;
     error = '';
     try {
-      await setDoc(doc(db, 'settings', 'project'), {
+      await SettingsService.saveProjectConfig({
         projectName: projectName.trim(),
         projectEmail: projectEmail.trim()
-      }, { merge: true });
+      });
     } catch (e: any) {
       error = e.message || 'Errore nel salvataggio.';
     } finally {

@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { db, doc, onSnapshot } from '$lib/firebase';
+import { SettingsService } from '$lib/services/settingsService';
 import modulesRegistry from '$lib/config/modules.registry.json';
 
 export interface MenuItemConfig {
@@ -94,12 +94,9 @@ export function initMenuStore() {
   if (unsubscribeMenu) return;
 
   // Listen to menu custom order/visibility settings
-  const docRef = doc(db, 'settings', 'menu');
-  unsubscribeMenu = onSnapshot(docRef, (snap: any) => {
+  unsubscribeMenu = SettingsService.subscribeToMenuConfig((savedList: MenuItemConfig[] | null) => {
     let list = DEFAULT_MENU_CONFIG;
-    if (snap.exists()) {
-      const data = snap.data();
-      const savedList: MenuItemConfig[] = data.list || [];
+    if (savedList) {
       const defaultConfigMap = new Map(DEFAULT_MENU_CONFIG.map(item => [item.id, item]));
       const filteredSaved = savedList
         .filter(item => defaultConfigMap.has(item.id))
@@ -113,11 +110,10 @@ export function initMenuStore() {
     Object.keys(NAMING_RESOLVERS).forEach(modId => {
       const isInstalled = (modulesRegistry.modules || []).some((m: any) => m.id === modId);
       if (isInstalled && !moduleSettingsUnsubscribers[modId]) {
-        const settingsRef = doc(db, 'settings', modId);
-        moduleSettingsUnsubscribers[modId] = onSnapshot(settingsRef, (sSnap: any) => {
-          if (!sSnap.exists()) return;
+        moduleSettingsUnsubscribers[modId] = SettingsService.subscribeToModuleSettings(modId, (data) => {
+          if (!data) return;
           const resolver = NAMING_RESOLVERS[modId];
-          const newPluralLabel = resolver(sSnap.data());
+          const newPluralLabel = resolver(data);
 
           menuConfigStore.update(items =>
             items.map(item =>
