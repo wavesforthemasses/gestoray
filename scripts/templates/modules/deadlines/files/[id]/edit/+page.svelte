@@ -10,7 +10,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { AlertTriangle, ArrowLeft, Save } from '@lucide/svelte';
+  import { AlertTriangle, List, Save } from '@lucide/svelte';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
 
   let deadlineId = $derived($page.params.id || '');
@@ -151,8 +151,8 @@
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href={`/dashboard/deadlines/${deadlineId}`} class="btn-back" title="Annulla">
-          <ArrowLeft size={20} />
+        <a href="/dashboard/deadlines" class="btn-module-list" title="Vai a elenco {labels.plural}" aria-label="Vai a elenco {labels.plural}">
+          <List size={20} />
         </a>
         <div class="header-icon">
           <AlertTriangle size={24} color="#D97706" />

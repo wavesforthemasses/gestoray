@@ -5,7 +5,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pageTitle } from '$lib/stores/page';
   import { Card, FormField } from '$lib';
-  import { Palette, ArrowLeft, RefreshCcw, Save, Pipette } from '@lucide/svelte';
+  import { Palette, Settings, RefreshCcw, Save, Pipette } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project';
   import { SettingsService } from '$lib/services/settingsService';
   import { toast } from '$lib/stores/toast.svelte';
@@ -264,8 +264,8 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <a href="/dashboard/settings" class="back-link">
-        <ArrowLeft size={14} /> Torna a Impostazioni
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
     {/snippet}
 

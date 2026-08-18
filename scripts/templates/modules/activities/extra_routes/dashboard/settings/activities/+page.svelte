@@ -20,7 +20,7 @@
     RotateCcw, 
     Save, 
     Info, 
-    ArrowLeft, 
+    Settings, 
     Phone, 
     Users, 
     Mail, 
@@ -272,8 +272,8 @@
 <div class="activity-types-settings animate-fade-in">
   <div class="page-top">
     <div>
-      <a href="/dashboard/settings" class="back-link">
-        <ArrowLeft size={14} /> Torna alle Impostazioni
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <h2 class="title-header">
         <ClipboardList size={26} color="var(--color-primary-600)" />

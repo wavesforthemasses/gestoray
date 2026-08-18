@@ -11,7 +11,7 @@
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import { Card } from '$lib';
   import { 
-    ArrowLeft, 
+    List, 
     Printer, 
     Edit, 
     Info, 
@@ -144,14 +144,14 @@
 </svelte:head>
 
 <div class="contract-detail-page animate-fade-in">
-  <button 
-    type="button" 
-    class="back-link btn-back-context" 
-    onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/contracts')}
+  <a 
+    href="/dashboard/contracts" 
+    class="btn-module-list" 
+    title="Vai all'elenco {labels.plural}"
+    aria-label="Vai all'elenco {labels.plural}"
   >
-    <ArrowLeft size={16} /> 
-    <span>{NavigationService.getBackLabel($page.url.searchParams, `Torna alla Gestione ${labels.plural}`)}</span>
-  </button>
+    <List size={20} />
+  </a>
 
   {#if loading}
     <div class="loader-box">

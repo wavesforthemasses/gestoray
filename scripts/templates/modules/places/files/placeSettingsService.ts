@@ -18,7 +18,16 @@ export class PlaceSettingsService {
           numberPadding: data.numberPadding || 3,
           lastNumber: data.lastNumber || 0,
           lastCounterYear: data.lastCounterYear || new Date().getFullYear(),
-          defaultStatus: data.defaultStatus || 'attivo'
+          defaultStatus: data.defaultStatus || 'attivo',
+          presence: {
+            mode: data.presence?.mode || 'hybrid_assisted',
+            defaultGeofenceRadiusMeters: data.presence?.defaultGeofenceRadiusMeters ?? 100,
+            geofenceToleranceMeters: data.presence?.geofenceToleranceMeters ?? 25,
+            maxShiftHours: data.presence?.maxShiftHours ?? 8,
+            autoCloseGraceMinutes: data.presence?.autoCloseGraceMinutes ?? 60,
+            allowForemanManualCheckIn: data.presence?.allowForemanManualCheckIn !== false,
+            requireForemanReason: data.presence?.requireForemanReason ?? false
+          }
         };
       }
     } catch (e) {
@@ -33,7 +42,16 @@ export class PlaceSettingsService {
       numberPadding: 3,
       lastNumber: 0,
       lastCounterYear: new Date().getFullYear(),
-      defaultStatus: 'attivo'
+      defaultStatus: 'attivo',
+      presence: {
+        mode: 'hybrid_assisted',
+        defaultGeofenceRadiusMeters: 100,
+        geofenceToleranceMeters: 25,
+        maxShiftHours: 8,
+        autoCloseGraceMinutes: 60,
+        allowForemanManualCheckIn: true,
+        requireForemanReason: false
+      }
     };
   }
 

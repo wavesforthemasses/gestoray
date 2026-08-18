@@ -171,5 +171,20 @@ export class NavigationService {
   static async cancelAndReturn(searchParams: URLSearchParams | ContextParams, fallbackUrl: string): Promise<void> {
     return this.navigateBack(searchParams, fallbackUrl);
   }
+
+  /**
+   * Executes the global history back action.
+   */
+  static async goBack(): Promise<void> {
+    const { executeGlobalBack } = await import('$lib/stores/navigationHistory');
+    await executeGlobalBack();
+  }
 }
+
+export {
+  navigationStackStore,
+  canGoBackStore,
+  recordNavigation,
+  executeGlobalBack
+} from '$lib/stores/navigationHistory';
 

@@ -6,7 +6,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Users, Save, ArrowLeft } from '@lucide/svelte';
+  import { Users, Save, Settings } from '@lucide/svelte';
 
   pageTitle.set('Impostazioni Squadre & Risorse');
 
@@ -57,8 +57,8 @@
 <div class="settings-page-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/settings/modules" class="btn-back" title="Torna ai Moduli">
-        <ArrowLeft size={20} />
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <div class="header-icon">
         <Users size={24} color="var(--color-primary-500)" />

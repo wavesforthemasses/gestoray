@@ -13,7 +13,7 @@
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { 
-    ArrowLeft, 
+    List, 
     Pencil, 
     Package, 
     Briefcase, 
@@ -191,8 +191,8 @@
 
 <div class="add-product-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/products/{productId}" class="back-link">
-      <ArrowLeft size={14} /> Torna al Dettaglio Articolo
+    <a href="/dashboard/products" class="btn-module-list" title="Vai al catalogo prodotti" aria-label="Vai al catalogo prodotti">
+      <List size={20} />
     </a>
     <h2>
       <Pencil size={22} class="header-icon" /> Modifica Articolo Catalogo

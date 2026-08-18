@@ -14,7 +14,7 @@
   import { VersioningService, type SystemLedgerEntry } from '$lib/services/versioningService';
   import { PRODUCT_FIELD_LABELS, ProductsVersioningBridge } from '../products.versioning.bridge';
   import { 
-    ArrowLeft, 
+    List, 
     Printer, 
     Pencil, 
     Info, 
@@ -71,8 +71,8 @@
 </svelte:head>
 
 <div class="product-detail-page animate-fade-in">
-  <a href="/dashboard/products" class="back-link">
-    <ArrowLeft size={14} /> Torna al Catalogo Prodotti & Servizi
+  <a href="/dashboard/products" class="btn-module-list" title="Vai al catalogo prodotti" aria-label="Vai al catalogo prodotti">
+    <List size={20} />
   </a>
 
   {#if loading}

@@ -9,7 +9,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card } from '$lib';
-  import { User, ArrowLeft } from '@lucide/svelte';
+  import { User, List } from '@lucide/svelte';
   import UserDetailForm from './components/UserDetailForm.svelte';
 
   let uid = $page.params.id as string;
@@ -109,8 +109,8 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <a href="/dashboard/users" class="back-link">
-        <ArrowLeft size={14} /> Torna all'elenco
+      <a href="/dashboard/users" class="btn-module-list" title="Vai all'elenco utenti" aria-label="Vai all'elenco utenti">
+        <List size={20} />
       </a>
     {/snippet}
 

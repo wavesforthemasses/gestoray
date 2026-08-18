@@ -441,8 +441,10 @@ a.btn-create:active {
 }
 
 /* ==========================================================================
-   UNIFIED CONTEXTUAL BACK BUTTON (PREMIUM SLEEK PILL)
+   UNIFIED MODULE LIST & CONTEXT ACTION BUTTONS (PREMIUM ICON-ONLY SQUIRCLE)
    ========================================================================== */
+.btn-module-list,
+.btn-back-settings,
 .back-link,
 .btn-back-context,
 .btn-back,
@@ -451,29 +453,31 @@ button.back-link,
 button.btn-back-context,
 button.btn-back,
 a.back-link,
-a.btn-back {
+a.btn-back,
+a.btn-module-list {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
-  padding: 8px 16px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
   background: #ffffff !important;
-  border: 1px solid var(--color-neutral-300) !important;
-  border-radius: var(--radius-md) !important;
-  color: var(--color-neutral-700) !important;
+  border: 1px solid var(--color-neutral-250, #e2e8f0) !important;
+  border-radius: 10px !important;
+  color: var(--color-neutral-700, #334155) !important;
   font-family: var(--font-sans) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
   text-decoration: none !important;
   cursor: pointer !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-shadow: var(--shadow-sm) !important;
-  width: fit-content !important;
-  max-width: fit-content !important;
-  margin-bottom: 16px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
   outline: none !important;
+  flex-shrink: 0 !important;
 }
 
+.btn-module-list:hover,
+.btn-back-settings:hover,
 .back-link:hover,
 .btn-back-context:hover,
 .btn-back:hover,
@@ -482,12 +486,29 @@ button.back-link:hover,
 button.btn-back-context:hover,
 button.btn-back:hover,
 a.back-link:hover,
-a.btn-back:hover {
-  background: var(--color-neutral-100) !important;
-  border-color: var(--color-primary-400) !important;
-  color: var(--color-primary-600) !important;
-  box-shadow: var(--shadow-md) !important;
-  transform: translateY(-1px) !important;
+a.btn-back:hover,
+a.btn-module-list:hover {
+  background: var(--color-primary-50, #f0f7ff) !important;
+  border-color: var(--color-primary-300, #93c5fd) !important;
+  color: var(--color-primary-600, #2563eb) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12), 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  transform: translateY(-2px) scale(1.04) !important;
+}
+
+.btn-module-list:active,
+.btn-back-settings:active,
+.back-link:active,
+.btn-back-context:active,
+.btn-back:active,
+.back-link-btn:active,
+button.back-link:active,
+button.btn-back-context:active,
+button.btn-back:active,
+a.back-link:active,
+a.btn-back:active,
+a.btn-module-list:active {
+  transform: translateY(0) scale(0.96) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* ==========================================================================

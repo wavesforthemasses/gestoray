@@ -46,6 +46,7 @@ export interface ActivityItem {
 
   // Multiple tagging assignment (users, teams, vehicles)
   assignedEntities?: AssignedEntityRef[];
+  assigneeFilterKeys?: string[];
 
   // Legacy fallback fields for backward compatibility
   assignedUid?: string;

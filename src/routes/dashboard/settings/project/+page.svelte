@@ -8,7 +8,7 @@
   import { Card, FormField, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   pageTitle.set('Configurazione Progetto');
-  import { ArrowLeft, AlertTriangle } from '@lucide/svelte';
+  import { Settings, AlertTriangle } from '@lucide/svelte';
 
   let projectName = $state('');
   let projectEmail = $state('');
@@ -63,8 +63,8 @@
 <div class="project-settings-page animate-fade-in">
   <Card title="Configurazione Progetto" description="Modifica il nome del progetto, l'email aziendale principale ed integra le API di notifica per Resend." class="settings-card">
     {#snippet headerSnippet()}
-      <a href="/dashboard/settings" class="back-link">
-        <ArrowLeft size={14} /> Torna a Impostazioni
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
     {/snippet}
 

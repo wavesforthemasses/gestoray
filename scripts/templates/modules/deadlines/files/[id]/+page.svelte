@@ -10,7 +10,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { AlertTriangle, ArrowLeft, Edit3, Trash2, Calendar, Link, CheckCircle2 } from '@lucide/svelte';
+  import { AlertTriangle, List, Edit3, Trash2, Calendar, Link, CheckCircle2 } from '@lucide/svelte';
 
   let deadlineId = $derived($page.params.id || '');
   let deadline = $state<DeadlineEntry | null>(null);
@@ -110,13 +110,15 @@
     <Card class="empty-card">
       <h2>{labels.singular} non trovata</h2>
       <p>L'elemento richiesto non esiste o è stato rimosso.</p>
-      <a href="/dashboard/deadlines" class="btn-back-link">Torna allo scadenzario</a>
+      <a href="/dashboard/deadlines" class="btn-module-list" title="Vai a elenco {labels.plural}" aria-label="Vai a elenco {labels.plural}">
+        <List size={20} />
+      </a>
     </Card>
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href="/dashboard/deadlines" class="btn-back" title="Torna allo scadenzario">
-          <ArrowLeft size={20} />
+        <a href="/dashboard/deadlines" class="btn-module-list" title="Vai a elenco {labels.plural}" aria-label="Vai a elenco {labels.plural}">
+          <List size={20} />
         </a>
         <div class="header-icon">
           <AlertTriangle size={24} color="#D97706" />

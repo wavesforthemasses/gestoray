@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDate", "order": "ASCENDING" },
+        { "fieldPath": "assigneeFilterKeys", "arrayConfig": "CONTAINS" }
+      ]
+    },
+    {
+      "collectionGroup": "place_presences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "placeId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "clientEnteredAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "place_presences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "clientEnteredAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}

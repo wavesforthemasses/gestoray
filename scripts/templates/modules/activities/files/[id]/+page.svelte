@@ -11,7 +11,7 @@
   import { ActivitiesBridgeOrchestrator } from '../activities.orchestrator';
   import type { TargetSummary } from '$lib/types/moduleActivitiesBridge';
   import { 
-    ArrowLeft, 
+    List, 
     Printer, 
     Pencil, 
     Info, 
@@ -134,14 +134,14 @@
   <!-- Top Navigation / Header -->
   <header class="page-header">
     <div class="header-title-box">
-      <button 
-        type="button" 
-        class="btn-back btn-back-context" 
-        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/activities')}
-        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista attività')}
+      <a 
+        href="/dashboard/activities" 
+        class="btn-module-list" 
+        title="Vai all'elenco attività"
+        aria-label="Vai all'elenco attività"
       >
-        <ArrowLeft size={20} />
-      </button>
+        <List size={20} />
+      </a>
       <div>
         <h1 class="page-main-title">
           {activity ? activity.title : 'Dettaglio Attività'}

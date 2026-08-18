@@ -180,3 +180,9 @@
   10. **I10 (Always-On Enterprise Audit Trail)**: L'audit trail è sempre attivo su tutte le entità di business (`clients`, `products`, `contracts`, `tickets`, `places`, `activities`). È vietata qualsiasi opzione UI o backdoor per disabilitare la registrazione.
 
 ---
+
+### 23. Architettura Navigazione Globale (Core Back Navigation vs. Module List Action)
+- **Lezione**: L'uso improprio di frecce a sinistra (`ArrowLeft`) con etichetta "Torna indietro" all'interno dei singoli moduli (schede di dettaglio o form) per reindirizzare all'elenco catalogo creava ambiguità semantica: l'utente arrivato su una pagina tramite un link contestuale (es. da un'attività a un cliente) cliccando "Torna indietro" si aspettava di tornare all'attività precedente, non di essere forzato all'elenco generale dei clienti.
+- **Regola**:
+  1. **Navigazione Storica di Competenza Esclusiva del Core**: La funzione di andare indietro nella cronologia (`NavigationService.goBack()`, `navigationHistory.ts`) appartiene unicamente alla Shell Core (`+layout.svelte`). È presente come pulsante globale persistente (sidebar desktop, header flottante desktop e mobile) e viene disabilitato dinamicamente alla radice (`/dashboard`) o quando non esiste cronologia.
+  2. **Disaccoppiamento Azione Modulo ("Vai alla Lista")**: I moduli non implementano pulsanti di cronologia storica. I link di ritorno al catalogo o elenco del modulo utilizzano la classe `.btn-module-list`, l'icona vettoriale `<List size={16} />` (oppure `<Settings size={14} />` nelle configurazioni) ed etichette esplicite (es. *"Elenco Luoghi"*, *"Elenco Clienti"*, *"Catalogo Prodotti"*).

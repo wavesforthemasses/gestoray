@@ -6,7 +6,7 @@
   import { hasAccess } from '$lib/utils/authCheck';
   import { toast } from '$lib/stores/toast.svelte';
   import Button from '$lib/components/Button.svelte';
-  import { Save, ArrowLeft, Menu, ChevronUp, ChevronDown } from 'lucide-svelte';
+  import { Save, Settings, Menu, ChevronUp, ChevronDown } from '@lucide/svelte';
   import { DEFAULT_MENU_CONFIG, type MenuItemConfig } from '$lib/stores/menu';
   import { pageTitle } from '$lib/stores/page';
 
@@ -104,9 +104,9 @@
 
 <div class="settings-page animate-fade-in">
   <div class="page-top-actions">
-    <Button variant="secondary" href="/dashboard/settings">
-      <ArrowLeft size={16} /> Torna indietro
-    </Button>
+    <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+      <Settings size={20} />
+    </a>
     <div class="title-header">
       <Menu size={24} color="var(--color-neutral-800)" />
       <h2>Visibilità Menu & Ordine</h2>

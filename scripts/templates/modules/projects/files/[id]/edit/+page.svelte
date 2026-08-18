@@ -8,7 +8,7 @@
   import type { ProjectItem, ProjectSettings, ProjectStatus } from '../../schema';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FolderKanban, ArrowLeft, Save, MapPin, Pencil } from '@lucide/svelte';
+  import { FolderKanban, List, Save, MapPin, Pencil } from '@lucide/svelte';
   import { FormField, Autocomplete } from '$lib';
 
   const projectId = $page.params.id || '';
@@ -132,8 +132,8 @@
 
 <div class="edit-project-container">
   <div class="top-nav-bar">
-    <a href="/dashboard/projects/{projectId}" class="back-link">
-      <ArrowLeft size={16} /> Torna a Dettaglio {labels.singular}
+    <a href="/dashboard/projects" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+      <List size={20} />
     </a>
   </div>
 

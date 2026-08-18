@@ -7,7 +7,7 @@
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { NavigationService } from '$lib/services/navigationService';
-  import { ArrowLeft, User, MessageSquare, FileText, QrCode, UserCheck } from '@lucide/svelte';
+  import { List, User, MessageSquare, FileText, QrCode, UserCheck } from '@lucide/svelte';
   import ConfirmModal from '$lib/components/ConfirmModal.svelte';
   import ClientTicketQRCodeModal from '$lib/components/ClientTicketQRCodeModal.svelte';
   import AnonymizeModal from '$lib/components/AnonymizeModal.svelte';
@@ -487,14 +487,14 @@
 <div class="client-details-page animate-fade-in">
   <Card class="header-card">
     <div class="page-top-actions">
-      <button 
-        type="button" 
-        class="back-link-btn action-link btn-back-context" 
-        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/clients')}
+      <a 
+        href="/dashboard/clients" 
+        class="btn-module-list" 
+        title="Vai all'elenco clienti"
+        aria-label="Vai all'elenco clienti"
       >
-        <ArrowLeft size={16} /> 
-        <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna a elenco clienti')}</span>
-      </button>
+        <List size={20} />
+      </a>
       <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
       {#if hasTicketsModule}
         <button type="button" onclick={() => (showQRCodeModal = true)} class="btn-qr-modal">

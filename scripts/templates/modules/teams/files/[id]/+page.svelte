@@ -10,7 +10,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { Users, ArrowLeft, Edit3, Trash2, UserCheck, Truck } from '@lucide/svelte';
+  import { Users, List, Edit3, Trash2, UserCheck, Truck } from '@lucide/svelte';
 
   let teamId = $derived($page.params.id || '');
   let team = $state<TeamItem | null>(null);
@@ -90,13 +90,15 @@
     <Card class="empty-card">
       <h2>{labels.singular} non trovata</h2>
       <p>L'elemento richiesto non esiste o è stato rimosso.</p>
-      <a href="/dashboard/teams" class="btn-back-link">Torna alla lista</a>
+      <a href="/dashboard/teams" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+        <List size={20} />
+      </a>
     </Card>
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href="/dashboard/teams" class="btn-back" title="Torna alla lista">
-          <ArrowLeft size={20} />
+        <a href="/dashboard/teams" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+          <List size={20} />
         </a>
         <div class="header-icon">
           <Users size={24} color="var(--color-primary-500)" />

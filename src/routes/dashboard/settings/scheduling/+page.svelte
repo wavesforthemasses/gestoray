@@ -7,7 +7,7 @@
   import { Card, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Calendar, Save, ArrowLeft, Plus, Trash2, ArrowUp, ArrowDown, Settings2 } from '@lucide/svelte';
+  import { Calendar, Save, Settings, Plus, Trash2, ArrowUp, ArrowDown, Settings2 } from '@lucide/svelte';
 
   pageTitle.set('Configurazione Pianificazione & Agenda');
 
@@ -132,8 +132,8 @@
 <div class="settings-page-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/settings" class="btn-back" title="Torna alle impostazioni">
-        <ArrowLeft size={20} />
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <div class="header-icon">
         <Calendar size={24} color="var(--color-primary-500)" />

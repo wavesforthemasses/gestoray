@@ -13,7 +13,7 @@
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FileText, ArrowLeft, AlertTriangle } from '@lucide/svelte';
+  import { FileText, List, AlertTriangle } from '@lucide/svelte';
 
   import ContractHeaderSection from '../../components/ContractHeaderSection.svelte';
   import ContractDatesSection from '../../components/ContractDatesSection.svelte';
@@ -438,8 +438,8 @@
     </div>
   {:else if !contract}
     <Card title="Non Trovato" description="Il documento richiesto non esiste o è stato rimosso.">
-      <a href="/dashboard/contracts" class="back-link">
-        <ArrowLeft size={14} /> Torna a {labels.plural}
+      <a href="/dashboard/contracts" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+        <List size={20} />
       </a>
     </Card>
   {:else}
@@ -453,8 +453,8 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        <a href={`/dashboard/contracts/${contractId}`} class="back-link">
-          <ArrowLeft size={14} /> Torna al Dettaglio
+        <a href={`/dashboard/contracts/${contractId}`} class="btn-module-list" title="Vai alla scheda {labels.singular}" aria-label="Vai alla scheda {labels.singular}">
+          <FileText size={20} />
         </a>
       {/snippet}
 

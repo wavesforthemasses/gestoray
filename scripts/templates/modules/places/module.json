@@ -1,7 +1,7 @@
 {
   "id": "places",
   "label": "Luoghi",
-  "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
+  "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative, magazzini e geofencing radar.",
   "icon": "MapPin",
   "requirements": [],
   "path": "/dashboard/places",
@@ -68,6 +68,10 @@
       {
         "fieldPath": "notes",
         "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "accessInfo.notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
       }
     ]
   },
@@ -89,6 +93,13 @@
           "display"
         ]
       },
+      "types": {
+        "type": "array",
+        "description": "Ruoli e tipologie assegnate (site, warehouse, headquarters, branch, store, etc.)",
+        "tags": [
+          "filter:type"
+        ]
+      },
       "clientId": {
         "type": "string",
         "description": "ID del cliente proprietario/titolare del luogo",
@@ -97,9 +108,24 @@
           "relation:clients"
         ]
       },
+      "parentId": {
+        "type": "string",
+        "description": "ID del luogo genitore nella gerarchia ad albero",
+        "tags": [
+          "filter:parent",
+          "relation:places"
+        ]
+      },
+      "depth": {
+        "type": "number",
+        "description": "Profondità nell'albero (0 = radice, 1 = sotto-area)",
+        "tags": [
+          "filter:depth"
+        ]
+      },
       "status": {
         "type": "string",
-        "description": "Stato del luogo (attivo, inattivo)",
+        "description": "Stato del luogo (active, temporary, completed, archived)",
         "tags": [
           "filter:status",
           "kpi:places_attivi"

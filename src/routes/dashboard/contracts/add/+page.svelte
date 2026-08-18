@@ -14,7 +14,7 @@
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FileText, ArrowLeft, AlertTriangle } from '@lucide/svelte';
+  import { FileText, List, AlertTriangle } from '@lucide/svelte';
   import { authState } from '$lib/auth.svelte';
 
   import ContractHeaderSection from '../components/ContractHeaderSection.svelte';
@@ -439,14 +439,14 @@
       {/snippet}
 
       {#snippet headerSnippet()}
-        <button 
-          type="button" 
-          class="back-link btn-back-context" 
-          onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/contracts')}
+        <a 
+          href="/dashboard/contracts" 
+          class="btn-module-list" 
+          title="Vai all'elenco {labels.plural}"
+          aria-label="Vai all'elenco {labels.plural}"
         >
-          <ArrowLeft size={14} /> 
-          <span>{NavigationService.getBackLabel($page.url.searchParams, 'Torna all\'elenco contratti')}</span>
-        </button>
+          <List size={20} />
+        </a>
       {/snippet}
 
       {#if errorMsg}

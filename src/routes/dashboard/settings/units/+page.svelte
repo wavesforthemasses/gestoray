@@ -14,7 +14,7 @@
     Save,
     RotateCcw,
     Info,
-    ArrowLeft,
+    Settings,
     Check
   } from '@lucide/svelte';
 
@@ -170,8 +170,8 @@
 
 <div class="units-settings-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/settings" class="back-link">
-      <ArrowLeft size={16} /> Torna alle Impostazioni Generali
+    <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+      <Settings size={20} />
     </a>
     <div class="title-bar">
       <h2>

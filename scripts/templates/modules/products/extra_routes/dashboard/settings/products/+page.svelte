@@ -10,7 +10,7 @@
   import { 
     Package, 
     Save, 
-    ArrowLeft, 
+    Settings, 
     Check, 
     Info, 
     Sliders,
@@ -55,8 +55,8 @@
   <!-- HEADER -->
   <div class="page-top-actions">
     <div>
-      <a href="/dashboard/settings" class="btn-back">
-        <ArrowLeft size={16} /> Torna alle Impostazioni
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <h2 class="title-header">
         <Package size={28} color="var(--color-primary-600)" />

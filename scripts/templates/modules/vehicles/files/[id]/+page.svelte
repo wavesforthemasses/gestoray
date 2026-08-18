@@ -11,7 +11,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { Truck, ArrowLeft, Edit3, Trash2 } from '@lucide/svelte';
+  import { Truck, List, Edit3, Trash2 } from '@lucide/svelte';
 
   let vehicleId = $derived($page.params.id || '');
   let vehicle = $state<VehicleItem | null>(null);
@@ -92,19 +92,21 @@
     <Card class="empty-card">
       <h2>{labels.singular} non trovato</h2>
       <p>L'elemento richiesto non esiste o è stato rimosso.</p>
-      <a href="/dashboard/vehicles" class="btn-back-link">Torna alla lista</a>
+      <a href="/dashboard/vehicles" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+        <List size={20} />
+      </a>
     </Card>
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <button 
-          type="button" 
-          class="btn-back btn-back-context" 
-          onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/vehicles')}
-          title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+        <a 
+          href="/dashboard/vehicles" 
+          class="btn-module-list" 
+          title="Vai all'elenco {labels.plural}"
+          aria-label="Vai all'elenco {labels.plural}"
         >
-          <ArrowLeft size={20} />
-        </button>
+          <List size={20} />
+        </a>
         <div class="header-icon">
           <Truck size={24} color="var(--color-primary-500)" />
         </div>

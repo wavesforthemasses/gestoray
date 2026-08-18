@@ -1,0 +1,35 @@
+// PLACES
+match /places/{placeId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+match /unique_keys/{keyId} {
+  allow read: if isAuth();
+  allow create, delete: if isAuth();
+  allow update: if false;
+}
+
+// USER ACTIVE PRESENCES & SLOTS
+match /user_active_presences/{userId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+
+// PLACE PRESENCES & TIME LOGS
+match /place_presences/{logId} {
+  allow read: if isAuth();
+  allow create: if isAuth()
+    && request.resource.data.clientEnteredAt is string
+    && request.resource.data.status == 'active';
+
+  allow update: if isAuth()
+    && request.resource.data.userId == resource.data.userId
+    && request.resource.data.placeId == resource.data.placeId
+    && request.resource.data.clientEnteredAt == resource.data.clientEnteredAt
+    && request.resource.data.verifiedBy == resource.data.verifiedBy
+    && request.resource.data.verifiedByUserId == resource.data.verifiedByUserId;
+
+  allow delete: if hasRole('superadmin') || isAdmin();
+}

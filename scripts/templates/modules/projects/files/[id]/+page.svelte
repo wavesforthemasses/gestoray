@@ -13,7 +13,7 @@
   import { menuConfigStore } from '$lib/stores/menu';
   import { 
     FolderKanban, 
-    ArrowLeft, 
+    List, 
     User, 
     Calendar, 
     Clock,
@@ -154,8 +154,8 @@
 
 <div class="project-detail-container">
   <div class="top-nav-bar">
-    <a href="/dashboard/projects" class="back-link">
-      <ArrowLeft size={16} /> Torna all'Elenco {labels.plural}
+    <a href="/dashboard/projects" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+      <List size={20} />
     </a>
   </div>
 

@@ -9,7 +9,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { AlertTriangle, ArrowLeft, Save, Calendar, Link } from '@lucide/svelte';
+  import { AlertTriangle, List, Save, Calendar, Link } from '@lucide/svelte';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
 
   let settings = $state<DeadlineSettings>({
@@ -129,8 +129,8 @@
 <div class="add-deadline-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/deadlines" class="btn-back" title="Torna allo scadenzario">
-        <ArrowLeft size={20} />
+      <a href="/dashboard/deadlines" class="btn-module-list" title="Vai a elenco {labels.plural}" aria-label="Vai a elenco {labels.plural}">
+        <List size={20} />
       </a>
       <div class="header-icon">
         <AlertTriangle size={24} color="#D97706" />

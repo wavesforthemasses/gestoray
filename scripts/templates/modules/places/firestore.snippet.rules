@@ -3,5 +3,10 @@ match /places/{placeId} {
   allow read: if isAuth();
   allow create: if isAuth() && notWritingDerived();
   allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+match /unique_keys/{keyId} {
+  allow read: if isAuth();
+  allow create, delete: if isAuth();
+  allow update: if false;
 }

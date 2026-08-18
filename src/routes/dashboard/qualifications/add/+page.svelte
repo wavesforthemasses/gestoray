@@ -5,7 +5,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Card } from '$lib';
-  import { Award, ArrowLeft } from '@lucide/svelte';
+  import { Award, List } from '@lucide/svelte';
   import { QualificationsService } from '$lib/services/qualifications';
   import QualificationForm from '../components/QualificationForm.svelte';
   import { pageTitle } from '$lib/stores/page';
@@ -63,8 +63,8 @@
     {/snippet}
 
     {#snippet headerSnippet()}
-      <a href="/dashboard/qualifications" class="back-link">
-        <ArrowLeft size={14} /> Annulla
+      <a href="/dashboard/qualifications" class="btn-module-list" title="Vai all'elenco qualifiche" aria-label="Vai all'elenco qualifiche">
+        <List size={20} />
       </a>
     {/snippet}
 

@@ -6,7 +6,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Users, Save, ArrowLeft } from '@lucide/svelte';
+  import { Users, Save, Settings } from '@lucide/svelte';
 
   pageTitle.set('Impostazioni Squadre & Risorse');
 
@@ -25,12 +25,14 @@
   let loading = $state(true);
   let saving = $state(false);
 
+  let labels = $derived(TeamSettingsService.getLabels(settings));
+
   onMount(async () => {
     try {
       settings = await TeamSettingsService.getSettings();
     } catch (e) {
       console.error('Errore caricamento impostazioni squadre:', e);
-      toast.error('Errore caricamento impostazioni');
+      toast.error('Impossibile caricare le impostazioni');
     } finally {
       loading = false;
     }
@@ -42,7 +44,7 @@
       await TeamSettingsService.saveSettings(settings);
       toast.success('Impostazioni salvate con successo');
     } catch (e) {
-      console.error('Errore salvataggio impostazioni:', e);
+      console.error('Errore salvataggio impostazioni squadre:', e);
       toast.error('Errore durante il salvataggio');
     } finally {
       saving = false;
@@ -57,8 +59,8 @@
 <div class="settings-page-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/settings/modules" class="btn-back" title="Torna ai Moduli">
-        <ArrowLeft size={20} />
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <div class="header-icon">
         <Users size={24} color="var(--color-primary-500)" />

@@ -18,7 +18,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { FormField } from '$lib';
   import { 
-    ArrowLeft, 
+    List, 
     Pencil, 
     Info, 
     SlidersHorizontal, 
@@ -297,14 +297,14 @@
 <div class="edit-activity-page animate-fade-in">
   <header class="page-header">
     <div class="header-title-box">
-      <button 
-        type="button" 
-        class="btn-back btn-back-context" 
-        onclick={() => NavigationService.cancelAndReturn($page.url.searchParams, `/dashboard/activities/${activityId}`)}
-        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla scheda attività')}
+      <a 
+        href="/dashboard/activities" 
+        class="btn-module-list" 
+        title="Vai all'elenco attività"
+        aria-label="Vai all'elenco attività"
       >
-        <ArrowLeft size={20} />
-      </button>
+        <List size={20} />
+      </a>
       <div>
         <h1 class="page-main-title">
           <Pencil size={24} color="var(--color-primary-600)" />

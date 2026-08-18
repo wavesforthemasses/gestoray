@@ -6,7 +6,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
   import { ClientSettingsService, DEFAULT_CLIENT_FIELDS_SETTINGS, type ClientFieldsSettings } from '$lib/services/clientSettingsService';
-  import { ArrowLeft, Save, Building, FileText, UserCheck, ShieldAlert, Notebook } from '@lucide/svelte';
+  import { Settings, Save, Building, FileText, UserCheck, ShieldAlert, Notebook } from '@lucide/svelte';
 
   pageTitle.set('Configurazione Campi Scheda Cliente');
 
@@ -48,9 +48,9 @@
 <div class="settings-page animate-fade-in">
   <div class="page-header">
     <div class="header-left">
-      <button class="btn-back" onclick={() => goto('/dashboard/settings')} aria-label="Torna a Impostazioni">
-        <ArrowLeft size={20} />
-      </button>
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
+      </a>
       <div>
         <h2 class="page-title">Configurazione Campi Scheda Cliente</h2>
         <p class="page-subtitle">Scegli quali sezioni e gruppi di campi mostrare o nascondere nei form ed anagrafiche dei clienti.</p>

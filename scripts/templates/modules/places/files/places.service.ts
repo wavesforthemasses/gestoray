@@ -1,183 +1,85 @@
-import {
-  db,
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy
-} from '$lib/firebase';
+import { db, collection, getDocs, query, where } from '$lib/firebase';
+import type { PlaceDocument } from './domain/models/place';
 import type { PlaceItem } from './schema';
 import { PlaceSettingsService } from './placeSettingsService';
-import { generateSearchTerms } from '$lib/search-utils';
+import { PlaceFirestoreRepository } from './infrastructure/firestore/PlaceFirestoreRepository';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { cleanUndefined } from '$lib/utils/helpers';
 
 export class PlacesService {
+  private static repo = new PlaceFirestoreRepository();
   private static COLLECTION = 'places';
 
-  static async getPlaces(clientId?: string): Promise<PlaceItem[]> {
-    try {
-      let snap;
-      if (clientId) {
-        snap = await getDocs(query(collection(db, this.COLLECTION), where('clientId', '==', clientId)));
-      } else {
-        try {
-          snap = await getDocs(query(collection(db, this.COLLECTION), orderBy('createdAt', 'desc')));
-        } catch (err) {
-          snap = await getDocs(collection(db, this.COLLECTION));
-        }
-        if (snap.empty) {
-          snap = await getDocs(collection(db, this.COLLECTION));
-        }
-      }
-      const list: PlaceItem[] = [];
-      snap.forEach(d => {
-        const data = d.data();
-        if (!data?.derived?.deleted) {
-          list.push({ id: d.id, ...data } as PlaceItem);
-        }
-      });
-      return list.sort((a, b) => {
-        const dA = a.createdAt || '';
-        const dB = b.createdAt || '';
-        return dB.localeCompare(dA);
-      });
-    } catch (e) {
-      console.error('Errore getPlaces:', e);
-      return [];
-    }
+  static async getPlaces(clientId?: string): Promise<PlaceDocument[]> {
+    return this.repo.fetchPlaces('default', { clientId });
   }
 
-  static async getPlaceById(id: string): Promise<PlaceItem | null> {
-    try {
-      const ref = doc(db, this.COLLECTION, id);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) return null;
-      const data = snap.data();
-      if (data?.derived?.deleted) return null;
-      return { id: snap.id, ...data } as PlaceItem;
-    } catch (e) {
-      console.error('Errore getPlaceById:', e);
-      return null;
-    }
+  static async getPlaceById(id: string): Promise<PlaceDocument | null> {
+    return this.repo.fetchPlaceById('default', id);
   }
 
   /**
-   * @deprecated Use getPlaceById instead. Maintained as a defensive alias.
+   * @deprecated Use getPlaceById instead. Maintained as defensive alias.
    */
-  static async getPlace(id: string): Promise<PlaceItem | null> {
+  static async getPlace(id: string): Promise<PlaceDocument | null> {
     return this.getPlaceById(id);
   }
 
-
   static async createPlace(
-    data: Omit<PlaceItem, 'id' | 'code' | 'createdAt' | 'updatedAt'>,
-    authorUid: string
+    data: Partial<PlaceDocument> & { address?: any },
+    authorUid?: string
   ): Promise<string> {
     const settings = await PlaceSettingsService.getSettings();
-    const { code, updatedSettings } = await PlaceSettingsService.generateNextCode(settings);
+    
+    let code = data.code;
+    let updatedSettings = settings;
 
-    let clientName = data.clientName || '';
-    if (!clientName && data.clientId) {
-      try {
-        const clientSnap = await getDoc(doc(db, 'clients', data.clientId));
-        if (clientSnap.exists()) {
-          const cd = clientSnap.data();
-          clientName = cd.name || cd.nome || cd.companyName || cd.original?.name || cd.original?.nome || cd.original?.ragioneSociale || '';
-        }
-      } catch (e) {
-        console.warn('Errore lettura clientName:', e);
-      }
+    if (!code) {
+      const gen = await PlaceSettingsService.generateNextCode(settings);
+      code = gen.code;
+      updatedSettings = gen.updatedSettings;
     }
 
-    const textSearch = generateSearchTerms(`${code} ${data.name} ${clientName} ${data.notes || ''}`);
-
-    const payload = cleanUndefined({
+    const payload: Partial<PlaceDocument> = {
+      ...data,
       code,
-      name: data.name,
-      clientId: data.clientId,
-      clientName,
-      status: data.status || settings.defaultStatus || 'attivo',
-      contactPerson: data.contactPerson || '',
-      phone: data.phone || '',
-      notes: data.notes || '',
-      address: data.address || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      derived: {
-        textSearch
-      }
-    });
+      status: (data.status || settings.defaultStatus || 'active') as any,
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-    const docRef = await addDoc(collection(db, this.COLLECTION), payload);
-    await PlaceSettingsService.saveSettings(updatedSettings);
+    const docId = await this.repo.savePlaceWithUniqueCodeLock('default', payload);
+    
+    if (updatedSettings !== settings) {
+      await PlaceSettingsService.saveSettings(updatedSettings);
+    }
 
     try {
-      await CacheLookupService.updateEntityCache('places', docRef.id, `${code} - ${data.name}`);
+      await CacheLookupService.updateEntityCache('places', docId, `${code} - ${data.name}`);
     } catch (e) {
       console.warn('Errore cache luoghi:', e);
     }
 
-    return docRef.id;
+    return docId;
   }
 
-  static async updatePlace(id: string, data: Partial<PlaceItem>): Promise<void> {
-    const ref = doc(db, this.COLLECTION, id);
-    const existing = await this.getPlaceById(id);
-    if (!existing) throw new Error('Luogo/Cantiere non trovato');
-
-    const name = data.name || existing.name;
-    const code = data.code || existing.code;
-
-    let clientName = data.clientName || existing.clientName || '';
-    if (!clientName && (data.clientId || existing.clientId)) {
-      try {
-        const cid = data.clientId || existing.clientId;
-        const clientSnap = await getDoc(doc(db, 'clients', cid));
-        if (clientSnap.exists()) {
-          const cd = clientSnap.data();
-          clientName = cd.name || cd.nome || `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.companyName || cd.ragioneSociale || cd.denominazione || cd.original?.name || cd.original?.nome || cd.original?.ragioneSociale || '';
-        }
-      } catch (e) {
-        console.warn('Errore lettura clientName update:', e);
-      }
-    }
-
-    const textSearch = generateSearchTerms(`${code} ${name} ${clientName} ${data.notes || existing.notes || ''}`);
-
-    const payload: Record<string, any> = cleanUndefined({
-      ...data,
-      clientName,
-      updatedAt: new Date().toISOString(),
-      'derived.textSearch': textSearch
-    });
-
-    await updateDoc(ref, payload);
-
+  static async updatePlace(id: string, data: Partial<PlaceDocument>, oldCode?: string): Promise<void> {
+    await this.repo.savePlaceWithUniqueCodeLock('default', data, id, oldCode);
     try {
-      await CacheLookupService.updateEntityCache('places', id, `${code} - ${name}`);
+      const name = data.name || 'Luogo';
+      const code = data.code || '';
+      await CacheLookupService.updateEntityCache('places', id, `${code ? code + ' - ' : ''}${name}`);
     } catch (e) {
       console.warn('Errore aggiornamento cache luoghi:', e);
     }
   }
 
+  static async reparentPlace(targetPlaceId: string, newParentId: string | null): Promise<void> {
+    await this.repo.updatePlaceParentWithCascade('default', targetPlaceId, newParentId);
+  }
+
   static async deletePlace(id: string, uid?: string): Promise<void> {
-    const ref = doc(db, this.COLLECTION, id);
-    await updateDoc(ref, {
-      'derived.deleted': true,
-      'edits.deletedAt': new Date().toISOString(),
-      'edits.deletedBy': uid || 'system'
-    });
-    try {
-      await CacheLookupService.removeEntityFromCache('places', id);
-    } catch (e) {
-      console.warn('Errore rimozione cache luogo:', e);
-    }
+    await this.repo.deletePlaceWithLockRelease('default', id, true, uid);
   }
 
   static async getPlaceContracts(placeId: string): Promise<any[]> {

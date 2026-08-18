@@ -8,7 +8,7 @@
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { authState } from '$lib/auth.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FolderKanban, ArrowLeft, Save, MapPin } from '@lucide/svelte';
+  import { FolderKanban, List, Save, MapPin } from '@lucide/svelte';
   import { FormField, Autocomplete } from '$lib';
 
   let settings = $state<ProjectSettings>({
@@ -111,8 +111,8 @@
 
 <div class="create-project-container">
   <div class="top-nav-bar">
-    <a href="/dashboard/projects" class="back-link">
-      <ArrowLeft size={16} /> Torna all'Elenco
+    <a href="/dashboard/projects" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+      <List size={20} />
     </a>
   </div>
 

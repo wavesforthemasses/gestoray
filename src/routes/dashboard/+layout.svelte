@@ -3,9 +3,9 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { auth as clientAuth } from '$lib/firebase';
   import { signOut as clientSignOut } from '$lib/firebase';
-  import { goto } from '$app/navigation';
+  import { goto, afterNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText, WifiOff } from '@lucide/svelte';
+  import { LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Info, X, Settings, FileText, WifiOff, ArrowLeft } from '@lucide/svelte';
   import { iconMap } from '$lib/utils/iconMap';
   import { ChartSettingsService } from '$lib';
   import ProjectSetupBlocker from '$lib/components/ProjectSetupBlocker.svelte';
@@ -13,6 +13,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
   import { menuBadgesStore, initTicketsBadgeListener, destroyBadgesListeners } from '$lib/stores/badges';
+  import { canGoBackStore, recordNavigation, executeGlobalBack } from '$lib/stores/navigationHistory';
   import SidebarNav from './components/SidebarNav.svelte';
 
   import { isOnlineStore, initNetworkStateListener } from '$lib/stores/networkState';
@@ -22,6 +23,10 @@
   let isCollapsed = $state(false);
   let isMobileOpen = $state(false);
   let showLegend = $state(false);
+
+  afterNavigate((nav) => {
+    recordNavigation(nav);
+  });
 
   let dynamicLegendKpis = $derived.by(() => {
     return ChartSettingsService.getAllKpisMasterListSync().filter(k => k.enabled);
@@ -84,13 +89,37 @@
     <div class="sidebar-header">
       {#if !isCollapsed}
         <img src="/logo.png?gst" alt="{$projectStore?.projectName || 'ERP'} Logo" class="sidebar-logo" />
-        <button onclick={toggleSidebar} class="toggle-btn" aria-label="Nascondi barra laterale">
-          <ChevronLeft size={18} />
-        </button>
+        <div class="sidebar-header-actions">
+          <button 
+            type="button" 
+            onclick={executeGlobalBack} 
+            disabled={!$canGoBackStore} 
+            class="header-back-btn" 
+            title={$canGoBackStore ? "Torna indietro (pagina precedente)" : "Nessuna pagina precedente"} 
+            aria-label="Torna indietro"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <button onclick={toggleSidebar} class="toggle-btn" aria-label="Nascondi barra laterale">
+            <ChevronLeft size={18} />
+          </button>
+        </div>
       {:else}
-        <button onclick={toggleSidebar} class="toggle-btn collapsed-toggle" aria-label="Mostra barra laterale">
-          <ChevronRight size={18} />
-        </button>
+        <div class="collapsed-header-actions">
+          <button 
+            type="button" 
+            onclick={executeGlobalBack} 
+            disabled={!$canGoBackStore} 
+            class="header-back-btn collapsed-back" 
+            title={$canGoBackStore ? "Torna indietro (pagina precedente)" : "Nessuna pagina precedente"} 
+            aria-label="Torna indietro"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <button onclick={toggleSidebar} class="toggle-btn collapsed-toggle" aria-label="Mostra barra laterale">
+            <ChevronRight size={18} />
+          </button>
+        </div>
       {/if}
     </div>
 
@@ -151,6 +180,18 @@
       {/if}
       {@render children()}
     </main>
+
+    <!-- Global Core Back Floating Button -->
+    <button 
+      class="floating-back-btn" 
+      class:disabled={!$canGoBackStore}
+      disabled={!$canGoBackStore}
+      onclick={executeGlobalBack} 
+      title={$canGoBackStore ? "Torna indietro (pagina precedente)" : "Nessuna pagina precedente"}
+      aria-label="Torna indietro"
+    >
+      <ArrowLeft size={22} />
+    </button>
 
     <!-- KPI Legend Floating Button -->
     <button class="floating-legend-btn" onclick={() => showLegend = true} title="Legenda KPI">
@@ -233,6 +274,49 @@
     justify-content: space-between;
     margin-bottom: 30px;
     min-height: 38px;
+  }
+
+  .sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .collapsed-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto;
+  }
+
+  .header-back-btn {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    color: var(--color-neutral-700);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .header-back-btn:hover:not(:disabled) {
+    background: var(--color-white);
+    color: var(--color-primary-600);
+    border-color: var(--color-primary-300);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .header-back-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    box-shadow: none;
   }
 
   .sidebar-logo {
@@ -522,9 +606,14 @@
       padding: 70px 20px 20px 20px;
     }
 
+    .floating-back-btn {
+      top: 16px;
+      right: 120px;
+    }
+
     .floating-legend-btn {
       top: 16px;
-      right: 70px;
+      right: 68px;
     }
 
     .legend-modal {
@@ -535,6 +624,45 @@
     .toggle-btn {
       display: none;
     }
+  }
+
+  /* Global Floating Back Button */
+  .floating-back-btn {
+    position: fixed;
+    top: 20px;
+    right: 74px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-white);
+    color: var(--color-neutral-800);
+    border: 1px solid var(--color-neutral-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    z-index: 990;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .floating-back-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    background: var(--color-neutral-50);
+    border-color: var(--color-primary-400);
+    color: var(--color-primary-600);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .floating-back-btn:disabled,
+  .floating-back-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-400);
+    border-color: var(--color-neutral-200);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transform: none !important;
   }
 
   /* Legend Floating Button & Modal Styles */
@@ -557,8 +685,13 @@
     transition: all 0.2s ease;
   }
   @media (max-width: 1024px) {
+    .floating-back-btn {
+      top: 16px;
+      right: 120px;
+    }
     .floating-legend-btn {
-      right: 70px; /* Make space for mobile menu button */
+      top: 16px;
+      right: 68px; /* Make space for mobile menu button */
     }
   }
   .floating-legend-btn:hover {

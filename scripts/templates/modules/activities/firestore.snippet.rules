@@ -1,5 +1,5 @@
 // ACTIVITIES
-match /activities/{docId} {
+match /{path=**}/activities/{docId} {
   allow read: if isAuth();
   allow write: if isAuth();
 }

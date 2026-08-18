@@ -11,7 +11,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Users, ArrowLeft, Save, Plus, Trash2, UserCheck, Shield, Truck } from '@lucide/svelte';
+  import { Users, List, Save, Plus, Trash2, UserCheck, Shield, Truck } from '@lucide/svelte';
 
   interface SystemUser {
     id: string;
@@ -205,8 +205,8 @@
   {:else}
     <header class="page-header">
       <div class="header-title-box">
-        <a href={`/dashboard/teams/${teamId}`} class="btn-back" title="Annulla">
-          <ArrowLeft size={20} />
+        <a href="/dashboard/teams" class="btn-module-list" title="Vai all'elenco {labels.plural}" aria-label="Vai all'elenco {labels.plural}">
+          <List size={20} />
         </a>
         <div class="header-icon">
           <Users size={24} color="var(--color-primary-500)" />

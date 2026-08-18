@@ -1,28 +1,13 @@
-export type PlaceStatus = 'attivo' | 'inattivo';
+export * from './domain/models/place';
 
-export interface PlaceAddress {
-  street: string;
-  city: string;
-  zip: string;
-  province: string;
-}
+// Legacy compatibility aliases
+import type { PlaceDocument, PlaceAddress, PlaceStatus, PlaceType } from './domain/models/place';
 
-export interface PlaceItem {
-  id?: string;
-  code: string;
-  clientId: string;
-  clientName?: string;
-  name: string;
-  address?: PlaceAddress;
-  status: PlaceStatus;
-  contactPerson?: string;
-  phone?: string;
-  notes?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  original?: Record<string, any>;
-  derived?: Record<string, any>;
-}
+export type { PlaceStatus, PlaceAddress, PlaceType };
+export type PlaceItem = PlaceDocument;
+
+import type { PresenceSettings } from './domain/models/presence';
+export type { PresenceSettings };
 
 export interface PlaceSettings {
   entityNaming: 'cantiere' | 'luogo' | 'sede' | 'destinazione' | 'custom';
@@ -34,4 +19,5 @@ export interface PlaceSettings {
   lastNumber: number;
   lastCounterYear: number;
   defaultStatus: PlaceStatus;
+  presence?: PresenceSettings;
 }

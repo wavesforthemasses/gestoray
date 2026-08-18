@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { Card, Button, FormField, ToastContainer, StatusBadge } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Shield, Plus, Trash2, Save, ArrowLeft, CheckSquare, Square } from '@lucide/svelte';
+  import { Shield, Plus, Trash2, Save, Settings, CheckSquare, Square } from '@lucide/svelte';
   import {
     rolesStore,
     initRolesStore,
@@ -156,9 +156,9 @@
   <ToastContainer />
 
   <div class="header-actions-bar">
-    <Button href="/dashboard/settings" variant="secondary">
-      <ArrowLeft size={16} /> Torna a Impostazioni
-    </Button>
+    <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+      <Settings size={20} />
+    </a>
 
     <div class="top-buttons">
       {#if activeRoleState.role === 'superadmin'}

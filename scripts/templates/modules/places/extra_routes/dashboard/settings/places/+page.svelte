@@ -4,7 +4,7 @@
   import { PlaceSettingsService } from '../../places/placeSettingsService';
   import type { PlaceSettings, PlaceStatus } from '../../places/schema';
   import { toast } from '$lib/stores/toast.svelte';
-  import { MapPin, Save, Layers, Hash, CheckCircle2 } from '@lucide/svelte';
+  import { MapPin, Save, Layers, Hash, CheckCircle2, Radio } from '@lucide/svelte';
 
   let settings = $state<PlaceSettings>({
     entityNaming: 'luogo',
@@ -170,6 +170,92 @@
             <option value="inattivo">Inattivo / Concluso</option>
           </select>
         </div>
+      </div>
+
+      <!-- Card 4: Presenze & Timbrature Smart (Presence Settings) -->
+      <div class="settings-card full-width">
+        <div class="card-header">
+          <Radio size={20} class="card-icon text-blue-600" />
+          <h2>Rilevamento Presenze & Timbrature Smart</h2>
+        </div>
+        <p class="card-desc">Definisci la modalità operativa per la registrazione delle presenze operaie sui cantieri (Manuale, Assistita da Geofence o Disabilitata).</p>
+
+        {#if settings.presence}
+          <div class="form-group">
+            <label for="presenceMode">Modalità Operativa Presenze</label>
+            <select id="presenceMode" bind:value={settings.presence.mode} class="form-select font-semibold">
+              <option value="hybrid_assisted">Ibrido Assistito (Consigliato: Check-in con controllo Geofence e Tolleranza)</option>
+              <option value="manual_only">Manuale Semplice (Tasto Check-in libero senza vincoli di posizione)</option>
+              <option value="geofence_auto">Radar Automatico (Rilevamento proattivo all'ingresso nel raggio del cantiere)</option>
+              <option value="disabled">Disabilitato (Nessuna rilevazione presenze sui luoghi)</option>
+            </select>
+          </div>
+
+          {#if settings.presence.mode !== 'disabled'}
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="defRadius">Raggio Geofence Predefinito (metri)</label>
+                <input 
+                  id="defRadius" 
+                  type="number" 
+                  min="1" 
+                  max="5000" 
+                  bind:value={settings.presence.defaultGeofenceRadiusMeters} 
+                  class="form-input" 
+                />
+                <span class="field-hint">Raggio cerchio di prossimità applicato di default ai nuovi cantieri (es. 100m).</span>
+              </div>
+
+              <div class="form-group">
+                <label for="defTolerance">Tolleranza GPS di Bordo (metri)</label>
+                <input 
+                  id="defTolerance" 
+                  type="number" 
+                  min="0" 
+                  max="200" 
+                  bind:value={settings.presence.geofenceToleranceMeters} 
+                  class="form-input" 
+                />
+                <span class="field-hint">Margine di incertezza consentito per dispositivi GPS a bassa precisione (es. 25m).</span>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="maxShiftHours">Durata Massima Turno Previsto (ore)</label>
+                <input 
+                  id="maxShiftHours" 
+                  type="number" 
+                  min="1" 
+                  max="24" 
+                  bind:value={settings.presence.maxShiftHours} 
+                  class="form-input" 
+                />
+                <span class="field-hint">Soglia oltre la quale il sistema esegue l'auto-chiusura predittiva virtuale (es. 8h).</span>
+              </div>
+
+              <div class="form-group">
+                <label for="autoCloseGrace">Tolleranza Auto-Chiusura (minuti)</label>
+                <input 
+                  id="autoCloseGrace" 
+                  type="number" 
+                  min="0" 
+                  max="360" 
+                  bind:value={settings.presence.autoCloseGraceMinutes} 
+                  class="form-input" 
+                />
+                <span class="field-hint">Minuti di attesa oltre le ore massime prima di marcare il turno come concluso (es. 60m).</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" bind:checked={settings.presence.allowForemanManualCheckIn} />
+                <span class="font-medium text-slate-800">Consenti timbratura e registrazione manuale operai da parte del Caposquadra</span>
+              </label>
+            </div>
+          {/if}
+        {/if}
       </div>
     </div>
   {/if}

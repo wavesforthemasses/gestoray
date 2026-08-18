@@ -214,11 +214,21 @@ export class ActivitiesService {
       `${data.activityNumber || ''} ${data.title || ''} ${data.targetName || ''} ${assignedName} ${assignedEntities.map(a => a.entityName).join(' ')}`
     );
 
+    const filterKeys = new Set<string>();
+    if (Array.isArray(assignedEntities)) {
+      for (const a of assignedEntities) {
+        if (a.entityType === 'user' && a.entityId) filterKeys.add(`u:${a.entityId}`);
+        if (a.entityType === 'team' && a.entityId) filterKeys.add(`t:${a.entityId}`);
+      }
+    }
+    if (assignedUid) filterKeys.add(`u:${assignedUid}`);
+
     const payload: ActivityItem = {
       ...data,
       id: newId,
       category: data.category || 'crm',
       assignedEntities,
+      assigneeFilterKeys: Array.from(filterKeys),
       assignedUid,
       assignedName,
       createdAt: nowIso,
@@ -300,14 +310,24 @@ export class ActivitiesService {
       updatedAt: nowIso
     };
 
-    // Rigenerazione dei search terms se variano dati descrittivi
-    if (updates.activityNumber || updates.title || updates.targetName || updates.assignedName || updates.assignedEntities) {
+    // Rigenerazione dei search terms e assigneeFilterKeys se variano dati descrittivi o assegnazioni
+    if (updates.activityNumber || updates.title || updates.targetName || updates.assignedName || updates.assignedEntities || updates.assignedUid) {
       const user = nextData.assignedName || '';
       const entitiesStr = Array.isArray(nextData.assignedEntities) ? nextData.assignedEntities.map(a => a.entityName).join(' ') : '';
       nextData.derived = {
         ...(nextData.derived || {}),
         textSearch: generateSearchTerms(`${nextData.activityNumber || ''} ${nextData.title} ${nextData.targetName || ''} ${user} ${entitiesStr}`)
       };
+
+      const filterKeys = new Set<string>();
+      if (Array.isArray(nextData.assignedEntities)) {
+        for (const a of nextData.assignedEntities) {
+          if (a.entityType === 'user' && a.entityId) filterKeys.add(`u:${a.entityId}`);
+          if (a.entityType === 'team' && a.entityId) filterKeys.add(`t:${a.entityId}`);
+        }
+      }
+      if (nextData.assignedUid) filterKeys.add(`u:${nextData.assignedUid}`);
+      nextData.assigneeFilterKeys = Array.from(filterKeys);
     }
 
     const semanticsMap = ActivitiesVersioningBridge.getSemanticsMap();

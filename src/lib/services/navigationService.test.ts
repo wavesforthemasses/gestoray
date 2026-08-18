@@ -77,4 +77,42 @@ describe('NavigationService', () => {
       expect(url).toBe('/dashboard/activities/act1/edit?placeId=P123');
     });
   });
+
+  describe('Global History Navigation', () => {
+    it('should record navigation and execute global back', async () => {
+      const { recordNavigation, executeGlobalBack, navigationStackStore } = await import('$lib/stores/navigationHistory');
+      
+      // Initial page
+      recordNavigation({
+        to: { url: new URL('http://localhost:5173/dashboard') } as any,
+        from: null,
+        type: 'goto',
+        willUnload: false
+      });
+
+      // Navigate to places
+      recordNavigation({
+        to: { url: new URL('http://localhost:5173/dashboard/places') } as any,
+        from: null,
+        type: 'link',
+        willUnload: false
+      });
+
+      // Navigate to place detail
+      recordNavigation({
+        to: { url: new URL('http://localhost:5173/dashboard/places/P123') } as any,
+        from: null,
+        type: 'link',
+        willUnload: false
+      });
+
+      let stack: string[] = [];
+      navigationStackStore.subscribe(s => stack = s)();
+      expect(stack).toEqual(['/dashboard', '/dashboard/places', '/dashboard/places/P123']);
+
+      // Execute global back
+      await executeGlobalBack();
+      expect(goto).toHaveBeenCalledWith('/dashboard/places');
+    });
+  });
 });

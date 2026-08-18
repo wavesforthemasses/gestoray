@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, FormField, RoleSelector } from '$lib';
-  import { UserPlus, ArrowLeft } from '@lucide/svelte';
+  import { UserPlus, X } from '@lucide/svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { UsersService, type UserData } from '../users.service';
 
@@ -66,8 +66,8 @@
   {/snippet}
 
   {#snippet headerSnippet()}
-    <button onclick={onCancel} class="back-link">
-      <ArrowLeft size={14} /> Annulla e Torna all'elenco
+    <button type="button" onclick={onCancel} class="btn-module-list" title="Annulla e Torna all'elenco" aria-label="Annulla e Torna all'elenco">
+      <X size={20} />
     </button>
   {/snippet}
 

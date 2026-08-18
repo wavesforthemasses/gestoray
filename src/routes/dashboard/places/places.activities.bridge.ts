@@ -18,14 +18,15 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
         filtered = places.filter(p => {
           const name = (p.name || '').toLowerCase();
           const client = (p.clientName || '').toLowerCase();
-          const formattedAddr = formatAddress(p.address).toLowerCase();
-          const city = (p.city || '').toLowerCase();
+          const formattedAddr = (p.summary?.shortAddress || formatAddress(p.address)).toLowerCase();
+          const city = ((p as any).city || p.address?.city || '').toLowerCase();
           return name.includes(queryTerm) || client.includes(queryTerm) || formattedAddr.includes(queryTerm) || city.includes(queryTerm);
         });
       }
       return filtered.slice(0, 30).map(p => {
-        const formattedAddr = formatAddress(p.address);
-        const subtext = [p.clientName, p.city || formattedAddr].filter(Boolean).join(' • ');
+        const formattedAddr = p.summary?.shortAddress || formatAddress(p.address);
+        const city = (p as any).city || p.address?.city || '';
+        const subtext = [p.clientName, city || formattedAddr].filter(Boolean).join(' • ');
         return {
           id: p.id,
           label: p.name,
@@ -49,11 +50,11 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
         name: place.name,
         targetType: 'place',
         url: `/dashboard/places/${place.id}`,
-        address: formatAddress(place.address),
+        address: place.summary?.shortAddress || formatAddress(place.address),
         meta: {
           clientId: place.clientId,
           clientName: place.clientName,
-          typeId: place.typeId
+          typeId: (place as any).typeId || (place.types && place.types[0]) || 'site'
         }
       };
     } catch (e) {
@@ -62,4 +63,3 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
     }
   }
 };
-

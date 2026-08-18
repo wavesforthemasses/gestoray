@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, UserPlus } from '@lucide/svelte';
+  import { List, UserPlus } from '@lucide/svelte';
   import ClientAddForm from '../components/ClientAddForm.svelte';
 
   function handleCreated() {
@@ -15,8 +15,8 @@
 
 <div class="client-add-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/clients" class="back-link">
-      <ArrowLeft size={16} /> Torna all'elenco clienti
+    <a href="/dashboard/clients" class="btn-module-list" title="Vai all'elenco clienti" aria-label="Vai all'elenco clienti">
+      <List size={20} />
     </a>
     <div class="page-header">
       <h1 class="page-title">

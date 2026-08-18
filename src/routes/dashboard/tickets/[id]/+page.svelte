@@ -12,7 +12,7 @@
   import { UsersService } from '../../users/users.service';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { 
-    ArrowLeft, 
+    List, 
     CheckCircle2, 
     AlertTriangle, 
     Clock, 
@@ -153,8 +153,8 @@
 
 <div class="ticket-detail-page">
   <div class="page-header">
-    <a href="/dashboard/tickets" class="back-link">
-      <ArrowLeft size={16} /> Torna all'elenco ticket
+    <a href="/dashboard/tickets" class="btn-module-list" title="Vai all'elenco ticket" aria-label="Vai all'elenco ticket">
+      <List size={20} />
     </a>
   </div>
 

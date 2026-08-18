@@ -10,7 +10,7 @@
   import { pageTitle } from '$lib/stores/page';
   import { Card, Button } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Truck, ArrowLeft, Save } from '@lucide/svelte';
+  import { Truck, List, Save } from '@lucide/svelte';
 
   let settings = $state<VehicleSettings>({
     entityNaming: 'mezzo',
@@ -77,14 +77,14 @@
 <div class="add-vehicle-container">
   <header class="page-header">
     <div class="header-title-box">
-      <button 
-        type="button" 
-        class="btn-back btn-back-context" 
-        onclick={() => NavigationService.navigateBack($page.url.searchParams, '/dashboard/vehicles')}
-        title={NavigationService.getBackLabel($page.url.searchParams, 'Torna alla lista')}
+      <a 
+        href="/dashboard/vehicles" 
+        class="btn-module-list" 
+        title="Vai all'elenco {labels.plural}"
+        aria-label="Vai all'elenco {labels.plural}"
       >
-        <ArrowLeft size={20} />
-      </button>
+        <List size={20} />
+      </a>
       <div class="header-icon">
         <Truck size={24} color="var(--color-primary-500)" />
       </div>

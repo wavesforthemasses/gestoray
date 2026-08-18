@@ -6,7 +6,7 @@
   import { Card, Button } from '$lib';
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
-  import { AlertTriangle, Save, ArrowLeft, Bell } from '@lucide/svelte';
+  import { AlertTriangle, Save, Settings, Bell } from '@lucide/svelte';
 
   pageTitle.set('Configurazione Scadenzario & Allarmi');
 
@@ -74,8 +74,8 @@
 <div class="settings-page-container">
   <header class="page-header">
     <div class="header-title-box">
-      <a href="/dashboard/settings" class="btn-back" title="Torna alle impostazioni">
-        <ArrowLeft size={20} />
+      <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+        <Settings size={20} />
       </a>
       <div class="header-icon">
         <AlertTriangle size={24} color="#D97706" />

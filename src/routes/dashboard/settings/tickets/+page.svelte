@@ -9,7 +9,7 @@
     DEFAULT_TICKET_SETTINGS
   } from '$lib/services/ticketSettings';
   import { toast } from '$lib/stores/toast.svelte';
-  import { Settings, Tag, Key, Save, Plus, X, ArrowLeft } from '@lucide/svelte';
+  import { Settings, Tag, Key, Save, Plus, X } from '@lucide/svelte';
 
   let config = $state<TicketSettingsConfig>({ ...DEFAULT_TICKET_SETTINGS });
 
@@ -19,39 +19,42 @@
 
   onMount(async () => {
     try {
-      config = await TicketSettingsService.getSettings();
-    } catch (e) {
-      console.error('Errore caricamento impostazioni ticket:', e);
+      const data = await TicketSettingsService.getSettings();
+      if (data) {
+        config = data;
+      }
+    } catch (e: any) {
+      toast.error('Errore caricamento impostazioni ticket');
     } finally {
       loading = false;
     }
   });
 
-  function addCategory() {
-    if (!newCatLabel.trim()) return;
-    const id = newCatLabel.trim().toLowerCase().replace(/\s+/g, '_');
-    if (config.categories.some((c: TicketCategoryConfig) => c.id === id)) {
-      toast.error('Esiste già una categoria con questo nome.');
-      return;
-    }
-    config.categories = [...config.categories, { id, label: newCatLabel.trim() }];
-    newCatLabel = '';
-  }
-
-  function removeCategory(id: string) {
-    config.categories = config.categories.filter((c: TicketCategoryConfig) => c.id !== id);
-  }
-
   async function handleSave() {
     saving = true;
     try {
       await TicketSettingsService.saveSettings(config);
-      toast.success('Impostazioni Ticket salvate con successo!');
-    } catch (err: any) {
-      toast.error('Errore salvataggio impostazioni: ' + err.message);
+      toast.success('Impostazioni ticket salvate con successo');
+    } catch (e: any) {
+      toast.error('Errore durante il salvataggio');
     } finally {
       saving = false;
     }
+  }
+
+  function addCategory() {
+    if (!newCatLabel.trim()) return;
+    const id = newCatLabel.trim().toLowerCase().replace(/\s+/g, '_');
+    if (config.categories.some(c => c.id === id)) {
+      toast.error('Categoria già esistente');
+      return;
+    }
+    config.categories.push({ id, label: newCatLabel.trim(), enabled: true });
+    newCatLabel = '';
+  }
+
+  function removeCategory(id: string) {
+    config.categories = config.categories.filter(c => c.id !== id);
   }
 </script>
 
@@ -61,8 +64,8 @@
 
 <div class="ticket-settings-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/settings" class="back-link">
-      <ArrowLeft size={16} /> Torna alle Impostazioni Generali
+    <a href="/dashboard/settings" class="btn-module-list" title="Vai a Impostazioni" aria-label="Vai a Impostazioni">
+      <Settings size={20} />
     </a>
     <h2 class="title-header">
       <Settings size={24} /> Configurazione Helpdesk & Ticket Assistenza
