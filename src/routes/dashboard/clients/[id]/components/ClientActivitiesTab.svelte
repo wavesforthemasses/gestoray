@@ -82,7 +82,9 @@
         {/snippet}
 
         <div class="quick-log-actions">
-          {#each (activitiesConfig || []).filter((kpi: any) => kpi.rolesInsert.includes(activeRole || '')) as kpi}
+          {#each (activitiesConfig || [])
+            .filter((kpi: any) => kpi.rolesInsert?.includes(activeRole || ''))
+            .filter((kpi: any) => !kpi.allowedTargets || kpi.allowedTargets.length === 0 || kpi.allowedTargets.includes('client')) as kpi}
             <Button
               onclick={() => logActivity(kpi.id)}
               variant="secondary"
@@ -91,8 +93,10 @@
               {kpi.name}
             </Button>
           {/each}
-          {#if (activitiesConfig || []).filter((kpi: any) => kpi.rolesInsert.includes(activeRole || '')).length === 0}
-            <p class="empty-kpi-msg">Nessun KPI disponibile per il tuo ruolo.</p>
+          {#if (activitiesConfig || [])
+            .filter((kpi: any) => kpi.rolesInsert?.includes(activeRole || ''))
+            .filter((kpi: any) => !kpi.allowedTargets || kpi.allowedTargets.length === 0 || kpi.allowedTargets.includes('client')).length === 0}
+            <p class="empty-kpi-msg">Nessuna attività disponibile per i clienti o per il tuo ruolo.</p>
           {/if}
         </div>
       </Card>

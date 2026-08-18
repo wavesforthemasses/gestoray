@@ -1,8 +1,9 @@
 <script lang="ts">
   import { pageTitle } from '$lib/stores/page';
+  import { projectStore } from '$lib/stores/project';
   import { activeRoleState, authState } from '$lib/auth.svelte';
-  import { TrendingUp, BarChart3, PieChart, Layers } from '@lucide/svelte';
-  import { Card, UniversalAnalyticsChart, ChartSettingsService } from '$lib';
+  import { TrendingUp } from '@lucide/svelte';
+  import { UniversalAnalyticsChart, ChartSettingsService } from '$lib';
   import { DashboardService } from '../dashboard.service';
 
   pageTitle.set('Analytics & Grafici Business Intelligence');
@@ -13,10 +14,12 @@
   let loadingChart = $state(false);
   let computedChartPoints = $state<number[]>([]);
   let selectedPointIdx = $state<number | null>(null);
-  let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
+
+  // Derive dynamic chart periods deterministically
+  let chartPeriods = $derived(DashboardService.generateChartPeriods(endDateString, granularity));
 
   // Fetch dynamic metrics for the general BI chart
-  // This uses the merged master list of all enabled KPIs from active modules.
+  // This uses the dynamically discovered master list of all enabled KPIs from active modules.
   let chartMetrics = $derived.by(() => {
     return ChartSettingsService.getAllKpisMasterListSync()
       .filter(k => k.enabled)
@@ -39,12 +42,8 @@
     }
   });
 
-  $effect(() => {
-    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
-  });
-
   async function loadChartData() {
-    if (chartPeriods.length === 0) return;
+    if (chartPeriods.length === 0 || !activeChartTab) return;
     loadingChart = true;
     try {
       const roleToUse = activeRoleState.role || '';
@@ -60,11 +59,15 @@
   }
 
   $effect(() => {
-    if (granularity || endDateString || activeChartTab) {
+    if (chartPeriods.length > 0 && activeChartTab) {
       loadChartData();
     }
   });
 </script>
+
+<svelte:head>
+  <title>Analytics & BI | {$projectStore?.projectName || 'ERP'}</title>
+</svelte:head>
 
 <div class="chart-module-page animate-fade-in">
   <div class="page-top-actions">

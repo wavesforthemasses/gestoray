@@ -26,6 +26,7 @@ function parseArgs() {
     wait: 2000,
     fullPage: true,
     name: '',
+    click: '',
     cdpUrl: 'http://localhost:9222'
   };
 
@@ -37,6 +38,8 @@ function parseArgs() {
       options.wait = parseInt(args[++i], 10) || 2000;
     } else if (arg === '--name' && args[i + 1]) {
       options.name = args[++i];
+    } else if (arg === '--click' && args[i + 1]) {
+      options.click = args[++i];
     } else if (arg === '--cdp' && args[i + 1]) {
       options.cdpUrl = args[++i];
     } else if (arg === '--no-full') {
@@ -110,8 +113,9 @@ function parseArgs() {
       await page.click('button[type="submit"]');
       await page.waitForURL(url => !url.href.includes('/login'), { timeout: 15000 });
       console.log(`✅ Login effettuato con successo. Navigazione alla destinazione: ${opts.url}`);
-      if (opts.url && !page.url().includes(opts.url)) {
-        await page.goto(opts.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForSelector('.sidebar, nav, .topbar, a[href*="/dashboard"]', { timeout: 10000 }).catch(() => {});
+      if (opts.url && page.url() !== opts.url) {
+        await page.goto(opts.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
       }
     } catch (authErr) {
       console.warn(`⚠️ Auto-login non completato:`, authErr.message);
@@ -122,6 +126,17 @@ function parseArgs() {
   if (opts.wait > 0) {
     console.log(`⏳ Attesa rendering per ${opts.wait}ms...`);
     await page.waitForTimeout(opts.wait);
+  }
+
+  if (opts.click) {
+    console.log(`🖱️ Esecuzione click su selettore: ${opts.click}...`);
+    try {
+      await page.waitForSelector(opts.click, { timeout: 5000 });
+      await page.click(opts.click);
+      await page.waitForTimeout(800);
+    } catch (clickErr) {
+      console.warn(`⚠️ Errore click: ${clickErr.message}`);
+    }
   }
 
   const currentUrl = page.url();

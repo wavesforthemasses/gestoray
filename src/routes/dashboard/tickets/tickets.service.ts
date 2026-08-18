@@ -1,21 +1,7 @@
 import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot } from '$lib/firebase';
 import type { TicketItem, TicketMessage, TicketKPIs } from './schema';
 import { TicketSettingsService } from '$lib/services/ticketSettings';
-
-function cleanUndefined(obj: any): any {
-  if (obj === null || typeof obj !== 'object') return obj;
-  const cleaned: Record<string, any> = Array.isArray(obj) ? [] : {};
-  for (const [key, val] of Object.entries(obj)) {
-    if (val === undefined) {
-      continue;
-    } else if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
-      cleaned[key] = cleanUndefined(val);
-    } else {
-      cleaned[key] = val;
-    }
-  }
-  return cleaned;
-}
+import { cleanUndefined } from '$lib/utils/helpers';
 
 const COLLECTION_NAME = 'tickets';
 
@@ -47,8 +33,16 @@ export const TicketsService = {
   async getTickets(isExecutive: boolean = false, userUid?: string, userEmail?: string): Promise<TicketItem[]> {
     try {
       if (isExecutive || (!userUid && !userEmail)) {
-        const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
-        const snap = await getDocs(q);
+        let snap;
+        try {
+          const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+          snap = await getDocs(q);
+        } catch (e) {
+          snap = await getDocs(collection(db, COLLECTION_NAME));
+        }
+        if (snap.empty) {
+          snap = await getDocs(collection(db, COLLECTION_NAME));
+        }
         const items = snap.docs
           .map((d: any) => ({ id: d.id, ...d.data() } as TicketItem))
           .filter((t: any) => !t.derived?.deleted);

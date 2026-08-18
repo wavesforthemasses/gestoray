@@ -94,7 +94,11 @@ export class PlacesKPIBridge {
     let allPlaces: any[] = [];
     try {
       const snap = await getDocs(collection(db, 'places'));
-      snap.forEach(d => allPlaces.push({ id: d.id, ...d.data() }));
+      snap.forEach(d => {
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        allPlaces.push({ id: d.id, ...data });
+      });
     } catch (e) {
       console.error('Error fetching places for chart aggregations:', e);
       return periods.map(() => 0);

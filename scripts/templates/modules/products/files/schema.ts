@@ -20,7 +20,7 @@ export interface ProductItem {
   
   // Gestione Giacenza & Scorte (Disaccoppiata)
   trackStock?: boolean;             // Se false, nessun monitoraggio di giacenza (default true per product, false per service/digital)
-  stockQty: number;                 // Giacenza numerica (può essere <= 0 con backorder)
+  stockQty?: number;                // Giacenza numerica (può essere <= 0 con backorder, default 0)
   minStockThreshold?: number;       // Soglia scorta minima per alert
   allowOutOfStockSale?: boolean;    // true: vendibile anche se <= 0 (backorder); false: bloccato se esaurito
   

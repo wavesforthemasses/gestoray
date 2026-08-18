@@ -1,77 +1,67 @@
-import { db, doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc } from '$lib/firebase';
+import { db, doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from '$lib/firebase';
 import { generateId } from '$lib/utils/helpers';
 import { generateSearchTerms } from '$lib/search-utils';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { AuditHistoryService } from '$lib/services/auditHistoryService';
 import { VersioningService, computeDiff, type SystemLedgerEntry } from '$lib/services/versioningService';
 import { ClientsVersioningBridge } from '../clients.versioning.bridge';
+import { ClientsService } from '../clients.service';
+import type { ClientOriginal, ClientDerived } from '../schema';
 
 export interface ClientDataPayload {
-  clientDerived: any;
-  originalProfile: any;
+  clientDerived: ClientDerived;
+  originalProfile: ClientOriginal;
   clientCreatedAt: string;
-  productsList: any[];
   activitiesList: any[];
   historyList: any[];
   timelineList: SystemLedgerEntry[];
   aggregateVersion: number;
-  contractsList: any[];
-  quotesList: any[];
   usersList: any[];
   clientNotes: string[];
 }
 
 export class ClientDetailService {
+  /**
+   * Recupera i dati anagrafici completi, lo storico audit, le attività e gli utenti per la scheda cliente.
+   */
   static async fetchClientData(clientId: string, activeModuleIds: string[] = []): Promise<ClientDataPayload> {
-    const payload: ClientDataPayload = {
-      clientDerived: {},
-      originalProfile: {},
-      clientCreatedAt: '',
-      productsList: [],
-      activitiesList: [],
-      historyList: [],
-      timelineList: [],
-      aggregateVersion: 0,
-      contractsList: [],
-      quotesList: [],
-      usersList: [],
-      clientNotes: []
-    };
-
     const clientDoc = await getDoc(doc(db, 'clients', clientId));
     if (!clientDoc.exists()) {
       throw new Error('Il cliente specificato non esiste.');
     }
     const data = clientDoc.data();
-    const orig = data.original || data || {};
-    payload.clientDerived = data.derived || {};
+    if (data.derived?.deleted) {
+      throw new Error('Questa anagrafica cliente è stata eliminata.');
+    }
+    const orig: ClientOriginal = data.original || data || {};
+    const clientDerived: ClientDerived = data.derived || {};
 
-    payload.originalProfile = {
-      nome: orig.nome || orig.companyName || orig.ragioneSociale || orig.name || data.nome || data.companyName || data.ragioneSociale || data.name || '',
-      cognome: orig.cognome || data.cognome || '',
-      email: orig.email || data.email || '',
-      phone: orig.phone || data.phone || '',
-      website: orig.website || data.website || '',
-      createdBy: orig.createdBy || data.createdBy || '',
-      assignedAdminId: orig.assignedAdminId || data.assignedAdminId || orig.createdBy || data.createdBy || '',
-      status: orig.status || data.status || 'prospect',
-      fiscalId: orig.fiscalId || data.fiscalId || '',
-      partitaIva: orig.partitaIva || data.partitaIva || '',
-      codiceFiscale: orig.codiceFiscale || data.codiceFiscale || '',
-      
+    const originalProfile: ClientOriginal = {
+      nome: orig.nome || '',
+      cognome: orig.cognome || '',
+      email: orig.email || '',
+      phone: orig.phone || '',
+      website: orig.website || '',
+      createdBy: orig.createdBy || '',
+      assignedAdminId: orig.assignedAdminId || orig.createdBy || '',
+      status: orig.status || 'prospect',
+      fiscalId: orig.fiscalId || '',
+      partitaIva: orig.partitaIva || '',
+      codiceFiscale: orig.codiceFiscale || '',
+
       // Anagrafica & ERP additions
-      clientCode: orig.clientCode || orig.codiceCliente || data.clientCode || '',
-      clientGroup: orig.clientGroup || orig.gruppoCliente || data.clientGroup || '',
-      certificationStatus: orig.certificationStatus || orig.statoCertificazione || data.certificationStatus || '',
+      clientCode: orig.clientCode || '',
+      clientGroup: orig.clientGroup || 'Standard',
+      certificationStatus: orig.certificationStatus || 'in_attesa',
       isItalianSubject: orig.isItalianSubject !== undefined ? orig.isItalianSubject : true,
-      
+
       // SDI & Bank Data
-      sdiCode: orig.sdiCode || data.sdiCode || orig.sdi_code || orig.codiceSdi || '',
-      pec: orig.pec || data.pec || '',
-      iban: orig.iban || data.iban || '',
-      bankName: orig.bankName || data.bankName || '',
-      paymentTerms: orig.paymentTerms || data.paymentTerms || orig.condizioniPagamento || '',
-      mainPhone: orig.mainPhone || orig.telefonoCentralino || orig.phone || '',
+      sdiCode: orig.sdiCode || '',
+      pec: orig.pec || '',
+      iban: orig.iban || '',
+      bankName: orig.bankName || '',
+      paymentTerms: orig.paymentTerms || '',
+      mainPhone: orig.mainPhone || orig.phone || '',
 
       // Referenti Rapidi
       referenteTecnico: orig.referenteTecnico || '',
@@ -80,40 +70,41 @@ export class ClientDetailService {
       emailAlternativa: orig.emailAlternativa || '',
 
       // Affidabilità & Credito
-      crifCheck: orig.crifCheck || orig.controlloCrif || 'NON ESEGUITO',
-      riskClass: orig.riskClass || orig.classeRischio || 'AAA (Basso Rischio)',
-      maxCredit: orig.maxCredit || orig.fidoMassimo || 0,
-      residualCredit: orig.residualCredit || orig.fidoResiduo || 0,
-      paymentStatus: orig.paymentStatus || orig.statoPagamenti || 'Regolare',
+      crifCheck: orig.crifCheck || 'NON ESEGUITO',
+      riskClass: orig.riskClass || 'AAA (Basso Rischio)',
+      maxCredit: orig.maxCredit || 0,
+      residualCredit: orig.residualCredit || 0,
+      paymentStatus: orig.paymentStatus || 'Regolare',
 
       // Note ERP
-      internalAdminNotes: orig.internalAdminNotes || orig.noteAmministrative || '',
-      quoteAutoNotes: orig.quoteAutoNotes || orig.notePreventivo || '',
+      internalAdminNotes: orig.internalAdminNotes || '',
+      quoteAutoNotes: orig.quoteAutoNotes || '',
+      notes: orig.notes || [],
 
-      // Sede Principale
-      address: orig.address || data.address || '',
-      city: orig.city || data.city || '',
-      province: orig.province || data.province || '',
-      postalCode: orig.postalCode || data.postalCode || '',
-      country: orig.country || data.country || 'Italy',
+      // Sede Principale / Operativa
+      address: orig.address || '',
+      city: orig.city || '',
+      province: orig.province || '',
+      postalCode: orig.postalCode || '',
+      country: orig.country || 'Italy',
 
-      // Fatturazione
-      billingAddress: orig.billingAddress || data.billingAddress || orig.address || data.address || '',
-      billingCity: orig.billingCity || data.billingCity || orig.city || data.city || '',
-      billingProvince: orig.billingProvince || data.billingProvince || orig.province || data.province || '',
-      billingPostalCode: orig.billingPostalCode || data.billingPostalCode || orig.postalCode || data.postalCode || '',
-      billingCountry: orig.billingCountry || data.billingCountry || orig.country || data.country || 'Italy',
+      // Sede Legale / Fatturazione
+      billingAddress: orig.billingAddress || orig.address || '',
+      billingCity: orig.billingCity || orig.city || '',
+      billingProvince: orig.billingProvince || orig.province || '',
+      billingPostalCode: orig.billingPostalCode || orig.postalCode || '',
+      billingCountry: orig.billingCountry || orig.country || 'Italy',
 
-      // Spedizione
-      shippingAddress: orig.shippingAddress || data.shippingAddress || orig.billingAddress || data.billingAddress || orig.address || data.address || '',
-      shippingCity: orig.shippingCity || data.shippingCity || orig.billingCity || data.billingCity || orig.city || data.city || '',
-      shippingProvince: orig.shippingProvince || data.shippingProvince || orig.billingProvince || data.billingProvince || orig.province || data.province || '',
-      shippingPostalCode: orig.shippingPostalCode || data.shippingPostalCode || orig.billingPostalCode || data.billingPostalCode || orig.postalCode || data.postalCode || '',
-      shippingCountry: orig.shippingCountry || data.shippingCountry || orig.billingCountry || data.billingCountry || orig.country || data.country || 'Italy'
+      // Sede Spedizione / Cantiere
+      shippingAddress: orig.shippingAddress || orig.billingAddress || orig.address || '',
+      shippingCity: orig.shippingCity || orig.billingCity || orig.city || '',
+      shippingProvince: orig.shippingProvince || orig.billingProvince || orig.province || '',
+      shippingPostalCode: orig.shippingPostalCode || orig.billingPostalCode || orig.postalCode || '',
+      shippingCountry: orig.shippingCountry || orig.billingCountry || orig.country || 'Italy'
     };
 
-    payload.clientNotes = orig.notes || [];
-    payload.clientCreatedAt = data.edits?.createdAt || orig.createdAt || '';
+    const clientNotes = orig.notes || [];
+    const clientCreatedAt = data.edits?.createdAt || '';
 
     const safeGetDocs = async (queryOrCol: any) => {
       try {
@@ -123,9 +114,8 @@ export class ClientDetailService {
       }
     };
 
-    const [activitiesSnap, historySnap, usersSnap] = await Promise.all([
+    const [activitiesSnap, usersSnap] = await Promise.all([
       safeGetDocs(collection(db, 'clients', clientId, 'activities')),
-      safeGetDocs(collection(db, 'clients', clientId, 'history')),
       safeGetDocs(collection(db, 'users'))
     ]);
 
@@ -136,11 +126,13 @@ export class ClientDetailService {
         acts.push({ id: d.id, ...act.original, edits: act.edits });
       });
     }
-    payload.activitiesList = acts.sort((a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime());
+    const activitiesList = acts.sort(
+      (a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime()
+    );
 
-    payload.historyList = await AuditHistoryService.getEntityHistory('clients', clientId);
-    payload.timelineList = await VersioningService.getEntityTimeline(clientId);
-    payload.aggregateVersion = (data.edits?.aggregateVersion as number) || 0;
+    const historyList = await AuditHistoryService.getEntityHistory('clients', clientId);
+    const timelineList = await VersioningService.getEntityTimeline(clientId);
+    const aggregateVersion = (data.edits?.aggregateVersion as number) || 0;
 
     const uList: any[] = [];
     if (usersSnap.forEach) {
@@ -149,45 +141,111 @@ export class ClientDetailService {
         uList.push({ uid: d.id, ...u });
       });
     }
-    payload.usersList = uList;
 
-    return payload;
+    return {
+      clientDerived,
+      originalProfile,
+      clientCreatedAt,
+      activitiesList,
+      historyList,
+      timelineList,
+      aggregateVersion,
+      usersList: uList,
+      clientNotes
+    };
   }
 
-  static async updateProfile(clientId: string, activeRole: string, originalProfile: any, newProfile: any, authObj: { uid: string, email: string, tenantId?: string }, expectedBaseVersion?: number) {
+  /**
+   * Aggiorna la scheda anagrafica cliente con validazione duplicati e transazione atomica dual-write (OCC).
+   */
+  static async updateProfile(
+    clientId: string,
+    activeRole: string,
+    originalProfile: ClientOriginal,
+    newProfile: ClientOriginal,
+    authObj: { uid: string; email: string; tenantId?: string },
+    expectedBaseVersion?: number
+  ): Promise<ClientOriginal> {
     const isDirezione = activeRole === 'direzione';
 
-    if (!isDirezione && newProfile.fiscalId && newProfile.fiscalId.trim()) {
-      const checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', newProfile.fiscalId.trim()));
+    const computedFiscalId = (newProfile.partitaIva?.trim() || newProfile.codiceFiscale?.trim() || newProfile.fiscalId?.trim() || '');
+    newProfile.fiscalId = computedFiscalId;
+
+    if (!isDirezione && computedFiscalId) {
+      const checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId));
       const checkSnap = await getDocs(checkQuery);
-      const otherWithSameId = checkSnap.docs.some((d: any) => d.id !== clientId);
+      const otherWithSameId = checkSnap.docs.some((d: any) => d.id !== clientId && !d.data()?.derived?.deleted);
       if (otherWithSameId) {
         throw new Error("L'Identificativo Fiscale inserito è già associato a un'altra anagrafica.");
       }
     }
 
-    const now = new Date().toISOString();
-    
-    const fields = [
-      'nome', 'cognome', 'email', 'phone', 'website', 'status', 'fiscalId', 'partitaIva', 'codiceFiscale',
-      'clientCode', 'clientGroup', 'certificationStatus', 'isItalianSubject',
-      'sdiCode', 'pec', 'iban', 'bankName', 'paymentTerms', 'mainPhone',
-      'referenteTecnico', 'telReferente', 'emailContatto', 'emailAlternativa',
-      'crifCheck', 'riskClass', 'maxCredit', 'residualCredit', 'paymentStatus',
-      'internalAdminNotes', 'quoteAutoNotes',
-      'address', 'city', 'province', 'postalCode', 'country',
-      'billingAddress', 'billingCity', 'billingProvince', 'billingPostalCode', 'billingCountry',
-      'shippingAddress', 'shippingCity', 'shippingProvince', 'shippingPostalCode', 'shippingCountry',
-      'createdBy', 'assignedAdminId'
+    const fields: (keyof ClientOriginal)[] = [
+      'nome',
+      'cognome',
+      'email',
+      'phone',
+      'website',
+      'status',
+      'fiscalId',
+      'partitaIva',
+      'codiceFiscale',
+      'clientCode',
+      'clientGroup',
+      'certificationStatus',
+      'isItalianSubject',
+      'sdiCode',
+      'pec',
+      'iban',
+      'bankName',
+      'paymentTerms',
+      'mainPhone',
+      'referenteTecnico',
+      'telReferente',
+      'emailContatto',
+      'emailAlternativa',
+      'crifCheck',
+      'riskClass',
+      'maxCredit',
+      'residualCredit',
+      'paymentStatus',
+      'internalAdminNotes',
+      'quoteAutoNotes',
+      'address',
+      'city',
+      'province',
+      'postalCode',
+      'country',
+      'billingAddress',
+      'billingCity',
+      'billingProvince',
+      'billingPostalCode',
+      'billingCountry',
+      'shippingAddress',
+      'shippingCity',
+      'shippingProvince',
+      'shippingPostalCode',
+      'shippingCountry',
+      'createdBy',
+      'assignedAdminId'
     ];
 
     const newOriginal: any = {};
-    fields.forEach(f => {
-      newOriginal[f] = isDirezione ? (originalProfile[f] || '') : (newProfile[f] !== undefined ? newProfile[f] : (originalProfile[f] || ''));
+    fields.forEach((f) => {
+      newOriginal[f] = isDirezione
+        ? originalProfile[f] ?? ''
+        : newProfile[f] !== undefined
+          ? newProfile[f]
+          : (originalProfile[f] ?? '');
     });
 
     const fullClientName = `${newOriginal.nome || ''} ${newOriginal.cognome || ''}`.trim();
-    const updatedTerms = generateSearchTerms(fullClientName, newOriginal.partitaIva || '', newOriginal.codiceFiscale || '', newOriginal.email || '');
+    const updatedTerms = generateSearchTerms(
+      fullClientName,
+      newOriginal.partitaIva || '',
+      newOriginal.codiceFiscale || '',
+      newOriginal.email || newOriginal.emailContatto || ''
+    );
 
     const clientRef = doc(db, 'clients', clientId);
     const clientSnap = await getDoc(clientRef);
@@ -232,34 +290,26 @@ export class ClientDetailService {
       );
     }
 
-    await CacheLookupService.updateClientCache(clientId, fullClientName);
-
-    return newOriginal;
-  }
-
-  static async deleteClientCascade(clientId: string) {
     try {
-      const activitiesSnap = await getDocs(collection(db, 'clients', clientId, 'activities'));
-      for (const docItem of activitiesSnap.docs) {
-        await deleteDoc(doc(db, 'clients', clientId, 'activities', docItem.id));
-      }
-    } catch (e) {}
+      await CacheLookupService.updateClientCache(clientId, fullClientName);
+    } catch (e) {
+      // Ignora avviso cache se eseguito in modalità client-restricted
+    }
 
-    try {
-      const historySnap = await getDocs(collection(db, 'clients', clientId, 'history'));
-      for (const docItem of historySnap.docs) {
-        await deleteDoc(doc(db, 'clients', clientId, 'history', docItem.id));
-      }
-    } catch (e) {}
-
-    await deleteDoc(doc(db, 'clients', clientId));
+    return newOriginal as ClientOriginal;
   }
 
-  static async deleteClient(clientId: string, activitiesList: any[], historyList: any[]) {
-    await this.deleteClientCascade(clientId);
+  /**
+   * Esegue il soft delete dell'anagrafica cliente delegando al ClientsService canonico.
+   */
+  static async deleteClient(clientId: string, uid?: string): Promise<{ success: boolean; error?: string }> {
+    return await ClientsService.deleteClient(clientId, uid);
   }
 
-  static async addNote(clientId: string, noteText: string, authorEmail: string) {
+  /**
+   * Aggiunge una nota interna all'anagrafica cliente.
+   */
+  static async addNote(clientId: string, noteText: string, authorEmail: string): Promise<string[]> {
     const noteObject = {
       text: noteText,
       createdAt: new Date().toISOString(),
@@ -278,20 +328,24 @@ export class ClientDetailService {
     return updatedNotes;
   }
 
+  /**
+   * Registra un'attività rapida nella sotto-collezione activities del cliente.
+   */
   static async logActivity(
     clientId: string,
+    activityType: string,
     notes: string,
     appointmentDate: string | undefined,
-    authObj: { uid: string, email: string }
-  ) {
+    authObj: { uid: string; email: string }
+  ): Promise<string> {
     const activityId = generateId('act');
     const activityDate = appointmentDate || new Date().toISOString();
 
     await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
       original: {
         clientId,
-        type: 'Nota / Attività',
-        notes,
+        type: activityType || 'Nota / Attività',
+        notes: notes || activityType,
         date: activityDate,
         loggedBy: authObj.uid,
         loggedEmail: authObj.email,
@@ -303,14 +357,32 @@ export class ClientDetailService {
       }
     });
 
+    try {
+      const clientRef = doc(db, 'clients', clientId);
+      const snap = await getDoc(clientRef);
+      if (snap.exists()) {
+        const currentCount = snap.data()?.derived?.activitiesCount || 0;
+        await updateDoc(clientRef, {
+          'derived.activitiesCount': currentCount + 1,
+          'derived.lastActivityDate': activityDate,
+          'edits.modifiedAt': new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      console.warn('Aggiornamento derived activitiesCount:', e);
+    }
+
     return activityId;
   }
 
+  /**
+   * Aggiorna un'attività esistente.
+   */
   static async updateActivity(
     clientId: string,
     activityId: string,
-    payload: { notes?: string, date?: string }
-  ) {
+    payload: { notes?: string; date?: string }
+  ): Promise<void> {
     const docRef = doc(db, 'clients', clientId, 'activities', activityId);
     const updates: any = {
       'edits.modifiedAt': new Date().toISOString()
@@ -323,54 +395,5 @@ export class ClientDetailService {
     }
 
     await updateDoc(docRef, updates);
-  }
-
-  static async saveQuote(
-    clientId: string,
-    clientNameStr: string,
-    quoteItems: any[],
-    quoteTotal: number,
-    authObj: { uid: string, email: string }
-  ) {
-    const contractId = generateId('contract');
-    const now = new Date().toISOString();
-
-    const newQuoteDraft = {
-      original: {
-        clientId,
-        clientName: clientNameStr,
-        vendorUid: authObj.uid,
-        vendorEmail: authObj.email,
-        products: quoteItems,
-        totalPrice: quoteTotal,
-        status: 'draft',
-        hasWarning: quoteItems.some(item => item.priceSold < item.minPrice)
-      },
-      edits: {
-        createdAt: now,
-        createdBy: authObj.uid
-      }
-    };
-
-    await setDoc(doc(db, 'contracts', contractId), newQuoteDraft);
-  }
-
-  static async approveQuoteToContract(
-    quoteId: string,
-    clientId: string,
-    coSeller: { uid: string, share: number } | undefined,
-    activeRole: string,
-    authObj: { uid: string, email: string }
-  ) {
-    const now = new Date().toISOString();
-    await updateDoc(doc(db, 'contracts', quoteId), {
-      'original.status': 'pending',
-      ...(coSeller ? {
-        'original.secondVendorUid': coSeller.uid,
-        'original.secondVendorShare': coSeller.share
-      } : {}),
-      'edits.modifiedAt': now,
-      'edits.modifiedBy': authObj.uid
-    });
   }
 }

@@ -103,29 +103,38 @@ export const getChartAggregations = onCall({ region: 'europe-west3', cors: true 
       return { data: zeros, results: zeros };
     }
 
-    const docs = snap.docs.map(d => d.data());
+    const minStartMs = Math.min(...periods.map((p: any) => new Date(p.start).getTime()).filter(t => !isNaN(t)));
+    const maxEndMs = Math.max(...periods.map((p: any) => new Date(p.end).getTime()).filter(t => !isNaN(t)));
+
+    // Fast-pass: filter out soft-deleted and out-of-range documents immediately
+    const relevantDocs: Array<{ data: any; dateMs: number }> = [];
+
+    for (const d of snap.docs) {
+      const data = d.data();
+      if (data.derived?.deleted || data.deleted) continue;
+
+      let dateMs = 0;
+      if (Array.isArray(spec.dateFields)) {
+        for (const fieldPath of spec.dateFields) {
+          const raw = getNestedValue(data, fieldPath);
+          if (raw) {
+            dateMs = getMs(raw);
+            if (dateMs > 0) break;
+          }
+        }
+      }
+
+      if (dateMs >= minStartMs && dateMs <= maxEndMs) {
+        relevantDocs.push({ data, dateMs });
+      }
+    }
 
     for (const period of periods) {
       const startMs = new Date(period.start).getTime();
       const endMs = new Date(period.end).getTime();
       let periodTotal = 0;
 
-      for (const data of docs) {
-        // Skip soft-deleted documents
-        if (data.derived?.deleted || data.deleted) continue;
-
-        // 1. Resolve date from specified candidate dateFields
-        let dateMs = 0;
-        if (Array.isArray(spec.dateFields)) {
-          for (const fieldPath of spec.dateFields) {
-            const raw = getNestedValue(data, fieldPath);
-            if (raw) {
-              dateMs = getMs(raw);
-              if (dateMs > 0) break;
-            }
-          }
-        }
-
+      for (const { data, dateMs } of relevantDocs) {
         if (dateMs < startMs || dateMs > endMs) continue;
 
         // 2. Apply filters dynamically

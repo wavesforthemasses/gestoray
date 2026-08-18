@@ -20,14 +20,16 @@
     Save, 
     ShieldAlert, 
     Filter,
-    Check
+    Check,
+    ClipboardList
   } from '@lucide/svelte';
 
   import MultiComplete from '$lib/components/MultiComplete.svelte';
   import SearchToolbar from '$lib/components/SearchToolbar.svelte';
   import FilterSelect from '$lib/components/FilterSelect.svelte';
-
-
+  import { menuConfigStore } from '$lib/stores/menu';
+  import { BridgesSettingsService, bridgesConfigStore } from '$lib/services/bridgesSettingsService';
+  import ContactActivitiesModal from './components/ContactActivitiesModal.svelte';
 
   pageTitle.set('Gestione Contatti & Referenti');
 
@@ -58,14 +60,42 @@
   let formNotes = $state('');
   let formLinkedClientIds = $state<string[]>([]);
 
+  let hasActivitiesModule = $derived($menuConfigStore.some(m => m.id === 'activities'));
+  let hasActivitiesBridge = $derived(
+    hasActivitiesModule && BridgesSettingsService.isBridgeEnabled('activities-contacts', $bridgesConfigStore)
+  );
+  let activitiesConfig = $state<any[]>([]);
+  let activitiesModalOpen = $state(false);
+  let selectedContactForActivities = $state<ContactItem | null>(null);
+
   onMount(async () => {
     try {
+      await BridgesSettingsService.init();
       await ContactsService.deduplicateExistingContacts();
     } catch (e) {
       console.warn('Contacts deduplication error:', e);
     }
-    await Promise.all([loadContacts(), loadClientsLookup()]);
+    await Promise.all([loadContacts(), loadClientsLookup(), loadActivitiesConfig()]);
   });
+
+  async function loadActivitiesConfig() {
+    if ($menuConfigStore.some(m => m.id === 'activities')) {
+      try {
+        const { loadOptionalService } = await import('$lib/utils/moduleBridge');
+        const mod = await loadOptionalService('activityTypesService');
+        if (mod && mod.ActivityTypesService) {
+          activitiesConfig = await mod.ActivityTypesService.getActivityTypes();
+        }
+      } catch (e) {
+        console.warn('Impossibile caricare ActivityTypesService:', e);
+      }
+    }
+  }
+
+  function openActivitiesModal(c: ContactItem) {
+    selectedContactForActivities = c;
+    activitiesModalOpen = true;
+  }
 
 
   async function loadClientsLookup() {
@@ -318,6 +348,11 @@
             </div>
 
             <div class="card-actions">
+              {#if hasActivitiesBridge}
+                <button class="btn-icon btn-activities" onclick={() => openActivitiesModal(c)} title="Attività & Note Referente">
+                  <ClipboardList size={16} />
+                </button>
+              {/if}
               <button class="btn-icon" onclick={() => openEditModal(c)} title="Modifica contatto">
                 <Edit size={16} />
               </button>
@@ -372,6 +407,18 @@
                 {/each}
               {/if}
             </div>
+
+            {#if hasActivitiesBridge}
+              <button 
+                type="button" 
+                class="btn-activities-pill" 
+                onclick={() => openActivitiesModal(c)}
+                title="Gestisci attività per {c.fullName}"
+              >
+                <ClipboardList size={13} />
+                <span>Attività</span>
+              </button>
+            {/if}
           </div>
         </div>
       {/each}
@@ -472,6 +519,16 @@
       </form>
     </div>
   </div>
+{/if}
+
+{#if activitiesModalOpen && selectedContactForActivities}
+  <ContactActivitiesModal
+    contact={selectedContactForActivities}
+    isOpen={activitiesModalOpen}
+    {activitiesConfig}
+    {clientLookup}
+    onClose={() => { activitiesModalOpen = false; selectedContactForActivities = null; }}
+  />
 {/if}
 
 <style>
@@ -688,6 +745,34 @@
     border-top: 1px solid var(--color-neutral-100, #f3f4f6);
     padding-top: 12px;
     margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-activities-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-primary-50, #eff6ff);
+    color: var(--color-primary-700, #1d4ed8);
+    border: 1px solid var(--color-primary-200, #bfdbfe);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-activities-pill:hover {
+    background: var(--color-primary-600, #2563eb);
+    color: white;
+    border-color: var(--color-primary-600, #2563eb);
+  }
+  .btn-icon.btn-activities:hover {
+    color: var(--color-primary-600, #2563eb);
+    background: var(--color-primary-50, #eff6ff);
   }
   .clients-tag-list {
     display: flex;

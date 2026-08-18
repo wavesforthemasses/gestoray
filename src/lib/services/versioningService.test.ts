@@ -422,4 +422,49 @@ describe('VersioningService - Dual-Write & Reversal Transaction Flow', () => {
     // 170 + (-50) = 120
     expect(updatedEntity.stock).toBe(120);
   });
+
+  it('guarantees that executeDualWriteTransaction sanitizes undefined fields without throwing', async () => {
+    const entityRef = { id: 'client-clean-1', path: 'clients/client-clean-1' } as any;
+
+    const res = await VersioningService.executeDualWriteTransaction(
+      {} as any,
+      entityRef,
+      {
+        id: 'client-clean-1',
+        original: {
+          nome: 'Test S.r.l.',
+          pec: undefined,
+          note: undefined
+        }
+      },
+      {
+        tenantId: 'default',
+        module: 'clients',
+        entityType: 'client',
+        entityId: 'client-clean-1',
+        entityLabel: 'Test S.r.l.',
+        eventType: 'FIELD_MUTATION',
+        keysChanged: ['nome'],
+        mutations: {
+          nome: { old: null, new: 'Test S.r.l.', semantics: 'DESCRIPTIVE' }
+        },
+        performedBy: 'user-123',
+        performedByName: undefined, // Explicit undefined
+        actorType: 'USER'
+      },
+      0
+    );
+
+    expect(res.aggregateVersion).toBe(1);
+    expect(res.ledgerId).toBeDefined();
+
+    const savedEntity = mockDocStore.get(entityRef.path);
+    expect(savedEntity.original.nome).toBe('Test S.r.l.');
+    expect('pec' in savedEntity.original).toBe(false);
+    expect('note' in savedEntity.original).toBe(false);
+
+    const savedLedger = mockDocStore.get(`system_ledger/${res.ledgerId}`);
+    expect(savedLedger).toBeDefined();
+    expect('performedByName' in savedLedger).toBe(false);
+  });
 });

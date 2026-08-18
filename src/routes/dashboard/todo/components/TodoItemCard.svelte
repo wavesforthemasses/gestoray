@@ -12,19 +12,18 @@
 </script>
 
 <div class="timeline-todo-item border-{item.urgency}">
-  <div class="todo-marker">
-    {#if item.urgency === 'high'}
-      <span class="urg-badge high"><AlertTriangle size={12} /> Scadenza/Alta</span>
-    {:else if item.urgency === 'medium'}
-      <span class="urg-badge medium"><Clock size={12} /> Da Fare</span>
-    {:else}
-      <span class="urg-badge low"><Calendar size={12} /> Previsto/Bassa</span>
-    {/if}
-  </div>
-
   <div class="todo-content">
     <div class="todo-title-row">
-      <h4>{item.title}</h4>
+      <div class="title-with-badge">
+        {#if item.urgency === 'high'}
+          <span class="urg-badge high"><AlertTriangle size={12} /> Scadenza / Alta</span>
+        {:else if item.urgency === 'medium'}
+          <span class="urg-badge medium"><Clock size={12} /> Da Fare</span>
+        {:else}
+          <span class="urg-badge low"><Calendar size={12} /> Previsto / Bassa</span>
+        {/if}
+        <h4>{item.title}</h4>
+      </div>
       {#if item.dueDate}
         <span class="due-date">Data: {formatDate(item.dueDate)}</span>
       {/if}
@@ -48,7 +47,7 @@
 <style>
   .timeline-todo-item {
     position: relative;
-    padding: 16px 20px 16px 40px;
+    padding: 16px 20px;
     background: var(--bg-card);
     border-radius: var(--radius-md);
     margin-bottom: 12px;
@@ -63,75 +62,75 @@
   }
 
   .border-high {
-    border-left-color: var(--danger-color);
+    border-left-color: #ef4444;
   }
 
   .border-medium {
-    border-left-color: var(--warning-color);
+    border-left-color: #f59e0b;
   }
 
   .border-low {
-    border-left-color: var(--success-color);
+    border-left-color: #10b981;
   }
 
-  .todo-marker {
-    position: absolute;
-    left: -12px;
-    top: 16px;
-    background: var(--bg-main);
-    border-radius: 20px;
-    padding: 2px;
+  .title-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .urg-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 4px 8px;
-    border-radius: 12px;
-    color: white;
+    padding: 3px 8px;
+    border-radius: 6px;
   }
   .urg-badge.high {
-    background: var(--danger-color);
+    background: #fee2e2;
+    color: #991b1b;
   }
   .urg-badge.medium {
-    background: var(--warning-color);
-    color: var(--text-color);
+    background: #fef3c7;
+    color: #b45309;
   }
   .urg-badge.low {
-    background: var(--success-color);
+    background: #dcfce7;
+    color: #15803d;
   }
 
   .todo-content h4 {
     margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--text-color);
   }
 
   .todo-title-row {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 16px;
     margin-bottom: 8px;
   }
 
   .due-date {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--text-muted);
     font-weight: 500;
     background: var(--bg-hover);
     padding: 4px 8px;
     border-radius: 4px;
+    white-space: nowrap;
   }
 
   .todo-content p {
-    margin: 0 0 16px 0;
-    font-size: 0.95rem;
+    margin: 0 0 14px 0;
+    font-size: 0.9rem;
     color: var(--text-muted);
     line-height: 1.5;
   }

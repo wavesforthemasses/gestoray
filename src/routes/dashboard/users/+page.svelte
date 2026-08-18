@@ -110,9 +110,10 @@
     }
   });
 
-  onMount(() => {
-
-    fetchUsers();
+  $effect(() => {
+    if (authState.initialized && authState.user && activeRoleState.role === 'superadmin') {
+      fetchUsers();
+    }
   });
 
   async function handleAddSuccess() {

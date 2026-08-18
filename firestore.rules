@@ -43,10 +43,10 @@ service cloud.firestore {
     function notWritingDerived() {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
-             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId'])) ||
+             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])) ||
              (resource != null && (
                 request.resource.data.derived == resource.data.derived ||
-                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId'])
+                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])
              ));
     }
     
@@ -56,6 +56,29 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAuth() && (request.auth.uid == uid || isAdmin());
       allow delete: if hasRole('superadmin');
+    }
+
+    // TEAMS
+    match /teams/{teamId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && (isAdmin() || isDirezione());
+    }
+
+    // VEHICLES
+    match /vehicles/{vehicleId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && (isAdmin() || isDirezione());
+    }
+
+    // DEADLINES
+    match /deadlines/{deadlineId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth();
+    }
+
+    // ACTIVITIES
+    match /activities/{activityId} {
+      allow read, write: if isAuth();
     }
     
     // CLIENTS
@@ -250,5 +273,17 @@ match /products/{docId} {
   allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
 }
     // --- MODULE: products END ---
+
+    // --- MODULE: activities BEGIN ---
+    // ACTIVITIES
+match /activities/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth();
+}
+match /activity_types/{docId} {
+  allow read: if isAuth();
+  allow write: if isAdmin();
+}
+    // --- MODULE: activities END ---
   }
 }

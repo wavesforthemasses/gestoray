@@ -14,6 +14,24 @@
     "tecnico"
   ],
   "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "total_products",
+      "title": "Articoli a Catalogo",
+      "subtitle": "Prodotti e servizi a catalogo",
+      "icon": "Package",
+      "valueKey": "total_products",
+      "aggregation": {
+        "collection": "products",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    }
+  ],
   "anonymization": {
     "collectionName": "products",
     "linkFieldPath": "id",

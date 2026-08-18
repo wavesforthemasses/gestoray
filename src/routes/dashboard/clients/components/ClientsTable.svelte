@@ -1,31 +1,21 @@
 <script lang="ts">
-  import { Table, Card, SearchToolbar } from '$lib';
+  import { Table, Card } from '$lib';
   import { Users } from '@lucide/svelte';
-
-
   import { exportToCSV, exportToExcel, triggerPrint } from '$lib/export-utils';
   import StatusBadge from '$lib/components/StatusBadge.svelte';
-  import { activeRoleState } from '$lib/auth.svelte';
   import { projectStore } from '$lib/stores/project';
   import { menuConfigStore } from '$lib/stores/menu';
+  import type { ClientListItem } from '../schema';
 
   interface Props {
-    clientsList: any[];
-    searchQuery: string;
-    onSearch: (q: string) => void;
-    onReset: () => void;
-    onAddClick: () => void;
+    clientsList: ClientListItem[];
     selectedPeriod: { start: Date; end: Date } | null;
   }
 
   let { 
     clientsList,
-    searchQuery = $bindable(''),
-    onSearch,
-    onReset,
-    onAddClick,
     selectedPeriod
-  } = $props();
+  }: Props = $props();
 
   const dynamicClientActions = $derived(
     $menuConfigStore
@@ -98,8 +88,8 @@
 {/snippet}
 
 <Card
-  title="Anagrafica Clienti CRM"
-  description="Database dei contatti e dei lead commerciali. Fai clic su un cliente per vederne i dettagli, le note, e loggare le attività."
+  title="Anagrafica Clienti"
+  description="Database dei contatti e anagrafiche. Fai clic su un cliente per vederne i dettagli, le note e le attività collegate."
   class="list-card"
 >
   {#snippet icon()}

@@ -79,7 +79,11 @@ export class TicketsKPIBridge {
     let allTickets: any[] = [];
     try {
       const snap = await getDocs(collection(db, 'tickets'));
-      snap.forEach(d => allTickets.push(d.data()));
+      snap.forEach(d => {
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        allTickets.push({ id: d.id, ...data });
+      });
     } catch (e) {
       console.error('Error fetching tickets for chart aggregations:', e);
       return periods.map(() => 0);

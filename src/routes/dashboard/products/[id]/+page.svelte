@@ -186,17 +186,17 @@
         <div class="info-row">
           <span class="info-label">Giacenza Attuale</span>
           <div>
-            {#if product.stockQty > (product.minStockThreshold || 0)}
+            {#if (product.stockQty ?? 0) > (product.minStockThreshold || 0)}
               <span class="stock-badge stock-ok">
-                <CheckCircle2 size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit} (Disponibile)
+                <CheckCircle2 size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty ?? 0, product.unit)} {product.unit} (Disponibile)
               </span>
-            {:else if product.stockQty > 0}
+            {:else if (product.stockQty ?? 0) > 0}
               <span class="stock-badge stock-warning">
-                <AlertTriangle size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit} (Sottoscorta)
+                <AlertTriangle size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty ?? 0, product.unit)} {product.unit} (Sottoscorta)
               </span>
             {:else}
               <span class="stock-badge stock-danger">
-                <AlertCircle size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty, product.unit)} {product.unit} ({product.allowOutOfStockSale !== false ? 'Esaurito / Backorder' : 'Esaurito'})
+                <AlertCircle size={13} /> {UnitsOfMeasureService.formatQuantity(product.stockQty ?? 0, product.unit)} {product.unit} ({product.allowOutOfStockSale !== false ? 'Esaurito / Backorder' : 'Esaurito'})
               </span>
             {/if}
           </div>

@@ -34,7 +34,14 @@
   let selectedTypeFilter = $state<ProductType | 'all'>('all');
   let fieldSettings = $state<ProductFieldsSettings>({ ...DEFAULT_PRODUCT_FIELDS_SETTINGS });
 
-  onMount(async () => {
+  $effect(() => {
+    if (authState.initialized && authState.user) {
+      loadProductsData();
+    }
+  });
+
+  async function loadProductsData() {
+    loading = true;
     try {
       const [prods, loadedSettings] = await Promise.all([
         ProductsService.getProducts(),
@@ -47,7 +54,7 @@
     } finally {
       loading = false;
     }
-  });
+  }
 
   let filteredProducts = $derived(
     products.filter(p => {
@@ -391,17 +398,17 @@
                     <span class="untracked-pill" title="Nessun monitoraggio giacenza">
                       <Minus size={12} /> Non gestita
                     </span>
-                  {:else if p.stockQty > (p.minStockThreshold || 0)}
+                  {:else if (p.stockQty ?? 0) > (p.minStockThreshold || 0)}
                     <span class="stock-badge stock-ok" title="Disponibile a magazzino">
-                      <CheckCircle2 size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty, p.unit)} {p.unit}
+                      <CheckCircle2 size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit}
                     </span>
-                  {:else if p.stockQty > 0}
+                  {:else if (p.stockQty ?? 0) > 0}
                     <span class="stock-badge stock-warning" title="Sottoscorta / Scorta bassa">
-                      <AlertTriangle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty, p.unit)} {p.unit}
+                      <AlertTriangle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit}
                     </span>
                   {:else}
                     <span class="stock-badge stock-danger" title={p.allowOutOfStockSale !== false ? 'Esaurito - Backorder abilitato' : 'Esaurito'}>
-                      <AlertCircle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty, p.unit)} {p.unit} ({p.allowOutOfStockSale !== false ? 'Backorder' : 'Esaurito'})
+                      <AlertCircle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit} ({p.allowOutOfStockSale !== false ? 'Backorder' : 'Esaurito'})
                     </span>
                   {/if}
                 </td>

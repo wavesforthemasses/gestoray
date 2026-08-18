@@ -1,6 +1,6 @@
 {
   "id": "activities",
-  "label": "Attività & Task",
+  "label": "Attività",
   "description": "Tracciamento attività commerciali e operative",
   "icon": "ClipboardList",
   "requirements": [],
@@ -12,56 +12,116 @@
     "icon": "ClipboardList",
     "path": "/dashboard/settings/activities"
   },
-  "rolesView": ["superadmin", "direzione", "commerciale", "amministrazione"],
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "commerciale",
+    "amministrazione",
+    "tecnico"
+  ],
   "enabled": true,
   "kpiTiles": [
     {
       "id": "activities",
       "title": "Attività",
       "subtitle": "Attività Svolte",
-      "icon": "ActivitySquare",
+      "icon": "ClipboardList",
       "aggregation": {
-        "collectionGroup": "activities",
+        "collection": "activities",
         "type": "count",
-        "dateFields": ["edits.createdAt", "createdAt", "original.createdAt"],
-        "typeFilterField": "original.type",
-        "loggedByFilterField": "original.loggedBy"
+        "dateFields": [
+          "edits.createdAt",
+          "createdAt",
+          "original.createdAt"
+        ],
+        "typeFilterField": "activityTypeId",
+        "loggedByFilterField": "assignedUid"
       }
     }
   ],
   "anonymization": {
     "collectionName": "activities",
-    "linkFieldPath": "clientId",
+    "linkFieldPath": "targetId",
     "redactFields": [
-      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+      {
+        "fieldPath": "description",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "targetName",
+        "replacement": "ANONIMIZZATO"
+      },
+      {
+        "fieldPath": "targetSubtext",
+        "replacement": ""
+      }
     ]
   },
   "schema": {
     "fields": {
-      "type": {
+      "activityNumber": {
         "type": "string",
-        "description": "Tipologia dell'attività (chiamata, riunione, email, nota)",
-        "tags": ["kpi:activity_counts", "filter:type"]
+        "description": "Codice progressivo univoco dell'attività",
+        "tags": [
+          "search",
+          "sort"
+        ]
       },
-      "loggedBy": {
+      "title": {
         "type": "string",
-        "description": "UID dell'utente che ha registrato l'attività",
-        "tags": ["filter:user", "kpi:user_activities"]
+        "description": "Oggetto dell'attività",
+        "tags": [
+          "search",
+          "display"
+        ]
       },
-      "clientId": {
+      "targetType": {
         "type": "string",
-        "description": "ID del cliente correlato",
-        "tags": ["filter:client", "relation:clients"]
+        "description": "Tipologia dell'entità bersaglio (contact, client, user, place, vehicle, contract, ticket)",
+        "tags": [
+          "filter:targetType"
+        ]
       },
-      "date": {
+      "targetId": {
+        "type": "string",
+        "description": "ID dell'entità bersaglio correlata",
+        "tags": [
+          "filter:targetId",
+          "relation:dynamic"
+        ]
+      },
+      "assignedUid": {
+        "type": "string",
+        "description": "UID dell'operatore responsabile",
+        "tags": [
+          "filter:user",
+          "kpi:user_activities"
+        ]
+      },
+      "executionDate": {
         "type": "date",
         "description": "Data di svolgimento dell'attività",
-        "tags": ["filter:date"]
+        "tags": [
+          "filter:date"
+        ]
       },
-      "createdAt": {
-        "type": "datetime",
-        "description": "Data di inserimento a sistema ISO 8601",
-        "tags": ["filter:date", "sort:default"]
+      "status": {
+        "type": "string",
+        "description": "Stato lavorazione attività (da_fare, in_corso, completata, annullata)",
+        "tags": [
+          "filter:status"
+        ]
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priorità attività (bassa, media, alta, urgente)",
+        "tags": [
+          "filter:priority"
+        ]
       }
     }
   }

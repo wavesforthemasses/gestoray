@@ -1,23 +1,8 @@
 {
   "modules": [
     {
-      "id": "chart",
-      "name": "Analytics & Grafici BI",
-      "version": "1.0.0",
-      "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
-      "category": "analytics",
-      "icon": "TrendingUp",
-      "menuItem": null,
-      "settingsCard": {
-        "path": "/dashboard/settings/chart",
-        "title": "Configurazione Analytics & Grafici",
-        "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
-        "icon": "TrendingUp"
-      }
-    },
-    {
       "id": "places",
-      "label": "Gestione Luoghi",
+      "label": "Luoghi",
       "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
       "icon": "MapPin",
       "requirements": [],
@@ -141,6 +126,40 @@
         "tecnico"
       ],
       "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "ticket_aperti",
+          "title": "Ticket Aperti",
+          "subtitle": "Ticket aperti o in lavorazione",
+          "icon": "Ticket",
+          "valueKey": "ticket_aperti",
+          "aggregation": {
+            "collection": "tickets",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        },
+        {
+          "id": "tmr",
+          "title": "Tempo Medio Risoluzione",
+          "subtitle": "Ore medie per risoluzione ticket",
+          "icon": "Clock",
+          "valueKey": "tmr",
+          "aggregation": {
+            "collection": "tickets",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
       "anonymization": {
         "collectionName": "tickets",
         "linkFieldPath": "clientId",
@@ -230,6 +249,24 @@
         "tecnico"
       ],
       "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "total_products",
+          "title": "Articoli a Catalogo",
+          "subtitle": "Prodotti e servizi a catalogo",
+          "icon": "Package",
+          "valueKey": "total_products",
+          "aggregation": {
+            "collection": "products",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
       "anonymization": {
         "collectionName": "products",
         "linkFieldPath": "id",
@@ -278,6 +315,21 @@
             ]
           }
         }
+      }
+    },
+    {
+      "id": "chart",
+      "name": "Analytics & Grafici BI",
+      "version": "1.0.0",
+      "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
+      "category": "analytics",
+      "icon": "TrendingUp",
+      "menuItem": null,
+      "settingsCard": {
+        "path": "/dashboard/settings/chart",
+        "title": "Configurazione Analytics & Grafici",
+        "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
+        "icon": "TrendingUp"
       }
     },
     {
@@ -440,6 +492,134 @@
             "tags": [
               "filter:date",
               "sort:default"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "activities",
+      "label": "Attività",
+      "description": "Tracciamento attività commerciali e operative",
+      "icon": "ClipboardList",
+      "requirements": [],
+      "path": "/dashboard/activities",
+      "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
+      "settingsCard": {
+        "title": "Configurazione Attività & Task",
+        "description": "Configura tipologie attività (chiamate, email, visite, ferie, corsi sicurezza, ecc.), priorità e regole riassegnazione.",
+        "icon": "ClipboardList",
+        "path": "/dashboard/settings/activities"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "commerciale",
+        "amministrazione",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "activities",
+          "title": "Attività",
+          "subtitle": "Attività Svolte",
+          "icon": "ClipboardList",
+          "aggregation": {
+            "collection": "activities",
+            "type": "count",
+            "dateFields": [
+              "edits.createdAt",
+              "createdAt",
+              "original.createdAt"
+            ],
+            "typeFilterField": "activityTypeId",
+            "loggedByFilterField": "assignedUid"
+          }
+        }
+      ],
+      "anonymization": {
+        "collectionName": "activities",
+        "linkFieldPath": "targetId",
+        "redactFields": [
+          {
+            "fieldPath": "description",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          },
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          },
+          {
+            "fieldPath": "targetName",
+            "replacement": "ANONIMIZZATO"
+          },
+          {
+            "fieldPath": "targetSubtext",
+            "replacement": ""
+          }
+        ]
+      },
+      "schema": {
+        "fields": {
+          "activityNumber": {
+            "type": "string",
+            "description": "Codice progressivo univoco dell'attività",
+            "tags": [
+              "search",
+              "sort"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Oggetto dell'attività",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "targetType": {
+            "type": "string",
+            "description": "Tipologia dell'entità bersaglio (contact, client, user, place, vehicle, contract, ticket)",
+            "tags": [
+              "filter:targetType"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "description": "ID dell'entità bersaglio correlata",
+            "tags": [
+              "filter:targetId",
+              "relation:dynamic"
+            ]
+          },
+          "assignedUid": {
+            "type": "string",
+            "description": "UID dell'operatore responsabile",
+            "tags": [
+              "filter:user",
+              "kpi:user_activities"
+            ]
+          },
+          "executionDate": {
+            "type": "date",
+            "description": "Data di svolgimento dell'attività",
+            "tags": [
+              "filter:date"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato lavorazione attività (da_fare, in_corso, completata, annullata)",
+            "tags": [
+              "filter:status"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priorità attività (bassa, media, alta, urgente)",
+            "tags": [
+              "filter:priority"
             ]
           }
         }

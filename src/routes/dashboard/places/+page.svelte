@@ -126,7 +126,14 @@
     }
   });
 
-  onMount(async () => {
+  $effect(() => {
+    if (authState.initialized && authState.user) {
+      loadPlacesData();
+    }
+  });
+
+  async function loadPlacesData() {
+    loading = true;
     try {
       const [s, list] = await Promise.all([
         PlaceSettingsService.getSettings(),
@@ -140,7 +147,7 @@
     } finally {
       loading = false;
     }
-  });
+  }
 </script>
 
 <svelte:head>

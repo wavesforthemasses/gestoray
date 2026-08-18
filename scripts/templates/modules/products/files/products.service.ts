@@ -13,41 +13,34 @@ import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { generateSearchTerms } from '$lib/search-utils';
 import { VersioningService, computeDiff } from '$lib/services/versioningService';
 import { ProductsVersioningBridge } from './products.versioning.bridge';
-import { generateId } from '$lib/utils/helpers';
-
-function sanitizeFirestorePayload(obj: any): any {
-  if (obj === undefined) return undefined;
-  if (obj === null) return null;
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizeFirestorePayload).filter(v => v !== undefined);
-  }
-  if (typeof obj === 'object' && (obj.constructor === Object || !obj.constructor)) {
-    const res: Record<string, any> = {};
-    for (const [key, val] of Object.entries(obj)) {
-      if (val !== undefined) {
-        const cleaned = sanitizeFirestorePayload(val);
-        if (cleaned !== undefined) {
-          res[key] = cleaned;
-        }
-      }
-    }
-    return res;
-  }
-  return obj;
-}
+import { generateId, cleanUndefined } from '$lib/utils/helpers';
 
 export class ProductsService {
   private static COLLECTION_NAME = 'products';
 
   static async getProducts(): Promise<ProductItem[]> {
-    const q = query(
-      collection(db, this.COLLECTION_NAME),
-      orderBy('createdAt', 'desc')
-    );
-    const snap = await getDocs(q);
-    return snap.docs
+    let snap;
+    try {
+      const q = query(
+        collection(db, this.COLLECTION_NAME),
+        orderBy('createdAt', 'desc')
+      );
+      snap = await getDocs(q);
+    } catch (e) {
+      snap = await getDocs(collection(db, this.COLLECTION_NAME));
+    }
+    if (snap.empty) {
+      snap = await getDocs(collection(db, this.COLLECTION_NAME));
+    }
+    const list = snap.docs
       .map(d => ({ id: d.id, ...d.data() } as ProductItem))
       .filter(p => !(p as any).derived?.deleted);
+    list.sort((a, b) => {
+      const dA = a.createdAt || (a as any).edits?.createdAt || '';
+      const dB = b.createdAt || (b as any).edits?.createdAt || '';
+      return dB.localeCompare(dA);
+    });
+    return list;
   }
 
   static async getProductById(id: string): Promise<ProductItem | null> {
@@ -119,7 +112,7 @@ export class ProductsService {
       updatedAt: new Date().toISOString()
     };
 
-    const payload = sanitizeFirestorePayload(rawPayload);
+    const payload = cleanUndefined(rawPayload);
     const entityLabel = ProductsVersioningBridge.getEntityLabel(payload);
 
     const diff = computeDiff(null, payload, {
@@ -190,7 +183,7 @@ export class ProductsService {
       }
     };
 
-    const payload = sanitizeFirestorePayload(nextEntityData);
+    const payload = cleanUndefined(nextEntityData);
     const entityLabel = ProductsVersioningBridge.getEntityLabel(payload);
 
     const diff = computeDiff(existing, payload, {

@@ -20,32 +20,36 @@
   import ClientContactsTab from './components/ClientContactsTab.svelte';
   import { Card } from '$lib';
   import { menuConfigStore } from '$lib/stores/menu';
+  import { BridgesSettingsService, bridgesConfigStore } from '$lib/services/bridgesSettingsService';
   import { ClientDetailService } from './client-detail.service';
+  import type { ClientOriginal, ClientDerived } from '../schema';
 
   // Dynamic Tabs Injection
-  const injectedTabs = import.meta.glob('../../../routes/dashboard/*/client-tabs/*.svelte', { eager: true });
+  const injectedTabs = import.meta.glob('../../*/client-tabs/*.svelte', { eager: true });
   
   let dynamicTabsFromConfig = $derived($menuConfigStore.flatMap(m => 
     ((m as any).clientTabs || []).map((tab: any) => ({ ...tab, moduleId: m.id }))
   ));
 
   let activeDynamicTabs = $derived(
-    dynamicTabsFromConfig.map(tab => {
-      // The path format for the glob is relative to this file's path
-      // This file is at src/routes/dashboard/clients/[id]/+page.svelte
-      // The glob targets src/routes/dashboard/*/client-tabs/*.svelte
-      // So relative path from here is: ../../../routes/dashboard/${moduleId}/client-tabs/${tab.component}
-      // Actually since it's eager: true, keys are like '../../../routes/dashboard/contracts/client-tabs/ClientQuotesTab.svelte'
-      const path = Object.keys(injectedTabs).find(k => k.includes(`/${tab.moduleId}/client-tabs/${tab.component}`));
-      return {
-        ...tab,
-        componentInstance: path ? (injectedTabs[path] as any).default : null
-      };
-    }).filter(tab => tab.componentInstance)
+    dynamicTabsFromConfig
+      .filter(tab => {
+        const bridgeId = `${tab.moduleId}-clients`;
+        return BridgesSettingsService.isBridgeEnabled(bridgeId, $bridgesConfigStore);
+      })
+      .map(tab => {
+        const path = Object.keys(injectedTabs).find(k => k.includes(`/${tab.moduleId}/client-tabs/${tab.component}`));
+        return {
+          ...tab,
+          componentInstance: path ? (injectedTabs[path] as any).default : null
+        };
+      }).filter(tab => tab.componentInstance)
   );
 
-
   let hasActivitiesModule = $derived($menuConfigStore.some(i => i.id === 'activities'));
+  let isActivitiesBridgeActive = $derived(
+    hasActivitiesModule && BridgesSettingsService.isBridgeEnabled('activities-clients', $bridgesConfigStore)
+  );
   let hasContractsModule = $derived($menuConfigStore.some(i => i.id === 'contracts'));
   let hasTicketsModule = $derived($menuConfigStore.some(i => i.id === 'tickets'));
 
@@ -130,29 +134,20 @@
   let clientShippingProvince = $state('');
   let clientShippingPostalCode = $state('');
   let clientShippingCountry = $state('Italy');
-
-  let clientDerived = $state<any>({});
+  let clientDerived = $state<ClientDerived>({});
 
   // Original profile state for history tracking
-  let originalProfile = $state<any>({});
+  let originalProfile = $state<ClientOriginal>({ nome: '' });
 
-  // Products catalog (for preventivatore)
-  let productsList = $state<any[]>([]);
-
-  // Quotes, contracts & lists
-  let quotesList = $state<any[]>([]);
   let activitiesList = $state<any[]>([]);
   let historyList = $state<any[]>([]);
   let timelineList = $state<any[]>([]);
   let aggregateVersion = $state<number>(0);
-  let contractsList = $state<any[]>([]);
   let usersList = $state<any[]>([]);
 
   // Form: Quick Activity
   let activityNotesText = $state('');
   let appointmentDateTime = $state(getNowDateTimeString());
-
-
 
   function getNowDateTimeString() {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
@@ -165,6 +160,7 @@
   async function loadAllData() {
     loadingData = true;
     try {
+      await BridgesSettingsService.init();
       const payload = await ClientDetailService.fetchClientData(clientId, activeModuleIds);
       if (hasActivitiesModule) {
         try {
@@ -178,19 +174,13 @@
         }
       }
 
-
-
-      
       clientDerived = payload.clientDerived;
       originalProfile = payload.originalProfile;
       clientCreatedAt = payload.clientCreatedAt;
-      productsList = payload.productsList;
       activitiesList = payload.activitiesList;
       historyList = payload.historyList;
       timelineList = payload.timelineList || [];
       aggregateVersion = payload.aggregateVersion || 0;
-      contractsList = payload.contractsList;
-      quotesList = payload.quotesList;
       usersList = payload.usersList;
       clientNotes = payload.clientNotes;
 
@@ -365,19 +355,25 @@
       return;
     }
 
-    let hasNestedData = (clientDerived.contractsCount || 0) > 0 || historyList.length > 0 || activitiesList.length > 0;
+    const hasNestedData = (clientDerived.contractsCount || 0) > 0 || historyList.length > 0 || activitiesList.length > 0;
     
     if (hasNestedData) {
-      const resp = await confirmStore.requireMatch("ATTENZIONE: Questo cliente possiede dati collegati (contratti, incassi, log, attività). Vuoi procedere? Verranno eliminati definitivamente in cascata tutti i suoi dati.", 'ELIMINA');
+      const resp = await confirmStore.requireMatch("ATTENZIONE: Questo cliente possiede dati collegati (contratti, incassi, log, attività). Vuoi archiviare/eliminare questa anagrafica?", 'ELIMINA');
+      if (!resp) return;
+    } else {
+      const resp = await confirmStore.prompt("Sei sicuro di voler eliminare questa anagrafica cliente?");
       if (!resp) return;
     }
 
     submittingProfile = true;
 
     try {
-      await ClientDetailService.deleteClientCascade(clientId);
+      const res = await ClientDetailService.deleteClient(clientId, authState.user?.uid);
+      if (!res.success) {
+        throw new Error(res.error || 'Errore durante l\'eliminazione dell\'anagrafica.');
+      }
 
-      toast.success('Anagrafica ed eventuali sotto-risorse collegate eliminate con successo!');
+      toast.success('Anagrafica cliente eliminata con successo!');
       goto('/dashboard/clients');
     } catch (err: any) {
       toast.error(err.message || 'Errore durante l\'eliminazione dell\'anagrafica.');
@@ -407,9 +403,9 @@
     }
   }
 
-  async function logActivity(notes: string, appointmentDate?: string) {
-    if (!notes.trim()) {
-      toast.error('Inserisci una nota descrittiva dell\'attività.');
+  async function logActivity(kpiId: string, appointmentDate?: string) {
+    if (!kpiId) {
+      toast.error('Tipo di attività non valido.');
       return;
     }
     if (!authState.user) return;
@@ -417,9 +413,12 @@
     submittingActivity = true;
 
     try {
+      const kpiObj = (activitiesConfig || []).find((k: any) => k.id === kpiId);
+      const activityType = kpiObj?.name || kpiId;
       const activityId = await ClientDetailService.logActivity(
         clientId, 
-        notes, 
+        activityType,
+        activityType, 
         appointmentDate, 
         { uid: authState.user.uid, email: authState.user.email! }
       );
@@ -526,7 +525,7 @@
           <UserCheck size={16} /> Contatti & Referenti
         </button>
 
-        {#if hasActivitiesModule && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
+        {#if isActivitiesBridgeActive && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
           <button 
             class="tab-nav-btn" 
             class:active={activeTab === 'activities'} 
@@ -619,7 +618,7 @@
           clientName={clientName}
           userId={authState.user?.uid || ''}
         />
-      {:else if activeTab === 'activities' && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
+      {:else if activeTab === 'activities' && isActivitiesBridgeActive && (can('activities:read', activeRoleState.role) || can('activities:list', activeRoleState.role))}
         <ClientActivitiesTab
           activitiesList={activitiesList}
           clientNotes={clientNotes}

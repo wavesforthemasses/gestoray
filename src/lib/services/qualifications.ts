@@ -11,14 +11,25 @@ export interface Qualification {
 
 export const QualificationsService = {
   async getAll(): Promise<Qualification[]> {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('percentage', 'asc'));
-    const snap = await getDocs(q);
+    let snap;
+    try {
+      const q = query(collection(db, COLLECTION_NAME), orderBy('percentage', 'asc'));
+      snap = await getDocs(q);
+    } catch (e) {
+      snap = await getDocs(collection(db, COLLECTION_NAME));
+    }
+    if (snap.empty) {
+      const directSnap = await getDocs(collection(db, COLLECTION_NAME));
+      if (!directSnap.empty) {
+        snap = directSnap;
+      }
+    }
     const list: Qualification[] = [];
     snap.forEach((docSnap: any) => {
       list.push({ id: docSnap.id, ...(docSnap.data() as Omit<Qualification, 'id'>) });
     });
 
-    // Auto-insert defaults if empty
+    // Auto-insert defaults only if collection is truly empty
     if (list.length === 0) {
       const defaults = [
         { name: 'Junior', percentage: 10, supervisorPercentage: 0 },

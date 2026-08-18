@@ -44,15 +44,35 @@ export const CONTACTS_ANONYMIZATION_SPEC: FieldAnonymizationSpec[] = [
 ];
 
 export const CLIENTS_ANONYMIZATION_SPEC: FieldAnonymizationSpec[] = [
-  { fieldPath: 'original.ragioneSociale', strategy: 'REDACT', customReplacement: 'Cliente Anonimizzato' },
-  { fieldPath: 'original.nome', strategy: 'INITIALS' },
-  { fieldPath: 'original.cognome', strategy: 'INITIALS' },
+  { fieldPath: 'original.nome', strategy: 'REDACT', customReplacement: 'Cliente Anonimizzato' },
+  { fieldPath: 'original.cognome', strategy: 'CLEAR' },
   { fieldPath: 'original.email', strategy: 'HASH_EMAIL' },
-  { fieldPath: 'original.pec', strategy: 'CLEAR' },
-  { fieldPath: 'original.telefono', strategy: 'CLEAR' },
-  { fieldPath: 'original.cellulare', strategy: 'CLEAR' },
+  { fieldPath: 'original.emailContatto', strategy: 'HASH_EMAIL' },
+  { fieldPath: 'original.emailAlternativa', strategy: 'CLEAR' },
+  { fieldPath: 'original.phone', strategy: 'CLEAR' },
+  { fieldPath: 'original.mainPhone', strategy: 'CLEAR' },
+  { fieldPath: 'original.telReferente', strategy: 'CLEAR' },
+  { fieldPath: 'original.referenteTecnico', strategy: 'CLEAR' },
   { fieldPath: 'original.partitaIva', strategy: 'CLEAR' },
   { fieldPath: 'original.codiceFiscale', strategy: 'CLEAR' },
+  { fieldPath: 'original.fiscalId', strategy: 'CLEAR' },
+  { fieldPath: 'original.pec', strategy: 'CLEAR' },
+  { fieldPath: 'original.iban', strategy: 'CLEAR' },
+  { fieldPath: 'original.address', strategy: 'CLEAR' },
+  { fieldPath: 'original.city', strategy: 'CLEAR' },
+  { fieldPath: 'original.province', strategy: 'CLEAR' },
+  { fieldPath: 'original.postalCode', strategy: 'CLEAR' },
+  { fieldPath: 'original.billingAddress', strategy: 'CLEAR' },
+  { fieldPath: 'original.billingCity', strategy: 'CLEAR' },
+  { fieldPath: 'original.billingProvince', strategy: 'CLEAR' },
+  { fieldPath: 'original.billingPostalCode', strategy: 'CLEAR' },
+  { fieldPath: 'original.shippingAddress', strategy: 'CLEAR' },
+  { fieldPath: 'original.shippingCity', strategy: 'CLEAR' },
+  { fieldPath: 'original.shippingProvince', strategy: 'CLEAR' },
+  { fieldPath: 'original.shippingPostalCode', strategy: 'CLEAR' },
+  { fieldPath: 'original.internalAdminNotes', strategy: 'CLEAR' },
+  { fieldPath: 'original.quoteAutoNotes', strategy: 'CLEAR' },
+  { fieldPath: 'original.notes', strategy: 'CLEAR' }
 ];
 
 export class AnonymizationService {

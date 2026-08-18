@@ -13,6 +13,7 @@
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
+  import { BridgesSettingsService, bridgesConfigStore } from '$lib/services/bridgesSettingsService';
   import { ClientsService } from '../../clients/clients.service';
   import { 
     MapPin, 
@@ -46,7 +47,7 @@
 
   // Dynamic Bridge Tabs Discovery
   const globTabs = import.meta.glob('../places-tabs/*.svelte', { eager: true });
-  const activeModuleIds = $derived(new Set($menuConfigStore.map(m => m.id)));
+  let activeModuleIds = $derived(new Set($menuConfigStore.map(m => m.id)));
 
   // Available Bridge Sub-Tabs registered by installed modules
   const installedBridgeTabs = $derived(
@@ -67,12 +68,15 @@
       .filter(t => {
         if (!t.sourceModule) return true;
         if ($menuConfigStore.length === 0) return true;
-        return activeModuleIds.has(t.sourceModule);
+        if (!activeModuleIds.has(t.sourceModule)) return false;
+        const bridgeId = `${t.sourceModule}-places`;
+        return BridgesSettingsService.isBridgeEnabled(bridgeId, $bridgesConfigStore);
       })
   );
 
   onMount(async () => {
     try {
+      await BridgesSettingsService.init();
       const [s, item] = await Promise.all([
         PlaceSettingsService.getSettings(),
         PlacesService.getPlaceById(placeId)
@@ -85,7 +89,7 @@
           try {
             const cd = await ClientsService.getClient(item.clientId);
             if (cd) {
-              item.clientName = `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.ragioneSociale || cd.denominazione || cd.name || '';
+              item.clientName = `${cd.original?.nome || ''} ${cd.original?.cognome || ''}`.trim() || '';
             }
           } catch (err) {
             console.warn('Errore recupero cliente per luogo:', err);

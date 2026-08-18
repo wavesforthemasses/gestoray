@@ -19,7 +19,7 @@ export interface TodoItem {
 }
 
 // Dynamically import all todo.bridges from modules
-const dynamicBridges = import.meta.glob('../../../routes/dashboard/*/todo.bridge.ts', { eager: true });
+const dynamicBridges = import.meta.glob('../*/todo.bridge.ts', { eager: true });
 
 export class TodoService {
   static async fetchTodoData(activeRole: string | null, myUid: string | undefined): Promise<TodoDataPayload> {

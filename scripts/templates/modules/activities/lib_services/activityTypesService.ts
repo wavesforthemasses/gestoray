@@ -1,18 +1,7 @@
 import { db, doc, getDoc, setDoc } from '$lib/firebase';
+import type { ActivityType, ActivityTargetType } from '../files/schema';
 
-export interface ActivityType {
-  id: string;
-  name: string;
-  code: string;
-  icon: string;
-  isSchedulable: boolean;
-  defaultPriority: 'bassa' | 'media' | 'alta' | 'urgente';
-  defaultStatus: 'da_fare' | 'in_corso' | 'completata';
-  rolesInsert: string[];
-  canAssignToOthers: string[];
-  order?: number;
-  isSystem?: boolean;
-}
+export type { ActivityType, ActivityTargetType };
 
 export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
   {
@@ -20,24 +9,28 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     name: 'Telefonata',
     code: 'TEL',
     icon: 'Phone',
+    category: 'crm',
+    allowedTargets: ['contact', 'client', 'user'],
     isSchedulable: true,
     defaultPriority: 'media',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
     order: 1,
     isSystem: true
   },
   {
     id: 'visit',
-    name: 'Visita / Incontro',
+    name: 'Incontro / Appuntamento',
     code: 'VIS',
     icon: 'Users',
+    category: 'crm',
+    allowedTargets: ['contact', 'client'],
     isSchedulable: true,
     defaultPriority: 'media',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
     order: 2,
     isSystem: true
   },
@@ -46,25 +39,89 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     name: 'Email / Comunicazione',
     code: 'EML',
     icon: 'Mail',
+    category: 'crm',
+    allowedTargets: ['contact', 'client'],
     isSchedulable: false,
     defaultPriority: 'bassa',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
     order: 3,
     isSystem: true
   },
   {
-    id: 'quote',
-    name: 'Invio Preventivo',
+    id: 'quote_followup',
+    name: 'Follow-up Preventivo / Offerta',
     code: 'PREV',
     icon: 'FileText',
+    category: 'crm',
+    allowedTargets: ['contract', 'client', 'contact'],
     isSchedulable: true,
     defaultPriority: 'alta',
-    defaultStatus: 'completata',
+    defaultStatus: 'da_fare',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
     order: 4,
+    isSystem: true
+  },
+  {
+    id: 'internal_meeting',
+    name: 'Riunione Interna / One-to-One',
+    code: 'RIU',
+    icon: 'Briefcase',
+    category: 'internal',
+    allowedTargets: ['user'],
+    isSchedulable: true,
+    defaultPriority: 'media',
+    defaultStatus: 'da_fare',
+    rolesInsert: ['superadmin', 'amministrazione', 'direzione', 'commerciale', 'tecnico'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 5,
+    isSystem: true
+  },
+  {
+    id: 'training_medical',
+    name: 'Corso Formazione / Visita Medica',
+    code: 'FOR',
+    icon: 'ShieldCheck',
+    category: 'internal',
+    allowedTargets: ['user'],
+    isSchedulable: true,
+    defaultPriority: 'alta',
+    defaultStatus: 'da_fare',
+    rolesInsert: ['superadmin', 'amministrazione', 'direzione'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 6,
+    isSystem: true
+  },
+  {
+    id: 'survey_inspection',
+    name: 'Sopralluogo / Ispezione Impianto',
+    code: 'SOP',
+    icon: 'MapPin',
+    category: 'operational',
+    allowedTargets: ['place', 'client'],
+    isSchedulable: true,
+    defaultPriority: 'alta',
+    defaultStatus: 'da_fare',
+    rolesInsert: ['superadmin', 'amministrazione', 'tecnico'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 7,
+    isSystem: true
+  },
+  {
+    id: 'vehicle_service',
+    name: 'Revisione / Tagliando Mezzo',
+    code: 'MEZ',
+    icon: 'Truck',
+    category: 'maintenance',
+    allowedTargets: ['vehicle'],
+    isSchedulable: true,
+    defaultPriority: 'alta',
+    defaultStatus: 'da_fare',
+    rolesInsert: ['superadmin', 'amministrazione', 'tecnico', 'operaio'],
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 8,
     isSystem: true
   },
   {
@@ -72,12 +129,14 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     name: 'Intervento / Assistenza',
     code: 'AST',
     icon: 'Wrench',
+    category: 'operational',
+    allowedTargets: ['place', 'client', 'ticket'],
     isSchedulable: true,
     defaultPriority: 'alta',
     defaultStatus: 'in_corso',
     rolesInsert: ['superadmin', 'amministrazione', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
-    order: 5,
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 9,
     isSystem: true
   },
   {
@@ -85,12 +144,14 @@ export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
     name: 'Nota / Promemoria',
     code: 'NOTE',
     icon: 'MessageSquare',
+    category: 'crm',
+    allowedTargets: ['contact', 'client', 'user', 'place', 'vehicle', 'contract', 'ticket'],
     isSchedulable: true,
     defaultPriority: 'bassa',
     defaultStatus: 'completata',
     rolesInsert: ['superadmin', 'amministrazione', 'commerciale', 'tecnico', 'operaio'],
-    canAssignToOthers: ['superadmin', 'amministrazione'],
-    order: 6,
+    canAssignToOthers: ['superadmin', 'amministrazione', 'direzione'],
+    order: 10,
     isSystem: true
   }
 ];
@@ -101,10 +162,16 @@ export class ActivityTypesService {
   static async getActivityTypes(): Promise<ActivityType[]> {
     try {
       const snap = await getDoc(doc(db, 'settings', 'activity_types'));
-      if (snap.exists()) {
+      if (snap && typeof snap.exists === 'function' && snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data?.types) && data.types.length > 0) {
-          return data.types as ActivityType[];
+          // Normalize existing types to ensure allowedTargets is defined
+          return data.types.map((t: any) => ({
+            ...t,
+            allowedTargets: Array.isArray(t.allowedTargets) && t.allowedTargets.length > 0
+              ? t.allowedTargets
+              : ['contact', 'client', 'user', 'place', 'vehicle', 'contract', 'ticket']
+          })) as ActivityType[];
         }
       }
     } catch (e) {

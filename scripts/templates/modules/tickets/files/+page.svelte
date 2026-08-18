@@ -84,15 +84,27 @@
     }
   });
 
-  onMount(async () => {
-    tickets = await TicketsService.getTickets(isExecutiveRole, currentUserUid, currentEmail);
-    if (isExecutiveRole) {
-      viewScope = 'tutti';
-    } else {
-      viewScope = 'miei';
+  $effect(() => {
+    if (authState.initialized && authState.user) {
+      loadTicketsData();
     }
-    loading = false;
   });
+
+  async function loadTicketsData() {
+    loading = true;
+    try {
+      tickets = await TicketsService.getTickets(isExecutiveRole, currentUserUid, currentEmail);
+      if (isExecutiveRole) {
+        viewScope = 'tutti';
+      } else {
+        viewScope = 'miei';
+      }
+    } catch (e) {
+      console.error('Errore caricamento ticket:', e);
+    } finally {
+      loading = false;
+    }
+  }
 
   const myTicketsCount = $derived(
     tickets.filter(t => isMyTicket(t)).length

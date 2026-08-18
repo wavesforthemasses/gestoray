@@ -85,7 +85,7 @@
           try {
             const cd = await ClientsService.getClient(item.clientId);
             if (cd) {
-              item.clientName = `${cd.nome || ''} ${cd.cognome || ''}`.trim() || cd.ragioneSociale || cd.denominazione || cd.name || '';
+              item.clientName = `${cd.original?.nome || ''} ${cd.original?.cognome || ''}`.trim() || '';
             }
           } catch (err) {
             console.warn('Errore recupero cliente per luogo:', err);

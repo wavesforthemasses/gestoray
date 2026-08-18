@@ -92,7 +92,14 @@
     isGraphExpanded = !isGraphExpanded;
   }
 
-  onMount(async () => {
+  $effect(() => {
+    if (authState.initialized && authState.user) {
+      loadContractsData();
+    }
+  });
+
+  async function loadContractsData() {
+    loading = true;
     try {
       const [s, list] = await Promise.all([
         ContractSettingsService.getSettings(),
@@ -101,11 +108,11 @@
       settings = s;
       contracts = list;
     } catch (e) {
-      console.error('Errore caricamento:', e);
+      console.error('Errore caricamento contratti:', e);
     } finally {
       loading = false;
     }
-  });
+  }
 
   let filteredContracts = $derived(
     contracts.filter(c => {

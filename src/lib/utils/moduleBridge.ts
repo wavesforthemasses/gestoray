@@ -4,8 +4,12 @@
  */
 export async function loadOptionalService(serviceName: string): Promise<any> {
   try {
-    const servicePath = `$lib/services/${serviceName}`;
-    // Using a variable specifier with @vite-ignore prevents Vite from statically resolving absent files at bundle time
+    if (serviceName === 'activityTypesService') {
+      const servicePath = '/src/lib/services/activityTypesService.ts';
+      // @ts-ignore
+      return await import(/* @vite-ignore */ servicePath);
+    }
+    const servicePath = `/src/lib/services/${serviceName}.ts`;
     // @ts-ignore
     const mod = await import(/* @vite-ignore */ servicePath);
     return mod;

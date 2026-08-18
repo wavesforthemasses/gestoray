@@ -19,9 +19,23 @@ export class DeadlinesService {
   private static COLLECTION_NAME = 'deadlines';
 
   static async getDeadlines(): Promise<DeadlineEntry[]> {
-    const q = query(collection(db, this.COLLECTION_NAME), orderBy('expiryDate', 'asc'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as DeadlineEntry));
+    let snap;
+    try {
+      const q = query(collection(db, this.COLLECTION_NAME), orderBy('expiryDate', 'asc'));
+      snap = await getDocs(q);
+    } catch (e) {
+      snap = await getDocs(collection(db, this.COLLECTION_NAME));
+    }
+    if (snap.empty) {
+      snap = await getDocs(collection(db, this.COLLECTION_NAME));
+    }
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as DeadlineEntry));
+    list.sort((a, b) => {
+      const dA = a.expiryDate || '';
+      const dB = b.expiryDate || '';
+      return dA.localeCompare(dB);
+    });
+    return list;
   }
 
   static async getDeadlineById(id: string): Promise<DeadlineEntry | null> {

@@ -2,21 +2,25 @@ import { db, doc, getDoc, collection, getDocs, query, where, limit, startAfter, 
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { VersioningService, computeDiff } from '$lib/services/versioningService';
 import { ClientsVersioningBridge } from './clients.versioning.bridge';
+import type { ClientItem, ClientListItem, ClientOriginal } from './schema';
 
 export interface ClientsFetchResult {
-  list: any[];
+  list: ClientListItem[];
   lastDoc: QueryDocumentSnapshot | null;
   hasMore: boolean;
 }
 
 export class ClientsService {
-  static async getClient(id: string): Promise<any | null> {
+  /**
+   * Recupera un singolo cliente tramite ID (escludendo i record contrassegnati come soft-deleted).
+   */
+  static async getClient(id: string): Promise<ClientItem | null> {
     try {
       const snap = await getDoc(doc(db, 'clients', id));
       if (snap.exists()) {
         const data = snap.data();
         if (data.derived?.deleted) return null;
-        return { id: snap.id, ...data };
+        return { id: snap.id, ...data } as ClientItem;
       }
     } catch (e) {
       console.warn('Errore recupero cliente:', e);
@@ -24,24 +28,33 @@ export class ClientsService {
     return null;
   }
 
-  static async getClients(): Promise<any[]> {
+  /**
+   * Recupera l'elenco completo dei clienti attivi.
+   */
+  static async getClients(): Promise<ClientItem[]> {
     try {
       const snap = await getDocs(collection(db, 'clients'));
       return snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter((c: any) => !c.derived?.deleted);
+        .map(d => ({ id: d.id, ...d.data() } as ClientItem))
+        .filter((c: ClientItem) => !c.derived?.deleted);
     } catch (e) {
       console.warn('Errore recupero lista clienti:', e);
       return [];
     }
   }
 
-  static async deleteClient(id: string, uid?: string): Promise<{ success: boolean, error?: string }> {
+  /**
+   * Esegue il soft-delete canonico di un'anagrafica cliente garantendo la conservazione dell'audit trail.
+   */
+  static async deleteClient(id: string, uid?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, 'clients', id), {
         'derived.deleted': true,
-        'edits.deletedAt': new Date().toISOString(),
-        'edits.deletedBy': uid || 'system'
+        'edits.deletedAt': now,
+        'edits.deletedBy': uid || 'system',
+        'edits.modifiedAt': now,
+        'edits.modifiedBy': uid || 'system'
       });
       return { success: true };
     } catch (e: any) {
@@ -49,14 +62,29 @@ export class ClientsService {
     }
   }
 
-  static async createClient(clientData: any, historyData: any, computedFiscalId: string, isCommerciale: boolean, uid: string, tenantId: string = 'default'): Promise<{ success: boolean, error?: string, id?: string }> {
+  /**
+   * Crea una nuova anagrafica cliente con validazione duplicati e dual-write transazionale di versioning.
+   */
+  static async createClient(
+    clientData: Partial<ClientItem> & { id: string },
+    historyData: any,
+    computedFiscalId: string,
+    isCommerciale: boolean,
+    uid: string,
+    tenantId: string = 'default',
+    userEmail?: string
+  ): Promise<{ success: boolean; error?: string; id?: string }> {
     try {
       if (computedFiscalId) {
         let checkQuery;
         if (!isCommerciale) {
           checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId));
         } else {
-          checkQuery = query(collection(db, 'clients'), where('original.fiscalId', '==', computedFiscalId), where('original.createdBy', '==', uid));
+          checkQuery = query(
+            collection(db, 'clients'),
+            where('original.fiscalId', '==', computedFiscalId),
+            where('original.createdBy', '==', uid)
+          );
         }
         const snap = await getDocs(checkQuery);
         const activeMatches = snap.docs.filter(d => !d.data()?.derived?.deleted);
@@ -88,6 +116,7 @@ export class ClientsService {
           keysChanged: diff.keysChanged,
           mutations: diff.mutations,
           performedBy: uid,
+          performedByName: userEmail,
           actorType: 'USER',
           reason: 'Creazione anagrafica cliente'
         },
@@ -102,13 +131,16 @@ export class ClientsService {
           console.warn('Scrittura legacy history secondaria non riuscita:', e);
         }
       }
-      
+
       return { success: true, id: clientId };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
   }
 
+  /**
+   * Recupera i clienti paginati e filtrati per la vista elenco.
+   */
   static async fetchClients(
     searchVal: string | undefined,
     activeRole: string,
@@ -128,57 +160,77 @@ export class ClientsService {
       q = query(q, where('original.createdBy', '==', myUid));
     }
 
-    // Default order by createdAt desc
-    q = query(q, orderBy('edits.createdAt', 'desc'));
-
-    if (lastVisible) {
-      q = query(q, startAfter(lastVisible));
+    // Ordinamento predefinito per data di creazione decrescente
+    let snap;
+    try {
+      let orderedQ = query(q, orderBy('edits.createdAt', 'desc'));
+      if (lastVisible) {
+        orderedQ = query(orderedQ, startAfter(lastVisible));
+      }
+      orderedQ = query(orderedQ, limit(itemsPerPage));
+      snap = await getDocs(orderedQ);
+    } catch (err) {
+      console.warn('Fallback query senza orderBy per compatibilità documenti:', err);
+      let fallbackQ = q;
+      if (lastVisible) {
+        fallbackQ = query(fallbackQ, startAfter(lastVisible));
+      }
+      fallbackQ = query(fallbackQ, limit(itemsPerPage));
+      snap = await getDocs(fallbackQ);
     }
 
-    q = query(q, limit(itemsPerPage));
+    // Se la query ordinata non ha trovato nulla ma non c'è ricerca attiva, esegui fallback per includere record legacy senza edits.createdAt
+    if (snap.empty && !searchVal && !lastVisible) {
+      const fallbackSnap = await getDocs(query(q, limit(itemsPerPage)));
+      if (!fallbackSnap.empty) {
+        snap = fallbackSnap;
+      }
+    }
 
-    const snap = await getDocs(q);
-    const clList: any[] = [];
+    const clList: ClientListItem[] = [];
 
-    snap.forEach((doc: any) => {
-      const data = doc.data();
+    snap.forEach((docSnap: any) => {
+      const data = docSnap.data();
       if (data.derived?.deleted) return;
-      const orig = data.original || {};
+      const orig: ClientOriginal = data.original || {};
 
       clList.push({
-        id: doc.id,
-        nome: orig.nome || orig.ragioneSociale || '',
+        id: docSnap.id,
+        nome: orig.nome || '',
         cognome: orig.cognome || '',
         email: orig.email || orig.emailContatto || '',
         phone: orig.phone || orig.mainPhone || '',
-        status: orig.status || 'prospect',
-        clientCode: orig.clientCode || orig.codiceCliente || '',
-        clientGroup: orig.clientGroup || orig.gruppoCliente || '',
-        certificationStatus: orig.certificationStatus || orig.statoCertificazione || '',
+        status: (orig.status as string) || 'prospect',
+        clientCode: orig.clientCode || '',
+        clientGroup: orig.clientGroup || '',
+        certificationStatus: orig.certificationStatus || '',
         isItalianSubject: orig.isItalianSubject !== undefined ? orig.isItalianSubject : true,
         partitaIva: orig.partitaIva || '',
         codiceFiscale: orig.codiceFiscale || '',
-        sdiCode: orig.sdiCode || orig.codiceSdi || '',
+        sdiCode: orig.sdiCode || '',
         pec: orig.pec || '',
-        paymentTerms: orig.paymentTerms || orig.condizioniPagamento || '',
+        paymentTerms: orig.paymentTerms || '',
         iban: orig.iban || '',
         referenteTecnico: orig.referenteTecnico || '',
         telReferente: orig.telReferente || '',
         emailContatto: orig.emailContatto || orig.email || '',
         emailAlternativa: orig.emailAlternativa || '',
-        crifCheck: orig.crifCheck || orig.controlloCrif || '',
-        riskClass: orig.riskClass || orig.classeRischio || '',
-        maxCredit: orig.maxCredit || orig.fidoMassimo || 0,
-        residualCredit: orig.residualCredit || orig.fidoResiduo || 0,
-        paymentStatus: orig.paymentStatus || orig.statoPagamenti || 'Regolare',
-        internalAdminNotes: orig.internalAdminNotes || orig.noteAmministrative || '',
-        quoteAutoNotes: orig.quoteAutoNotes || orig.notePreventivo || '',
+        crifCheck: orig.crifCheck || '',
+        riskClass: orig.riskClass || '',
+        maxCredit: orig.maxCredit || 0,
+        residualCredit: orig.residualCredit || 0,
+        paymentStatus: orig.paymentStatus || 'Regolare',
+        internalAdminNotes: orig.internalAdminNotes || '',
+        quoteAutoNotes: orig.quoteAutoNotes || '',
         notes: orig.notes || [],
         createdBy: orig.createdBy || '',
-        createdAt: data.edits?.createdAt || orig.createdAt || new Date().toISOString(),
+        createdAt: data.edits?.createdAt || data.original?.createdAt || new Date().toISOString(),
         derived: data.derived || {}
       });
     });
+
+    // Se usata query di fallback, ordina in memoria
+    clList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const hasMore = snap.docs.length === itemsPerPage;
     const newLastDoc = snap.docs.length > 0 ? (snap.docs[snap.docs.length - 1] as unknown as QueryDocumentSnapshot) : null;

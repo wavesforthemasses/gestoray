@@ -15,21 +15,7 @@ import type { ProjectItem } from './schema';
 import { ProjectSettingsService } from './projectSettingsService';
 import { generateSearchTerms } from '$lib/search-utils';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
-
-function cleanUndefined(obj: any): any {
-  if (obj === null || typeof obj !== 'object') return obj;
-  const cleaned: Record<string, any> = Array.isArray(obj) ? [] : {};
-  for (const [key, val] of Object.entries(obj)) {
-    if (val === undefined) {
-      cleaned[key] = null;
-    } else if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
-      cleaned[key] = cleanUndefined(val);
-    } else {
-      cleaned[key] = val;
-    }
-  }
-  return cleaned;
-}
+import { cleanUndefined } from '$lib/utils/helpers';
 
 export class ProjectsService {
   private static COLLECTION = 'projects';

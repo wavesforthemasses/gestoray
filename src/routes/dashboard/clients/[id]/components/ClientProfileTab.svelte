@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button } from '$lib';
   import { User, Clock, Trash2, Building2, CreditCard, Truck, UserCheck, Copy, Save, ShieldAlert, Notebook } from '@lucide/svelte';
   import VersionTimeline from '$lib/components/versioning/VersionTimeline.svelte';
   import { CLIENT_FIELD_LABELS } from '../../clients.versioning.bridge';
   import type { SystemLedgerEntry } from '$lib/services/versioningService';
+  import { ClientSettingsService, DEFAULT_CLIENT_FIELDS_SETTINGS, type ClientFieldsSettings } from '$lib/services/clientSettingsService';
 
   interface Props {
     clientName: string;
@@ -101,7 +103,7 @@
 
     clientCode = $bindable(''),
     clientGroup = $bindable('Standard'),
-    certificationStatus = $bindable('Certificato'),
+    certificationStatus = $bindable('in_attesa'),
     isItalianSubject = $bindable(true),
 
     clientSdiCode = $bindable(),
@@ -115,7 +117,7 @@
     emailContatto = $bindable(''),
     emailAlternativa = $bindable(''),
 
-    crifCheck = $bindable('ESEGUITO & VALIDO'),
+    crifCheck = $bindable('NON ESEGUITO'),
     riskClass = $bindable('AAA (Basso Rischio)'),
     maxCredit = $bindable(0),
     residualCredit = $bindable(0),
@@ -158,7 +160,16 @@
     onreloaded
   }: Props = $props();
 
+  let fieldSettings = $state<ClientFieldsSettings>(DEFAULT_CLIENT_FIELDS_SETTINGS);
   let activeSubTab = $state<'general' | 'banking' | 'credit' | 'addresses' | 'admin'>('general');
+
+  onMount(async () => {
+    try {
+      fieldSettings = await ClientSettingsService.getSettings();
+    } catch (e) {
+      console.warn('Errore caricamento impostazioni campi clienti:', e);
+    }
+  });
 
   function copyBillingFromSede() {
     clientBillingAddress = clientAddress;
@@ -188,32 +199,38 @@
       <Building2 size={16} /> Dettagli Anagrafici
     </button>
 
-    <button 
-      type="button" 
-      class="subnav-btn" 
-      class:active={activeSubTab === 'banking'} 
-      onclick={() => (activeSubTab = 'banking')}
-    >
-      <CreditCard size={16} /> Fatturazione
-    </button>
+    {#if fieldSettings.fatturazioneSede.visible}
+      <button 
+        type="button" 
+        class="subnav-btn" 
+        class:active={activeSubTab === 'banking'} 
+        onclick={() => (activeSubTab = 'banking')}
+      >
+        <CreditCard size={16} /> Fatturazione
+      </button>
+    {/if}
 
-    <button 
-      type="button" 
-      class="subnav-btn" 
-      class:active={activeSubTab === 'credit'} 
-      onclick={() => (activeSubTab = 'credit')}
-    >
-      <ShieldAlert size={16} /> Affidabilità & Fido
-    </button>
+    {#if fieldSettings.affidabilitaCredito.visible}
+      <button 
+        type="button" 
+        class="subnav-btn" 
+        class:active={activeSubTab === 'credit'} 
+        onclick={() => (activeSubTab = 'credit')}
+      >
+        <ShieldAlert size={16} /> Affidabilità & Fido
+      </button>
+    {/if}
 
-    <button 
-      type="button" 
-      class="subnav-btn" 
-      class:active={activeSubTab === 'addresses'} 
-      onclick={() => (activeSubTab = 'addresses')}
-    >
-      <Truck size={16} /> Indirizzi Spedizione
-    </button>
+    {#if fieldSettings.sediConfig.sedi.spedizione.visible}
+      <button 
+        type="button" 
+        class="subnav-btn" 
+        class:active={activeSubTab === 'addresses'} 
+        onclick={() => (activeSubTab = 'addresses')}
+      >
+        <Truck size={16} /> Indirizzi Spedizione
+      </button>
+    {/if}
 
     <button 
       type="button" 
@@ -274,21 +291,33 @@
             </FormField>
           </div>
 
-          <div class="form-grid-columns">
-            <FormField id="c-cognome" label="Referente Tecnico / Referente Operativo">
-              <input type="text" id="c-cognome" bind:value={referenteTecnico} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. Mario Rossi" />
-            </FormField>
+          {#if fieldSettings.contattiReferenti.visible}
+            <div class="form-grid-columns">
+              <FormField id="c-cognome" label="Referente Tecnico / Referente Operativo">
+                <input type="text" id="c-cognome" bind:value={referenteTecnico} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. Mario Rossi" />
+              </FormField>
 
-            <FormField id="c-tel-ref" label="Tel. Referente">
-              <input type="text" id="c-tel-ref" bind:value={telReferente} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. +39 333 1234567" />
-            </FormField>
-          </div>
+              <FormField id="c-tel-ref" label="Tel. Referente">
+                <input type="text" id="c-tel-ref" bind:value={telReferente} disabled={submittingProfile || activeRole === 'direzione'} placeholder="es. +39 333 1234567" />
+              </FormField>
+            </div>
 
-          <div class="form-grid-columns">
-            <FormField id="c-email-alt" label="Email Alternativa">
-              <input type="email" id="c-email-alt" bind:value={emailAlternativa} placeholder="es. l.bianchi@cgen.it" disabled={submittingProfile || activeRole === 'direzione'} />
-            </FormField>
+            <div class="form-grid-columns">
+              <FormField id="c-email-alt" label="Email Alternativa">
+                <input type="email" id="c-email-alt" bind:value={emailAlternativa} placeholder="es. l.bianchi@cgen.it" disabled={submittingProfile || activeRole === 'direzione'} />
+              </FormField>
 
+              <FormField id="c-status" label="Stato Funnel Clienti">
+                <select id="c-status" bind:value={clientStatus} disabled={submittingProfile || activeRole === 'direzione'}>
+                  <option value="prospect">Prospect (Lead Potenziali)</option>
+                  <option value="contacted">Contattato (Primo Contatto)</option>
+                  <option value="proposal_sent">Proposta Inviata (Preventivo Creato)</option>
+                  <option value="customer">Cliente (Contratto Approvato)</option>
+                  <option value="churned">Perso / Inattivo</option>
+                </select>
+              </FormField>
+            </div>
+          {:else}
             <FormField id="c-status" label="Stato Funnel Clienti">
               <select id="c-status" bind:value={clientStatus} disabled={submittingProfile || activeRole === 'direzione'}>
                 <option value="prospect">Prospect (Lead Potenziali)</option>
@@ -298,7 +327,7 @@
                 <option value="churned">Perso / Inattivo</option>
               </select>
             </FormField>
-          </div>
+          {/if}
 
           <h4 class="section-divider-title">Identificativi Fiscali</h4>
           <div class="form-grid-columns">
@@ -457,14 +486,16 @@
             </select>
           </FormField>
 
-          <h4 class="section-divider-title">Note ERP & Preventivo</h4>
-          <FormField id="c-admin-notes" label="Note Amministrative (Interne)">
-            <textarea id="c-admin-notes" bind:value={internalAdminNotes} rows="2" placeholder="es. Fatturazione mensile posticipata al ricevimento delibera cantiere" disabled={submittingProfile || activeRole === 'direzione'}></textarea>
-          </FormField>
+          {#if fieldSettings.noteErp.visible}
+            <h4 class="section-divider-title">Note ERP & Preventivo</h4>
+            <FormField id="c-admin-notes" label="Note Amministrative (Interne)">
+              <textarea id="c-admin-notes" bind:value={internalAdminNotes} rows="2" placeholder="es. Fatturazione mensile posticipata al ricevimento delibera cantiere" disabled={submittingProfile || activeRole === 'direzione'}></textarea>
+            </FormField>
 
-          <FormField id="c-quote-notes" label="Note Automatiche per Preventivo">
-            <textarea id="c-quote-notes" bind:value={quoteAutoNotes} rows="2" placeholder="es. Quotazione al netto di IVA. Validità 30 giorni. Consegna franco..." disabled={submittingProfile || activeRole === 'direzione'}></textarea>
-          </FormField>
+            <FormField id="c-quote-notes" label="Note Automatiche per Preventivo">
+              <textarea id="c-quote-notes" bind:value={quoteAutoNotes} rows="2" placeholder="es. Quotazione al netto di IVA. Validità 30 giorni. Consegna franco..." disabled={submittingProfile || activeRole === 'direzione'}></textarea>
+            </FormField>
+          {/if}
         </div>
       </Card>
     {/if}

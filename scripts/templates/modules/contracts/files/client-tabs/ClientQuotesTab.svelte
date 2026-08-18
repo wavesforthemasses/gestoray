@@ -7,7 +7,6 @@
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { ContractService } from '../ContractService';
   import { UsersService } from '../../users/users.service';
-  import { ClientDetailService } from '../../clients/[id]/client-detail.service';
   import { toast } from '$lib/stores/toast.svelte';
 
   interface Props {
@@ -140,7 +139,7 @@
 
     try {
       const fullName = `${clientData?.nome || ''} ${clientData?.cognome || ''}`.trim();
-      await ClientDetailService.saveQuote(
+      await ContractService.saveQuote(
         clientId, 
         fullName, 
         quoteItems, 
@@ -167,7 +166,7 @@
     try {
       const coSeller = secondVendorUid ? { uid: secondVendorUid, share: secondVendorShare } : undefined;
 
-      await ClientDetailService.approveQuoteToContract(
+      await ContractService.approveQuoteToContract(
         quoteId, 
         clientId, 
         coSeller, 

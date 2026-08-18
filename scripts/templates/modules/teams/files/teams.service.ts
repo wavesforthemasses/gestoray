@@ -7,9 +7,23 @@ export class TeamsService {
 
   static async getTeams(): Promise<TeamItem[]> {
     try {
-      const q = query(collection(db, this.COLLECTION_NAME), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TeamItem));
+      let snap;
+      try {
+        const q = query(collection(db, this.COLLECTION_NAME), orderBy('createdAt', 'desc'));
+        snap = await getDocs(q);
+      } catch (e) {
+        snap = await getDocs(collection(db, this.COLLECTION_NAME));
+      }
+      if (snap.empty) {
+        snap = await getDocs(collection(db, this.COLLECTION_NAME));
+      }
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TeamItem));
+      list.sort((a, b) => {
+        const dA = a.createdAt || '';
+        const dB = b.createdAt || '';
+        return dB.localeCompare(dA);
+      });
+      return list;
     } catch (e) {
       console.error('Errore durante la lettura delle squadre:', e);
       throw e;

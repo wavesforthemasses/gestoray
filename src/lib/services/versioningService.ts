@@ -13,7 +13,7 @@ import {
   Timestamp
 } from '$lib/firebase';
 import type { Firestore, DocumentReference } from 'firebase/firestore';
-import { generateId } from '$lib/utils/helpers';
+import { generateId, cleanUndefined } from '$lib/utils/helpers';
 
 /** Struttura serializzabile per rappresentare campi assenti in Firestore */
 export interface LedgerMissingValue {
@@ -399,8 +399,14 @@ export class VersioningService {
       const dateInt = getDateInt();
 
       // Invariante I2 & I4: Scrittura atomica combinata di Entity + Ledger
+      const nowIso = new Date().toISOString();
       const entityEdits = {
+        ...(nextEntityData?.edits || {}),
         ...(currentEntityData?.edits || {}),
+        createdAt: currentEntityData?.edits?.createdAt || nextEntityData?.edits?.createdAt || nowIso,
+        createdBy: currentEntityData?.edits?.createdBy || nextEntityData?.edits?.createdBy || ledgerPayload.performedBy,
+        modifiedAt: nowIso,
+        modifiedBy: ledgerPayload.performedBy,
         aggregateVersion: nextVersion,
         lastLedgerId: ledgerId,
         updatedAt: serverTimestamp()
@@ -411,13 +417,15 @@ export class VersioningService {
         edits: entityEdits
       };
 
+      const sanitizedEntityPayload = cleanUndefined(entityPayloadToSave);
+
       if (exists) {
-        tx.set(entityRef, entityPayloadToSave, { merge: true });
+        tx.set(entityRef, sanitizedEntityPayload, { merge: true });
       } else {
-        tx.set(entityRef, entityPayloadToSave);
+        tx.set(entityRef, sanitizedEntityPayload);
       }
 
-      const ledgerRecord: SystemLedgerEntry = {
+      const ledgerRecord: SystemLedgerEntry = cleanUndefined({
         id: ledgerId,
         tenantId: ledgerPayload.tenantId,
         module: ledgerPayload.module,
@@ -431,15 +439,15 @@ export class VersioningService {
         mutations: ledgerPayload.mutations,
         performedBy: ledgerPayload.performedBy,
         actorType: ledgerPayload.actorType || 'USER',
-        performedByName: ledgerPayload.performedByName,
         timestamp: serverTimestamp(),
         dateInt,
+        ...(ledgerPayload.performedByName ? { performedByName: ledgerPayload.performedByName } : {}),
         ...(ledgerPayload.reason ? { reason: ledgerPayload.reason } : {}),
         ...(ledgerPayload.sourceDoc ? { sourceDoc: ledgerPayload.sourceDoc } : {}),
         ...(ledgerPayload.causedBy ? { causedBy: ledgerPayload.causedBy } : {}),
         ...(ledgerPayload.operationId ? { operationId: ledgerPayload.operationId } : {}),
         ...(ledgerPayload.correlationId ? { correlationId: ledgerPayload.correlationId } : {})
-      };
+      });
 
       tx.set(ledgerRef, ledgerRecord);
 
@@ -586,7 +594,7 @@ export class VersioningService {
       tx.set(markerRef, markerPayload);
 
       // Scrittura Record REVERSAL nel system_ledger
-      const reversalLedgerEntry: SystemLedgerEntry = {
+      const reversalLedgerEntry: SystemLedgerEntry = cleanUndefined({
         id: revLedgerId,
         tenantId,
         module: targetEntry.module,
@@ -600,15 +608,15 @@ export class VersioningService {
         mutations: reversalMutations,
         performedBy,
         actorType: 'USER',
-        performedByName,
         timestamp: serverTimestamp(),
         dateInt: getDateInt(),
         isReversal: true,
         reversalOfEntryId: entryId,
         reversalMode: overallMode,
+        ...(performedByName ? { performedByName } : {}),
         ...(isForced ? { isForced: true, forcedBy: performedBy } : {}),
         reason: reason || `Rollback operazione ${entryId} (versione ${targetEntry.aggregateVersion})`
-      };
+      });
 
       tx.set(revLedgerRef, reversalLedgerEntry);
 

@@ -17,7 +17,7 @@
         },
         {
             "id": "places",
-            "label": "Gestione Luoghi",
+            "label": "Luoghi",
             "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
             "icon": "MapPin",
             "requirements": [],

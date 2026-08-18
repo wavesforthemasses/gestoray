@@ -9,8 +9,9 @@
 
   import ClientsTable from './components/ClientsTable.svelte';
   import { ClientsService } from './clients.service';
+  import type { ClientListItem } from './schema';
   import { pageTitle } from '$lib/stores/page';
-  pageTitle.set('Gestione Clienti CRM');
+  pageTitle.set('Clienti');
 
   let activeChartTab = $state<string>('nuove_anagrafiche');
   let granularity = $state<'settimanale' | 'mensile' | 'annuale'>('mensile');
@@ -18,12 +19,10 @@
   let loadingChart = $state(false);
   let computedChartPoints = $state<number[]>([]);
 
-  $effect(() => {
-    chartPeriods = DashboardService.generateChartPeriods(endDateString, granularity);
-  });
+  let chartPeriods = $derived(DashboardService.generateChartPeriods(endDateString, granularity));
 
   async function loadChartData() {
-    if (!isGraphExpanded || chartPeriods.length === 0) return;
+    if (!isGraphExpanded || chartPeriods.length === 0 || !authState.user) return;
     loadingChart = true;
     try {
       const roleToUse = activeRoleState.role || '';
@@ -39,7 +38,7 @@
   }
 
   $effect(() => {
-    if (isGraphExpanded || granularity || endDateString || activeChartTab) {
+    if (authState.initialized && authState.user && (isGraphExpanded || granularity || endDateString || activeChartTab)) {
       loadChartData();
     }
   });
@@ -72,21 +71,13 @@
       }));
   });
 
-  onMount(async () => {
+  onMount(() => {
     if (typeof window !== 'undefined') {
       isGraphExpanded = localStorage.getItem('subpage_graph_expanded') === 'true';
     }
-    try {
-      await ChartSettingsService.getSettings();
-      const c = ChartSettingsService.getEntityConfigSync('clients');
-      if (c) clientChartConfig = c;
-    } catch (e) {
-      console.error('Errore caricamento impostazioni grafico clienti:', e);
-    }
-    fetchClients();
   });
 
-  let clientsList = $state<any[]>([]);
+  let clientsList = $state<ClientListItem[]>([]);
   let loadingClients = $state(true);
   let loadingMore = $state(false);
   let hasMore = $state(true);
@@ -96,7 +87,6 @@
 
   let isGraphExpanded = $state(false);
   let selectedPointIdx = $state<number | null>(null);
-  let chartPeriods = $state<Array<{ start: Date; end: Date; label: string }>>([]);
 
   let selectedPeriod = $derived(
     selectedPointIdx !== null && selectedPointIdx >= 0 && selectedPointIdx < chartPeriods.length
@@ -104,17 +94,43 @@
       : null
   );
 
+  // Reattivamente carica impostazioni grafico e lista clienti solo quando l'autenticazione è confermata
+  $effect(() => {
+    const isAuthReady = authState.initialized && !!authState.user;
+    const currentRole = activeRoleState.role;
+    const currentUid = authState.user?.uid;
+    const term = searchQuery;
+
+    if (isAuthReady) {
+      if (!clientChartConfig) {
+        ChartSettingsService.getSettings().then(() => {
+          const c = ChartSettingsService.getEntityConfigSync('clients');
+          if (c) clientChartConfig = c;
+        }).catch(e => console.warn('Caricamento impostazioni grafico clienti:', e));
+      }
+
+      fetchClients(term || undefined, true);
+    }
+  });
+
   async function fetchClients(searchVal?: string, reset = true) {
+    if (!authState.user) return;
+
     if (reset) {
       loadingClients = true;
       lastVisible = null;
-      clientsList = [];
     } else {
       loadingMore = true;
     }
     
     try {
-      const result = await ClientsService.fetchClients(searchVal, activeRoleState.role || '', authState.user?.uid, 50, lastVisible);
+      const result = await ClientsService.fetchClients(
+        searchVal, 
+        activeRoleState.role || '', 
+        authState.user?.uid, 
+        50, 
+        reset ? null : lastVisible
+      );
       
       if (reset) {
         clientsList = result.list;
@@ -145,9 +161,9 @@
       <div>
         <h2 class="title-header">
           <Users size={28} color="var(--color-primary-600)" />
-          Gestione Clienti CRM
+          Clienti
         </h2>
-        <p class="subtitle">Database dei contatti e dei lead commerciali.</p>
+        <p class="subtitle">Anagrafica e gestione contatti commerciali.</p>
       </div>
 
       {#if activeRoleState.role !== 'direzione'}
@@ -190,10 +206,6 @@
     {:else}
       <ClientsTable 
         {clientsList}
-        bind:searchQuery
-        onSearch={(q: string) => fetchClients(q, true)}
-        onReset={() => { searchQuery = ''; fetchClients(undefined, true); }}
-        onAddClick={() => goto('/dashboard/clients/add')}
         {selectedPeriod}
       />
 

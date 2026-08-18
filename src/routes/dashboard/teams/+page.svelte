@@ -40,7 +40,14 @@
     ).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
   });
 
-  onMount(async () => {
+  $effect(() => {
+    if (authState.initialized && authState.user) {
+      loadTeamsData();
+    }
+  });
+
+  async function loadTeamsData() {
+    loading = true;
     try {
       const [s, list, uList] = await Promise.all([
         TeamSettingsService.getSettings(),
@@ -52,11 +59,11 @@
       allUsers = uList;
       pageTitle.set(labels.plural);
     } catch (e) {
-      console.error(e);
+      console.error('Errore caricamento squadre:', e);
     } finally {
       loading = false;
     }
-  });
+  }
 
   // DRAG AND DROP
   function handleDragStart(e: DragEvent, userId: string, userName: string) {

@@ -29,7 +29,14 @@
     TrendingUp
   } from '@lucide/svelte';
 
+  import { onMount } from 'svelte';
+  import { ALL_BRIDGES_SPECS, BridgesSettingsService, bridgesConfigStore } from '$lib/services/bridgesSettingsService';
+
   pageTitle.set('Gestione Moduli & Plugin Bridges');
+
+  onMount(async () => {
+    await BridgesSettingsService.init();
+  });
 
   // Master list of all available pure modules & their metadata
   const ALL_MODULE_SPECS = [
@@ -70,16 +77,23 @@
     },
     {
       id: 'interventi',
-      label: 'Interventi Tecnici & Riconcilliazione',
-      description: 'Rapportini tecnici, interventi sul campo e consuntivazione.',
+      label: 'Interventi & Rapportini',
+      description: 'Rapportini tecnici, interventi sul campo, tracciamento ore lavorate e materiale.',
       icon: Wrench,
       requirements: []
     },
     {
       id: 'tickets',
-      label: 'Assistenza & Ticket',
-      description: 'Gestione ticket di supporto cliente e contratti SLA.',
+      label: 'Ticket & Assistenza',
+      description: 'Helpdesk, ticketing system, presa in carico e gestione SLA di supporto.',
       icon: Ticket,
+      requirements: []
+    },
+    {
+      id: 'privacy',
+      label: 'Privacy & GDPR',
+      description: 'Gestione consensi GDPR, informative, consensi marketing e registro trattamenti.',
+      icon: Shield,
       requirements: []
     },
     {
@@ -133,52 +147,6 @@
     }
   ];
 
-  // Master list of plugin bridges between modules
-  const ALL_BRIDGES_SPECS = [
-    {
-      id: 'contracts-projects',
-      title: 'Bridge Contratti ➔ Progetti',
-      sourceModule: 'contracts',
-      targetModule: 'projects',
-      description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Progetto e deriva l\'importo contrattato.'
-    },
-    {
-      id: 'contracts-places',
-      title: 'Bridge Contratti ➔ Luoghi',
-      sourceModule: 'contracts',
-      targetModule: 'places',
-      description: 'Mostra la tab Preventivi & Contratti collegati all\'interno della scheda Luogo/Cantiere.'
-    },
-    {
-      id: 'payments-contracts',
-      title: 'Bridge Incassi ➔ Contratti',
-      sourceModule: 'payments',
-      targetModule: 'contracts',
-      description: 'Consente l\'allocazione degli incassi riscossi sulle rate dei contratti.'
-    },
-    {
-      id: 'interventi-projects',
-      title: 'Bridge Interventi ➔ Progetti',
-      sourceModule: 'interventi',
-      targetModule: 'projects',
-      description: 'Collega i rapportini di lavoro al progetto e aggiorna la percentuale di avanzamento lavori.'
-    },
-    {
-      id: 'interventi-places',
-      title: 'Bridge Interventi ➔ Luoghi',
-      sourceModule: 'interventi',
-      targetModule: 'places',
-      description: 'Collega i rapportini di lavoro e gli interventi sul campo alla destinazione geografica/luogo.'
-    },
-    {
-      id: 'payments-projects',
-      title: 'Bridge Incassi ➔ Progetti',
-      sourceModule: 'payments',
-      targetModule: 'projects',
-      description: 'Mostra la situazione incassi e fatturato direttamente nel riepilogo finanziario del progetto.'
-    }
-  ];
-
   let activeModuleIds = $derived(new Set($menuConfigStore.map(m => m.id)));
 
   function isInstalled(id: string): boolean {
@@ -198,6 +166,18 @@
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
     toast.success(`Comando per ${label} copiato negli appunti!`);
+  }
+
+  async function toggleBridge(bridgeId: string) {
+    const isCurrentlyEnabled = BridgesSettingsService.isBridgeEnabled(bridgeId, $bridgesConfigStore);
+    const nextState = !isCurrentlyEnabled;
+    try {
+      await BridgesSettingsService.setBridgeStatus(bridgeId, nextState);
+      toast.success(`Bridge ${bridgeId} ${nextState ? 'attivato' : 'disattivato'} con successo!`);
+    } catch (e) {
+      console.error('Errore aggiornamento bridge:', e);
+      toast.error('Impossibile aggiornare lo stato del bridge.');
+    }
   }
 </script>
 
@@ -352,24 +332,40 @@
 
     <div class="bridges-grid">
       {#each ALL_BRIDGES_SPECS as bridge}
-        {@const sourceActive = bridge.sourceModule === 'todo' || isInstalled(bridge.sourceModule)}
-        {@const targetActive = bridge.targetModule === 'core' || isInstalled(bridge.targetModule)}
-        {@const bridgeActive = sourceActive && targetActive}
+        {@const isCoreModule = (m: string) => ['clients', 'contacts', 'users', 'core', 'todo'].includes(m)}
+        {@const sourceActive = isCoreModule(bridge.sourceModule) || isInstalled(bridge.sourceModule)}
+        {@const targetActive = isCoreModule(bridge.targetModule) || isInstalled(bridge.targetModule)}
+        {@const modulesInstalled = sourceActive && targetActive}
+        {@const isBridgeEnabled = BridgesSettingsService.isBridgeEnabled(bridge.id, $bridgesConfigStore)}
+        {@const bridgeActive = modulesInstalled && isBridgeEnabled}
 
-        <div class="bridge-card" class:active={bridgeActive}>
+        <div class="bridge-card" class:active={bridgeActive} class:disabled={!modulesInstalled || !isBridgeEnabled}>
           <div class="bc-header">
             <div class="bc-flow">
               <span class="mod-chip" class:active={sourceActive}>{bridge.sourceModule}</span>
               <ArrowRight size={14} class="flow-arrow" />
               <span class="mod-chip" class:active={targetActive}>{bridge.targetModule}</span>
             </div>
-            <span class="badge" class:installed={bridgeActive} class:available={!bridgeActive}>
-              {#if bridgeActive}
-                <Unlock size={12} /> Bridge Attivo
-              {:else}
-                <Lock size={12} /> Inattivo
-              {/if}
-            </span>
+
+            {#if modulesInstalled}
+              <button 
+                type="button" 
+                class="bridge-toggle-switch"
+                class:active={isBridgeEnabled}
+                onclick={() => toggleBridge(bridge.id)}
+                title={isBridgeEnabled ? 'Disattiva questo bridge' : 'Attiva questo bridge'}
+              >
+                {#if isBridgeEnabled}
+                  <Unlock size={12} /> Attivo
+                {:else}
+                  <Lock size={12} /> Disattivato
+                {/if}
+              </button>
+            {:else}
+              <span class="badge available">
+                <Lock size={12} /> Moduli mancanti
+              </span>
+            {/if}
           </div>
 
           <h4>{bridge.title}</h4>
@@ -618,10 +614,15 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    transition: all 0.15s ease;
   }
   .bridge-card.active {
     border-color: var(--color-emerald-300, #a7f3d0);
     background: #f0fdf4;
+  }
+  .bridge-card.disabled {
+    opacity: 0.75;
+    background: var(--color-neutral-50, #f8fafc);
   }
   .bc-header {
     display: flex;
@@ -646,6 +647,31 @@
     background: var(--color-primary-100);
     color: var(--color-primary-700);
   }
+
+  .bridge-toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--color-neutral-300, #cbd5e1);
+    background: var(--color-white, #ffffff);
+    color: var(--color-neutral-600, #475569);
+    transition: all 0.15s ease;
+  }
+  .bridge-toggle-switch.active {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+  }
+  .bridge-toggle-switch:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
   .bridge-card h4 {
     margin: 4px 0 0 0;
     font-size: 14px;

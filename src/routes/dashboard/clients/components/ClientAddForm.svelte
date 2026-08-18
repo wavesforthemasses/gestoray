@@ -130,9 +130,15 @@
       const fullClientName = `${nome.trim()} ${cognome.trim()}`.trim();
       const terms = generateSearchTerms(fullClientName, partitaIva.trim(), codiceFiscale.trim(), emailContatto.trim() || pec.trim());
 
-      const chunkId = await CacheLookupService.updateClientCache(clientId, fullClientName);
+      let chunkId: string | null = null;
+      try {
+        chunkId = await CacheLookupService.updateClientCache(clientId, fullClientName);
+      } catch (e) {
+        // Ignora eccezione cache client-side se non consentita
+      }
 
       const newClient = {
+        id: clientId,
         original: {
           nome: nome.trim(),
           cognome: cognome.trim(),
@@ -233,7 +239,15 @@
 
       const isCommerciale = !['superadmin', 'amministrazione', 'direzione'].includes(activeRoleState.role || '');
       const tenantId = (authState.user as any)?.tenantId || 'default';
-      const res = await ClientsService.createClient(newClient, historyData, computedFiscalId, isCommerciale, authState.user.uid, tenantId);
+      const res = await ClientsService.createClient(
+        newClient,
+        historyData,
+        computedFiscalId,
+        isCommerciale,
+        authState.user.uid,
+        tenantId,
+        authState.user.email || undefined
+      );
 
       if (!res.success) {
         throw new Error(res.error || "Errore sconosciuto durante il salvataggio.");

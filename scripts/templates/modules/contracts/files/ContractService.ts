@@ -293,4 +293,60 @@ export class ContractService {
       }
     });
   }
+
+  /**
+   * Salva una bozza di preventivo (draft contract).
+   */
+  static async saveQuote(
+    clientId: string,
+    clientNameStr: string,
+    quoteItems: any[],
+    quoteTotal: number,
+    authObj: { uid: string; email: string }
+  ): Promise<string> {
+    const contractId = generateId('contract');
+    const now = new Date().toISOString();
+
+    const newQuoteDraft = {
+      original: {
+        clientId,
+        clientName: clientNameStr,
+        vendorUid: authObj.uid,
+        vendorEmail: authObj.email,
+        products: quoteItems,
+        totalPrice: quoteTotal,
+        status: 'draft',
+        hasWarning: quoteItems.some(item => item.priceSold < item.minPrice)
+      },
+      edits: {
+        createdAt: now,
+        createdBy: authObj.uid
+      }
+    };
+
+    await setDoc(doc(db, 'contracts', contractId), newQuoteDraft);
+    return contractId;
+  }
+
+  /**
+   * Converte un preventivo in contratto in attesa di approvazione.
+   */
+  static async approveQuoteToContract(
+    quoteId: string,
+    clientId: string,
+    coSeller: { uid: string; share: number } | undefined,
+    activeRole: string,
+    authObj: { uid: string; email: string }
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, 'contracts', quoteId), {
+      'original.status': 'pending',
+      ...(coSeller ? {
+        'original.secondVendorUid': coSeller.uid,
+        'original.secondVendorShare': coSeller.share
+      } : {}),
+      'edits.modifiedAt': now,
+      'edits.modifiedBy': authObj.uid
+    });
+  }
 }

@@ -9,13 +9,10 @@
     BarChart2, 
     Edit3, 
     Info, 
-    Check,
-    ArrowUpRight,
-    Sliders,
-    Tag
+    Check
   } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project';
-  import { ChartSettingsService, type ChartGlobalSettings, type KPISettingSpec, type EntityChartConfig } from '$lib/services/chartSettingsService';
+  import { ChartSettingsService, type ChartGlobalSettings, type KPISettingSpec } from '$lib/services/chartSettingsService';
 
   let saving = $state(false);
   let loadingSettings = $state(true);
@@ -107,15 +104,6 @@
     const kpi = ent.kpis.find(k => k.id === kpiId);
     if (kpi) {
       kpi.enabled = !kpi.enabled;
-    }
-  }
-
-  function toggleKpiExport(entityId: string, kpiId: string) {
-    const ent = config.entities[entityId];
-    if (!ent) return;
-    const kpi = ent.kpis.find(k => k.id === kpiId);
-    if (kpi) {
-      kpi.exportToDashboard = !kpi.exportToDashboard;
     }
   }
 </script>

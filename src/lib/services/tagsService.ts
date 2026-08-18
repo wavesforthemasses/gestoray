@@ -23,8 +23,16 @@ export class TagsService {
    */
   static async getTags(): Promise<TagItem[]> {
     try {
-      const q = query(collection(db, this.COLLECTION_NAME), orderBy('name', 'asc'), limit(200));
-      const snap = await getDocs(q);
+      let snap;
+      try {
+        const q = query(collection(db, this.COLLECTION_NAME), orderBy('name', 'asc'), limit(200));
+        snap = await getDocs(q);
+      } catch (err) {
+        snap = await getDocs(query(collection(db, this.COLLECTION_NAME), limit(200)));
+      }
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, this.COLLECTION_NAME), limit(200)));
+      }
       return snap.docs.map((d) => ({ id: d.id, ...d.data() } as TagItem));
     } catch (err) {
       console.warn('[TagsService] Impossibile caricare i tag di sistema:', err);

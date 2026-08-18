@@ -14,6 +14,40 @@
     "tecnico"
   ],
   "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "ticket_aperti",
+      "title": "Ticket Aperti",
+      "subtitle": "Ticket aperti o in lavorazione",
+      "icon": "Ticket",
+      "valueKey": "ticket_aperti",
+      "aggregation": {
+        "collection": "tickets",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    },
+    {
+      "id": "tmr",
+      "title": "Tempo Medio Risoluzione",
+      "subtitle": "Ore medie per risoluzione ticket",
+      "icon": "Clock",
+      "valueKey": "tmr",
+      "aggregation": {
+        "collection": "tickets",
+        "type": "count",
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ]
+      }
+    }
+  ],
   "anonymization": {
     "collectionName": "tickets",
     "linkFieldPath": "clientId",
