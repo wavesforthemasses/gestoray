@@ -8,6 +8,7 @@
     DEFAULT_ACTIVITY_TYPES 
   } from '$lib/services/activityTypesService';
   import { BridgesSettingsService, bridgesConfigStore, ALL_BRIDGES_SPECS } from '$lib/services/bridgesSettingsService';
+  import modulesRegistry from '$lib/config/modules.registry.json';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { pageTitle } from '$lib/stores/page';
@@ -93,7 +94,13 @@
     ALL_BRIDGES_SPECS.filter(b => b.sourceModule === 'activities')
   );
 
-  let activeModuleIds = $derived(new Set($menuConfigStore.map(m => m.id)));
+  const installedModuleIds = $derived(
+    new Set([
+      'clients', 'contacts', 'users', 'qualifications', 'todo', 'settings',
+      ...(modulesRegistry.modules || []).map((m: any) => m.id),
+      ...$menuConfigStore.map(m => m.id)
+    ])
+  );
 
   onMount(async () => {
     await Promise.all([loadData(), BridgesSettingsService.init()]);
@@ -301,8 +308,8 @@
 
     <div class="bridges-grid">
       {#each activitiesBridges as bridge}
-        {@const isCore = ['clients', 'contacts', 'users'].includes(bridge.targetModule)}
-        {@const isTargetInstalled = isCore || activeModuleIds.has(bridge.targetModule)}
+        {@const isCore = ['clients', 'contacts', 'users', 'qualifications'].includes(bridge.targetModule)}
+        {@const isTargetInstalled = isCore || installedModuleIds.has(bridge.targetModule)}
         {@const isBridgeOn = BridgesSettingsService.isBridgeEnabled(bridge.id, $bridgesConfigStore)}
 
         <div class="bridge-item-card" class:disabled={!isTargetInstalled} class:active={isBridgeOn && isTargetInstalled}>

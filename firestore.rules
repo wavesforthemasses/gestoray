@@ -183,16 +183,6 @@ service cloud.firestore {
       }
     }
 
-    // --- MODULE: places BEGIN ---
-    // PLACES
-match /places/{placeId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && notWritingDerived();
-  allow update: if isAuth() && notWritingDerived();
-  allow delete: if hasRole('superadmin') || isDirezione();
-}
-    // --- MODULE: places END ---
-
     // --- MODULE: tickets BEGIN ---
     // TICKETS
 match /tickets/{docId} {
@@ -273,6 +263,16 @@ match /products/{docId} {
   allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
 }
     // --- MODULE: products END ---
+
+    // --- MODULE: places BEGIN ---
+    // PLACES
+match /places/{placeId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: places END ---
 
     // --- MODULE: activities BEGIN ---
     // ACTIVITIES

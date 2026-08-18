@@ -163,4 +163,13 @@ export class NavigationService {
     const targetUrl = this.getReturnUrl(searchParams, fallbackUrl);
     await goto(targetUrl);
   }
+
+  /**
+   * Executes a smart cancel / back action for form cancel and back buttons.
+   * Alias for navigateBack.
+   */
+  static async cancelAndReturn(searchParams: URLSearchParams | ContextParams, fallbackUrl: string): Promise<void> {
+    return this.navigateBack(searchParams, fallbackUrl);
+  }
 }
+

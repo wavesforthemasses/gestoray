@@ -39,6 +39,7 @@ export const UsersActivitiesBridge: ModuleActivitiesBridgeSpec<UserData> = {
         id,
         name: fullName,
         targetType: 'user',
+        url: `/dashboard/users/${id}`,
         email: original.email,
         meta: {
           roles: original.roles,

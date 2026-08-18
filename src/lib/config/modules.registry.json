@@ -1,116 +1,6 @@
 {
   "modules": [
     {
-      "id": "places",
-      "label": "Luoghi",
-      "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
-      "icon": "MapPin",
-      "requirements": [],
-      "path": "/dashboard/places",
-      "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
-      "clientTabs": [
-        {
-          "id": "places",
-          "component": "ClientPlacesTab.svelte",
-          "label": "Luoghi"
-        }
-      ],
-      "settingsCard": {
-        "title": "Configurazione Luoghi",
-        "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
-        "icon": "MapPin",
-        "path": "/dashboard/settings/places"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "active_places",
-          "title": "Cantieri Attivi",
-          "subtitle": "Destinazioni operative attive",
-          "icon": "CheckCircle2",
-          "valueKey": "active_places",
-          "aggregation": {
-            "collection": "places",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        },
-        {
-          "id": "new_places",
-          "title": "Nuove Aperture",
-          "subtitle": "Nuovi cantieri e luoghi aperti",
-          "icon": "CalendarPlus",
-          "valueKey": "new_places",
-          "aggregation": {
-            "collection": "places",
-            "type": "count",
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "places",
-        "linkFieldPath": "clientId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "code": {
-            "type": "string",
-            "description": "Codice identificativo del luogo (es. LUG-2026-001)",
-            "tags": [
-              "search",
-              "sort"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "description": "Nome o denominazione del luogo/cantiere",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "clientId": {
-            "type": "string",
-            "description": "ID del cliente proprietario/titolare del luogo",
-            "tags": [
-              "filter:client",
-              "relation:clients"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato del luogo (attivo, inattivo)",
-            "tags": [
-              "filter:status",
-              "kpi:places_attivi"
-            ]
-          }
-        }
-      }
-    },
-    {
       "id": "tickets",
       "label": "Ticket",
       "description": "Gestione ticket e richieste clienti",
@@ -492,6 +382,116 @@
             "tags": [
               "filter:date",
               "sort:default"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "places",
+      "label": "Luoghi",
+      "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
+      "icon": "MapPin",
+      "requirements": [],
+      "path": "/dashboard/places",
+      "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
+      "clientTabs": [
+        {
+          "id": "places",
+          "component": "ClientPlacesTab.svelte",
+          "label": "Luoghi"
+        }
+      ],
+      "settingsCard": {
+        "title": "Configurazione Luoghi",
+        "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
+        "icon": "MapPin",
+        "path": "/dashboard/settings/places"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "active_places",
+          "title": "Cantieri Attivi",
+          "subtitle": "Destinazioni operative attive",
+          "icon": "CheckCircle2",
+          "valueKey": "active_places",
+          "aggregation": {
+            "collection": "places",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        },
+        {
+          "id": "new_places",
+          "title": "Nuove Aperture",
+          "subtitle": "Nuovi cantieri e luoghi aperti",
+          "icon": "CalendarPlus",
+          "valueKey": "new_places",
+          "aggregation": {
+            "collection": "places",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
+      "anonymization": {
+        "collectionName": "places",
+        "linkFieldPath": "clientId",
+        "redactFields": [
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          }
+        ]
+      },
+      "schema": {
+        "fields": {
+          "code": {
+            "type": "string",
+            "description": "Codice identificativo del luogo (es. LUG-2026-001)",
+            "tags": [
+              "search",
+              "sort"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome o denominazione del luogo/cantiere",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "clientId": {
+            "type": "string",
+            "description": "ID del cliente proprietario/titolare del luogo",
+            "tags": [
+              "filter:client",
+              "relation:clients"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato del luogo (attivo, inattivo)",
+            "tags": [
+              "filter:status",
+              "kpi:places_attivi"
             ]
           }
         }

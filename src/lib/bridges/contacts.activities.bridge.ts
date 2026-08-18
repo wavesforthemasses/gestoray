@@ -33,6 +33,7 @@ export const ContactsActivitiesBridge: ModuleActivitiesBridgeSpec<ContactItem> =
         id: contact.id,
         name: contact.fullName || `${contact.firstName} ${contact.lastName}`.trim(),
         targetType: 'contact',
+        url: `/dashboard/contacts/${contact.id}`,
         email: contact.email,
         phone: contact.mobile || contact.phone,
         meta: {

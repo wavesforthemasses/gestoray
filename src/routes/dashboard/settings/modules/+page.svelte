@@ -1,6 +1,7 @@
 <script lang="ts">
   import { pageTitle } from '$lib/stores/page';
   import { menuConfigStore } from '$lib/stores/menu';
+  import modulesRegistry from '$lib/config/modules.registry.json';
   import { toast } from '$lib/stores/toast.svelte';
   import { Card, StatusBadge, Button } from '$lib';
   import { 
@@ -147,7 +148,13 @@
     }
   ];
 
-  let activeModuleIds = $derived(new Set($menuConfigStore.map(m => m.id)));
+  let activeModuleIds = $derived(
+    new Set([
+      'clients', 'contacts', 'users', 'qualifications', 'todo', 'settings',
+      ...(modulesRegistry.modules || []).map((m: any) => m.id),
+      ...$menuConfigStore.map(m => m.id)
+    ])
+  );
 
   function isInstalled(id: string): boolean {
     return activeModuleIds.has(id);

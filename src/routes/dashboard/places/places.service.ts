@@ -67,6 +67,14 @@ export class PlacesService {
     }
   }
 
+  /**
+   * @deprecated Use getPlaceById instead. Maintained as a defensive alias.
+   */
+  static async getPlace(id: string): Promise<PlaceItem | null> {
+    return this.getPlaceById(id);
+  }
+
+
   static async createPlace(
     data: Omit<PlaceItem, 'id' | 'code' | 'createdAt' | 'updatedAt'>,
     authorUid: string

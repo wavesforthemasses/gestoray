@@ -61,6 +61,10 @@
   let selectedTargetId = $state('');
   let selectedTargetSummary = $state<TargetSummary | null>(null);
 
+  let selectedTargetLabel = $derived(
+    availableTargetTypes.find(t => t.targetType === selectedTargetType)?.targetLabel || 'Entità'
+  );
+
   // Filtered Activity Types based on Target Context
   let availableActivityTypes = $derived.by(() => {
     return ActivitiesBridgeOrchestrator.filterActivityTypesForTarget(allActivityTypes, selectedTargetType);
@@ -139,17 +143,31 @@
       vehicles = vList;
       allActivityTypes = typesList;
 
-      // Handle query params for target pre-selection
+      // Handle query params for target pre-selection (prioritize specific targets over generic client)
       const paramTargetType = $page.url.searchParams.get('targetType') as ActivityTargetType;
       const paramTargetId = $page.url.searchParams.get('targetId');
-      const paramClientId = $page.url.searchParams.get('clientId');
       const paramPlaceId = $page.url.searchParams.get('placeId');
+      const paramContractId = $page.url.searchParams.get('contractId');
+      const paramVehicleId = $page.url.searchParams.get('vehicleId');
       const paramContactId = $page.url.searchParams.get('contactId');
+      const paramClientId = $page.url.searchParams.get('clientId');
 
       if (paramTargetType && paramTargetId) {
         selectedTargetType = paramTargetType;
         selectedTargetId = paramTargetId;
         await loadTargetSummary(paramTargetType, paramTargetId);
+      } else if (paramPlaceId) {
+        selectedTargetType = 'place';
+        selectedTargetId = paramPlaceId;
+        await loadTargetSummary('place', paramPlaceId);
+      } else if (paramContractId) {
+        selectedTargetType = 'contract';
+        selectedTargetId = paramContractId;
+        await loadTargetSummary('contract', paramContractId);
+      } else if (paramVehicleId) {
+        selectedTargetType = 'vehicle';
+        selectedTargetId = paramVehicleId;
+        await loadTargetSummary('vehicle', paramVehicleId);
       } else if (paramContactId) {
         selectedTargetType = 'contact';
         selectedTargetId = paramContactId;
@@ -158,10 +176,6 @@
         selectedTargetType = 'client';
         selectedTargetId = paramClientId;
         await loadTargetSummary('client', paramClientId);
-      } else if (paramPlaceId) {
-        selectedTargetType = 'place';
-        selectedTargetId = paramPlaceId;
-        await loadTargetSummary('place', paramPlaceId);
       }
 
       // Initial search for default target type
@@ -312,6 +326,13 @@
       };
 
       for (const d of dates) {
+        const relationalClientId = selectedTargetType === 'client' ? selectedTargetId : (selectedTargetSummary?.meta?.clientId || undefined);
+        const relationalClientName = selectedTargetType === 'client' ? (selectedTargetSummary?.name || '') : (selectedTargetSummary?.meta?.clientName || undefined);
+        const relationalPlaceId = selectedTargetType === 'place' ? selectedTargetId : undefined;
+        const relationalPlaceName = selectedTargetType === 'place' ? (selectedTargetSummary?.name || '') : undefined;
+        const relationalContactId = selectedTargetType === 'contact' ? selectedTargetId : undefined;
+        const relationalContactName = selectedTargetType === 'contact' ? (selectedTargetSummary?.name || '') : undefined;
+
         const actId = await ActivitiesService.createActivity({
           activityNumber: dates.length > 1 ? `${activityNumber.trim()}-${d.replace(/-/g, '')}` : activityNumber.trim(),
           title: finalTitle,
@@ -322,6 +343,12 @@
           targetId: selectedTargetId || undefined,
           targetName: selectedTargetSummary?.name || undefined,
           targetSubtext: selectedTargetSummary?.email || selectedTargetSummary?.phone || selectedTargetSummary?.address || undefined,
+          clientId: relationalClientId,
+          clientName: relationalClientName,
+          placeId: relationalPlaceId,
+          placeName: relationalPlaceName,
+          contactId: relationalContactId,
+          contactName: relationalContactName,
           assignedUid,
           assignedName: assignedUser ? assignedUser.name : 'Operatore',
           assignedEntities,
@@ -477,6 +504,12 @@
                   <span class="target-type-badge">{selectedTargetSummary.targetType}</span>
                 </div>
                 <div class="summary-details">
+                  {#if selectedTargetSummary.meta?.clientName}
+                    <div class="summary-detail-row">
+                      <Building2 size={14} class="detail-icon" />
+                      <span><strong>Cliente:</strong> {selectedTargetSummary.meta.clientName}</span>
+                    </div>
+                  {/if}
                   {#if selectedTargetSummary.phone}
                     <div class="summary-detail-row">
                       <Phone size={14} class="detail-icon" />

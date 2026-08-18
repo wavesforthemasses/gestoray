@@ -1,6 +1,7 @@
 import type { ModuleActivitiesBridgeSpec, TargetSearchResult, TargetSummary } from '$lib/types/moduleActivitiesBridge';
 import { PlacesService } from './places.service';
 import type { PlaceItem } from './schema';
+import { formatAddress } from '$lib/utils/formatters';
 
 export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
   moduleId: 'places',
@@ -17,18 +18,19 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
         filtered = places.filter(p => {
           const name = (p.name || '').toLowerCase();
           const client = (p.clientName || '').toLowerCase();
-          const address = (p.address || '').toLowerCase();
+          const formattedAddr = formatAddress(p.address).toLowerCase();
           const city = (p.city || '').toLowerCase();
-          return name.includes(queryTerm) || client.includes(queryTerm) || address.includes(queryTerm) || city.includes(queryTerm);
+          return name.includes(queryTerm) || client.includes(queryTerm) || formattedAddr.includes(queryTerm) || city.includes(queryTerm);
         });
       }
       return filtered.slice(0, 30).map(p => {
-        const subtext = [p.clientName, p.city || p.address].filter(Boolean).join(' • ');
+        const formattedAddr = formatAddress(p.address);
+        const subtext = [p.clientName, p.city || formattedAddr].filter(Boolean).join(' • ');
         return {
           id: p.id,
           label: p.name,
           subtext,
-          address: p.address,
+          address: formattedAddr,
           raw: p
         };
       });
@@ -40,13 +42,14 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
 
   async getTargetSummary(id: string, tenantId?: string): Promise<TargetSummary | null> {
     try {
-      const place = await PlacesService.getPlace(id);
+      const place = await PlacesService.getPlaceById(id);
       if (!place) return null;
       return {
         id: place.id,
         name: place.name,
         targetType: 'place',
-        address: place.address,
+        url: `/dashboard/places/${place.id}`,
+        address: formatAddress(place.address),
         meta: {
           clientId: place.clientId,
           clientName: place.clientName,
@@ -59,3 +62,4 @@ export const PlacesActivitiesBridge: ModuleActivitiesBridgeSpec<PlaceItem> = {
     }
   }
 };
+

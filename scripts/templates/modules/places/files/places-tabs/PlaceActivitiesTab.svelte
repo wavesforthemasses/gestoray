@@ -192,8 +192,8 @@
 
           <div class="activity-card-footer">
             <span class="type-tag">{act.activityTypeName || act.category || 'Attività'}</span>
-            <a href="/dashboard/activities/{act.id}/edit" class="btn-detail-link">
-              <span>Modifica / Dettagli</span>
+            <a href="/dashboard/activities/{act.id}?placeId={placeId}&returnUrl={encodeURIComponent($page.url.pathname)}" class="btn-detail-link">
+              <span>Dettagli Scheda</span>
               <ArrowRight size={14} />
             </a>
           </div>

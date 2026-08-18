@@ -24,6 +24,7 @@ export interface TargetSummary {
   id: string;
   name: string;
   targetType: ActivityTargetType;
+  url?: string;
   email?: string;
   phone?: string;
   address?: string;

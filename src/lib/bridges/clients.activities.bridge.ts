@@ -51,6 +51,7 @@ export const ClientsActivitiesBridge: ModuleActivitiesBridgeSpec<ClientItem> = {
         id: client.id,
         name,
         targetType: 'client',
+        url: `/dashboard/clients/${client.id}`,
         email: client.original?.email || client.email,
         phone: client.original?.phone || client.phone,
         address: client.original?.address || client.address,

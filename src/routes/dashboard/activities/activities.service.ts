@@ -25,6 +25,7 @@ export interface ActivityFilterOptions {
   priority?: string;
   targetType?: string;
   targetId?: string;
+  tenantId?: string;
 }
 
 export class ActivitiesService {
@@ -37,6 +38,9 @@ export class ActivitiesService {
     try {
       const constraints: any[] = [];
 
+      if (filters?.tenantId) {
+        constraints.push(where('tenantId', '==', filters.tenantId));
+      }
       if (filters?.status && filters.status !== 'tutti') {
         constraints.push(where('status', '==', filters.status));
       }
@@ -88,6 +92,93 @@ export class ActivitiesService {
       console.warn('[ActivitiesService] Errore getActivities:', e);
       return [];
     }
+  }
+
+  /**
+   * Recupera le attività correlate per lo stesso bersaglio o per lo stesso cliente,
+   * isolate per tenant, escludendo l'attività corrente e calcolando le attività dello stesso giorno in memoria.
+   */
+  static async getRelatedActivities(params: {
+    currentActivityId: string;
+    targetId?: string;
+    targetType?: string;
+    clientId?: string;
+    executionDate?: string;
+    tenantId?: string;
+    limitCount?: number;
+  }): Promise<{
+    sameTarget: ActivityItem[];
+    sameClient: ActivityItem[];
+    sameDayOnTarget: ActivityItem[];
+  }> {
+    const limit = params.limitCount || 6;
+    const sameTarget: ActivityItem[] = [];
+    const sameClient: ActivityItem[] = [];
+    const sameDayOnTarget: ActivityItem[] = [];
+
+    try {
+      // 1. Query per stesso Target (Luogo, Contratto, etc.)
+      if (params.targetId) {
+        const constraints: any[] = [where('targetId', '==', params.targetId)];
+        if (params.tenantId) {
+          constraints.push(where('tenantId', '==', params.tenantId));
+        }
+        const q = query(collection(db, this.COLLECTION_NAME), ...constraints);
+        const snap = await getDocs(q);
+        const docs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as ActivityItem))
+          .filter(a => a.id !== params.currentActivityId && !a.derived?.deleted);
+
+        // Ordina per data esecuzione/creazione più recente
+        docs.sort((a, b) => {
+          const dateA = a.executionDate || a.dueDate || a.createdAt || '';
+          const dateB = b.executionDate || b.dueDate || b.createdAt || '';
+          return dateB.localeCompare(dateA);
+        });
+
+        // Identifica attività dello stesso giorno in memoria
+        if (params.executionDate) {
+          const targetDay = params.executionDate.slice(0, 10);
+          for (const item of docs) {
+            const itemDay = (item.executionDate || item.dueDate || '').slice(0, 10);
+            if (itemDay && itemDay === targetDay) {
+              sameDayOnTarget.push(item);
+            }
+          }
+        }
+
+        sameTarget.push(...docs.slice(0, limit));
+      }
+
+      // 2. Query per stesso Cliente (se target non è già client e clientId è presente)
+      if (params.clientId && params.targetType !== 'client') {
+        const constraints: any[] = [where('clientId', '==', params.clientId)];
+        if (params.tenantId) {
+          constraints.push(where('tenantId', '==', params.tenantId));
+        }
+        const q = query(collection(db, this.COLLECTION_NAME), ...constraints);
+        const snap = await getDocs(q);
+        const docs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as ActivityItem))
+          .filter(a => a.id !== params.currentActivityId && !a.derived?.deleted && a.targetId !== params.targetId);
+
+        docs.sort((a, b) => {
+          const dateA = a.executionDate || a.dueDate || a.createdAt || '';
+          const dateB = b.executionDate || b.dueDate || b.createdAt || '';
+          return dateB.localeCompare(dateA);
+        });
+
+        sameClient.push(...docs.slice(0, limit));
+      }
+    } catch (e) {
+      console.warn('[ActivitiesService] Errore getRelatedActivities:', e);
+    }
+
+    return {
+      sameTarget,
+      sameClient,
+      sameDayOnTarget
+    };
   }
 
   static async getActivityById(id: string): Promise<ActivityItem | null> {

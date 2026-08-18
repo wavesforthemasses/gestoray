@@ -37,44 +37,30 @@ export class ActivitiesBridgeOrchestrator {
    */
   static async loadBridgeForTarget(
     targetType: ActivityTargetType, 
-    activeModuleIds: string[] = []
+    activeModuleIds?: string[]
   ): Promise<ModuleActivitiesBridgeSpec | null> {
     try {
-      if (targetType === 'contact') {
-        const bridgePath = '/src/lib/bridges/contacts.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.ContactsActivitiesBridge || null;
+      // 1. Core bridges in $lib/bridges/
+      const coreBridgeGlob: Record<string, () => Promise<any>> = import.meta.glob('/src/lib/bridges/*.activities.bridge.ts');
+      for (const [p, loader] of Object.entries(coreBridgeGlob)) {
+        if (p.includes(`${targetType}s.activities.bridge.ts`)) {
+          const mod = await loader();
+          const bridge = Object.values(mod).find((exp: any) => exp && exp.targetType === targetType);
+          if (bridge) return bridge as ModuleActivitiesBridgeSpec;
+        }
       }
-      if (targetType === 'client') {
-        const bridgePath = '/src/lib/bridges/clients.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.ClientsActivitiesBridge || null;
-      }
-      if (targetType === 'user') {
-        const bridgePath = '/src/lib/bridges/users.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.UsersActivitiesBridge || null;
-      }
-      if (targetType === 'place' && (activeModuleIds.includes('places') || activeModuleIds.length === 0)) {
-        const bridgePath = '/src/routes/dashboard/places/places.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.PlacesActivitiesBridge || null;
-      }
-      if (targetType === 'vehicle' && (activeModuleIds.includes('vehicles') || activeModuleIds.length === 0)) {
-        const bridgePath = '/src/routes/dashboard/vehicles/vehicles.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.VehiclesActivitiesBridge || null;
-      }
-      if (targetType === 'contract' && (activeModuleIds.includes('contracts') || activeModuleIds.length === 0)) {
-        const bridgePath = '/src/routes/dashboard/contracts/contracts.activities.bridge.ts';
-        // @ts-ignore
-        const mod = await import(/* @vite-ignore */ bridgePath);
-        return mod.ContractsActivitiesBridge || null;
+
+      // 2. Module bridges in ../*/*.activities.bridge.ts
+      const moduleBridgeGlob: Record<string, () => Promise<any>> = import.meta.glob('../*/*.activities.bridge.ts');
+      for (const [p, loader] of Object.entries(moduleBridgeGlob)) {
+        const parts = p.split('/');
+        const modName = parts[1]; // e.g. 'places'
+        if (activeModuleIds && !activeModuleIds.includes(modName)) {
+          continue;
+        }
+        const mod = await loader();
+        const bridge = Object.values(mod).find((exp: any) => exp && exp.targetType === targetType);
+        if (bridge) return bridge as ModuleActivitiesBridgeSpec;
       }
     } catch (e) {
       console.warn(`[ActivitiesBridgeOrchestrator] Impossibile caricare il bridge per '${targetType}':`, e);
@@ -89,7 +75,7 @@ export class ActivitiesBridgeOrchestrator {
     targetType: ActivityTargetType,
     searchVal: string,
     tenantId?: string,
-    activeModuleIds: string[] = []
+    activeModuleIds?: string[]
   ): Promise<TargetSearchResult[]> {
     const bridge = await this.loadBridgeForTarget(targetType, activeModuleIds);
     if (!bridge) return [];
@@ -104,7 +90,7 @@ export class ActivitiesBridgeOrchestrator {
     targetId: string,
     fallbackSnapshotName?: string,
     tenantId?: string,
-    activeModuleIds: string[] = []
+    activeModuleIds?: string[]
   ): Promise<TargetSummary> {
     const bridge = await this.loadBridgeForTarget(targetType, activeModuleIds);
     if (bridge) {
