@@ -20,7 +20,6 @@
   import { fade, scale } from 'svelte/transition';
   import Button from '$lib/components/Button.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { db, doc } from '$lib/firebase';
   import { 
     VersioningService, 
     isLedgerMissing, 
@@ -115,18 +114,20 @@
     conflictWarning = null;
 
     try {
-      const entityRef = doc(db, entityCollection, entityId);
       const tenantId = selectedEntry.tenantId || 'default';
 
-      const res = await VersioningService.revertLedgerEntry(db, {
-        entryId: selectedEntry.id,
-        entityRef,
-        reason: rollbackReason.trim() || undefined,
-        performedBy: currentUid || 'superadmin',
-        performedByName: 'Superadmin',
-        tenantId,
-        isForced: isForcedChecked
-      });
+      const res = await VersioningService.revertEntityLedgerEntryByPath(
+        entityCollection,
+        entityId,
+        {
+          entryId: selectedEntry.id,
+          reason: rollbackReason.trim() || undefined,
+          performedBy: currentUid || 'superadmin',
+          performedByName: 'Superadmin',
+          tenantId,
+          isForced: isForcedChecked
+        }
+      );
 
       toast.success(
         res.mode === 'FORCED_COMPENSATING'

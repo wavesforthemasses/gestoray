@@ -310,5 +310,34 @@ match /unique_keys/{keyId} {
   allow update: if false;
 }
     // --- MODULE: places END ---
+
+    // --- MODULE: payments BEGIN ---
+    // PAYMENTS & FLUSSI DI CASSA
+    match /payments/{paymentId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived();
+      allow delete: if hasRole('superadmin') || isAdmin();
+
+      match /{path=**}/contractsPaid/{allocId} {
+        allow read: if isAuth();
+        allow write: if isAuth();
+      }
+    }
+
+    match /{path=**}/contractsPaid/{allocId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+    // --- MODULE: payments END ---
+
+    // --- MODULE: interventions BEGIN ---
+    // INTERVENTIONS (Scheduling & Field Operations)
+    match /interventions/{docId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth() && notWritingDerived();
+      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+    }
+    // --- MODULE: interventions END ---
   }
 }

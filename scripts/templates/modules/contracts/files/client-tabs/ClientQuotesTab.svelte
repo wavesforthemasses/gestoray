@@ -5,9 +5,10 @@
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
   import { authState, activeRoleState } from '$lib/auth.svelte';
-  import { ContractService } from '../ContractService';
+  import { ContractsService } from '../contracts.service';
   import { UsersService } from '../../users/users.service';
   import { toast } from '$lib/stores/toast.svelte';
+  import type { ContractItem } from '../schema';
 
   interface Props {
     clientId: string;
@@ -17,8 +18,8 @@
 
   // State
   let productsList = $state<any[]>([]);
-  let quotesList = $state<any[]>([]);
-  let contractsList = $state<any[]>([]);
+  let quotesList = $state<ContractItem[]>([]);
+  let contractsList = $state<ContractItem[]>([]);
   let usersList = $state<any[]>([]);
 
   let selectedProductId = $state('');
@@ -48,7 +49,8 @@
             id: p.id,
             name: p.name,
             listPrice: p.price ?? p.listPrice ?? p.unitPrice ?? 0,
-            minPrice: p.minPrice
+            minPrice: p.minPrice ?? 0,
+            unit: p.unit || ''
           }));
         }
       } catch (e) {
@@ -58,29 +60,22 @@
       const uList = await UsersService.getUsers();
       usersList = uList.map((u: any) => ({ id: u.id, ...u }));
 
-      const cList = await ContractService.getClientContracts(clientId);
+      const cList = await ContractsService.getClientContracts(clientId);
       
-      const contracts: any[] = [];
-      const quotes: any[] = [];
+      const contracts: ContractItem[] = [];
+      const quotes: ContractItem[] = [];
 
-      cList.forEach((c: any) => {
-        const docData = { 
-          id: c.id, 
-          ...c.original, 
-          ...c,
-          edits: c.edits || { createdAt: c.createdAt }, 
-          derived: c.derived 
-        };
-        const statusVal = c.status || c.original?.status || 'bozza';
+      cList.forEach((c) => {
+        const statusVal = c.status || 'bozza';
         if (statusVal === 'bozza' || statusVal === 'draft') {
-          quotes.push(docData);
+          quotes.push(c);
         } else {
-          contracts.push(docData);
+          contracts.push(c);
         }
       });
 
-      contractsList = contracts.sort((a, b) => new Date(b.createdAt || b.edits?.createdAt || 0).getTime() - new Date(a.createdAt || a.edits?.createdAt || 0).getTime());
-      quotesList = quotes.sort((a, b) => new Date(b.createdAt || b.edits?.createdAt || 0).getTime() - new Date(a.createdAt || a.edits?.createdAt || 0).getTime());
+      contractsList = contracts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      quotesList = quotes.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
     } catch (e) {
       console.error('Error loading tab data', e);
@@ -110,14 +105,18 @@
     if (existingIdx > -1) {
       quoteItems[existingIdx].quantity += itemQuantity;
       quoteItems[existingIdx].priceSold = soldPrice;
+      quoteItems[existingIdx].subtotal = quoteItems[existingIdx].quantity * soldPrice;
     } else {
       quoteItems.push({
         productId: prod.id,
+        productName: prod.name,
         name: prod.name,
         listPrice: prod.listPrice,
         minPrice: prod.minPrice,
         priceSold: soldPrice,
-        quantity: itemQuantity
+        quantity: itemQuantity,
+        unit: prod.unit || '',
+        subtotal: itemQuantity * soldPrice
       });
     }
 
@@ -138,20 +137,30 @@
     quoteSuccessMsg = '';
 
     try {
-      const fullName = `${clientData?.nome || ''} ${clientData?.cognome || ''}`.trim();
-      await ContractService.saveQuote(
+      const fullName = (clientData?.ragioneSociale || clientData?.nome || clientData?.cognome || '').trim() || 'Cliente';
+      const secondVendor = usersList.find(u => u.uid === secondVendorUid);
+      const coSeller = secondVendorUid ? { 
+        uid: secondVendorUid, 
+        email: secondVendor ? secondVendor.email : undefined,
+        share: secondVendorShare 
+      } : undefined;
+
+      await ContractsService.saveQuote(
         clientId, 
         fullName, 
         quoteItems, 
         quoteTotal, 
-        { uid: authState.user.uid, email: authState.user.email! }
+        { uid: authState.user.uid, email: authState.user.email! },
+        coSeller
       );
 
       quoteSuccessMsg = 'Preventivo bozza salvato con successo!';
+      toast.success('Bozza preventivo salvata!');
       quoteItems = [];
       await loadTabData();
     } catch (e: any) {
       quoteErrorMsg = 'Errore durante il salvataggio: ' + e.message;
+      toast.error(quoteErrorMsg);
     } finally {
       submittingQuote = false;
     }
@@ -164,23 +173,28 @@
     quoteSuccessMsg = '';
 
     try {
-      const coSeller = secondVendorUid ? { uid: secondVendorUid, share: secondVendorShare } : undefined;
+      const secondVendor = usersList.find(u => u.uid === secondVendorUid);
+      const coSeller = secondVendorUid ? { 
+        uid: secondVendorUid, 
+        email: secondVendor ? secondVendor.email : undefined,
+        share: secondVendorShare 
+      } : undefined;
 
-      await ContractService.approveQuoteToContract(
+      await ContractsService.submitForApproval(
         quoteId, 
-        clientId, 
         coSeller, 
-        activeRoleState.role, 
         { uid: authState.user.uid, email: authState.user.email! }
       );
 
-      quoteSuccessMsg = 'Preventivo convertito in contratto! In attesa di approvazione amministrativa.';
+      quoteSuccessMsg = 'Preventivo inviato in approvazione amministrativa!';
+      toast.success('Preventivo inviato per approvazione!');
       quoteItems = []; 
       secondVendorUid = '';
       secondVendorShare = 30;
       await loadTabData();
     } catch (e: any) {
-      quoteErrorMsg = 'Errore durante la conversione in contratto: ' + e.message;
+      quoteErrorMsg = 'Errore durante l\'invio del contratto: ' + e.message;
+      toast.error(quoteErrorMsg);
     } finally {
       submittingQuote = false;
     }
@@ -191,7 +205,7 @@
   <div class="vertical-layout-stack">
     {#if activeRole !== 'direzione'}
       <!-- Current Quote Draft Builder -->
-      <Card title="Preventivatore Rapido" description="Seleziona i prodotti, modifica la quotazione venduta, ed inserisci la quantità per preparare un preventivo. Puoi salvarlo in bozza o convertirlo subito in un Contratto in attesa.">
+      <Card title="Preventivatore Rapido" description="Seleziona i prodotti, modifica la quotazione venduta, ed inserisci la quantità per preparare un preventivo. Puoi salvarlo in bozza o inviarlo subito in approvazione.">
         {#snippet icon()}
           <Plus size={20} class="icon-accent" />
         {/snippet}
@@ -211,7 +225,7 @@
                 <select id="q-product" bind:value={selectedProductId} onchange={(e) => onProductSelectChange(e.currentTarget.value)}>
                   <option value="">-- Seleziona Prodotto dal Catalogo --</option>
                   {#each productsList as p}
-                    <option value={p.id}>{p.name} (Listino: €{p.listPrice.toFixed(2)})</option>
+                    <option value={p.id}>{p.name} (Listino: €{(Number(p.listPrice) || 0).toFixed(2)})</option>
                   {/each}
                 </select>
               </FormField>
@@ -221,7 +235,7 @@
               {#if selectedProductId && itemPriceSold !== null}
                 {@const prod = productsList.find(p => p.id === selectedProductId)}
                 {#if prod}
-                  <FormField id="q-price" label="PREZZO VENDUTO SINGOLO (€)" helpText="Prezzo listino: €{prod.listPrice.toFixed(2)}. Prezzo minimo consentito: €{prod.minPrice.toFixed(2)}.">
+                  <FormField id="q-price" label="PREZZO VENDUTO SINGOLO (€)" helpText="Prezzo listino: €{(Number(prod.listPrice) || 0).toFixed(2)}. Prezzo minimo consentito: €{(Number(prod.minPrice) || 0).toFixed(2)}.">
                     <input type="number" id="q-price" bind:value={itemPriceSold} step="0.01" />
                     {#if itemPriceSold < prod.minPrice}
                       <span class="warning-inline"><ShieldAlert size={12} /> Prezzo inferiore al minimo di catalogo!</span>
@@ -280,8 +294,8 @@
                   <tbody>
                     {#each quoteItems as item, index}
                       <tr class:row-warning={item.priceSold < item.minPrice}>
-                        <td>{item.name}</td>
-                        <td>€ {item.listPrice.toFixed(2)}</td>
+                        <td>{item.productName || item.name}</td>
+                        <td>€ {(Number(item.listPrice) || 0).toFixed(2)}</td>
                         <td>
                           <div class="price-input-wrapper">
                             € <input type="number" bind:value={item.priceSold} step="0.01" class="price-input" class:text-warning={item.priceSold < item.minPrice} />
@@ -291,9 +305,9 @@
                           <input type="number" bind:value={item.quantity} min="0" step={UnitsOfMeasureService.getStepForUnit(item.unit)} class="qty-input" />
                           {#if item.unit}<span class="unit-label">{item.unit}</span>{/if}
                         </td>
-                        <td><strong>€ {(item.priceSold * item.quantity).toFixed(2)}</strong></td>
+                        <td><strong>€ {(Number(item.priceSold * item.quantity) || 0).toFixed(2)}</strong></td>
                         <td>
-                          <span class="min-threshold-cell">€ {item.minPrice.toFixed(2)}</span>
+                          <span class="min-threshold-cell">€ {(Number(item.minPrice) || 0).toFixed(2)}</span>
                           {#if item.priceSold < item.minPrice}
                             <span class="under-min-badge" title="Prezzo sotto la soglia minima"><ShieldAlert size={10} /> SOTTO SOGLIA</span>
                           {/if}
@@ -334,7 +348,7 @@
               <div class="builder-summary-row mt-20">
                 <div class="total-summary-box">
                   <span class="tot-label">Importo Complessivo Preventivo:</span>
-                  <span class="tot-val">€ {quoteTotal.toFixed(2)}</span>
+                  <span class="tot-val">€ {(Number(quoteTotal) || 0).toFixed(2)}</span>
                 </div>
 
                 <div class="save-quote-actions">
@@ -348,7 +362,7 @@
                     onclick={() => onConvertToContract(quoteItems)} 
                     disabled={submittingQuote}
                   >
-                    <CheckCircle size={14} /> Converti in Contratto
+                    <CheckCircle size={14} /> Invia in Approvazione
                   </Button>
                 </div>
               </div>
@@ -371,18 +385,18 @@
           {#each quotesList as q}
             <div class="quote-history-card">
               <div class="q-header">
-                <span class="q-date">Preventivo del {q.edits?.createdAt ? formatDateTime(q.edits.createdAt) : 'N/D'}</span>
-                <span class="q-creator">Creato da: {q.createdEmail || 'N/D'}</span>
-                <span class="q-amount">€ {q.totalPrice.toFixed(2)}</span>
+                <span class="q-date">{q.contractNumber ? `${q.contractNumber} - ` : ''}Preventivo del {q.createdAt ? formatDateTime(q.createdAt) : 'N/D'}</span>
+                <span class="q-creator">Creato da: {q.agentName || 'N/D'}</span>
+                <span class="q-amount">€ {(q.totalAmount || 0).toFixed(2)}</span>
               </div>
               
               <!-- products inside -->
               <div class="q-products-preview">
                 <ul class="preview-prod-list">
-                  {#each q.products as item}
+                  {#each (q.items || []) as item}
                     <li>
-                      {item.name} &times; {item.quantity} (Venduto a €{item.priceSold.toFixed(2)} / Listino €{item.listPrice.toFixed(2)})
-                      {#if item.priceSold < item.minPrice}
+                      {item.productName || item.name} &times; {item.quantity} (Venduto a €{(item.priceSold || 0).toFixed(2)} / Listino €{(item.listPrice || 0).toFixed(2)})
+                      {#if item.minPrice && item.priceSold < item.minPrice}
                         <span class="warning-pill"><ShieldAlert size={10} /> Prezzo Basso</span>
                       {/if}
                     </li>
@@ -390,13 +404,16 @@
                 </ul>
               </div>
 
-              {#if activeRole !== 'direzione'}
-                <div class="q-actions">
-                  <button onclick={() => onConvertToContract(q.products, q.id)} class="action-btn-convert" disabled={submittingQuote}>
-                    <CheckCircle size={12} /> Converti in Contratto Attivo
+              <div class="q-actions">
+                {#if activeRole !== 'direzione'}
+                  <button onclick={() => onConvertToContract(q.items || [], q.id)} class="action-btn-convert" disabled={submittingQuote}>
+                    <CheckCircle size={12} /> Invia in Approvazione
                   </button>
-                </div>
-              {/if}
+                {/if}
+                <a href={`/dashboard/contracts/${q.id}`} class="action-link-btn">
+                  Apri Scheda
+                </a>
+              </div>
             </div>
           {/each}
         </div>
@@ -404,7 +421,7 @@
     </Card>
 
     <!-- Active / Pending Contracts list for this client -->
-    <Card title="Contratti Assegnati al Cliente" description="Contratti emessi per questo cliente.">
+    <Card title="Contratti & Ordini Assegnati al Cliente" description="Contratti emessi per questo cliente.">
       {#snippet icon()}
         <FileText size={20} class="icon-accent" />
       {/snippet}
@@ -416,25 +433,30 @@
           <table class="widescreen-table">
             <thead>
               <tr>
-                <th>Data Creazione</th>
+                <th>Numero / Data</th>
+                <th>Titolo</th>
                 <th>Importo Totale</th>
-                <th>Stato Approvazione</th>
-                <th>Prezzo Sotto Minimo</th>
+                <th>Stato</th>
+                <th>Soglia Prezzo</th>
                 <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
               {#each contractsList as c}
                 <tr>
-                  <td>{c.edits?.createdAt ? formatDate(c.edits.createdAt) : 'N/D'}</td>
-                  <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
                   <td>
-                    <span class="badge-status" class:approved={c.status === 'approved'}>
-                      {c.status === 'approved' ? 'Approvato' : 'In Attesa'}
+                    <strong>{c.contractNumber || 'N/D'}</strong>
+                    <div class="text-sub">{c.createdAt ? formatDate(c.createdAt) : 'N/D'}</div>
+                  </td>
+                  <td>{c.title}</td>
+                  <td><strong>€ {(c.totalAmount || 0).toFixed(2)}</strong></td>
+                  <td>
+                    <span class="badge-status" class:approved={c.status === 'approvato' || c.status === 'attivo' || c.status === 'approved'}>
+                      {c.status === 'approvato' || c.status === 'attivo' || c.status === 'approved' ? 'Approvato' : (c.status === 'in_approvazione' || c.status === 'pending' ? 'In Approvazione' : c.status)}
                     </span>
                   </td>
                   <td>
-                    {#if c.hasWarning}
+                    {#if c.hasPriceWarning}
                       <span class="warning-badge"><ShieldAlert size={12} /> Prezzo Basso</span>
                     {:else}
                       <span class="regular-price-badge">Prezzi Standard</span>
@@ -458,27 +480,24 @@
 <style>
   .tab-view {
     padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
   }
   .vertical-layout-stack {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    width: 100%;
   }
 
   .save-quote-actions {
     display: flex;
     justify-content: flex-end;
+    gap: 12px;
     margin-top: 16px;
   }
-
-
-  .tab-view {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-
 
   :global(.icon-accent) {
     color: var(--color-primary-500);
@@ -490,12 +509,9 @@
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .mt-10 {
-    margin-top: 10px;
-  }
-  .mt-20 {
-    margin-top: 20px;
-  }
+  .mt-10 { margin-top: 10px; }
+  .mt-20 { margin-top: 20px; }
+
   .quote-items-container {
     border-top: 1px solid var(--color-neutral-200);
     padding-top: 24px;
@@ -539,15 +555,31 @@
     color: var(--color-neutral-500);
     margin-bottom: 12px;
   }
+
+  .action-btn-convert {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .action-btn-convert:hover { background: #dcfce7; }
+
   .action-link-btn {
     background: var(--color-white);
     border: 1px solid var(--color-neutral-300);
     color: var(--color-neutral-600);
-    padding: 4px 8px;
+    padding: 6px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     transition: all 0.2s;
     text-decoration: none;
@@ -557,5 +589,128 @@
   .action-link-btn:hover {
     background: var(--color-neutral-100);
     color: var(--color-neutral-800);
+  }
+
+  .widescreen-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .widescreen-table th, .widescreen-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-neutral-200);
+    text-align: left;
+  }
+  .widescreen-table th {
+    background: var(--color-neutral-50);
+    font-weight: 600;
+    color: var(--color-neutral-600);
+  }
+
+  .badge-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+  }
+  .badge-status.approved {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  .warning-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .regular-price-badge {
+    font-size: 11px;
+    color: var(--color-neutral-500);
+  }
+  .text-sub {
+    font-size: 11px;
+    color: var(--color-neutral-500);
+  }
+  .q-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
+  .quote-history-card {
+    background: var(--color-neutral-50);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .q-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .q-amount {
+    color: var(--color-primary-700);
+    font-weight: 700;
+  }
+  .preview-prod-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--color-neutral-700);
+  }
+  .warning-pill {
+    color: #b45309;
+    font-weight: 700;
+    font-size: 10px;
+    margin-left: 6px;
+  }
+  .status-alert-box {
+    padding: 10px 14px;
+    background: #ecfdf5;
+    color: #065f46;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .status-alert-box.error {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+  .remove-item-btn {
+    background: none;
+    border: none;
+    color: var(--color-error);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .under-min-badge {
+    font-size: 11px;
+    color: var(--color-error);
+    font-weight: 700;
+  }
+  .total-summary-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tot-label { font-size: 12px; color: var(--color-neutral-500); }
+  .tot-val { font-size: 18px; font-weight: 800; color: var(--color-neutral-900); }
+  .builder-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 </style>

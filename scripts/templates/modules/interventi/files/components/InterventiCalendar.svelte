@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { InterventionItem } from '../schema';
   import { goto } from '$app/navigation';
+  import { ChevronLeft, ChevronRight } from '@lucide/svelte';
 
   interface Props {
     interventions: InterventionItem[];
@@ -165,8 +166,8 @@
     <div class="nav-controls">
       <button type="button" onclick={goToToday} class="btn-today">Oggi</button>
       <div class="btn-group">
-        <button type="button" onclick={prevMonth} class="btn-nav" title="Mese precedente">‹</button>
-        <button type="button" onclick={nextMonth} class="btn-nav" title="Mese successivo">›</button>
+        <button type="button" onclick={prevMonth} class="btn-nav" title="Mese precedente"><ChevronLeft size={16} /></button>
+        <button type="button" onclick={nextMonth} class="btn-nav" title="Mese successivo"><ChevronRight size={16} /></button>
       </div>
     </div>
   </div>

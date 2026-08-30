@@ -39,7 +39,7 @@
                 </span>
               </td>
               <td><code>{pay.paymentId}</code></td>
-              <td><strong>€ {pay.amount?.toFixed(2)}</strong></td>
+              <td><strong>€ {(Number(pay.amount) || 0).toFixed(2)}</strong></td>
               <td>
                 <a 
                   href={`/dashboard/payments/${pay.paymentId}`} 

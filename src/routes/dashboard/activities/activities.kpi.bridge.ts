@@ -3,34 +3,109 @@ import type { KPIFetchParams, DrillDownFetchParams } from '$lib/types/moduleKPIB
 import { formatDate } from '$lib/utils/formatters';
 
 export class ActivitiesKPIBridge {
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
-    const activityCounts: Record<string, number> = {};
-    let commTotalNA = 0;
+  /**
+   * Pure domain function: Single Source of Truth (SSOT) for Activities KPIs.
+   */
+  static calculateKPIs(activitiesList: any[], params: { role?: string | null; uid?: string | null } = {}) {
+    const { role = '', uid = '' } = params;
+    const isComm = role === 'commerciale';
 
+    const activityCounts: Record<string, number> = {};
+    let totalActivities = 0;
+
+    for (const d of activitiesList) {
+      if (!d || d?.derived?.deleted || d?.deleted) continue;
+      const data = d.data ? d.data() : d;
+      const orig = data.original || {};
+      const logged = orig.loggedBy || data.loggedBy;
+
+      if (isComm && uid && logged !== uid) continue;
+
+      totalActivities++;
+      const t = orig.type || data.type;
+      if (t) {
+        activityCounts[t] = (activityCounts[t] || 0) + 1;
+      }
+    }
+
+    return {
+      activityCounts,
+      total_activities: totalActivities,
+      totalActivities
+    };
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    let commTotalNA = 0;
     try {
+      let snap;
       if (role === 'commerciale') {
         const qAct = query(collectionGroup(db, 'activities'), where('original.loggedBy', '==', uid));
-        const snap = await getDocs(qAct);
-        snap.forEach((d: any) => {
-          const t = d.data()?.original?.type || d.data()?.type;
-          if (t) activityCounts[t] = (activityCounts[t] || 0) + 1;
-        });
+        snap = await getDocs(qAct);
 
         const qNA = query(collection(db, 'clients'), where('original.createdBy', '==', uid));
         const naSnap = await getDocs(qNA);
         commTotalNA = naSnap.size;
       } else {
-        const snap = await getDocs(collectionGroup(db, 'activities'));
-        snap.forEach((d: any) => {
-          const t = d.data()?.original?.type || d.data()?.type;
-          if (t) activityCounts[t] = (activityCounts[t] || 0) + 1;
-        });
+        snap = await getDocs(collectionGroup(db, 'activities'));
       }
+
+      const list: any[] = [];
+      snap.forEach((d: any) => {
+        list.push({ id: d.id, ...d.data() });
+      });
+
+      const res = this.calculateKPIs(list, { role, uid });
+      return { ...res, commTotalNA };
     } catch (e) {
       console.error('Error fetching activities KPIs in bridge:', e);
+      return { ...this.calculateKPIs([], { role, uid }), commTotalNA: 0 };
+    }
+  }
+
+  static async fetchChartAggregations({ periods, role, uid, tab }: any) {
+    let allActivities: any[] = [];
+    try {
+      const snap = await getDocs(collectionGroup(db, 'activities'));
+      snap.forEach(d => {
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        allActivities.push({ id: d.id, ...data });
+      });
+    } catch (e) {
+      console.error('Error fetching activities for chart aggregations:', e);
+      return periods.map(() => 0);
     }
 
-    return { activityCounts, commTotalNA };
+    return periods.map((p: any) => {
+      const startMs = new Date(p.start).getTime();
+      const endMs = new Date(p.end).getTime();
+
+      const periodActs = allActivities.filter(data => {
+        const orig = data.original || {};
+        const dt = data.createdAt || data.edits?.createdAt || orig.createdAt || data.date;
+        let ms = 0;
+        if (dt) {
+          if (typeof dt === 'string') {
+            const parsed = dt.includes('T') ? new Date(dt).getTime() : new Date(`${dt}T12:00:00Z`).getTime();
+            ms = isNaN(parsed) ? 0 : parsed;
+          } else if (typeof dt.toDate === 'function') {
+            ms = dt.toDate().getTime();
+          } else if (typeof dt.seconds === 'number') {
+            ms = dt.seconds * 1000;
+          } else if (dt instanceof Date) {
+            ms = dt.getTime();
+          }
+        }
+        return ms >= startMs && ms <= endMs;
+      });
+
+      const kpis = this.calculateKPIs(periodActs, { role, uid });
+      if (tab && kpis.activityCounts[tab] !== undefined) {
+        return kpis.activityCounts[tab];
+      }
+      return kpis.totalActivities;
+    });
   }
 
   static async fetchDrillDownItems({ period, tab, role, uid, clientFilter, vendorFilter }: DrillDownFetchParams) {
@@ -65,23 +140,13 @@ export class ActivitiesKPIBridge {
       return {
         id: item.id,
         cliente: item.clientName || orig.clientName || 'Cliente',
-        consulente: item.loggedEmail || orig.loggedEmail || 'Operatore',
-        data: formatDate(item.createdAt || item.edits?.createdAt || orig.createdAt || item.date),
-        valore: '-',
-        dettaglio: item.notes || orig.notes || 'Registrazione attività',
-        status: item.type || orig.type || 'Attività',
-        link: `/dashboard/clients/${item.clientId || orig.clientId}?tab=activities`
+        consulente: item.loggedByName || orig.loggedByName || 'Commerciale',
+        data: formatDate(item.createdAt || item.date || orig.createdAt),
+        valore: orig.type || item.type || 'Attività',
+        dettaglio: orig.notes || item.notes || 'Note attività',
+        status: orig.status || item.status || 'Completata',
+        link: `/dashboard/clients/${item.clientId || orig.clientId || ''}`
       };
     });
-  }
-
-  static async getClientActivities(clientId: string) {
-    try {
-      const subCol = collection(db, 'clients', clientId, 'activities');
-      const snap = await getDocs(subCol);
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      return [];
-    }
   }
 }

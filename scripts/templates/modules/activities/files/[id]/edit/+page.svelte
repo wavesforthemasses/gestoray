@@ -154,10 +154,10 @@
 
           if (activity.assignedEntities) {
             const teamAss = activity.assignedEntities.find(a => a.entityType === 'team' || a.type === 'team');
-            if (teamAss) selectedTeamId = teamAss.entityId || teamAss.id;
+            if (teamAss) selectedTeamId = teamAss.entityId || teamAss.id || '';
 
             const vehicleAss = activity.assignedEntities.find(a => a.entityType === 'vehicle' || a.type === 'vehicle');
-            if (vehicleAss) selectedVehicleId = vehicleAss.entityId || vehicleAss.id;
+            if (vehicleAss) selectedVehicleId = vehicleAss.entityId || vehicleAss.id || '';
           }
 
           if (activity.customFields) {
@@ -260,6 +260,7 @@
         customFields: customFieldsValues
       };
 
+      if (!activity?.id) throw new Error('ID attività non valido');
       await ActivitiesService.updateActivity(activity.id, updates, author);
 
       // Handle propagation to group if requested
@@ -267,15 +268,17 @@
         const groupActs = await ActivitiesService.getActivities();
         const siblings = groupActs.filter(a => a.groupId === activity!.groupId && a.id !== activity!.id);
         for (const sib of siblings) {
-          await ActivitiesService.updateActivity(sib.id, {
-            title: updates.title,
-            activityTypeId: updates.activityTypeId,
-            assignedUid: updates.assignedUid,
-            assignedName: updates.assignedName,
-            assignedEntities: updates.assignedEntities,
-            priority: updates.priority,
-            description: updates.description
-          }, author);
+          if (sib.id) {
+            await ActivitiesService.updateActivity(sib.id, {
+              title: updates.title,
+              activityTypeId: updates.activityTypeId,
+              assignedUid: updates.assignedUid,
+              assignedName: updates.assignedName,
+              assignedEntities: updates.assignedEntities,
+              priority: updates.priority,
+              description: updates.description
+            }, author);
+          }
         }
       }
 

@@ -1,5 +1,18 @@
 <script lang="ts">
   import type { InterventionItem } from '../schema';
+  import { 
+    Inbox, 
+    User, 
+    MapPin, 
+    FileText, 
+    RefreshCw, 
+    Calendar, 
+    Wrench, 
+    CheckCircle2, 
+    Star, 
+    Receipt, 
+    ArrowRight 
+  } from '@lucide/svelte';
 
   interface Props {
     interventions: InterventionItem[];
@@ -10,12 +23,12 @@
 
   function getStatusBadge(status: string) {
     switch (status) {
-      case 'pianificato': return { label: '📅 Pianificato', class: 'badge-info' };
-      case 'in_lavorazione': return { label: '🛠️ In Lavorazione', class: 'badge-warning' };
-      case 'completato': return { label: '✅ Consuntivato', class: 'badge-success' };
-      case 'approvato': return { label: '⭐ Approvato', class: 'badge-primary' };
-      case 'fatturato': return { label: '🧾 Fatturato', class: 'badge-dark' };
-      default: return { label: status, class: 'badge-secondary' };
+      case 'pianificato': return { label: 'Pianificato', class: 'badge-info', icon: Calendar };
+      case 'in_lavorazione': return { label: 'In Lavorazione', class: 'badge-warning', icon: Wrench };
+      case 'completato': return { label: 'Consuntivato', class: 'badge-success', icon: CheckCircle2 };
+      case 'approvato': return { label: 'Approvato', class: 'badge-primary', icon: Star };
+      case 'fatturato': return { label: 'Fatturato', class: 'badge-dark', icon: Receipt };
+      default: return { label: status, class: 'badge-secondary', icon: null };
     }
   }
 
@@ -33,7 +46,7 @@
 <div class="table-card">
   {#if interventions.length === 0}
     <div class="empty-state">
-      <div class="empty-icon">📭</div>
+      <div class="empty-icon"><Inbox size={32} class="text-neutral-400" /></div>
       <h3>Nessun intervento trovato</h3>
       <p>Non ci sono interventi corrispondenti ai criteri di ricerca impostati.</p>
     </div>
@@ -55,24 +68,30 @@
         <tbody>
           {#each interventions as item (item.id)}
             {@const badge = getStatusBadge(item.status)}
+            {@const BadgeIcon = badge.icon}
             <tr class="table-row">
               <td>
-                <span class="badge {badge.class}">{badge.label}</span>
+                <span class="badge {badge.class}">
+                  {#if BadgeIcon}
+                    <BadgeIcon size={12} class="badge-icon-inline" />
+                  {/if}
+                  {badge.label}
+                </span>
               </td>
               <td>
                 <div class="title-cell">
                   <a href="/dashboard/interventi/{item.id}" class="item-title">{item.title}</a>
-                  <span class="item-client">👤 {item.clientName || 'Cliente non specificato'}</span>
+                  <span class="item-client"><User size={12} class="inline-icon" /> {item.clientName || 'Cliente non specificato'}</span>
                 </div>
               </td>
               <td>
-                <span class="location-tag">📍 {item.locationName || 'Sede Principale'}</span>
+                <span class="location-tag"><MapPin size={12} class="inline-icon" /> {item.locationName || 'Sede Principale'}</span>
               </td>
               <td>
                 {#if item.mode === 'a_bolla'}
-                  <span class="mode-tag bolla">📄 A Bolla</span>
+                  <span class="mode-tag bolla"><FileText size={12} class="inline-icon" /> A Bolla</span>
                 {:else}
-                  <span class="mode-tag erogazione">🔄 Ad Erogazione</span>
+                  <span class="mode-tag erogazione"><RefreshCw size={12} class="inline-icon" /> Ad Erogazione</span>
                 {/if}
               </td>
               <td>
@@ -82,10 +101,10 @@
                 <span class="hours-text">{item.actualHoursWorked ? `${item.actualHoursWorked} h` : '-'}</span>
               </td>
               <td>
-                <span class="price-text">{item.totalAmount ? `€ ${item.totalAmount.toFixed(2)}` : '€ 0.00'}</span>
+                <span class="price-text">€ {(Number(item.totalAmount) || 0).toFixed(2)}</span>
               </td>
               <td>
-                <a href="/dashboard/interventi/{item.id}" class="action-btn">Visualizza ➔</a>
+                <a href="/dashboard/interventi/{item.id}" class="action-btn">Visualizza <ArrowRight size={12} class="inline-icon" /></a>
               </td>
             </tr>
           {/each}

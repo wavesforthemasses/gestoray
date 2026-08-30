@@ -28,7 +28,7 @@
       const ratio = p.remaining / totalRemaining;
       return {
         productId: p.productId,
-        amount: parseFloat((toDistribute * ratio).toFixed(2))
+        amount: parseFloat(((Number(toDistribute * ratio) || 0)).toFixed(2))
       };
     });
   }
@@ -55,7 +55,7 @@
         <input type="number" id="inst-actual-amount" bind:value={installmentActualAmount} min="0" step="0.01" required />
         <button type="button" class="back-link-btn" onclick={() => {
           if (installmentActualAmount) {
-            installmentActualAmount = parseFloat((installmentActualAmount / 1.22).toFixed(2));
+            installmentActualAmount = parseFloat(((Number(installmentActualAmount) || 0) / 1.22).toFixed(2));
           }
         }}>
           Scorpora IVA
@@ -80,7 +80,7 @@
       <div class="dist-list">
         {#each productsStatus as p, idx}
           <div class="dist-row">
-            <span class="dist-name">{p.name} (Restante: €{p.remaining.toFixed(2)})</span>
+            <span class="dist-name">{p.name} (Restante: €{(Number(p.remaining) || 0).toFixed(2)})</span>
             <div class="dist-input-wrapper">
               € <input type="number" bind:value={productAllocations[idx].amount} min="0" step="0.01" class="dist-input" />
             </div>

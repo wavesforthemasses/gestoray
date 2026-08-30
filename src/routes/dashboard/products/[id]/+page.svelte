@@ -157,7 +157,7 @@
             {#if product.minimoFatturabile.displayText}
               {product.minimoFatturabile.displayText}
             {:else if product.minimoFatturabile.minQuantity && product.minimoFatturabile.flatPrice}
-              Sotto i {product.minimoFatturabile.minQuantity} {product.unit} ➔ € {product.minimoFatturabile.flatPrice.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+              Sotto i {product.minimoFatturabile.minQuantity} {product.unit} -> € {product.minimoFatturabile.flatPrice.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
             {/if}
           </span>
         </div>

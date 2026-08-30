@@ -25,17 +25,18 @@ export async function runInstallmentWrite(
   const todayStr = new Date().toISOString().split('T')[0];
 
   installmentsSnap.forEach((docSnap) => {
-    const inst = docSnap.data()?.original || {};
-    const status = inst.status || 'pending';
-    const dueDate = inst.dueDate || '';
-    const amount = inst.expectedAmount || 0;
+    const data = docSnap.data() || {};
+    const orig = data.original || {};
+    const status = data.status || orig.status || 'in_attesa';
+    const dueDate = data.dueDate || orig.dueDate || '';
+    const amount = Number(data.expectedAmount ?? data.amount ?? orig.expectedAmount ?? orig.amount ?? 0);
 
     installmentsCount += 1;
 
-    if (status === 'paid') {
+    if (status === 'pagato' || status === 'paid') {
       paidInstallmentsCount += 1;
     } else {
-      // Status is pending
+      // Status is pending/in_attesa
       if (dueDate && dueDate < todayStr) {
         overdueInstallmentsCount += 1;
       }
@@ -51,13 +52,16 @@ export async function runInstallmentWrite(
 
   // 2. Update parent contract document
   const contractRef = db.collection('contracts').doc(contractId);
-  await contractRef.update({
-    'derived.installmentsCount': installmentsCount,
-    'derived.paidInstallmentsCount': paidInstallmentsCount,
-    'derived.overdueInstallmentsCount': overdueInstallmentsCount,
-    'derived.nextInstallmentDate': nextInstallmentDate,
-    'derived.nextInstallmentAmount': nextInstallmentAmount
-  });
+  const contractSnap = await contractRef.get();
+  if (contractSnap.exists) {
+    await contractRef.update({
+      'derived.installmentsCount': installmentsCount,
+      'derived.paidInstallmentsCount': paidInstallmentsCount,
+      'derived.overdueInstallmentsCount': overdueInstallmentsCount,
+      'derived.nextInstallmentDate': nextInstallmentDate,
+      'derived.nextInstallmentAmount': nextInstallmentAmount
+    });
+  }
 }
 
 export const onInstallmentWrite = onDocumentWritten(

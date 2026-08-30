@@ -55,7 +55,7 @@
                     <tr>
                       <td><strong>{c.clientName}</strong></td>
                       <td>{c.vendorEmail}</td>
-                      <td><strong>€ {c.totalPrice.toFixed(2)}</strong></td>
+                      <td><strong>€ {(Number(c.totalPrice) || 0).toFixed(2)}</strong></td>
                       <td>
                         <Button href={`/dashboard/contracts/${c.id}`} size="sm">
                           Gestisci
@@ -124,7 +124,7 @@
                     <tr>
                       <td><strong>{p.clientName}</strong></td>
                       <td>{formatDate(p.date)}</td>
-                      <td>€ {p.amount.toFixed(2)}</td>
+                      <td>€ {(Number(p.amount) || 0).toFixed(2)}</td>
                       <td><strong class="warning-text">€ {(p.remainingToDistribute || 0).toFixed(2)}</strong></td>
                       <td>
                         <Button href={`/dashboard/payments/${p.id}`} size="sm">

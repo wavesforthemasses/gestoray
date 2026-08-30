@@ -107,9 +107,9 @@
               <td><strong>{item.productName}</strong></td>
               <td class="cell-desc">{item.description || '-'}</td>
               <td>{item.quantity} {item.unit || ''}</td>
-              <td>€ {item.priceSold?.toFixed(2)}</td>
+              <td>€ {(Number(item.priceSold) || 0).toFixed(2)}</td>
               <td class="text-right font-bold">
-                € {item.subtotal.toFixed(2)}
+                € {(Number(item.subtotal) || 0).toFixed(2)}
                 {#if item.minimoFatturabileText}
                   <div class="minimo-info-note"><Info size={12} /> {item.minimoFatturabileText}</div>
                 {/if}
@@ -135,7 +135,7 @@
   <div class="totals-summary-box">
     <div class="totals-row">
       <span class="totals-label">Imponibile Parziale:</span>
-      <span class="totals-value">€ {taxableAmount.toFixed(2)}</span>
+      <span class="totals-value">€ {(Number(taxableAmount) || 0).toFixed(2)}</span>
     </div>
 
     <div class="totals-row">
@@ -147,12 +147,12 @@
         </select>
         <input type="number" bind:value={discountValue} min="0" step="any" class="input-mini" placeholder="0" />
       </div>
-      <span class="totals-value text-danger">- € {discountAmount.toFixed(2)}</span>
+      <span class="totals-value text-danger">- € {(Number(discountAmount) || 0).toFixed(2)}</span>
     </div>
 
     <div class="totals-row grand-total-row">
       <span class="grand-total-label">TOTALE COMPLESSIVO:</span>
-      <span class="grand-total-value">€ {grandTotalAmount.toFixed(2)}</span>
+      <span class="grand-total-value">€ {(Number(grandTotalAmount) || 0).toFixed(2)}</span>
     </div>
   </div>
 </div>

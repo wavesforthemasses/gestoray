@@ -21,8 +21,8 @@
       </div>
       <div class="stat-body">
         <span class="stat-lbl">Provvigioni Maturate (Incassate)</span>
-        <span class="stat-val">€ {commercialStats.maturate.toFixed(2)}</span>
-        <span class="stat-sub">Fatturato incassato: € {commercialStats.totalVenduto.toFixed(2)}</span>
+        <span class="stat-val">€ {(Number(commercialStats?.maturate) || 0).toFixed(2)}</span>
+        <span class="stat-sub">Fatturato incassato: € {(Number(commercialStats?.totalVenduto) || 0).toFixed(2)}</span>
       </div>
     </div>
 
@@ -32,7 +32,7 @@
       </div>
       <div class="stat-body">
         <span class="stat-lbl">Provvigioni Sospese (In Attesa)</span>
-        <span class="stat-val">€ {commercialStats.sospese.toFixed(2)}</span>
+        <span class="stat-val">€ {(Number(commercialStats?.sospese) || 0).toFixed(2)}</span>
         <span class="stat-sub">Visualizzato non appena l'amministrazione approva l'incasso.</span>
       </div>
     </div>

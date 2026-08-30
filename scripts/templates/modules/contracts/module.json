@@ -3,7 +3,9 @@
   "label": "Contratti",
   "description": "Gestione contratti e ordini",
   "icon": "FileText",
-  "requirements": ["products"],
+  "requirements": [
+    "products"
+  ],
   "path": "/dashboard/contracts",
   "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
   "clientTabs": [
@@ -19,7 +21,11 @@
     "icon": "FileText",
     "path": "/dashboard/settings/contracts"
   },
-  "rolesView": ["superadmin", "direzione", "amministrazione"],
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
+  ],
   "enabled": true,
   "kpiTiles": [
     {
@@ -32,7 +38,9 @@
       "aggregation": {
         "collection": "clients",
         "type": "count",
-        "dateFields": ["derived.nncfDate"]
+        "dateFields": [
+          "derived.nncfDate"
+        ]
       }
     },
     {
@@ -46,9 +54,20 @@
       "aggregation": {
         "collection": "contracts",
         "type": "sum",
-        "sumFields": ["totalAmount", "original.totalPrice"],
-        "dateFields": ["createdAt", "edits.createdAt", "original.createdAt"],
-        "vendorFields": ["agentId", "original.vendorUid", "original.secondVendorUid"]
+        "sumFields": [
+          "totalAmount",
+          "original.totalPrice"
+        ],
+        "dateFields": [
+          "createdAt",
+          "edits.createdAt",
+          "original.createdAt"
+        ],
+        "vendorFields": [
+          "agentId",
+          "original.vendorUid",
+          "original.secondVendorUid"
+        ]
       }
     }
   ],
@@ -56,8 +75,14 @@
     "collectionName": "contracts",
     "linkFieldPath": "clientId",
     "redactFields": [
-      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "clientNotes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" }
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      },
+      {
+        "fieldPath": "clientNotes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      }
     ]
   },
   "schema": {
@@ -65,47 +90,75 @@
       "contractNumber": {
         "type": "string",
         "description": "Numero sequenziale del contratto (es. CTR-2026-0001)",
-        "tags": ["filter:number", "search", "sort"]
+        "tags": [
+          "filter:number",
+          "search",
+          "sort"
+        ]
       },
       "title": {
         "type": "string",
         "description": "Oggetto o descrizione sintetica del contratto",
-        "tags": ["search", "display"]
+        "tags": [
+          "search",
+          "display"
+        ]
       },
       "clientId": {
         "type": "string",
         "description": "ID del cliente intestatario del contratto",
-        "tags": ["filter:client", "relation:clients"]
+        "tags": [
+          "filter:client",
+          "relation:clients"
+        ]
       },
       "clientName": {
         "type": "string",
         "description": "Ragione sociale / nome del cliente al momento del salvataggio",
-        "tags": ["search", "display"]
+        "tags": [
+          "search",
+          "display"
+        ]
       },
       "agentId": {
         "type": "string",
         "description": "UID dell'agente responsabile del contratto",
-        "tags": ["filter:agent", "kpi:user_sales"]
+        "tags": [
+          "filter:agent",
+          "kpi:user_sales"
+        ]
       },
       "totalAmount": {
         "type": "currency",
         "description": "Valore totale del contratto al netto degli sconti",
-        "tags": ["kpi:vss", "filter:amount", "chart:aggregate"]
+        "tags": [
+          "kpi:vss",
+          "filter:amount",
+          "chart:aggregate"
+        ]
       },
       "status": {
         "type": "string",
         "description": "Stato operativo (bozza, inviato, attivo, accettato, in_scadenza, scaduto)",
-        "tags": ["filter:status", "kpi:pending_contracts"]
+        "tags": [
+          "filter:status",
+          "kpi:pending_contracts"
+        ]
       },
       "type": {
         "type": "string",
         "description": "Tipologia contrattuale (Ricorrente, Non Ricorrente)",
-        "tags": ["filter:type"]
+        "tags": [
+          "filter:type"
+        ]
       },
       "createdAt": {
         "type": "datetime",
         "description": "Data ISO 8601 di creazione del contratto",
-        "tags": ["filter:date", "sort:default"]
+        "tags": [
+          "filter:date",
+          "sort:default"
+        ]
       }
     }
   }

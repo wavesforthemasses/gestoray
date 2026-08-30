@@ -58,12 +58,12 @@
     <div class="totals-dashboard">
       <div class="total-metric">
         <span class="metric-lbl">Importo Lordo Contratto</span>
-        <span class="metric-val text-primary">€ {contract.original?.totalPrice?.toFixed(2)}</span>
+        <span class="metric-val text-primary">€ {(Number(contract.original?.totalPrice ?? contract.totalAmount) || 0).toFixed(2)}</span>
       </div>
 
       <div class="total-metric">
         <span class="metric-lbl">Provvigione Commerciale ({vendorQual.toUpperCase()})</span>
-        <span class="metric-val text-success">€ {(contract.derived?.commissionTotal || 0).toFixed(2)}</span>
+        <span class="metric-val text-success">€ {(Number(contract.derived?.commissionTotal) || 0).toFixed(2)}</span>
         <span class="metric-sub">Calcolata con interpolazione lineare basata sullo sconto applicato.</span>
       </div>
 
@@ -81,13 +81,13 @@
             <tbody>
               <tr class="split-body-row">
                 <td class="split-td split-td-left split-font-medium">{contract.original?.vendorEmail} (Principale)</td>
-                <td class="split-td split-td-right">{100 - contract.original?.secondVendorShare}%</td>
-                <td class="split-td split-td-right split-font-bold split-val-color">€ {(contract.derived?.commissionPrimary || 0).toFixed(2)}</td>
+                <td class="split-td split-td-right">{100 - (Number(contract.original?.secondVendorShare) || 0)}%</td>
+                <td class="split-td split-td-right split-font-bold split-val-color">€ {(Number(contract.derived?.commissionPrimary) || 0).toFixed(2)}</td>
               </tr>
               <tr>
                 <td class="split-td split-td-left split-font-medium">{contract.original?.secondVendorEmail} (Co-selling)</td>
                 <td class="split-td split-td-right">{contract.original?.secondVendorShare}%</td>
-                <td class="split-td split-td-right split-font-bold split-val-color">€ {(contract.derived?.commissionSecondary || 0).toFixed(2)}</td>
+                <td class="split-td split-td-right split-font-bold split-val-color">€ {(Number(contract.derived?.commissionSecondary) || 0).toFixed(2)}</td>
               </tr>
             </tbody>
           </table>

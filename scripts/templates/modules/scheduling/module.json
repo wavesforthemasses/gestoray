@@ -1,94 +1,50 @@
 {
   "id": "scheduling",
-  "label": "Pianificazione & Agenda",
-  "description": "Assegnazione e pianificazione giornaliera/settimanale di squadre, operatori e mezzi nei vari luoghi di lavoro.",
-  "icon": "Calendar",
+  "label": "Pianificazione & Interventi",
+  "description": "Agenda interventi di campo, planning cantieri e assegnazione risorse",
+  "icon": "CalendarDays",
   "requirements": [],
   "path": "/dashboard/scheduling",
   "kpiBridgePath": "/dashboard/scheduling/scheduling.kpi.bridge.ts",
-  "clientTabs": [],
-  "settingsCard": {
-    "title": "Configurazione Pianificazione & Agenda",
-    "description": "Fasce orarie (Mattina, Pomeriggio, Giornata Intera, Personalizzati), stati predefiniti e permessi.",
-    "icon": "Calendar",
-    "path": "/dashboard/settings/scheduling"
-  },
   "rolesView": [
     "superadmin",
     "direzione",
-    "amministrazione",
-    "commerciale",
-    "tecnico",
-    "operaio"
+    "tecnico"
   ],
   "enabled": true,
   "kpiTiles": [
     {
-      "id": "scheduling_in_corso",
-      "title": "Attività In Corso",
-      "subtitle": "Pianificazioni oggi",
-      "icon": "Calendar",
+      "id": "active_scheduling",
+      "title": "Pianificazioni Attive",
+      "subtitle": "Interventi programmati in agenda",
+      "icon": "CalendarDays",
       "valueKey": "activeSchedulingCount",
       "aggregation": {
-        "collection": "scheduling",
+        "collection": "interventions",
         "type": "count",
         "dateFields": [
-          "createdAt",
-          "edits.createdAt",
-          "original.createdAt"
+          "scheduledDate",
+          "createdAt"
         ]
       }
     }
   ],
-  "anonymization": {
-    "collectionName": "scheduling",
-    "linkFieldPath": "clientId",
-    "redactFields": [
-      {
-        "fieldPath": "notes",
-        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-      }
-    ]
-  },
   "schema": {
     "fields": {
-      "code": {
-        "type": "string",
-        "description": "Codice pianificazione (es. SCH-2026-0001)",
-        "tags": [
-          "search",
-          "sort"
-        ]
-      },
       "title": {
         "type": "string",
-        "description": "Titolo o motivo della pianificazione",
+        "description": "Titolo intervento o attività pianificata",
         "tags": [
           "search",
           "display"
         ]
       },
-      "date": {
+      "scheduledDate": {
         "type": "date",
-        "description": "Data programmata (YYYY-MM-DD)",
+        "description": "Data pianificata",
         "tags": [
           "filter:date",
           "sort:default"
-        ]
-      },
-      "slot": {
-        "type": "string",
-        "description": "Fascia oraria (mattina, pomeriggio, giornata_intera, custom)",
-        "tags": [
-          "filter:slot"
-        ]
-      },
-      "status": {
-        "type": "string",
-        "description": "Stato operativo (pianificato, confermato, in_corso, completato, annullato)",
-        "tags": [
-          "filter:status",
-          "kpi:scheduling_in_corso"
         ]
       }
     }

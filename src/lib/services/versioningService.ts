@@ -630,6 +630,21 @@ export class VersioningService {
   }
 
   /**
+   * Helper incapsulato per ripristino da frontend: risolve automaticamente la DocumentReference senza esporre Firestore al client UI.
+   */
+  static async revertEntityLedgerEntryByPath(
+    entityCollection: string,
+    entityId: string,
+    options: Omit<RevertLedgerOptions, 'entityRef'>
+  ): Promise<{ aggregateVersion: number; reversalLedgerId: string; mode: ReversalMode }> {
+    const entityRef = doc(db, entityCollection, entityId);
+    return await this.revertLedgerEntry(db, {
+      ...options,
+      entityRef
+    });
+  }
+
+  /**
    * Recupera la cronologia completa (timeline) delle mutazioni di un'entità ordinata per aggregateVersion decrescente.
    */
   static async getEntityTimeline(

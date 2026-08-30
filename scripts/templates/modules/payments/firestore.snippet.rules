@@ -1,7 +1,14 @@
-// PAYMENTS
-match /payments/{docId} {
+// PAYMENTS & FLUSSI DI CASSA
+match /payments/{paymentId} {
   allow read: if isAuth();
-  allow write: if isAdmin();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isAdmin();
+
+  match /contractsPaid/{allocId} {
+    allow read: if isAuth();
+    allow write: if isAuth();
+  }
 }
 
 match /{path=**}/contractsPaid/{allocId} {

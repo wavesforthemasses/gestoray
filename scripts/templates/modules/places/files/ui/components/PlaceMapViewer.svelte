@@ -244,7 +244,7 @@
           La Tua Posizione Live
         </div>
         <div style="font-weight: 600; color: #0f172a;">
-          ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}
+          ${(Number(coords.lat) || 0).toFixed(6)}, ${(Number(coords.lng) || 0).toFixed(6)}
         </div>
         <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
           ${(coords.accuracy && coords.accuracy > 1500) ? 'Posizione stimata da rete IP/WiFi (nessun GPS hardware)' : `Accuratezza segnale: ±${Math.round(coords.accuracy || 0)}m`}

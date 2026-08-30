@@ -1,4 +1,17 @@
 <script lang="ts">
+  import { 
+    Wrench, 
+    ClipboardList, 
+    Calendar, 
+    Users, 
+    Truck, 
+    Settings, 
+    Plus, 
+    Clock, 
+    Euro, 
+    List 
+  } from '@lucide/svelte';
+
   interface Props {
     locationLabel?: string;
     totalCount: number;
@@ -20,7 +33,7 @@
 
 <header class="page-header">
   <div class="header-titles">
-    <h1 class="page-title">🛠️ Interventi & Rapportini di Lavoro</h1>
+    <h1 class="page-title"><Wrench size={22} class="inline-icon text-primary" /> Interventi & Rapportini di Lavoro</h1>
     <p class="page-subtitle">Pianifica, gestisci e consuntiva gli interventi sul campo per {locationLabel}.</p>
   </div>
   <div class="header-actions">
@@ -31,7 +44,7 @@
         onclick={() => viewMode = 'list'}
         title="Vista Elenco"
       >
-        📋 Elenco
+        <List size={14} /> Elenco
       </button>
       <button 
         class="toggle-btn" 
@@ -39,45 +52,45 @@
         onclick={() => viewMode = 'calendar'}
         title="Vista Calendario"
       >
-        📅 Calendario
+        <Calendar size={14} /> Calendario
       </button>
     </div>
 
-    <a href="/dashboard/interventi/teams" class="btn btn-secondary">👥 Squadre</a>
-    <a href="/dashboard/interventi/vehicles" class="btn btn-secondary">🚛 Mezzi</a>
-    <a href="/dashboard/settings/interventi" class="btn btn-icon-only" title="Impostazioni Modulo">⚙️</a>
-    <a href="/dashboard/interventi/add" class="btn btn-primary">➕ Nuovo Intervento</a>
+    <a href="/dashboard/interventi/teams" class="btn btn-secondary"><Users size={14} /> Squadre</a>
+    <a href="/dashboard/interventi/vehicles" class="btn btn-secondary"><Truck size={14} /> Mezzi</a>
+    <a href="/dashboard/settings/interventi" class="btn btn-icon-only" title="Impostazioni Modulo"><Settings size={16} /></a>
+    <a href="/dashboard/interventi/add" class="btn btn-primary"><Plus size={16} /> Nuovo Intervento</a>
   </div>
 </header>
 
 <!-- KPI BAR -->
 <div class="kpi-grid">
   <div class="kpi-card">
-    <div class="kpi-icon">📋</div>
+    <div class="kpi-icon"><ClipboardList size={22} class="text-primary" /></div>
     <div class="kpi-info">
       <span class="kpi-label">Totale Interventi</span>
       <span class="kpi-value">{totalCount}</span>
     </div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-icon warning">📅</div>
+    <div class="kpi-icon warning"><Calendar size={22} class="text-warning" /></div>
     <div class="kpi-info">
       <span class="kpi-label">Pianificati / In Lavorazione</span>
       <span class="kpi-value">{plannedCount}</span>
     </div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-icon info">⏱️</div>
+    <div class="kpi-icon info"><Clock size={22} class="text-info" /></div>
     <div class="kpi-info">
       <span class="kpi-label">Ore Consuntivate Totali</span>
-      <span class="kpi-value">{totalActualHours.toFixed(1)} h</span>
+      <span class="kpi-value">{(Number(totalActualHours) || 0).toFixed(1)} h</span>
     </div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-icon success">💶</div>
+    <div class="kpi-icon success"><Euro size={22} class="text-success" /></div>
     <div class="kpi-info">
       <span class="kpi-label">Valore a Bolla Totale</span>
-      <span class="kpi-value">€ {totalValueBolla.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+      <span class="kpi-value">€ {(Number(totalValueBolla) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
     </div>
   </div>
 </div>

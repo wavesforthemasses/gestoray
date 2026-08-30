@@ -495,7 +495,7 @@
       >
         <List size={20} />
       </a>
-      <h2 class="title-header">Gestione Cliente: {clientName} {clientCognome}</h2>
+      <h2 class="title-header">Gestione Cliente: {clientName}</h2>
       {#if hasTicketsModule}
         <button type="button" onclick={() => (showQRCodeModal = true)} class="btn-qr-modal">
           <QrCode size={16} /> QR Code Assistenza
@@ -645,7 +645,7 @@
 </div>
 
 {#if showQRCodeModal}
-  <ClientTicketQRCodeModal clientId={clientId} clientName={`${clientName} ${clientCognome}`} bind:isOpen={showQRCodeModal} />
+  <ClientTicketQRCodeModal clientId={clientId} clientName={clientName} bind:isOpen={showQRCodeModal} />
 {/if}
 
 {#if showAnonymizeModal}

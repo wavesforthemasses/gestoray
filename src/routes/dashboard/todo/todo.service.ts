@@ -65,7 +65,7 @@ export class TodoService {
           id: `prospect_${cl.id}`,
           type: 'prospect_followup',
           urgency: 'medium',
-          title: `Primo Contatto Lead: ${cl.nome} ${cl.cognome || ''}`.trim(),
+          title: `Primo Contatto Lead: ${cl.nome || cl.cognome || 'Cliente'}`.trim(),
           description: `Lead registrato ma non ancora contattato. Effettua una telefonata conoscitiva.`,
           dueDate: cl.edits?.createdAt || cl.createdAt,
           meta: { clientId: cl.id, component: 'prospect' }
@@ -78,7 +78,7 @@ export class TodoService {
           id: `quote_${cl.id}`,
           type: 'quote_followup',
           urgency: 'medium',
-          title: `Follow-up Preventivo: ${cl.nome} ${cl.cognome || ''}`.trim(),
+          title: `Follow-up Preventivo: ${cl.nome || cl.cognome || 'Cliente'}`.trim(),
           description: `Proposta inviata al cliente. Ricontatta il referente per negoziare la firma del contratto.`,
           dueDate: cl.edits?.createdAt || cl.createdAt,
           meta: { clientId: cl.id, component: 'quote' }

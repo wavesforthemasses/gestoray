@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { X, Search } from '@lucide/svelte';
+
   interface Props {
     searchQuery: string;
     selectedStatus: string;
@@ -27,7 +29,7 @@
   <div class="filter-group main-search">
     <input 
       type="text" 
-      placeholder="🔍 Cerca per titolo, cliente o luogo..." 
+      placeholder="Cerca per titolo, cliente o luogo..." 
       bind:value={searchQuery}
       class="form-control search-input"
     />
@@ -62,7 +64,9 @@
   </div>
 
   {#if searchQuery || selectedStatus || selectedMode || selectedOperator}
-    <button onclick={resetFilters} class="btn-reset" title="Resetta Filtri">✖ Resetta</button>
+    <button onclick={resetFilters} class="btn-reset" title="Resetta Filtri">
+      <X size={14} class="inline-icon" /> Resetta
+    </button>
   {/if}
 </div>
 

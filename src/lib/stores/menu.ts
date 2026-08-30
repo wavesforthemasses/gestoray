@@ -87,6 +87,12 @@ const NAMING_RESOLVERS: Record<string, (d: any) => string> = {
     if (naming === 'consuntivo') return 'Consuntivi';
     if (naming === 'custom' && d.customPluralLabel) return d.customPluralLabel;
     return 'Interventi Operativi';
+  },
+  payments: (d) => {
+    const naming = d.entityNaming || 'payment';
+    if (naming === 'receipt') return 'Ricevute';
+    if (naming === 'income') return 'Entrate';
+    return 'Incassi';
   }
 };
 

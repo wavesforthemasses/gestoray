@@ -47,10 +47,17 @@
   let loadingChart = $state(false);
   let computedChartPoints = $state<number[]>([]);
 
+  import { ContractsKPIBridge } from './contracts.kpi.bridge';
+
   let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('contracts'));
   let sideKpisPosition = $derived<'right' | 'none'>(
     activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
   );
+
+  let calculatedKPIs = $derived(
+    ContractsKPIBridge.calculateKPIs(contracts, { role: activeRoleState.role, uid: authState.user?.uid })
+  );
+
   let availableChartMetrics = $derived(
     (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
       .filter(k => k.enabled)
@@ -58,7 +65,8 @@
         id: k.id,
         label: k.name,
         shortLabel: k.acronym,
-        isCurrency: k.isCurrency
+        isCurrency: k.isCurrency !== false,
+        value: (calculatedKPIs as any)[k.id] ?? (calculatedKPIs as any)[k.acronym?.toLowerCase()] ?? 0
       }))
   );
 

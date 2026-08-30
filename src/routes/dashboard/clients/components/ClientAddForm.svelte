@@ -127,8 +127,8 @@
 
       const clientId = generateId('client');
       const now = new Date().toISOString();
-      const fullClientName = `${nome.trim()} ${cognome.trim()}`.trim();
-      const terms = generateSearchTerms(fullClientName, partitaIva.trim(), codiceFiscale.trim(), emailContatto.trim() || pec.trim());
+      const fullClientName = (nome.trim() || cognome.trim()).trim();
+      const terms = generateSearchTerms(nome.trim(), cognome.trim(), partitaIva.trim(), codiceFiscale.trim(), emailContatto.trim() || pec.trim());
 
       let chunkId: string | null = null;
       try {

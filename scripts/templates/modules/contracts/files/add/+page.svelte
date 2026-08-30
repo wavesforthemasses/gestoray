@@ -105,7 +105,7 @@
     productsCatalog.map(p => {
       const price = parsePriceNumber(p.price ?? p.listPrice ?? p.unitPrice ?? p.priceSold);
       const unit = p.unit || 'pz';
-      const priceTag = price > 0 ? ` - € ${price.toFixed(2)} / ${unit}` : '';
+      const priceTag = (Number(price) || 0) > 0 ? ` - € ${(Number(price) || 0).toFixed(2)} / ${unit}` : '';
       return {
         id: p.id,
         label: `${p.name || p.label || 'Articolo'}${priceTag}`

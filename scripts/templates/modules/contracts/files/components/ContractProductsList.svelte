@@ -67,7 +67,7 @@
           <select id="e-product" bind:value={editSelectedProductId} onchange={(e) => handleEditProductSelectChange(e.currentTarget.value)}>
             <option value="">-- Seleziona Prodotto --</option>
             {#each productsList as p}
-              <option value={p.id}>{p.name} (Listino: €{p.listPrice.toFixed(2)})</option>
+              <option value={p.id}>{p.name} (Listino: €{(Number(p.listPrice) || 0).toFixed(2)})</option>
             {/each}
           </select>
         </FormField>
@@ -119,7 +119,7 @@
             {#each editQuoteItems as item, index}
               <tr>
                 <td>{item.name}</td>
-                <td>€ {item.listPrice.toFixed(2)}</td>
+                <td>€ {(Number(item.listPrice) || 0).toFixed(2)}</td>
                 <td>
                   <div class="price-input-wrapper">
                     € <input type="number" bind:value={item.priceSold} step="0.01" class="small-input price-input" />
@@ -128,7 +128,7 @@
                 <td>
                   <input type="number" bind:value={item.quantity} min="1" step="1" class="small-input qty-input" />
                 </td>
-                <td><strong>€ {(item.priceSold * item.quantity).toFixed(2)}</strong></td>
+                <td><strong>€ {(Number(item.priceSold * item.quantity) || 0).toFixed(2)}</strong></td>
                 <td>
                   <button onclick={() => handleRemoveEditQuoteItem(index)} class="remove-item-btn danger-icon-btn">
                     <Trash2 size={14} />
@@ -139,14 +139,15 @@
           </tbody>
         </table>
 
-        <div class="co-selling-config-panel co-selling-panel-styled">
-          <h4 class="co-selling-title">Ripartizione Co-Selling</h4>
-          <div class="form-grid-columns grid-two-cols">
-            <FormField id="e-second-vendor" label="Secondo Consulente">
+        <div class="co-selling-config-panel co-selling-container">
+          <h4 class="co-selling-title">Ripartizione Co-Selling (Opzionale)</h4>
+          <p class="co-selling-desc">Se questa vendita è stata conclusa in collaborazione con un altro commerciale, selezionalo qui sotto per ripartire le provvigioni.</p>
+          <div class="form-grid-columns">
+            <FormField id="e-second-vendor" label="Secondo Commerciale">
               <select id="e-second-vendor" bind:value={editSecondVendorUid}>
-                <option value="">Nessuno (100% principale)</option>
+                <option value="">Nessuno (100% provvigione)</option>
                 {#each usersList.filter(u => u.uid !== contract.original?.vendorUid) as u}
-                  <option value={u.uid}>{u.nome || ''} {u.cognome || ''}</option>
+                  <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
                 {/each}
               </select>
             </FormField>
@@ -160,7 +161,7 @@
 
         <div class="total-footer">
           <div class="total-label">
-            Totale: <span class="total-amount">€ {editQuoteTotal.toFixed(2)}</span>
+            Totale: <span class="total-amount">€ {(Number(editQuoteTotal) || 0).toFixed(2)}</span>
           </div>
           <div class="flex-gap-12">
             <button onclick={cancelEditingProducts} class="cancel-btn footer-cancel-btn">Annulla</button>
@@ -185,8 +186,8 @@
         </thead>
         <tbody>
           {#each contract.original?.products || [] as p}
-            {@const isBelowMin = p.priceSold < p.minPrice}
-            {@const gap = p.priceSold - p.listPrice}
+            {@const isBelowMin = (Number(p.priceSold) || 0) < (Number(p.minPrice) || 0)}
+            {@const gap = (Number(p.priceSold) || 0) - (Number(p.listPrice) || 0)}
             <tr class:row-warning={isBelowMin}>
               <td>
                 <div class="prod-cell">
@@ -196,23 +197,23 @@
                   {/if}
                 </div>
               </td>
-              <td>€ {p.listPrice.toFixed(2)}</td>
-              <td>€ {p.minPrice.toFixed(2)}</td>
+              <td>€ {(Number(p.listPrice) || 0).toFixed(2)}</td>
+              <td>€ {(Number(p.minPrice) || 0).toFixed(2)}</td>
               <td>
                 <strong class:text-warning={isBelowMin}>
-                  € {p.priceSold.toFixed(2)}
+                  € {(Number(p.priceSold) || 0).toFixed(2)}
                 </strong>
               </td>
               <td>{p.quantity}</td>
-              <td><strong>€ {(p.priceSold * p.quantity).toFixed(2)}</strong></td>
+              <td><strong>€ {(Number(p.priceSold * p.quantity) || 0).toFixed(2)}</strong></td>
               <td>
                 {#if gap === 0}
                   <span class="gap-neutral">Listino Pieno</span>
                 {:else if gap > 0}
-                  <span class="gap-positive">+€ {gap.toFixed(2)}</span>
+                  <span class="gap-positive">+€ {(Number(gap) || 0).toFixed(2)}</span>
                 {:else}
                   <span class="gap-negative" class:heavy-discount={isBelowMin}>
-                    -€ {Math.abs(gap).toFixed(2)} ({((Math.abs(gap) / p.listPrice) * 100).toFixed(0)}% sconto)
+                    -€ {(Number(Math.abs(gap)) || 0).toFixed(2)} ({((Math.abs(gap) / (Number(p.listPrice) || 1)) * 100).toFixed(0)}% sconto)
                   </span>
                 {/if}
               </td>

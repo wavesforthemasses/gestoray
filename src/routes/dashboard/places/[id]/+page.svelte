@@ -309,7 +309,7 @@
               <div class="geo-details-footer">
                 <div class="geo-stat">
                   <span class="stat-label">Coordinate:</span>
-                  <span class="stat-val font-mono">{placeCoords.lat.toFixed(5)}, {placeCoords.lng.toFixed(5)}</span>
+                  <span class="stat-val font-mono">{(Number(placeCoords.lat) || 0).toFixed(5)}, {(Number(placeCoords.lng) || 0).toFixed(5)}</span>
                 </div>
                 <div class="geo-stat">
                   <span class="stat-label">Radar Geofence:</span>

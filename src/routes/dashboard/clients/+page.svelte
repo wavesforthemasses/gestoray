@@ -61,13 +61,20 @@
 
   let activeMetrics = $derived.by(() => {
     if (!clientChartConfig) return [];
+    const isComm = activeRoleState.role === 'commerciale';
+    const myUid = authState.user?.uid;
+    const totalCount = isComm && myUid 
+      ? clientsList.filter(c => (c as any).createdBy === myUid || (c as any).original?.createdBy === myUid).length 
+      : clientsList.length;
+
     return clientChartConfig.kpis
       .filter(k => k.enabled)
       .map(k => ({
         id: k.id,
         label: k.name,
         shortLabel: k.acronym,
-        isCurrency: k.isCurrency
+        isCurrency: k.isCurrency !== false,
+        value: totalCount
       }));
   });
 

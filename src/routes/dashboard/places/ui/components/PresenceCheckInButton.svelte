@@ -146,7 +146,7 @@
         {:else if distanceToPlace !== null}
           <span class="badge-proximity away">
             <Navigation size={13} />
-            <span>A {distanceToPlace > 1000 ? (distanceToPlace / 1000).toFixed(1) + ' km' : distanceToPlace + ' m'} da qui</span>
+            <span>A {distanceToPlace > 1000 ? (Number(distanceToPlace / 1000) || 0).toFixed(1) + ' km' : distanceToPlace + ' m'} da qui</span>
           </span>
         {/if}
 

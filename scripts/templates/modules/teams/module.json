@@ -5,6 +5,7 @@
   "icon": "Users",
   "requirements": [],
   "path": "/dashboard/teams",
+  "kpiBridgePath": "/dashboard/teams/teams.kpi.bridge.ts",
   "clientTabs": [],
   "settingsCard": {
     "title": "Configurazione Squadre & Risorse",

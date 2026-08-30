@@ -5,10 +5,10 @@
   import { SchedulingService } from './scheduling.service';
   import { ScheduleSettingsService } from './scheduleSettingsService';
   import { ScheduleViewsService } from './scheduleViewsService';
-  import { TeamsService } from '../teams/teams.service';
   import { UsersService } from '../users/users.service';
   import type { ScheduleSettings, CompositeCalendarItem, ScheduleView } from './schema';
   import type { TeamItem } from '../teams/schema';
+  import type { TeamsService as TeamsServiceType } from '../teams/teams.service';
   import MatrixCalendar, { type YAxisEntity } from './components/MatrixCalendar.svelte';
   import { Card, StatusBadge, Button, SearchToolbar, EmptyState, PageHeader } from '$lib';
   import { pageTitle } from '$lib/stores/page';
@@ -153,11 +153,10 @@
   async function loadData() {
     loading = true;
     try {
-      const [s, viewsData, compositeData, teamsData, usersData] = await Promise.all([
+      const [s, viewsData, compositeData, usersData] = await Promise.all([
         ScheduleSettingsService.getSettings(),
         ScheduleViewsService.getViews(),
         SchedulingService.getCompositeSchedule(),
-        TeamsService.getTeams(),
         UsersService.getUsers(undefined, 'active')
       ]);
 
@@ -168,10 +167,17 @@
       }
       compositeItems = compositeData.items;
       backlogItems = compositeData.backlog;
-      teams = teamsData.filter(t => t.status === 'attiva' || t.status === 'in_servizio');
       users = usersData;
 
-      // Dynamic import optional modules
+      // Dynamic import optional modules (teams, vehicles, places)
+      try {
+        const modTeams = await import('../teams/teams.service');
+        if (modTeams?.TeamsService) {
+          const teamsData = await modTeams.TeamsService.getTeams();
+          teams = teamsData.filter(t => t.status === 'attiva' || t.status === 'in_servizio');
+        }
+      } catch (e) {}
+
       try {
         const modVeh = await import('../vehicles/vehicles.service');
         if (modVeh?.VehiclesService) {

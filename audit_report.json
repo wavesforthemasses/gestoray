@@ -1,0 +1,346 @@
+{
+  "summary": {
+    "totalChecks": 62,
+    "passedChecks": 52,
+    "failedChecks": 0,
+    "warnings": 10
+  },
+  "modules": {
+    "activities": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "chart": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": false,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "clients": {
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": false
+    },
+    "contacts": {
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": false,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "contracts": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "deadlines": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "payments": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "places": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "products": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "profile": {
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": true,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "qualifications": {
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": false,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "scheduling": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "teams": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "tickets": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    },
+    "todo": {
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": true,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "vehicles": {
+      "registered": true,
+      "hasTemplate": true,
+      "hasService": true,
+      "hasSchema": true,
+      "hasTests": true,
+      "hasBridge": true
+    }
+  },
+  "bridges": {
+    "activities": {
+      "path": "src/routes/dashboard/activities/activities.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": false,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "contracts": {
+      "path": "src/routes/dashboard/contracts/contracts.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": false,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "deadlines": {
+      "path": "src/routes/dashboard/deadlines/deadlines.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": true,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "payments": {
+      "path": "src/routes/dashboard/payments/payments.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": true,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "places": {
+      "path": "src/routes/dashboard/places/places.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": false,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "products": {
+      "path": "src/routes/dashboard/products/products.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": false,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "scheduling": {
+      "path": "src/routes/dashboard/scheduling/scheduling.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": true,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "teams": {
+      "path": "src/routes/dashboard/teams/teams.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": true,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "tickets": {
+      "path": "src/routes/dashboard/tickets/tickets.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": false,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    },
+    "vehicles": {
+      "path": "src/routes/dashboard/vehicles/vehicles.kpi.bridge.ts",
+      "hasFetchKPIs": true,
+      "hasCalculateKPIs": true,
+      "hasAdminTables": true,
+      "hasBrokenFirestoreCall": false,
+      "illegalCrossImports": []
+    }
+  },
+  "templates": {
+    "activities": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "chart": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "clients": {
+      "status": "NO_TEMPLATE_FILES_DIR",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "contacts": {
+      "status": "NO_TEMPLATE_FILES_DIR",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "contracts": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "deadlines": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "payments": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "places": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "products": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "profile": {
+      "status": "NO_TEMPLATE_FILES_DIR",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "qualifications": {
+      "status": "NO_TEMPLATE_FILES_DIR",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "scheduling": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "teams": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "tickets": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "todo": {
+      "status": "NO_TEMPLATE_FILES_DIR",
+      "missingFiles": [],
+      "divergedFiles": []
+    },
+    "vehicles": {
+      "status": "PERFECT_SYNC",
+      "missingFiles": [],
+      "divergedFiles": []
+    }
+  },
+  "firestoreRules": {
+    "collectionsScanned": 6,
+    "missingRules": []
+  },
+  "numericsSafety": {
+    "filesScanned": 351,
+    "unsafeToFixed": []
+  },
+  "uiEmojis": {
+    "filesScanned": 0,
+    "rawEmojisFound": []
+  },
+  "multiSectorSimulations": {
+    "Edilizia_Manodopera_Multi_Tariffa": {
+      "expected": 3050,
+      "actual": 3050,
+      "passed": true
+    },
+    "Food_Scorporo_IVA_Multirate": {
+      "passed": true,
+      "foodP1": {
+        "net": 90.91,
+        "vat": 9.09
+      },
+      "foodP2": {
+        "net": 50,
+        "vat": 2
+      }
+    },
+    "B2B_Auto_Allocation_Reconciliation": {
+      "passed": true,
+      "result": {
+        "allocations": {
+          "inst1": 300,
+          "inst2": 450
+        },
+        "unallocated": 0
+      }
+    },
+    "Manutenzione_TMR_Calculation": {
+      "passed": true,
+      "avgHours": 4
+    }
+  }
+}

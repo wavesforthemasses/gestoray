@@ -1,33 +1,66 @@
 {
   "id": "payments",
-  "label": "Scadenzario & Incassi",
-  "description": "Gestione rate, scadenze ed incassi clienti",
+  "label": "Incassi & Cassa",
+  "description": "Registro incassi, flussi di cassa, scorporo IVA e riconciliazione",
   "icon": "CreditCard",
+  "requirements": [],
   "path": "/dashboard/payments",
   "kpiBridgePath": "/dashboard/payments/payments.kpi.bridge.ts",
-  "todoModals": [
-    {
-      "id": "installment",
-      "component": "TodoInstallmentModal.svelte"
-    }
+  "settingsCard": {
+    "title": "Configurazione Incassi & Cassa",
+    "description": "Denominazione agnostica (Incasso/Ricevuta/Entrata), prefissi numerazione, aliquote IVA predefinite.",
+    "icon": "CreditCard",
+    "path": "/dashboard/settings/payments"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
   ],
-  "rolesView": ["superadmin", "direzione", "amministrazione"],
-  "requirements": ["contracts"],
   "enabled": true,
   "kpiTiles": [
     {
-      "id": "gi",
-      "title": "GI",
-      "subtitle": "Incassato Reale",
-      "icon": "Wallet",
-      "valueKey": "totalIncassato",
-      "commValueKey": "commIncassato",
+      "id": "total_incassato",
+      "title": "Totale Incassato",
+      "subtitle": "Imponibile netto incassato",
+      "icon": "CreditCard",
       "format": "currency",
+      "isCurrency": true,
+      "valueKey": "totalIncassato",
       "aggregation": {
         "collection": "payments",
         "type": "sum",
-        "sumFields": ["amount", "original.amount"],
-        "dateFields": ["date", "paymentDate", "original.date", "createdAt", "edits.createdAt", "original.createdAt"]
+        "sumFields": [
+          "netAmount",
+          "original.netAmount",
+          "grossAmount",
+          "original.amount"
+        ],
+        "dateFields": [
+          "paymentDate",
+          "createdAt",
+          "original.date"
+        ]
+      }
+    },
+    {
+      "id": "incassato_contratti",
+      "title": "Incassato Contratti",
+      "subtitle": "Quote incassate imputate a contratti (GI)",
+      "icon": "Wallet",
+      "format": "currency",
+      "isCurrency": true,
+      "valueKey": "incassatoContratti",
+      "aggregation": {
+        "collection": "payments",
+        "type": "sum",
+        "sumFields": [
+          "contractAllocations.amount"
+        ],
+        "dateFields": [
+          "paymentDate",
+          "createdAt"
+        ]
       }
     }
   ],
@@ -35,41 +68,83 @@
     "collectionName": "payments",
     "linkFieldPath": "clientId",
     "redactFields": [
-      { "fieldPath": "notes", "replacement": "[CONTENUTO ANONIMIZZATO GDPR]" },
-      { "fieldPath": "clientName", "replacement": "Cliente Anonimizzato" }
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      }
     ]
   },
   "schema": {
     "fields": {
       "paymentNumber": {
         "type": "string",
-        "description": "Numero progressivo dell'incasso riscosso",
-        "tags": ["search", "sort"]
+        "description": "Numero progressivo del movimento di incasso (es. INC-2026-0001)",
+        "tags": [
+          "filter:number",
+          "search",
+          "sort"
+        ]
       },
       "clientId": {
         "type": "string",
-        "description": "ID del cliente incassato",
-        "tags": ["filter:client", "relation:clients"]
+        "description": "ID del cliente pagatore",
+        "tags": [
+          "filter:client",
+          "relation:clients"
+        ]
       },
       "clientName": {
         "type": "string",
-        "description": "Ragione sociale del cliente",
-        "tags": ["search", "display"]
+        "description": "Ragione sociale del cliente pagatore",
+        "tags": [
+          "search",
+          "display"
+        ]
       },
-      "amount": {
+      "grossAmount": {
         "type": "currency",
-        "description": "Importo totale incassato",
-        "tags": ["kpi:gi", "filter:amount", "chart:aggregate"]
+        "description": "Importo lordo totale incassato",
+        "tags": [
+          "kpi:gross_amount",
+          "filter:amount"
+        ]
       },
-      "date": {
+      "netAmount": {
+        "type": "currency",
+        "description": "Imponibile netto reale (base calcolo provvigioni)",
+        "tags": [
+          "kpi:net_amount",
+          "filter:amount"
+        ]
+      },
+      "vatRate": {
+        "type": "number",
+        "description": "Aliquota IVA percentuale applicata (es. 22%)",
+        "tags": [
+          "filter:vat"
+        ]
+      },
+      "paymentDate": {
         "type": "date",
-        "description": "Data di registrazione dell'incasso",
-        "tags": ["filter:date", "sort:default"]
+        "description": "Data effettiva dell'incasso",
+        "tags": [
+          "filter:date",
+          "sort:default"
+        ]
       },
-      "derived.remainingToDistribute": {
-        "type": "currency",
-        "description": "Quota rimanente dell'incasso da allocare ai contratti",
-        "tags": ["kpi:undistributed_payments"]
+      "method": {
+        "type": "string",
+        "description": "Metodo di pagamento (bonifico, contanti, carta, assegno, etc.)",
+        "tags": [
+          "filter:method"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato movimento (registrato, in_verifica, annullato)",
+        "tags": [
+          "filter:status"
+        ]
       }
     }
   }

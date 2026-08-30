@@ -196,9 +196,15 @@ export class AnonymizationService {
       const ragione = updatedData.original?.ragioneSociale || '';
       
       let cacheLabel = '';
-      if (ragione) cacheLabel = ragione;
-      else if (nome || cognome) cacheLabel = `${nome} ${cognome}`.trim();
-      else cacheLabel = 'Anonimo';
+      if (collectionName === 'clients') {
+        cacheLabel = ragione || nome || cognome || 'Anonimo';
+      } else if (collectionName === 'users') {
+        cacheLabel = `${nome} ${cognome}`.trim() || ragione || 'Anonimo';
+      } else {
+        if (ragione) cacheLabel = ragione;
+        else if (nome || cognome) cacheLabel = `${nome} ${cognome}`.trim();
+        else cacheLabel = 'Anonimo';
+      }
 
       // Cerchiamo di dedurre il tipo cache dalla collection
       if (collectionName === 'users') {

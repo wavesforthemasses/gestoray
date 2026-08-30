@@ -380,7 +380,7 @@
                               <option value="__auto_uuid">Identificatore Unico (UUIDv7)</option>
                               {#if field.autoGenerators}
                                 {#each field.autoGenerators as gen}
-                                  <option value={`__custom_gen_${gen.key}`}>{gen.label.replace(/^✨\s*/, '')}</option>
+                                  <option value={`__custom_gen_${gen.key}`}>{gen.label.replace(/^[\u2728\s]*/, '')}</option>
                                 {/each}
                               {/if}
                             </optgroup>

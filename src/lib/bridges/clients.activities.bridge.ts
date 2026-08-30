@@ -3,8 +3,8 @@ import { ClientsService } from '../../routes/dashboard/clients/clients.service';
 import type { ClientItem } from '../../routes/dashboard/clients/schema';
 
 function extractClientDisplayName(client: ClientItem): string {
-  const orig = client.original || {};
-  return `${orig.nome || ''} ${orig.cognome || ''}`.trim() || 'Cliente';
+  const orig = (client.original || {}) as any;
+  return (orig.ragioneSociale || orig.companyName || orig.nome || orig.cognome || '').trim() || 'Cliente';
 }
 
 function extractClientFiscalId(client: ClientItem): string {

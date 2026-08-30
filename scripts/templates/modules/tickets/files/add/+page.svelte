@@ -19,60 +19,54 @@
     requesterName: '',
     assignedTo: '',
     assignedToName: '',
-    priority: 'normale',
-    category: 'altro',
+    priority: 'media',
+    category: 'generale',
     status: 'aperto'
   });
 
-  let users = $state<{ id: string; name: string }[]>([]);
   let clients = $state<{ id: string; name: string }[]>([]);
+  let users = $state<{ id: string; name: string; role?: string }[]>([]);
   let categories = $state<TicketCategoryConfig[]>([]);
-
-  let loading = $state(true);
   let saving = $state(false);
   let errorMsg = $state('');
 
   onMount(async () => {
     try {
-      const [usersData, clientsData, ticketSettings] = await Promise.all([
-        TicketsService.getAssignableUsers(),
-        CacheLookupService.getClients(),
-        TicketSettingsService.getSettings()
-      ]);
+      const conf = await TicketSettingsService.getSettings();
+      categories = conf.categories || [];
+      if (categories.length > 0) {
+        formData.category = categories[0].id;
+      }
 
-      users = usersData;
-      clients = clientsData;
-      if (ticketSettings && ticketSettings.categories) {
-        categories = ticketSettings.categories.filter(c => c.enabled);
-      }
-      
-      // Auto-populate requester if logged in
-      if (authState.user) {
-        formData.requesterEmail = authState.user.email || '';
-        formData.requesterName = authState.user.email?.split('@')[0] || '';
-      }
-    } catch (e: any) {
-      errorMsg = 'Impossibile caricare i dati: ' + e.message;
-    } finally {
-      loading = false;
+      clients = await CacheLookupService.getLookup('clients');
+      users = await CacheLookupService.getLookup('users');
+    } catch (e) {
+      console.error('Errore caricamento dati per form ticket:', e);
     }
   });
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
+    if (!formData.subject || !formData.description) {
+      errorMsg = 'Compila i campi obbligatori (Oggetto e Descrizione).';
+      return;
+    }
+
+    if (authState.user?.uid) {
+      formData.createdBy = authState.user.uid;
+    }
+
+    // Assign operator name if assignedTo is set
+    if (formData.assignedTo) {
+      const u = users.find(x => x.id === formData.assignedTo);
+      if (u) formData.assignedToName = u.name;
+    }
+
     saving = true;
     errorMsg = '';
-
     try {
-      if (!formData.subject.trim()) {
-        throw new Error('Il campo Oggetto è obbligatorio.');
-      }
-      if (!formData.description.trim()) {
-        throw new Error('Il campo Descrizione è obbligatorio.');
-      }
-
-      await TicketsService.createTicket(formData, authState.user?.uid);
-      goto('/dashboard/tickets');
+      const newId = await TicketsService.createTicket(formData);
+      goto(`/dashboard/tickets/${newId}`);
     } catch (e: any) {
       errorMsg = 'Errore durante la creazione del ticket: ' + e.message;
       saving = false;

@@ -91,11 +91,15 @@
   }
 
   function getMetricDisplayVal(m: MetricOption) {
-    const raw = (m as any).value ?? 0;
-    if (m.isCurrency) {
-      return `€ ${Number(raw).toFixed(2)}`;
+    let raw = (m as any).value;
+    if ((raw === undefined || raw === null) && m.id === activeMetric && computedChartPoints && computedChartPoints.length > 0) {
+      raw = computedChartPoints.reduce((a, b) => a + (b || 0), 0);
     }
-    return raw;
+    raw = raw ?? 0;
+    if (m.isCurrency) {
+      return `€ ${Number(raw).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return typeof raw === 'number' ? raw.toLocaleString('it-IT') : raw;
   }
 
   function handleMetricClick(metricId: string) {

@@ -45,8 +45,9 @@ const search_utils_1 = require("../search-utils");
 const modules_registry_json_1 = __importDefault(require("../config/modules.registry.json"));
 function extractClientSearchTerms(data) {
     const orig = data.original || data || {};
-    const clientName = `${orig.nome || orig.ragioneSociale || orig.companyName || ''} ${orig.cognome || ''}`.trim();
-    return (0, search_utils_1.generateSearchTerms)(clientName, orig.partitaIva, orig.codiceFiscale);
+    const clientName = (orig.ragioneSociale || orig.companyName || orig.nome || orig.cognome || '').trim();
+    const contactName = orig.cognome ? orig.cognome.trim() : undefined;
+    return (0, search_utils_1.generateSearchTerms)(clientName, contactName, orig.partitaIva, orig.codiceFiscale);
 }
 exports.onClientCreated = (0, firestore_1.onDocumentCreated)('clients/{clientId}', async (event) => {
     const snapshot = event.data;

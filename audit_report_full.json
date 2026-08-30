@@ -1,0 +1,341 @@
+{
+  "timestamp": "2026-08-30T21:22:08.683Z",
+  "environment": {
+    "nodeVersion": "v22.23.1",
+    "rootDir": "/home/vincenzo/Code/gestoray"
+  },
+  "subsystems": {
+    "CORE_FOUNDATION": {
+      "title": "1. Core CRM, Identity & Tenant Foundation",
+      "modules": {
+        "clients": {
+          "exists": true,
+          "filesCount": 15,
+          "linesOfCode": 5492,
+          "hasService": true,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "users": {
+          "exists": true,
+          "filesCount": 9,
+          "linesOfCode": 1469,
+          "hasService": true,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        },
+        "contacts": {
+          "exists": true,
+          "filesCount": 2,
+          "linesOfCode": 1497,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        },
+        "profile": {
+          "exists": true,
+          "filesCount": 4,
+          "linesOfCode": 343,
+          "hasService": true,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        },
+        "qualifications": {
+          "exists": true,
+          "filesCount": 6,
+          "linesOfCode": 789,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        },
+        "settings": {
+          "exists": true,
+          "filesCount": 28,
+          "linesOfCode": 9826,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": true
+        }
+      }
+    },
+    "FINANCE_COMMERCIAL": {
+      "title": "2. Commercial Pipelines & Financial Reconciliation",
+      "modules": {
+        "contracts": {
+          "exists": true,
+          "filesCount": 30,
+          "linesOfCode": 8952,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "payments": {
+          "exists": true,
+          "filesCount": 10,
+          "linesOfCode": 2934,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "commissions": {
+          "exists": false,
+          "filesCount": 0,
+          "linesOfCode": 0,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        }
+      }
+    },
+    "OPERATIONS_LOGISTICS": {
+      "title": "3. Field Operations, Resources & Logistics",
+      "modules": {
+        "places": {
+          "exists": true,
+          "filesCount": 42,
+          "linesOfCode": 13270,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "teams": {
+          "exists": true,
+          "filesCount": 9,
+          "linesOfCode": 3332,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "vehicles": {
+          "exists": true,
+          "filesCount": 10,
+          "linesOfCode": 1565,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "scheduling": {
+          "exists": true,
+          "filesCount": 9,
+          "linesOfCode": 1800,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "interventi": {
+          "exists": false,
+          "filesCount": 0,
+          "linesOfCode": 0,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        }
+      }
+    },
+    "PRODUCTS_HELPDESK_ACTIVITY": {
+      "title": "4. Products Catalog, Service Desk & Tasks",
+      "modules": {
+        "products": {
+          "exists": true,
+          "filesCount": 10,
+          "linesOfCode": 2661,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "tickets": {
+          "exists": true,
+          "filesCount": 9,
+          "linesOfCode": 2410,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "activities": {
+          "exists": true,
+          "filesCount": 16,
+          "linesOfCode": 5786,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "deadlines": {
+          "exists": true,
+          "filesCount": 9,
+          "linesOfCode": 1851,
+          "hasService": true,
+          "hasBridge": true,
+          "bridgeHealth": "PERFECT_SSOT",
+          "hasSchema": true,
+          "hasTest": true
+        },
+        "todo": {
+          "exists": true,
+          "filesCount": 4,
+          "linesOfCode": 534,
+          "hasService": true,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        }
+      }
+    },
+    "ANALYTICS_INTELLIGENCE": {
+      "title": "5. Business Intelligence & Dynamic KPI Dispatcher",
+      "modules": {
+        "chart": {
+          "exists": true,
+          "filesCount": 1,
+          "linesOfCode": 128,
+          "hasService": false,
+          "hasBridge": false,
+          "bridgeHealth": "N/A",
+          "hasSchema": false,
+          "hasTest": false
+        }
+      }
+    }
+  },
+  "summary": {
+    "totalModulesScanned": 20,
+    "totalFilesScanned": 223,
+    "totalLinesOfCode": 64639,
+    "healthScore": 100,
+    "totalChecks": 180,
+    "passedChecks": 180,
+    "warnings": 0,
+    "failedChecks": 0
+  },
+  "securityAlerts": [],
+  "templateDriftAlerts": [],
+  "numericSafetyAlerts": [],
+  "smeSimulations": {
+    "1_Edilizia_Cantieri_SAL": {
+      "totalLabor": 6300,
+      "sal1Gross": 16500,
+      "passed": true
+    },
+    "2_Studi_Professionali_Notule": {
+      "gross": 4282.2,
+      "netPayable": 3607.2,
+      "passed": true
+    },
+    "3_Food_Retail_Scorporo_IVA": {
+      "totalCassa": 960,
+      "totalNet": 865.57,
+      "totalVat": 94.43,
+      "passed": true
+    },
+    "4_Manutenzioni_SLA_TMR": {
+      "tmr": 12.2,
+      "breaches": 1,
+      "passed": true
+    },
+    "5_Commercio_B2B_PriceFloor_CoSeller": {
+      "totalOrder": 1500,
+      "underPriceAlerts": 1,
+      "commTotal": 150,
+      "primaryComm": 105,
+      "secondaryComm": 45,
+      "passed": true
+    }
+  },
+  "uiEmojiAlerts": [],
+  "capabilityMatrix": [
+    {
+      "id": "CRM_DUPLICATE_PREVENTION",
+      "name": "Impedire anagrafiche duplicate & dati mancanti",
+      "covered": true
+    },
+    {
+      "id": "CRM_DIARY_ACTIVITIES",
+      "name": "Diario contatti multi-tipo (telefonate, appuntamenti, incontri, email)",
+      "covered": true
+    },
+    {
+      "id": "QUOTES_PRICE_ALERT",
+      "name": "Preventivatore con alert soglia minima prezzo di listino",
+      "covered": true
+    },
+    {
+      "id": "CO_SELLER_COMMISSIONS",
+      "name": "Supporto Co-venditore con ripartizione % provvigionale",
+      "covered": true
+    },
+    {
+      "id": "INSTALLMENTS_RECONCILIATION",
+      "name": "Pianificazione rate flessibile e solleciti scadenza",
+      "covered": true
+    },
+    {
+      "id": "PAYMENT_MULTI_CONTRACT_ALLOCATION",
+      "name": "Allocazione singolo incasso a contratti/rate multiple",
+      "covered": true
+    },
+    {
+      "id": "VAT_UNBUNDLING_REALIZED_COMMISSIONS",
+      "name": "Scorporo IVA e maturazione provvigioni su incassato reale",
+      "covered": true
+    },
+    {
+      "id": "RBAC_MULTI_ROLES_QUALIFICATIONS",
+      "name": "RBAC multi-ruolo e provvigioni per qualifica (Junior/Senior/DV)",
+      "covered": true
+    },
+    {
+      "id": "GDPR_ONE_CLICK_CASCADE",
+      "name": "Anonimizzazione GDPR Diritto all Oblio 1-click in cascata",
+      "covered": true
+    },
+    {
+      "id": "BI_DYNAMIC_CHART_EXPORTS",
+      "name": "Universal Analytics Chart interattivo con export CSV/XLS/PDF",
+      "covered": true
+    },
+    {
+      "id": "HIERARCHICAL_PLACES_GEOFENCING",
+      "name": "Luoghi e Cantieri multilivello con presenza e coordinate",
+      "covered": true
+    },
+    {
+      "id": "TEAMS_AND_RESOURCE_SCHEDULING",
+      "name": "Pianificazione Squadre/Mezzi e tariffe operatore",
+      "covered": true
+    }
+  ]
+}

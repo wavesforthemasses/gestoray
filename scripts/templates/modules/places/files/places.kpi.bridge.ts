@@ -3,39 +3,37 @@ import type { KPIFetchParams, DrillDownFetchParams } from '$lib/types/moduleKPIB
 import { formatDate } from '$lib/utils/formatters';
 
 export class PlacesKPIBridge {
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  /**
+   * Pure domain function: Single Source of Truth (SSOT) for Places KPIs.
+   */
+  static calculateKPIs(placesList: any[], referenceDate = new Date()) {
     let activePlaces = 0;
     let newPlaces = 0;
     let totalPlaces = 0;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1).getTime();
 
-    try {
-      const snap = await getDocs(collection(db, 'places'));
-      totalPlaces = snap.size;
+    for (const d of placesList) {
+      if (!d || d?.derived?.deleted || d?.deleted) continue;
+      const data = d.data ? d.data() : d;
+      totalPlaces++;
 
-      snap.forEach((d: any) => {
-        const data = d.data();
-        const status = data.status || data.original?.status;
-        if (status !== 'inattivo') {
-          activePlaces += 1;
-        }
+      const status = data.status || data.original?.status;
+      if (status !== 'inattivo') {
+        activePlaces += 1;
+      }
 
-        const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
-        let ms = 0;
-        if (dt) {
-          if (typeof dt === 'string') ms = new Date(dt).getTime();
-          else if (typeof dt.toDate === 'function') ms = dt.toDate().getTime();
-          else if (typeof dt.seconds === 'number') ms = dt.seconds * 1000;
-          else if (dt instanceof Date) ms = dt.getTime();
-        }
-        if (ms >= startOfMonth) {
-          newPlaces += 1;
-        }
-      });
-    } catch (e) {
-      console.error('Error fetching places KPIs in bridge:', e);
+      const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
+      let ms = 0;
+      if (dt) {
+        if (typeof dt === 'string') ms = new Date(dt).getTime();
+        else if (typeof dt.toDate === 'function') ms = dt.toDate().getTime();
+        else if (typeof dt.seconds === 'number') ms = dt.seconds * 1000;
+        else if (dt instanceof Date) ms = dt.getTime();
+      }
+      if (ms >= startOfMonth) {
+        newPlaces += 1;
+      }
     }
 
     return {
@@ -43,8 +41,23 @@ export class PlacesKPIBridge {
       new_places: newPlaces,
       places_attivi: activePlaces,
       activePlacesCount: activePlaces,
-      totalPlacesCount: totalPlaces
+      totalPlacesCount: totalPlaces,
+      total_places: totalPlaces
     };
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const snap = await getDocs(collection(db, 'places'));
+      const list: any[] = [];
+      snap.forEach((d: any) => {
+        list.push({ id: d.id, ...d.data() });
+      });
+      return this.calculateKPIs(list);
+    } catch (e) {
+      console.error('Error fetching places KPIs in bridge:', e);
+      return this.calculateKPIs([]);
+    }
   }
 
   static async fetchDrillDownItems({ period, tab, role, uid }: DrillDownFetchParams) {

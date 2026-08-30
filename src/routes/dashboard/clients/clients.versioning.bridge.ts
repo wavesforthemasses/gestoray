@@ -67,7 +67,7 @@ export class ClientsVersioningBridge {
   static getEntityLabel(clientData: any): string {
     if (!clientData) return 'Cliente';
     const orig = clientData.original || clientData;
-    const name = `${orig.nome || orig.ragioneSociale || ''} ${orig.cognome || ''}`.trim();
+    const name = (orig.ragioneSociale || orig.companyName || orig.nome || orig.cognome || '').trim();
     return name || orig.email || clientData.id || 'Cliente';
   }
 }

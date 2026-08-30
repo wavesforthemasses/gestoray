@@ -114,20 +114,41 @@ export class ClientDetailService {
       }
     };
 
-    const [activitiesSnap, usersSnap] = await Promise.all([
+    const [subActsSnap, rootTargetSnap, rootClientSnap, usersSnap] = await Promise.all([
       safeGetDocs(collection(db, 'clients', clientId, 'activities')),
+      safeGetDocs(query(collection(db, 'activities'), where('targetId', '==', clientId))),
+      safeGetDocs(query(collection(db, 'activities'), where('clientId', '==', clientId))),
       safeGetDocs(collection(db, 'users'))
     ]);
 
-    const acts: any[] = [];
-    if (activitiesSnap.forEach) {
-      activitiesSnap.forEach((d: any) => {
-        const act = d.data();
-        acts.push({ id: d.id, ...act.original, edits: act.edits });
-      });
-    }
-    const activitiesList = acts.sort(
-      (a, b) => new Date(b.edits?.createdAt || a.date).getTime() - new Date(a.edits?.createdAt || b.date).getTime()
+    const actsMap = new Map<string, any>();
+    const processDoc = (d: any) => {
+      if (!d || !d.data) return;
+      const act = d.data();
+      if (act.derived?.deleted || act.deleted) return;
+      const id = d.id;
+      const orig = act.original || {};
+      const merged = {
+        id,
+        type: orig.type || act.activityType || act.type || act.category || 'Attività',
+        notes: orig.notes || act.description || act.notes || act.title || '',
+        date: orig.date || act.executionDate || act.dueDate || act.createdAt || act.edits?.createdAt || '',
+        loggedBy: orig.loggedBy || act.assignedUid || act.loggedBy || act.edits?.createdBy || '',
+        loggedEmail: orig.loggedEmail || act.loggedEmail || '',
+        status: orig.status || act.status || 'completata',
+        title: act.title || orig.title || '',
+        activityNumber: act.activityNumber || orig.activityNumber || '',
+        edits: act.edits || orig.edits || {}
+      };
+      actsMap.set(id, merged);
+    };
+
+    if (subActsSnap.docs) subActsSnap.docs.forEach(processDoc);
+    if (rootTargetSnap.docs) rootTargetSnap.docs.forEach(processDoc);
+    if (rootClientSnap.docs) rootClientSnap.docs.forEach(processDoc);
+
+    const activitiesList = Array.from(actsMap.values()).sort(
+      (a, b) => new Date(b.edits?.createdAt || b.date || 0).getTime() - new Date(a.edits?.createdAt || a.date || 0).getTime()
     );
 
     const historyList = await AuditHistoryService.getEntityHistory('clients', clientId);
@@ -239,9 +260,10 @@ export class ClientDetailService {
           : (originalProfile[f] ?? '');
     });
 
-    const fullClientName = `${newOriginal.nome || ''} ${newOriginal.cognome || ''}`.trim();
+    const fullClientName = (newOriginal.nome || newOriginal.ragioneSociale || newOriginal.cognome || '').trim();
     const updatedTerms = generateSearchTerms(
-      fullClientName,
+      newOriginal.nome || '',
+      newOriginal.cognome || '',
       newOriginal.partitaIva || '',
       newOriginal.codiceFiscale || '',
       newOriginal.email || newOriginal.emailContatto || ''
@@ -336,11 +358,37 @@ export class ClientDetailService {
     activityType: string,
     notes: string,
     appointmentDate: string | undefined,
-    authObj: { uid: string; email: string }
+    authObj: { uid: string; email: string; tenantId?: string; displayName?: string }
   ): Promise<string> {
-    const activityId = generateId('act');
+    let activityId = generateId('act');
     const activityDate = appointmentDate || new Date().toISOString();
 
+    // 1. Dynamic delegation to ActivitiesService on root collection (Principle #18)
+    try {
+      const { ActivitiesService } = await import('../../activities/activities.service');
+      activityId = await ActivitiesService.createActivity({
+        title: activityType || 'Nota / Attività',
+        description: notes || activityType,
+        targetType: 'client',
+        targetId: clientId,
+        targetName: '',
+        clientId,
+        executionDate: activityDate.slice(0, 10),
+        priority: 'media',
+        status: 'completata',
+        category: 'crm',
+        assignedUid: authObj.uid,
+        assignedName: authObj.displayName || authObj.email || 'Operatore'
+      }, {
+        uid: authObj.uid,
+        displayName: authObj.displayName || authObj.email,
+        tenantId: authObj.tenantId || 'default'
+      });
+    } catch {
+      // Fallback
+    }
+
+    // 2. Dual-write to subcollection for backward compatibility
     await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
       original: {
         clientId,

@@ -228,20 +228,36 @@ export class CacheLookupService {
     for (const d of snap.docs) {
       const data = d.data();
       const orig = data.original || data;
-      const name =
-        (orig.nome && orig.cognome ? `${orig.nome} ${orig.cognome}`.trim() : null) ||
-        orig.ragioneSociale ||
-        orig.companyName ||
-        orig.nome ||
-        orig.cognome ||
-        orig.title ||
-        orig.subject ||
-        orig.contractNumber ||
-        orig.plate ||
-        orig.name ||
-        orig.displayName ||
-        orig.email ||
-        `${type} ${d.id}`;
+      let name: string;
+      if (type === 'users') {
+        name =
+          (orig.nome && orig.cognome ? `${orig.nome} ${orig.cognome}`.trim() : null) ||
+          orig.displayName ||
+          orig.nome ||
+          orig.email ||
+          `Utente ${d.id}`;
+      } else if (type === 'clients') {
+        name =
+          orig.ragioneSociale ||
+          orig.companyName ||
+          orig.nome ||
+          orig.cognome ||
+          orig.email ||
+          `Cliente ${d.id}`;
+      } else {
+        name =
+          orig.ragioneSociale ||
+          orig.companyName ||
+          orig.title ||
+          orig.subject ||
+          orig.name ||
+          orig.contractNumber ||
+          orig.plate ||
+          orig.nome ||
+          orig.displayName ||
+          orig.email ||
+          `${type} ${d.id}`;
+      }
 
       resultList.push({ id: d.id, name });
       currentChunkItems[d.id] = name;

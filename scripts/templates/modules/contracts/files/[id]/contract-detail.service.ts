@@ -88,7 +88,11 @@ export class ContractDetailService {
   static async reopenContract(contractId: string, uid: string) {
     const now = new Date().toISOString();
     await updateDoc(doc(db, 'contracts', contractId), {
-      'original.status': 'draft',
+      status: 'bozza',
+      approvedAt: null,
+      approvedBy: null,
+      approvedEmail: null,
+      'original.status': 'bozza',
       'original.approvedAt': null,
       'original.approvedBy': null,
       'original.approvedEmail': null,
@@ -100,6 +104,7 @@ export class ContractDetailService {
   static async saveSignature(contractId: string, signatureDataUrl: string, uid: string) {
     const now = new Date().toISOString();
     await updateDoc(doc(db, 'contracts', contractId), {
+      signature: signatureDataUrl,
       'original.signature': signatureDataUrl,
       'edits.modifiedAt': now,
       'edits.modifiedBy': uid
@@ -109,6 +114,7 @@ export class ContractDetailService {
   static async clearSignature(contractId: string, uid: string) {
     const now = new Date().toISOString();
     await updateDoc(doc(db, 'contracts', contractId), {
+      signature: null,
       'original.signature': null,
       'edits.modifiedAt': now,
       'edits.modifiedBy': uid
@@ -118,17 +124,20 @@ export class ContractDetailService {
   static async addInstallment(contract: any, contractId: string, installmentDueDate: string, installmentExpectedAmount: number, uid: string, email: string) {
     const now = new Date().toISOString();
     const instId = generateId('inst');
+    const clientId = contract?.original?.clientId || contract?.clientId || '';
+    const clientName = contract?.original?.clientName || contract?.clientName || 'Cliente';
+    const amountVal = Number(installmentExpectedAmount) || 0;
     
     const newInst = {
       original: {
         contractId,
-        clientId: contract.original.clientId,
-        clientName: contract.original.clientName,
+        clientId,
+        clientName,
         dueDate: installmentDueDate,
-        expectedAmount: Number(installmentExpectedAmount),
+        expectedAmount: amountVal,
         status: 'pending',
-        vendorUid: contract.original.vendorUid || null,
-        secondVendorUid: contract.original.secondVendorUid || null
+        vendorUid: contract?.original?.vendorUid || contract?.agentId || null,
+        secondVendorUid: contract?.original?.secondVendorUid || null
       },
       edits: {
         createdAt: now,
@@ -138,48 +147,111 @@ export class ContractDetailService {
 
     await setDoc(doc(db, 'contracts', contractId, 'installments', instId), newInst);
     
-    const activityId = generateId('act');
-    await setDoc(doc(db, 'clients', contract.original.clientId, 'activities', activityId), {
-      original: {
-        clientId: contract.original.clientId,
-        clientName: contract.original.clientName,
-        type: 'Sollecito Email',
-        notes: `Pianificata scadenza di recupero credito per €${installmentExpectedAmount.toFixed(2)} in data ${installmentDueDate}`,
+    let activityId = generateId('act');
+    const actNotes = `Pianificata scadenza di recupero credito per €${(Number(amountVal) || 0).toFixed(2)} in data ${installmentDueDate}`;
+
+    // 1. Dynamic delegation to ActivitiesService (Principle #18)
+    try {
+      const { ActivitiesService } = await import('../../activities/activities.service');
+      activityId = await ActivitiesService.createActivity({
+        title: 'Sollecito Email',
+        description: actNotes,
+        targetType: 'contract',
+        targetId: contractId,
+        targetName: contract?.title || contract?.contractNumber || 'Contratto',
+        clientId,
+        executionDate: installmentDueDate || now.slice(0, 10),
+        priority: 'media',
         status: 'completata',
-        loggedBy: uid,
-        loggedEmail: email
-      },
-      edits: {
-        createdAt: now,
-        createdBy: uid
-      }
-    });
+        category: 'crm',
+        assignedUid: uid,
+        assignedName: email || 'Operatore'
+      }, {
+        uid,
+        displayName: email,
+        tenantId: 'default'
+      });
+    } catch {
+      // Fallback if activities module is inactive
+    }
+
+    // 2. Dual-write to subcollection for backward compatibility
+    if (clientId) {
+      await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
+        original: {
+          clientId,
+          clientName,
+          type: 'Sollecito Email',
+          notes: actNotes,
+          status: 'completata',
+          loggedBy: uid,
+          loggedEmail: email
+        },
+        edits: {
+          createdAt: now,
+          createdBy: uid
+        }
+      });
+    }
   }
 
   static async postponeInstallment(contract: any, contractId: string, instId: string, newDate: string, uid: string, email: string) {
     const now = new Date().toISOString();
+    const clientId = contract?.original?.clientId || contract?.clientId || '';
+    const clientName = contract?.original?.clientName || contract?.clientName || 'Cliente';
+
     await updateDoc(doc(db, 'contracts', contractId, 'installments', instId), {
       'original.dueDate': newDate,
       'edits.modifiedAt': now,
       'edits.modifiedBy': uid
     });
     
-    const activityId = generateId('act');
-    await setDoc(doc(db, 'clients', contract.original.clientId, 'activities', activityId), {
-      original: {
-        clientId: contract.original.clientId,
-        clientName: contract.original.clientName,
-        type: 'Sollecito Telefonico',
-        notes: `Posticipata scadenza pagamento al ${newDate}`,
+    let activityId = generateId('act');
+    const actNotes = `Posticipata scadenza pagamento al ${newDate}`;
+
+    // 1. Dynamic delegation to ActivitiesService (Principle #18)
+    try {
+      const { ActivitiesService } = await import('../../activities/activities.service');
+      activityId = await ActivitiesService.createActivity({
+        title: 'Sollecito Telefonico',
+        description: actNotes,
+        targetType: 'contract',
+        targetId: contractId,
+        targetName: contract?.title || contract?.contractNumber || 'Contratto',
+        clientId,
+        executionDate: newDate || now.slice(0, 10),
+        priority: 'media',
         status: 'completata',
-        loggedBy: uid,
-        loggedEmail: email
-      },
-      edits: {
-        createdAt: now,
-        createdBy: uid
-      }
-    });
+        category: 'crm',
+        assignedUid: uid,
+        assignedName: email || 'Operatore'
+      }, {
+        uid,
+        displayName: email,
+        tenantId: 'default'
+      });
+    } catch {
+      // Fallback
+    }
+
+    // 2. Dual-write to subcollection for backward compatibility
+    if (clientId) {
+      await setDoc(doc(db, 'clients', clientId, 'activities', activityId), {
+        original: {
+          clientId,
+          clientName,
+          type: 'Sollecito Telefonico',
+          notes: actNotes,
+          status: 'completata',
+          loggedBy: uid,
+          loggedEmail: email
+        },
+        edits: {
+          createdAt: now,
+          createdBy: uid
+        }
+      });
+    }
   }
 
   static async collectInstallment(contractId: string, instId: string, actualAmount: number, uid: string, email: string, allocations: any[]) {
@@ -195,7 +267,8 @@ export class ContractDetailService {
 
   static async saveEditedProducts(contractId: string, editQuoteItems: any[], editQuoteTotal: number, editSecondVendorUid: string, usersList: any[], editSecondVendorShare: number, uid: string) {
     const now = new Date().toISOString();
-    const hasWarning = editQuoteItems.some(item => item.priceSold < item.minPrice);
+    const hasWarning = editQuoteItems.some(item => (Number(item.priceSold) || 0) < (Number(item.minPrice) || 0));
+    const totalVal = Number(editQuoteTotal) || 0;
     
     let secondVendorEmail = '';
     if (editSecondVendorUid) {
@@ -204,8 +277,14 @@ export class ContractDetailService {
     }
 
     await updateDoc(doc(db, 'contracts', contractId), {
+      items: editQuoteItems,
+      totalAmount: totalVal,
+      hasWarning,
+      secondVendorUid: editSecondVendorUid || null,
+      secondVendorEmail: secondVendorEmail || null,
+      secondVendorShare: editSecondVendorUid ? Number(editSecondVendorShare) : null,
       'original.products': editQuoteItems,
-      'original.totalPrice': editQuoteTotal,
+      'original.totalPrice': totalVal,
       'original.hasWarning': hasWarning,
       'original.secondVendorUid': editSecondVendorUid || null,
       'original.secondVendorEmail': secondVendorEmail || null,

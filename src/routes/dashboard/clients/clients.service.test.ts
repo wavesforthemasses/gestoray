@@ -87,7 +87,7 @@ describe('Clients Service & Anagrafica Logic', () => {
         }
       };
 
-      expect(ClientsVersioningBridge.getEntityLabel(clientData)).toBe('TechNova Solutions');
+      expect(ClientsVersioningBridge.getEntityLabel(clientData)).toBe('TechNova');
     });
 
     it('should fallback gracefully when client data has only undefined or partial fields', () => {

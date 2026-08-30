@@ -251,7 +251,7 @@
         lat = res.latitude;
         lng = res.longitude;
         geocodingStatus = 'resolved';
-        toast.success(`Coordinate rilevate: [${res.latitude.toFixed(4)}, ${res.longitude.toFixed(4)}]`);
+        toast.success(`Coordinate rilevate: [${(Number(res.latitude) || 0).toFixed(4)}, ${(Number(res.longitude) || 0).toFixed(4)}]`);
       } else {
         toast.error('Indirizzo non trovato su OpenStreetMap. Seleziona il punto manualmente sulla mappa.');
         geocodingStatus = 'failed';
@@ -268,7 +268,7 @@
     lat = coords.lat;
     lng = coords.lng;
     geocodingStatus = 'manual';
-    toast.success(`Punto posizionato: [${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}]`);
+    toast.success(`Punto posizionato: [${(Number(coords.lat) || 0).toFixed(5)}, ${(Number(coords.lng) || 0).toFixed(5)}]`);
   }
 
   async function handleSubmitForm(e: Event) {
@@ -389,7 +389,7 @@
             <span class="spec-label">Stato Coordinate Genitore</span>
             <span class="spec-val {parentLocation ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}">
               {#if parentLocation}
-                <span class="inline-flex items-center gap-1"><Check size={14} /> GPS Attivo ({parentLocation.lat.toFixed(4)}, {parentLocation.lng.toFixed(4)})</span>
+                <span class="inline-flex items-center gap-1"><Check size={14} /> GPS Attivo ({(Number(parentLocation.lat) || 0).toFixed(4)}, {(Number(parentLocation.lng) || 0).toFixed(4)})</span>
               {:else}
                 <span class="inline-flex items-center gap-1"><AlertTriangle size={14} /> Nessuna coordinata nel genitore</span>
               {/if}
@@ -595,7 +595,7 @@
         <div class="coordinates-display">
           <span class="coord-label">Coordinate GPS:</span>
           {#if lat !== null && lng !== null}
-            <span class="coord-val font-mono">{lat.toFixed(5)}, {lng.toFixed(5)}</span>
+            <span class="coord-val font-mono">{(Number(lat) || 0).toFixed(5)}, {(Number(lng) || 0).toFixed(5)}</span>
           {:else}
             <span class="coord-none text-slate-400">Nessuna coordinata (clicca sulla mappa per posizionare)</span>
           {/if}

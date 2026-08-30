@@ -1,47 +1,68 @@
-import { db, collection, query, where, getCountFromServer, getAggregateFromServer, average, getDocs } from '$lib/firebase';
+import { db, collection, getDocs } from '$lib/firebase';
 import type { KPIFetchParams, DrillDownFetchParams } from '$lib/types/moduleKPIBridge';
 import { formatDate } from '$lib/utils/formatters';
 
 export class TicketsKPIBridge {
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  /**
+   * Pure domain function: Single Source of Truth (SSOT) for Tickets KPIs.
+   */
+  static calculateKPIs(ticketsList: any[]) {
     let ticketsCount = 0;
     let ticketsOpenCount = 0;
-    let avgTmrHours = 0;
+    let totalResolutionHours = 0;
+    let resolvedCount = 0;
 
-    try {
-      const ticketsRef = collection(db, 'tickets');
+    for (const d of ticketsList) {
+      if (!d || d?.derived?.deleted || d?.deleted) continue;
+      const data = d.data ? d.data() : d;
+      ticketsCount++;
 
-      // 1. Ticket Aperti (Count aggregation)
-      const qOpen = query(ticketsRef, where('status', 'in', ['aperto', 'in_lavorazione']));
-      const snapOpen = await getCountFromServer(qOpen);
-      ticketsOpenCount = snapOpen.data().count;
+      const status = data.status || data.original?.status || 'aperto';
+      if (['aperto', 'in_lavorazione'].includes(status)) {
+        ticketsOpenCount++;
+      }
 
-      // 2. TMR: Tempo Medio Risoluzione (Average aggregation on resolved/closed tickets)
-      // Since resolutionTimeHours is only set on resolved/closed tickets, we can just aggregate over all tickets where resolutionTimeHours > 0.
-      const qResolved = query(ticketsRef, where('resolutionTimeHours', '>', 0));
-      const snapAgg = await getAggregateFromServer(qResolved, {
-        tmr: average('resolutionTimeHours')
-      });
-      avgTmrHours = snapAgg.data().tmr || 0;
-      
-    } catch (e) {
-      console.error('Error fetching tickets KPIs in bridge:', e);
+      const resHours = Number(data.resolutionTimeHours ?? data.original?.resolutionTimeHours ?? 0);
+      if (resHours > 0) {
+        totalResolutionHours += resHours;
+        resolvedCount++;
+      }
     }
 
-    return { 
+    const avgTmrHours = resolvedCount > 0 ? totalResolutionHours / resolvedCount : 0;
+
+    return {
       ticket_aperti: ticketsOpenCount,
-      tmr: Number(avgTmrHours.toFixed(1))
+      ticketsOpenCount,
+      tmr: Number(avgTmrHours.toFixed(1)),
+      ticketsCount,
+      total_tickets: ticketsCount
     };
   }
 
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const snap = await getDocs(collection(db, 'tickets'));
+      const list: any[] = [];
+      snap.forEach((d: any) => {
+        list.push({ id: d.id, ...d.data() });
+      });
+      return this.calculateKPIs(list);
+    } catch (e) {
+      console.error('Error fetching tickets KPIs in bridge:', e);
+      return this.calculateKPIs([]);
+    }
+  }
+
   static async fetchDrillDownItems({ period, tab, role, uid }: DrillDownFetchParams) {
-    if (tab !== 'tickets') return [];
+    if (tab !== 'tickets' && tab !== 'ticket_aperti') return [];
 
     let items: any[] = [];
     try {
       const snap = await getDocs(collection(db, 'tickets'));
       snap.forEach((d: any) => {
         const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
         const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
         let ms = 0;
         if (dt) {
@@ -89,13 +110,11 @@ export class TicketsKPIBridge {
       return periods.map(() => 0);
     }
 
-    console.log("ALL TICKETS IN BRIDGE:", allTickets.length, "TAB:", tab);
-
     return periods.map((p: any) => {
       const startMs = new Date(p.start).getTime();
       const endMs = new Date(p.end).getTime();
-      
-      const ticketsInPeriod = allTickets.filter(data => {
+
+      const periodTickets = allTickets.filter(data => {
         const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
         let ms = 0;
         if (dt) {
@@ -104,22 +123,16 @@ export class TicketsKPIBridge {
           else if (typeof dt.seconds === 'number') ms = dt.seconds * 1000;
           else if (dt instanceof Date) ms = dt.getTime();
         }
-        if (ms > 0 && ms >= startMs && ms <= endMs) {
-          console.log("TICKET FOUND IN PERIOD:", new Date(ms), "PERIOD:", new Date(startMs), "TO", new Date(endMs));
-          return true;
-        }
-        return false;
+        return ms >= startMs && ms <= endMs;
       });
 
+      const periodKpis = this.calculateKPIs(periodTickets);
+
       if (tab === 'ticket_aperti') {
-        console.log("RETURNING ticket_aperti:", ticketsInPeriod.length);
-        return ticketsInPeriod.length; 
+        return periodKpis.ticket_aperti;
       }
       if (tab === 'tmr') {
-        const resolved = ticketsInPeriod.filter(t => t.resolutionTimeHours > 0);
-        if (resolved.length === 0) return 0;
-        const sum = resolved.reduce((acc, t) => acc + t.resolutionTimeHours, 0);
-        return Number((sum / resolved.length).toFixed(1));
+        return periodKpis.tmr;
       }
       return 0;
     });

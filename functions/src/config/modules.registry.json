@@ -522,6 +522,7 @@
       "icon": "Users",
       "requirements": [],
       "path": "/dashboard/teams",
+      "kpiBridgePath": "/dashboard/teams/teams.kpi.bridge.ts",
       "clientTabs": [],
       "settingsCard": {
         "title": "Configurazione Squadre & Risorse",
@@ -723,6 +724,307 @@
               "filter:status",
               "kpi:places_attivi"
             ]
+          }
+        }
+      }
+    },
+    {
+      "id": "payments",
+      "label": "Incassi & Cassa",
+      "description": "Registro incassi, flussi di cassa, scorporo IVA e riconciliazione",
+      "icon": "CreditCard",
+      "requirements": [],
+      "path": "/dashboard/payments",
+      "kpiBridgePath": "/dashboard/payments/payments.kpi.bridge.ts",
+      "settingsCard": {
+        "title": "Configurazione Incassi & Cassa",
+        "description": "Denominazione agnostica (Incasso/Ricevuta/Entrata), prefissi numerazione, aliquote IVA predefinite.",
+        "icon": "CreditCard",
+        "path": "/dashboard/settings/payments"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "total_incassato",
+          "title": "Totale Incassato",
+          "subtitle": "Imponibile netto incassato",
+          "icon": "CreditCard",
+          "format": "currency",
+          "isCurrency": true,
+          "valueKey": "totalIncassato",
+          "aggregation": {
+            "collection": "payments",
+            "type": "sum",
+            "sumFields": [
+              "netAmount",
+              "original.netAmount",
+              "grossAmount",
+              "original.amount"
+            ],
+            "dateFields": [
+              "paymentDate",
+              "createdAt",
+              "original.date"
+            ]
+          }
+        },
+        {
+          "id": "incassato_contratti",
+          "title": "Incassato Contratti",
+          "subtitle": "Quote incassate imputate a contratti (GI)",
+          "icon": "Wallet",
+          "format": "currency",
+          "isCurrency": true,
+          "valueKey": "incassatoContratti",
+          "aggregation": {
+            "collection": "payments",
+            "type": "sum",
+            "sumFields": [
+              "contractAllocations.amount"
+            ],
+            "dateFields": [
+              "paymentDate",
+              "createdAt"
+            ]
+          }
+        }
+      ],
+      "anonymization": {
+        "collectionName": "payments",
+        "linkFieldPath": "clientId",
+        "redactFields": [
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          }
+        ]
+      },
+      "schema": {
+        "fields": {
+          "paymentNumber": {
+            "type": "string",
+            "description": "Numero progressivo del movimento di incasso (es. INC-2026-0001)",
+            "tags": [
+              "filter:number",
+              "search",
+              "sort"
+            ]
+          },
+          "clientId": {
+            "type": "string",
+            "description": "ID del cliente pagatore",
+            "tags": [
+              "filter:client",
+              "relation:clients"
+            ]
+          },
+          "clientName": {
+            "type": "string",
+            "description": "Ragione sociale del cliente pagatore",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "grossAmount": {
+            "type": "currency",
+            "description": "Importo lordo totale incassato",
+            "tags": [
+              "kpi:gross_amount",
+              "filter:amount"
+            ]
+          },
+          "netAmount": {
+            "type": "currency",
+            "description": "Imponibile netto reale (base calcolo provvigioni)",
+            "tags": [
+              "kpi:net_amount",
+              "filter:amount"
+            ]
+          },
+          "vatRate": {
+            "type": "number",
+            "description": "Aliquota IVA percentuale applicata (es. 22%)",
+            "tags": [
+              "filter:vat"
+            ]
+          },
+          "paymentDate": {
+            "type": "date",
+            "description": "Data effettiva dell'incasso",
+            "tags": [
+              "filter:date",
+              "sort:default"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "description": "Metodo di pagamento (bonifico, contanti, carta, assegno, etc.)",
+            "tags": [
+              "filter:method"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato movimento (registrato, in_verifica, annullato)",
+            "tags": [
+              "filter:status"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "vehicles",
+      "label": "Parco Mezzi & Veicoli",
+      "description": "Gestione automezzi aziendali, furgoni, assegnazioni e stato manutenzioni",
+      "icon": "Truck",
+      "requirements": [],
+      "path": "/dashboard/vehicles",
+      "kpiBridgePath": "/dashboard/vehicles/vehicles.kpi.bridge.ts",
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "available_vehicles",
+          "title": "Mezzi Disponibili",
+          "subtitle": "Veicoli operativi e pronti all'uso",
+          "icon": "Truck",
+          "valueKey": "availableVehiclesCount",
+          "aggregation": {
+            "collection": "vehicles",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "plate": {
+            "type": "string",
+            "description": "Targa del veicolo",
+            "tags": ["search", "display", "sort"]
+          },
+          "model": {
+            "type": "string",
+            "description": "Modello e marca del mezzo",
+            "tags": ["search", "display"]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato del mezzo (disponibile, in_uso, in_manutenzione)",
+            "tags": ["filter:status", "kpi:available_vehicles"]
+          }
+        }
+      }
+    },
+    {
+      "id": "deadlines",
+      "label": "Scadenziario & Adempimenti",
+      "description": "Monitoraggio scadenze contrattuali, revisioni mezzi, corsi e adempimenti",
+      "icon": "Calendar",
+      "requirements": [],
+      "path": "/dashboard/deadlines",
+      "kpiBridgePath": "/dashboard/deadlines/deadlines.kpi.bridge.ts",
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "upcoming_deadlines",
+          "title": "Scadenze Imminenti",
+          "subtitle": "Adempimenti nei prossimi 30 giorni",
+          "icon": "Calendar",
+          "valueKey": "upcomingDeadlinesCount",
+          "aggregation": {
+            "collection": "deadlines",
+            "type": "count",
+            "dateFields": [
+              "expiryDate",
+              "createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "title": {
+            "type": "string",
+            "description": "Oggetto della scadenza",
+            "tags": ["search", "display"]
+          },
+          "expiryDate": {
+            "type": "date",
+            "description": "Data di scadenza",
+            "tags": ["filter:date", "sort:default"]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato scadenza (attiva, completata, archiviata)",
+            "tags": ["filter:status"]
+          }
+        }
+      }
+    },
+    {
+      "id": "scheduling",
+      "label": "Pianificazione & Interventi",
+      "description": "Agenda interventi di campo, planning cantieri e assegnazione risorse",
+      "icon": "CalendarDays",
+      "requirements": [],
+      "path": "/dashboard/scheduling",
+      "kpiBridgePath": "/dashboard/scheduling/scheduling.kpi.bridge.ts",
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "active_scheduling",
+          "title": "Pianificazioni Attive",
+          "subtitle": "Interventi programmati in agenda",
+          "icon": "CalendarDays",
+          "valueKey": "activeSchedulingCount",
+          "aggregation": {
+            "collection": "interventions",
+            "type": "count",
+            "dateFields": [
+              "scheduledDate",
+              "createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "title": {
+            "type": "string",
+            "description": "Titolo intervento o attività pianificata",
+            "tags": ["search", "display"]
+          },
+          "scheduledDate": {
+            "type": "date",
+            "description": "Data pianificata",
+            "tags": ["filter:date", "sort:default"]
           }
         }
       }

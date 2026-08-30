@@ -28,6 +28,9 @@ const IGNORE_PATTERNS = [
   'Service.ts',               // Any service file with Service.ts
   'Settings.ts',
   'SettingsService.ts',
+  'Repository.ts',            // Infrastructure Repository Pattern (DDD)
+  '.test.ts',                 // Unit & Integration test files
+  '.spec.ts',                 // Spec test files
   '.bridge.ts',               // Any bridge file
   '+server.ts',               // Backend API routes
   'src/lib/firebase.ts',      // The firebase init file itself

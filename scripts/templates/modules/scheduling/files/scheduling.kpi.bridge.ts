@@ -1,38 +1,72 @@
 import { db, collection, getDocs, query, where } from '$lib/firebase';
 
 export class SchedulingKPIBridge {
-  static async fetchKPIs(context: { role: string; uid: string }): Promise<Record<string, any>> {
+  /**
+   * Pure domain function: Single Source of Truth (SSOT) for all Scheduling / Interventions KPIs.
+   */
+  static calculateKPIs(
+    interventionsList: any[] = [], 
+    activitiesList: any[] = [], 
+    params: { role?: string | null; uid?: string | null; tenantId?: string } = {}
+  ) {
+    let activeInterventions = 0;
+    let activeActivities = 0;
+
+    for (const item of interventionsList) {
+      if (!item || item.derived?.deleted || item.deleted) continue;
+      const data = item.data ? item.data() : item;
+      const status = data.status || data.phase || '';
+      if (status === 'pianificato' || status === 'in_corso') {
+        activeInterventions++;
+      }
+    }
+
+    for (const item of activitiesList) {
+      if (!item || item.derived?.deleted || item.deleted) continue;
+      const data = item.data ? item.data() : item;
+      const status = data.status || '';
+      if (status === 'pianificato' || status === 'in_corso') {
+        activeActivities++;
+      }
+    }
+
+    const activeSchedulingCount = activeInterventions + activeActivities;
+
+    return {
+      activeSchedulingCount,
+      activeInterventions,
+      activeActivities,
+      active_scheduling: activeSchedulingCount
+    };
+  }
+
+  static async fetchKPIs(context: { role: string; uid: string; tenantId?: string }): Promise<Record<string, any>> {
     try {
-      let activeCount = 0;
+      const interventionsList: any[] = [];
+      const activitiesList: any[] = [];
 
-      // 1. Count active/planned interventions
       try {
-        const snapInterventions = await getDocs(collection(db, 'interventions'));
-        const interventions = snapInterventions.docs.map(d => d.data());
-        activeCount += interventions.filter(
-          item => !item.derived?.deleted && (item.status === 'pianificato' || item.status === 'in_corso' || item.phase === 'pianificato' || item.phase === 'in_corso')
-        ).length;
+        const constraints = context?.tenantId ? [where('tenantId', '==', context.tenantId)] : [];
+        const q = constraints.length > 0 ? query(collection(db, 'interventions'), ...constraints) : collection(db, 'interventions');
+        const snapInterventions = await getDocs(q);
+        snapInterventions.forEach(d => interventionsList.push({ id: d.id, ...d.data() }));
       } catch (e) {
-        // Interventions collection might be empty or not yet created
+        // collection might be empty or missing
       }
 
-      // 2. Count active activities
       try {
-        const snapActivities = await getDocs(collection(db, 'activities'));
-        const activities = snapActivities.docs.map(d => d.data());
-        activeCount += activities.filter(
-          item => !item.derived?.deleted && (item.status === 'pianificato' || item.status === 'in_corso')
-        ).length;
+        const constraints = context?.tenantId ? [where('tenantId', '==', context.tenantId)] : [];
+        const q = constraints.length > 0 ? query(collection(db, 'activities'), ...constraints) : collection(db, 'activities');
+        const snapActivities = await getDocs(q);
+        snapActivities.forEach(d => activitiesList.push({ id: d.id, ...d.data() }));
       } catch (e) {
-        // Activities collection might be empty
+        // collection might be empty
       }
 
-      return {
-        activeSchedulingCount: activeCount
-      };
+      return this.calculateKPIs(interventionsList, activitiesList, context);
     } catch (e) {
       console.warn('[SchedulingKPIBridge] Error fetching KPIs:', e);
-      return { activeSchedulingCount: 0 };
+      return this.calculateKPIs([], [], context);
     }
   }
 

@@ -6,8 +6,9 @@ import modulesRegistry from '../config/modules.registry.json';
 
 export function extractClientSearchTerms(data: any): string[] {
   const orig = data.original || data || {};
-  const clientName = `${orig.nome || orig.ragioneSociale || orig.companyName || ''} ${orig.cognome || ''}`.trim();
-  return generateSearchTerms(clientName, orig.partitaIva, orig.codiceFiscale);
+  const clientName = (orig.ragioneSociale || orig.companyName || orig.nome || orig.cognome || '').trim();
+  const contactName = orig.cognome ? orig.cognome.trim() : undefined;
+  return generateSearchTerms(clientName, contactName, orig.partitaIva, orig.codiceFiscale);
 }
 
 export const onClientCreated = onDocumentCreated('clients/{clientId}', async (event) => {

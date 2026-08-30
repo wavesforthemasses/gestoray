@@ -44,32 +44,37 @@ const REGION = 'europe-west3';
 // Recalculates client and vendor stats from scratch for a given clientId/vendorId to ensure 100% accuracy.
 // This is the ultimate "self-healing" state sync pattern.
 async function syncClientAndVendorStats(db, clientId, vendorUids) {
-    // 1. Fetch all contracts for the client
-    const clientContractsSnap = await db
-        .collection('contracts')
-        .where('original.clientId', '==', clientId)
-        .get();
+    // 1. Fetch all contracts for the client (dual check: root clientId or original.clientId)
+    const [snapRoot, snapOrig] = await Promise.all([
+        db.collection('contracts').where('clientId', '==', clientId).get(),
+        db.collection('contracts').where('original.clientId', '==', clientId).get()
+    ]);
+    const contractDocsMap = new Map();
+    snapRoot.forEach(d => contractDocsMap.set(d.id, d.data()));
+    snapOrig.forEach(d => contractDocsMap.set(d.id, d.data()));
     let contractsCount = 0;
     let approvedContractsCount = 0;
     let totalContractValue = 0;
     let clientTotalPaid = 0;
     let clientTotalRemaining = 0;
     const approvedContracts = [];
-    clientContractsSnap.forEach((docSnap) => {
-        const cData = docSnap.data() || {};
+    contractDocsMap.forEach((cData, docId) => {
+        if (cData.derived?.deleted)
+            return;
         const orig = cData.original || {};
-        const status = orig.status || 'pending';
-        if (status !== 'cancelled') {
+        const status = cData.status || orig.status || 'pending';
+        const totalAmount = Number(cData.totalAmount ?? orig.totalPrice ?? 0);
+        if (status !== 'cancelled' && status !== 'rifiutato') {
             contractsCount++;
-            totalContractValue += orig.totalPrice || 0;
+            totalContractValue += totalAmount;
             clientTotalPaid += cData.derived?.totalPaid || 0;
             clientTotalRemaining += cData.derived?.totalRemaining || 0;
         }
-        if (status === 'approved') {
+        if (status === 'approved' || status === 'approvato' || status === 'attivo') {
             approvedContractsCount++;
             approvedContracts.push({
-                id: docSnap.id,
-                createdAt: cData.edits?.createdAt || orig.createdAt || new Date().toISOString()
+                id: docId,
+                createdAt: cData.createdAt || cData.edits?.createdAt || orig.createdAt || new Date().toISOString()
             });
         }
     });
@@ -83,47 +88,56 @@ async function syncClientAndVendorStats(db, clientId, vendorUids) {
     }
     // Update client
     const clientRef = db.collection('clients').doc(clientId);
-    await clientRef.update({
-        'original.status': approvedContractsCount > 0 ? 'customer' : 'prospect',
-        'derived.contractsCount': contractsCount,
-        'derived.approvedContractsCount': approvedContractsCount,
-        'derived.totalContractValue': totalContractValue,
-        'derived.totalPaid': clientTotalPaid,
-        'derived.totalRemaining': clientTotalRemaining,
-        'derived.nncfDate': nncfDate,
-        'derived.nncfOrderId': nncfOrderId
-    });
+    const clientSnap = await clientRef.get();
+    if (clientSnap.exists) {
+        await clientRef.update({
+            'original.status': approvedContractsCount > 0 ? 'customer' : 'prospect',
+            'derived.contractsCount': contractsCount,
+            'derived.approvedContractsCount': approvedContractsCount,
+            'derived.totalContractValue': totalContractValue,
+            'derived.totalPaid': clientTotalPaid,
+            'derived.totalRemaining': clientTotalRemaining,
+            'derived.nncfDate': nncfDate,
+            'derived.nncfOrderId': nncfOrderId
+        });
+    }
     // 2. Fetch and sync stats for each affected vendor
     for (const uid of vendorUids) {
         if (!uid)
             continue;
-        const vendorContractsSnap = await db
-            .collection('contracts')
-            .where('original.vendorUid', '==', uid)
-            .get();
-        const vendorCoContractsSnap = await db
-            .collection('contracts')
-            .where('original.secondVendorUid', '==', uid)
-            .get();
+        const [vRoot, vOrig, vCoRoot, vCoOrig] = await Promise.all([
+            db.collection('contracts').where('agentId', '==', uid).get(),
+            db.collection('contracts').where('original.vendorUid', '==', uid).get(),
+            db.collection('contracts').where('coSellerUid', '==', uid).get(),
+            db.collection('contracts').where('original.secondVendorUid', '==', uid).get()
+        ]);
+        const vendorDocsMap = new Map();
+        vRoot.forEach(d => vendorDocsMap.set(d.id, d.data()));
+        vOrig.forEach(d => vendorDocsMap.set(d.id, d.data()));
+        vCoRoot.forEach(d => vendorDocsMap.set(d.id, d.data()));
+        vCoOrig.forEach(d => vendorDocsMap.set(d.id, d.data()));
         let totalContractsCount = 0;
         let totalPendingSales = 0;
         let totalApprovedSales = 0;
         let totalCommissionPending = 0;
         let totalCommissionEarned = 0;
-        const processContract = (cData) => {
+        vendorDocsMap.forEach((cData) => {
+            if (cData.derived?.deleted)
+                return;
             const orig = cData.original || {};
             const deriv = cData.derived || {};
-            const status = orig.status || 'pending';
-            if (status === 'cancelled')
+            const status = cData.status || orig.status || 'pending';
+            if (status === 'cancelled' || status === 'rifiutato')
                 return;
             totalContractsCount++;
-            const isPrimary = orig.vendorUid === uid;
-            const secondShare = orig.secondVendorShare || 0;
+            const isPrimary = (cData.agentId === uid) || (orig.vendorUid === uid);
+            const secondShare = Number(cData.coSellerShare ?? orig.secondVendorShare ?? 0);
             const primaryShare = 100 - secondShare;
             const share = isPrimary ? primaryShare : secondShare;
-            const sale = ((orig.totalPrice || 0) * share) / 100;
+            const totalAmt = Number(cData.totalAmount ?? orig.totalPrice ?? 0);
+            const sale = (totalAmt * share) / 100;
             const comm = isPrimary ? (deriv.commissionPrimary || 0) : (deriv.commissionSecondary || 0);
-            if (status === 'approved') {
+            if (status === 'approved' || status === 'approvato' || status === 'attivo') {
                 totalApprovedSales += sale;
                 totalCommissionEarned += comm;
             }
@@ -131,17 +145,18 @@ async function syncClientAndVendorStats(db, clientId, vendorUids) {
                 totalPendingSales += sale;
                 totalCommissionPending += comm;
             }
-        };
-        vendorContractsSnap.forEach((docSnap) => processContract(docSnap.data()));
-        vendorCoContractsSnap.forEach((docSnap) => processContract(docSnap.data()));
-        const vendorRef = db.collection('users').doc(uid);
-        await vendorRef.update({
-            'derived.totalContractsCount': totalContractsCount,
-            'derived.totalPendingSales': totalPendingSales,
-            'derived.totalApprovedSales': totalApprovedSales,
-            'derived.totalCommissionPending': totalCommissionPending,
-            'derived.totalCommissionEarned': totalCommissionEarned
         });
+        const vendorRef = db.collection('users').doc(uid);
+        const vendorSnap = await vendorRef.get();
+        if (vendorSnap.exists) {
+            await vendorRef.update({
+                'derived.totalContractsCount': totalContractsCount,
+                'derived.totalPendingSales': totalPendingSales,
+                'derived.totalApprovedSales': totalApprovedSales,
+                'derived.totalCommissionPending': totalCommissionPending,
+                'derived.totalCommissionEarned': totalCommissionEarned
+            });
+        }
     }
 }
 exports.onContractCreated = (0, firestore_1.onDocumentWritten)({ region: REGION, document: 'contracts/{contractId}' }, async (event) => {
@@ -151,37 +166,41 @@ exports.onContractCreated = (0, firestore_1.onDocumentWritten)({ region: REGION,
     const afterDoc = event.data?.after;
     const beforeData = beforeDoc?.data();
     const afterData = afterDoc?.data();
-    // Guard: ignora mutazioni che riguardano esclusivamente campi calcolati derived.* (Principio 10 Anti-Loop)
+    // Guard: ignora mutazioni che riguardano esclusivamente campi calcolati derived.* (Anti-Loop)
     if (beforeData && afterData && (0, utils_1.isDerivedOnlyChange)(beforeData, afterData)) {
         return;
     }
-    // Collect all vendor UIDs and clientIds affected by this change (both old and new values)
+    // Collect all vendor UIDs and clientIds affected by this change
     const clientIds = new Set();
     const vendorUids = new Set();
-    if (beforeData?.original) {
-        if (beforeData.original.clientId)
-            clientIds.add(beforeData.original.clientId);
-        if (beforeData.original.vendorUid)
-            vendorUids.add(beforeData.original.vendorUid);
-        if (beforeData.original.secondVendorUid)
-            vendorUids.add(beforeData.original.secondVendorUid);
-    }
-    if (afterData?.original) {
-        if (afterData.original.clientId)
-            clientIds.add(afterData.original.clientId);
-        if (afterData.original.vendorUid)
-            vendorUids.add(afterData.original.vendorUid);
-        if (afterData.original.secondVendorUid)
-            vendorUids.add(afterData.original.secondVendorUid);
-    }
+    const extractRefs = (data) => {
+        if (!data)
+            return;
+        if (data.clientId)
+            clientIds.add(data.clientId);
+        if (data.original?.clientId)
+            clientIds.add(data.original.clientId);
+        if (data.agentId)
+            vendorUids.add(data.agentId);
+        if (data.original?.vendorUid)
+            vendorUids.add(data.original.vendorUid);
+        if (data.coSellerUid)
+            vendorUids.add(data.coSellerUid);
+        if (data.original?.secondVendorUid)
+            vendorUids.add(data.original.secondVendorUid);
+    };
+    extractRefs(beforeData);
+    extractRefs(afterData);
     try {
-        // 1. If it was created, calculate initial derived fields for the contract document itself
-        if (afterDoc?.exists && !beforeDoc?.exists) {
-            const original = (afterData && afterData.original) || {};
-            const { vendorUid, products = [], secondVendorShare = 0 } = original;
+        // 1. If created or updated without derived commissions, calculate them
+        if (afterDoc?.exists && (!beforeDoc?.exists || !afterData?.derived?.commissionTotal)) {
+            const vendorUid = afterData?.agentId || afterData?.original?.vendorUid;
+            const products = afterData?.items || afterData?.original?.products || [];
+            const secondVendorShare = Number(afterData?.coSellerShare ?? afterData?.original?.secondVendorShare ?? 0);
+            const totalAmount = Number(afterData?.totalAmount ?? afterData?.original?.totalPrice ?? 0);
             if (vendorUid) {
                 const vendorSnap = await db.collection('users').doc(vendorUid).get();
-                const qualificationId = vendorSnap.data()?.original?.qualification;
+                const qualificationId = vendorSnap.data()?.original?.qualification || vendorSnap.data()?.qualification;
                 let qualification = null;
                 if (qualificationId) {
                     const qualSnap = await db.collection('qualifications').doc(qualificationId).get();
@@ -191,10 +210,10 @@ exports.onContractCreated = (0, firestore_1.onDocumentWritten)({ region: REGION,
                 }
                 const commission = (0, business_logic_1.calculateCommission)(products, qualification, secondVendorShare);
                 await db.collection('contracts').doc(contractId).update({
-                    'derived.totalPaid': 0,
-                    'derived.totalRemaining': original.totalPrice || 0,
-                    'derived.paymentsCount': 0,
-                    'derived.installmentsCount': 0,
+                    'derived.totalPaid': afterData?.derived?.totalPaid || 0,
+                    'derived.totalRemaining': totalAmount - (afterData?.derived?.totalPaid || 0),
+                    'derived.paymentsCount': afterData?.derived?.paymentsCount || 0,
+                    'derived.installmentsCount': afterData?.derived?.installmentsCount || 0,
                     'derived.commissionTotal': commission.total,
                     'derived.commissionPrimary': commission.primary,
                     'derived.commissionSecondary': commission.secondary

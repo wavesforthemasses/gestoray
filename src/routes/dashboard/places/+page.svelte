@@ -52,10 +52,15 @@
   let isGraphExpanded = $state(false);
   let selectedPointIdx = $state<number | null>(null);
 
+  import { PlacesKPIBridge } from './places.kpi.bridge';
+
   let activeEntityConfig = $derived(ChartSettingsService.getEntityConfigSync('places'));
   let sideKpisPosition = $derived<'right' | 'none'>(
     activeEntityConfig && activeEntityConfig.showSideKpis !== false ? 'right' : 'none'
   );
+
+  let calculatedKPIs = $derived(PlacesKPIBridge.calculateKPIs(placesState.places));
+
   let availableChartMetrics = $derived(
     (activeEntityConfig?.enabled ? activeEntityConfig.kpis || [] : [])
       .filter(k => k.enabled)
@@ -63,7 +68,8 @@
         id: k.id,
         label: k.name,
         shortLabel: k.acronym,
-        isCurrency: k.isCurrency
+        isCurrency: k.isCurrency !== false,
+        value: (calculatedKPIs as any)[k.id] ?? (calculatedKPIs as any)[k.acronym?.toLowerCase()] ?? 0
       }))
   );
 

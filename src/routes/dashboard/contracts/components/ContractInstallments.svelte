@@ -74,11 +74,11 @@
                       </span>
                     {/if}
                   </td>
-                  <td><strong>€ {inst.expectedAmount.toFixed(2)}</strong></td>
+                  <td><strong>€ {(Number(inst.expectedAmount) || 0).toFixed(2)}</strong></td>
                   <td>
                     <StatusBadge status={inst.status} />
                   </td>
-                  <td>{inst.paidAmount ? `€ ${inst.paidAmount.toFixed(2)}` : 'N/D'}</td>
+                  <td>{inst.paidAmount ? `€ ${(Number(inst.paidAmount) || 0).toFixed(2)}` : 'N/D'}</td>
                   <td>{inst.paidAt ? formatDate(inst.paidAt) : 'N/D'}</td>
                   {#if activeRole === 'superadmin' || activeRole === 'amministrazione'}
                     <td>

@@ -36,6 +36,8 @@ const KNOWN_ACRONYMS: Record<string, string> = {
   vss: 'VSS',
   nncf: 'NNCF',
   gi: 'GI',
+  incassato_contratti: 'GI',
+  total_incassato: 'TI',
   total_products: 'PRD',
   ticket_aperti: 'TA',
   tmr: 'TMR',

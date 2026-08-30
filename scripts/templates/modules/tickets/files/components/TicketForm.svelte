@@ -29,33 +29,36 @@
 
   function fillSelfData() {
     if (authState.user) {
-      formData.requesterName = authState.user.name || authState.user.email || '';
-      formData.requesterEmail = authState.user.email || '';
-      formData.requesterType = 'internal';
+      const u = authState.user;
+      const fullName = `${u.nome || ''} ${u.cognome || ''}`.trim() || u.email || '';
+      formData.requesterName = fullName;
+      formData.requesterEmail = u.email || '';
+      formData.requesterUid = u.uid;
+      formData.createdBy = u.uid;
     }
   }
 </script>
 
-<div class="ticket-form-fields">
-  <div class="field-group">
-    <label for="title" class="form-label">Titolo Ticket *</label>
+<div class="form-grid">
+  <div class="field-group full-width">
+    <label for="subject" class="form-label">Oggetto Ticket *</label>
     <input
-      id="title"
+      id="subject"
       type="text"
       class="form-input"
-      placeholder="Es: Errore connessione stampante fiscale"
-      bind:value={formData.title}
+      placeholder="Es: Problema di accesso al portale"
+      bind:value={formData.subject}
       required
     />
   </div>
 
-  <div class="field-group">
+  <div class="field-group full-width">
     <label for="description" class="form-label">Descrizione Dettagliata *</label>
     <textarea
       id="description"
       class="form-textarea"
       rows="4"
-      placeholder="Descrivi il problema riscontrato..."
+      placeholder="Descrivi la richiesta o la segnalazione..."
       bind:value={formData.description}
       required
     ></textarea>
@@ -64,20 +67,16 @@
   <div class="field-group">
     <label for="category" class="form-label">Categoria</label>
     <select id="category" class="form-select" bind:value={formData.category}>
-      <option value="generale">Generale</option>
-      {#each categories as cat}
-        <option value={cat.id}>{cat.label}</option>
-      {/each}
-    </select>
-  </div>
-
-  <div class="field-group">
-    <label for="status" class="form-label">Stato Iniziale</label>
-    <select id="status" class="form-select" bind:value={formData.status}>
-      <option value="aperto">Aperto</option>
-      <option value="in_lavorazione">In Lavorazione</option>
-      <option value="risolto">Risolto</option>
-      <option value="chiuso">Chiuso</option>
+      {#if categories.length > 0}
+        {#each categories as cat}
+          <option value={cat.id}>{cat.label}</option>
+        {/each}
+      {:else}
+        <option value="generale">Generale</option>
+        <option value="tecnico">Tecnico</option>
+        <option value="commerciale">Commerciale</option>
+        <option value="amministrativo">Amministrativo</option>
+      {/if}
     </select>
   </div>
 
@@ -135,34 +134,42 @@
       id="requesterEmail"
       type="email"
       class="form-input"
-      placeholder="Es: mario.rossi@azienda.it"
+      placeholder="mario.rossi@cliente.it"
       bind:value={formData.requesterEmail}
     />
   </div>
 
-  <div class="field-group">
-    <label for="requesterPhone" class="form-label">Telefono Richiedente</label>
+  <div class="field-group full-width">
+    <label for="ccEmails" class="form-label">Email in Copia (CC) - Separate da virgola</label>
     <input
-      id="requesterPhone"
-      type="tel"
+      id="ccEmails"
+      type="text"
       class="form-input"
-      placeholder="Es: +39 333 1234567"
-      bind:value={formData.requesterPhone}
+      placeholder="collega1@azienda.it, collega2@azienda.it"
+      value={formData.ccEmails ? formData.ccEmails.join(', ') : ''}
+      oninput={(e) => {
+        const val = (e.target as HTMLInputElement).value;
+        formData.ccEmails = val.split(',').map(s => s.trim()).filter(Boolean);
+      }}
     />
   </div>
 </div>
 
 <style>
-  .ticket-form-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
   }
 
   .field-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.35rem;
   }
 
   .label-row {
@@ -171,55 +178,46 @@
     align-items: center;
   }
 
+  .btn-self {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: none;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-self:hover {
+    background: #bae6fd;
+  }
+
   .form-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-neutral-700, #374151);
+    color: var(--text-secondary, #64748b);
   }
 
   .form-input,
   .form-select,
   .form-textarea {
     width: 100%;
-    padding: 8px 12px;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background-color: var(--bg-surface, #ffffff);
+    color: var(--text-primary, #0f172a);
     font-size: 0.9rem;
-    border: 1px solid var(--color-neutral-300, #d1d5db);
-    border-radius: var(--radius-md, 6px);
-    background-color: #fff;
-    color: var(--color-neutral-900, #111827);
-    box-sizing: border-box;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
   .form-input:focus,
   .form-select:focus,
   .form-textarea:focus {
     outline: none;
-    border-color: var(--color-primary, #3b82f6);
+    border-color: var(--primary, #3b82f6);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  }
-
-  .form-textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-
-  .btn-self {
-    background: none;
-    border: none;
-    font-size: 0.75rem;
-    color: var(--color-primary, #3b82f6);
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .btn-self:hover {
-    background-color: var(--color-primary-50, #eff6ff);
-    text-decoration: underline;
   }
 </style>

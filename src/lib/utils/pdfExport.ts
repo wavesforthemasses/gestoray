@@ -84,14 +84,14 @@ export class PdfExportService {
               <tr>
                 <td>${item.description}</td>
                 <td>${UnitsOfMeasureService.formatQuantity(item.quantity, item.unit || 'pz')} ${item.unit || ''}</td>
-                <td>${item.unitPrice ? '€ ' + item.unitPrice.toFixed(2) : '-'}</td>
-                <td style="text-align: right;">${item.total ? '€ ' + item.total.toFixed(2) : '-'}</td>
+                <td>${item.unitPrice ? '€ ' + (Number(item.unitPrice) || 0).toFixed(2) : '-'}</td>
+                <td style="text-align: right;">${item.total ? '€ ' + (Number(item.total) || 0).toFixed(2) : '-'}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        ${data.totalAmount ? `<div class="total-box">Totale Complessivo: € ${data.totalAmount.toFixed(2)}</div>` : ''}
+        ${data.totalAmount ? `<div class="total-box">Totale Complessivo: € ${(Number(data.totalAmount) || 0).toFixed(2)}</div>` : ''}
 
         ${data.signatureData ? `
           <div class="signature-box">

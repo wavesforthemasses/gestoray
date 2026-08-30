@@ -1,9 +1,33 @@
 /**
- * Format a number as EUR currency.
+ * Safely parse any value into a finite number, falling back to a default (0).
  */
-export function formatCurrency(value: number): string {
-  if (typeof value !== 'number') return '€ 0.00';
-  return '€ ' + value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export function safeNumber(value: unknown, fallback: number = 0): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim().replace(',', '.');
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+/**
+ * Format any value into a decimal string with fixed precision (default 2), preventing .toFixed crashes.
+ */
+export function formatNumber(value: unknown, decimals: number = 2, fallback: string = '0.00'): string {
+  const num = safeNumber(value, NaN);
+  if (isNaN(num)) return fallback;
+  return (Number(num) || 0).toFixed(decimals);
+}
+
+/**
+ * Format a number or numeric string as EUR currency safely.
+ */
+export function formatCurrency(value: unknown): string {
+  const num = safeNumber(value, 0);
+  return '€ ' + num.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**

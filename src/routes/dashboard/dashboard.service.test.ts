@@ -27,7 +27,7 @@ describe('DashboardService - Chart Aggregations Engine', () => {
       { start: new Date('2026-03-01'), end: new Date('2026-03-31') }
     ];
 
-    const results = await DashboardService.fetchChartAggregations(periods, 'superadmin', 'test-uid', 'vss');
+    const results = await DashboardService.fetchChartAggregations(periods, 'superadmin', 'test-uid', 'legacy_cloud_function_tab');
     expect(results).toEqual([100, 200, 300]);
   });
 });
