@@ -516,6 +516,82 @@
       }
     },
     {
+      "id": "teams",
+      "label": "Squadre & Risorse",
+      "description": "Gestione squadre di lavoro, operatori di campo, caposquadra e composizione team.",
+      "icon": "Users",
+      "requirements": [],
+      "path": "/dashboard/teams",
+      "clientTabs": [],
+      "settingsCard": {
+        "title": "Configurazione Squadre & Risorse",
+        "description": "Denominazione agnostica (Squadra/Team/Gruppo/Risorsa), prefissi numerazione, stati predefiniti.",
+        "icon": "Users",
+        "path": "/dashboard/settings/teams"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "teams_attivi",
+          "title": "Squadre Attive",
+          "subtitle": "Team di lavoro operativi sul campo",
+          "icon": "Users",
+          "valueKey": "activeTeamsCount",
+          "aggregation": {
+            "collection": "teams",
+            "type": "count",
+            "dateFields": [
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "code": {
+            "type": "string",
+            "description": "Codice identificativo della squadra (es. SQD-2026-001)",
+            "tags": [
+              "search",
+              "sort"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome della squadra o identificativo del team",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "leaderId": {
+            "type": "string",
+            "description": "UID dell'operatore caposquadra / responsabile",
+            "tags": [
+              "filter:leader"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato operativo (attiva, inattiva, in_servizio)",
+            "tags": [
+              "filter:status",
+              "kpi:teams_attivi"
+            ]
+          }
+        }
+      }
+    },
+    {
       "id": "places",
       "label": "Luoghi",
       "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative, magazzini e geofencing radar.",

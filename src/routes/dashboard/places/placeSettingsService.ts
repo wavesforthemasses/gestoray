@@ -20,13 +20,18 @@ export class PlaceSettingsService {
           lastCounterYear: data.lastCounterYear || new Date().getFullYear(),
           defaultStatus: data.defaultStatus || 'attivo',
           presence: {
-            mode: data.presence?.mode || 'hybrid_assisted',
-            defaultGeofenceRadiusMeters: data.presence?.defaultGeofenceRadiusMeters ?? 100,
-            geofenceToleranceMeters: data.presence?.geofenceToleranceMeters ?? 25,
-            maxShiftHours: data.presence?.maxShiftHours ?? 8,
-            autoCloseGraceMinutes: data.presence?.autoCloseGraceMinutes ?? 60,
-            allowForemanManualCheckIn: data.presence?.allowForemanManualCheckIn !== false,
-            requireForemanReason: data.presence?.requireForemanReason ?? false
+            presenceTrackingEnabled: data.presence?.presenceTrackingEnabled !== false,
+            defaultMode: data.presence?.defaultMode || 'proximity_radar',
+            checkInPromptMode: data.presence?.checkInPromptMode || 'prompt',
+            autoCheckoutOnExit: data.presence?.autoCheckoutOnExit ?? false,
+            checkoutCooldownMinutes: data.presence?.checkoutCooldownMinutes ?? 15,
+            allowManualCheckIn: data.presence?.allowManualCheckIn !== false,
+            requireGpsValidation: data.presence?.requireGpsValidation ?? true,
+            gpsToleranceMeters: data.presence?.gpsToleranceMeters ?? 25,
+            allowTeamLeaderCheckin: data.presence?.allowTeamLeaderCheckin !== false,
+            predictiveAutoCloseEnabled: data.presence?.predictiveAutoCloseEnabled !== false,
+            defaultMaxShiftHours: data.presence?.defaultMaxShiftHours ?? 10,
+            autoCloseGraceMinutes: data.presence?.autoCloseGraceMinutes ?? 60
           }
         };
       }
@@ -44,13 +49,18 @@ export class PlaceSettingsService {
       lastCounterYear: new Date().getFullYear(),
       defaultStatus: 'attivo',
       presence: {
-        mode: 'hybrid_assisted',
-        defaultGeofenceRadiusMeters: 100,
-        geofenceToleranceMeters: 25,
-        maxShiftHours: 8,
-        autoCloseGraceMinutes: 60,
-        allowForemanManualCheckIn: true,
-        requireForemanReason: false
+        presenceTrackingEnabled: true,
+        defaultMode: 'proximity_radar',
+        checkInPromptMode: 'prompt',
+        autoCheckoutOnExit: false,
+        checkoutCooldownMinutes: 15,
+        allowManualCheckIn: true,
+        requireGpsValidation: true,
+        gpsToleranceMeters: 25,
+        allowTeamLeaderCheckin: true,
+        predictiveAutoCloseEnabled: true,
+        defaultMaxShiftHours: 10,
+        autoCloseGraceMinutes: 60
       }
     };
   }

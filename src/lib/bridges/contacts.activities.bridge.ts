@@ -9,7 +9,7 @@ export const ContactsActivitiesBridge: ModuleActivitiesBridgeSpec<ContactItem> =
 
   async searchTargets(searchVal: string, tenantId?: string): Promise<TargetSearchResult<ContactItem>[]> {
     try {
-      const contacts = await ContactsService.fetchContacts(searchVal, undefined, 'all', tenantId);
+      const contacts = await ContactsService.fetchContacts(searchVal, undefined, 'all');
       return contacts.map(c => ({
         id: c.id,
         label: c.fullName || `${c.firstName} ${c.lastName}`.trim(),

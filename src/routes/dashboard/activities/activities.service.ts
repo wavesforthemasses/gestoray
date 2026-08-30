@@ -18,10 +18,13 @@ import { generateSearchTerms } from '$lib/search-utils';
 import { generateId, cleanUndefined } from '$lib/utils/helpers';
 import { VersioningService, computeDiff } from '$lib/services/versioningService';
 import { ActivitiesVersioningBridge } from './activities.versioning.bridge';
+import { syncActivityAssignees, chunkArray } from './activityAssigneeUtils';
 
 export interface ActivityFilterOptions {
   status?: string;
   assignedUid?: string;
+  assigneeFilterKey?: string;
+  assigneeFilterKeys?: string[];
   priority?: string;
   targetType?: string;
   targetId?: string;
@@ -46,6 +49,9 @@ export class ActivitiesService {
       }
       if (filters?.assignedUid && filters.assignedUid !== 'tutti') {
         constraints.push(where('assignedUid', '==', filters.assignedUid));
+      }
+      if (filters?.assigneeFilterKey) {
+        constraints.push(where('assigneeFilterKeys', 'array-contains', filters.assigneeFilterKey));
       }
       if (filters?.priority && filters.priority !== 'tutti') {
         constraints.push(where('priority', '==', filters.priority));
@@ -92,6 +98,41 @@ export class ActivitiesService {
       console.warn('[ActivitiesService] Errore getActivities:', e);
       return [];
     }
+  }
+
+  /**
+   * Recupera tutte le attività pertinenti per un operatore (inclusi i suoi team),
+   * utilizzando query con array-contains-any chunkate a max 30 target.
+   */
+  static async getActivitiesForActor(actorTargets: string[], tenantId?: string): Promise<ActivityItem[]> {
+    if (!actorTargets || actorTargets.length === 0) return [];
+    const chunks = chunkArray(actorTargets, 30);
+    const results = new Map<string, ActivityItem>();
+
+    await Promise.all(chunks.map(async (chunk) => {
+      try {
+        const constraints: any[] = [where('assigneeFilterKeys', 'array-contains-any', chunk)];
+        if (tenantId) constraints.push(where('tenantId', '==', tenantId));
+        const q = query(collection(db, this.COLLECTION_NAME), ...constraints);
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          const item = { id: d.id, ...d.data() } as ActivityItem;
+          if (!item.derived?.deleted) {
+            results.set(d.id, item);
+          }
+        }
+      } catch (e) {
+        console.warn('[ActivitiesService] Errore getActivitiesForActor chunk:', e);
+      }
+    }));
+
+    const list = Array.from(results.values());
+    list.sort((a, b) => {
+      const dA = a.createdAt || a.edits?.createdAt || '';
+      const dB = b.createdAt || b.edits?.createdAt || '';
+      return dB.localeCompare(dA);
+    });
+    return list;
   }
 
   /**
@@ -202,10 +243,10 @@ export class ActivitiesService {
     data: Omit<ActivityItem, 'id' | 'createdAt' | 'updatedAt' | 'edits'>,
     author: { uid: string; displayName?: string; tenantId?: string }
   ): Promise<string> {
-    const assignedEntities = data.assignedEntities || [];
-    const firstUser = assignedEntities.find(a => a.entityType === 'user');
-    const assignedUid = data.assignedUid || firstUser?.entityId || '';
-    const assignedName = data.assignedName || firstUser?.entityName || '';
+    const synced = syncActivityAssignees(data);
+    const assignedEntities = synced.assignedEntities || [];
+    const assignedUid = synced.assignedUid || '';
+    const assignedName = synced.assignedName || '';
 
     const newId = generateId('act');
     const nowIso = new Date().toISOString();
@@ -214,23 +255,10 @@ export class ActivitiesService {
       `${data.activityNumber || ''} ${data.title || ''} ${data.targetName || ''} ${assignedName} ${assignedEntities.map(a => a.entityName).join(' ')}`
     );
 
-    const filterKeys = new Set<string>();
-    if (Array.isArray(assignedEntities)) {
-      for (const a of assignedEntities) {
-        if (a.entityType === 'user' && a.entityId) filterKeys.add(`u:${a.entityId}`);
-        if (a.entityType === 'team' && a.entityId) filterKeys.add(`t:${a.entityId}`);
-      }
-    }
-    if (assignedUid) filterKeys.add(`u:${assignedUid}`);
-
     const payload: ActivityItem = {
-      ...data,
+      ...synced,
       id: newId,
       category: data.category || 'crm',
-      assignedEntities,
-      assigneeFilterKeys: Array.from(filterKeys),
-      assignedUid,
-      assignedName,
       createdAt: nowIso,
       updatedAt: nowIso,
       edits: {
@@ -304,13 +332,19 @@ export class ActivitiesService {
     if (!existing) throw new Error(`Attività ${id} non trovata`);
 
     const nowIso = new Date().toISOString();
-    const nextData: ActivityItem = {
+    const merged = {
       ...existing,
-      ...updates,
+      ...updates
+    };
+    const synced = syncActivityAssignees(merged);
+
+    const nextData: ActivityItem = {
+      ...synced,
+      id,
       updatedAt: nowIso
     };
 
-    // Rigenerazione dei search terms e assigneeFilterKeys se variano dati descrittivi o assegnazioni
+    // Rigenerazione dei search terms se variano dati descrittivi o assegnazioni
     if (updates.activityNumber || updates.title || updates.targetName || updates.assignedName || updates.assignedEntities || updates.assignedUid) {
       const user = nextData.assignedName || '';
       const entitiesStr = Array.isArray(nextData.assignedEntities) ? nextData.assignedEntities.map(a => a.entityName).join(' ') : '';
@@ -318,16 +352,6 @@ export class ActivitiesService {
         ...(nextData.derived || {}),
         textSearch: generateSearchTerms(`${nextData.activityNumber || ''} ${nextData.title} ${nextData.targetName || ''} ${user} ${entitiesStr}`)
       };
-
-      const filterKeys = new Set<string>();
-      if (Array.isArray(nextData.assignedEntities)) {
-        for (const a of nextData.assignedEntities) {
-          if (a.entityType === 'user' && a.entityId) filterKeys.add(`u:${a.entityId}`);
-          if (a.entityType === 'team' && a.entityId) filterKeys.add(`t:${a.entityId}`);
-        }
-      }
-      if (nextData.assignedUid) filterKeys.add(`u:${nextData.assignedUid}`);
-      nextData.assigneeFilterKeys = Array.from(filterKeys);
     }
 
     const semanticsMap = ActivitiesVersioningBridge.getSemanticsMap();

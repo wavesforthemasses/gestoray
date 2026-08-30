@@ -1,5 +1,6 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project';
+  import { menuConfigStore } from '$lib/stores/menu';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -10,7 +11,24 @@
   import { pageTitle } from '$lib/stores/page';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { Users, List, Edit3, Trash2, UserCheck, Truck } from '@lucide/svelte';
+  import { 
+    Users, 
+    List, 
+    Edit3, 
+    Trash2, 
+    UserCheck, 
+    Truck, 
+    Calendar, 
+    Crown, 
+    ClipboardList, 
+    Clock, 
+    CheckCircle2, 
+    AlertCircle, 
+    ExternalLink,
+    MapPin,
+    BarChart3,
+    FileText
+  } from '@lucide/svelte';
 
   let teamId = $derived($page.params.id || '');
   let team = $state<TeamItem | null>(null);
@@ -26,10 +44,16 @@
     defaultStatus: 'attiva'
   });
 
+  let activeTab = $state<'overview' | 'members' | 'activities'>('overview');
   let loading = $state(true);
   let deleting = $state(false);
 
+  // Activities linked to this team
+  let teamActivities = $state<any[]>([]);
+  let loadingActivities = $state(false);
+
   let labels = $derived(TeamSettingsService.getLabels(settings));
+  let hasActivitiesModule = $derived($menuConfigStore.some(m => m.id === 'activities'));
 
   onMount(async () => {
     try {
@@ -42,14 +66,36 @@
       team = data;
       if (data) {
         pageTitle.set(`${data.code} - ${data.name}`);
+        loadTeamActivities();
       }
     } catch (e) {
-      console.error('Errore caricamento dettaglio squadra:', e);
+      console.error('[TeamsDetail] Errore caricamento:', e);
       toast.error('Impossibile caricare il dettaglio');
     } finally {
       loading = false;
     }
   });
+
+  async function loadTeamActivities() {
+    if (!hasActivitiesModule || !teamId) return;
+    loadingActivities = true;
+    try {
+      // Dynamic import to keep pure plugin architecture
+      // @ts-ignore
+      const mod = await import('../../activities/activities.service');
+      if (mod?.ActivitiesService) {
+        // Query using zero-expansion filter key
+        const list = await mod.ActivitiesService.getActivities({
+          assigneeFilterKey: `team:${teamId}`
+        });
+        teamActivities = list;
+      }
+    } catch (e) {
+      console.warn('[TeamsDetail] Impossibile caricare attività collegate:', e);
+    } finally {
+      loadingActivities = false;
+    }
+  }
 
   async function handleDelete() {
     if (!team) return;
@@ -62,7 +108,7 @@
       toast.success(`${labels.singular} eliminata con successo`);
       goto('/dashboard/teams');
     } catch (e) {
-      console.error('Errore eliminazione squadra:', e);
+      console.error('[TeamsDetail] Errore eliminazione squadra:', e);
       toast.error('Errore durante l\'eliminazione');
     } finally {
       deleting = false;
@@ -80,12 +126,15 @@
 </script>
 
 <svelte:head>
-  <title>{team ? team.name : labels.singular} | {$projectStore?.projectName || 'ERP'}</title>
+  <title>{team ? `${team.code} - ${team.name}` : labels.singular} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
 <div class="team-detail-container">
   {#if loading}
-    <div class="loading-state">Caricamento in corso...</div>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Caricamento dettagli...</p>
+    </div>
   {:else if !team}
     <Card class="empty-card">
       <h2>{labels.singular} non trovata</h2>
@@ -121,73 +170,196 @@
       </div>
     </header>
 
-    <div class="detail-grid">
-      <Card class="detail-card">
-        <h2 class="card-title">Informazioni Generali</h2>
-        
-        <div class="info-list">
-          <div class="info-item">
-            <span class="info-label">Stato Operativo</span>
-            <StatusBadge status={team.status} label={getStatusLabel(team.status)} />
-          </div>
-          <div class="info-item">
-            <span class="info-label">Caposquadra</span>
-            <span class="info-value">
-              {#if team.leaderName}
-                <span class="leader-badge"><UserCheck size={14} /> {team.leaderName}</span>
-              {:else}
-                <span class="text-muted">Non assegnato</span>
-              {/if}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Mezzo Assegnato</span>
-            <span class="info-value">
-              {#if team.vehicleName}
-                <span class="vehicle-badge"><Truck size={14} /> {team.vehicleName}</span>
-              {:else}
-                <span class="text-muted">Nessun mezzo</span>
-              {/if}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Data Registrazione</span>
-            <span class="info-value">{new Date(team.createdAt).toLocaleDateString('it-IT')}</span>
-          </div>
-        </div>
-      </Card>
+    <!-- TAB NAVIGATION -->
+    <div class="tabs-nav">
+      <button 
+        class="tab-btn" 
+        class:active={activeTab === 'overview'} 
+        onclick={() => activeTab = 'overview'}
+      >
+        <Users size={16} />
+        <span>Panoramica</span>
+      </button>
 
+      <button 
+        class="tab-btn" 
+        class:active={activeTab === 'members'} 
+        onclick={() => activeTab = 'members'}
+      >
+        <UserCheck size={16} />
+        <span>Componenti ({team.members ? team.members.length : 0})</span>
+      </button>
+
+      {#if hasActivitiesModule}
+        <button 
+          class="tab-btn" 
+          class:active={activeTab === 'activities'} 
+          onclick={() => activeTab = 'activities'}
+        >
+          <ClipboardList size={16} />
+          <span>Attività Assegnate ({teamActivities.length})</span>
+        </button>
+      {/if}
+    </div>
+
+    <!-- TAB CONTENT -->
+    {#if activeTab === 'overview'}
+      <div class="detail-grid">
+        <Card class="detail-card">
+          <h2 class="card-title">Informazioni Operative</h2>
+          
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Stato Operativo</span>
+              <StatusBadge status={team.status} label={getStatusLabel(team.status)} />
+            </div>
+            <div class="info-item">
+              <span class="info-label">Caposquadra Designato</span>
+              <span class="info-value">
+                {#if team.leaderName}
+                  <span class="leader-badge"><Crown size={14} /> {team.leaderName}</span>
+                {:else}
+                  <span class="text-muted">Nessun caposquadra designato</span>
+                {/if}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Mezzo / Furgone Assegnato</span>
+              <span class="info-value">
+                {#if team.vehicleName}
+                  <span class="vehicle-badge"><Truck size={14} /> {team.vehicleName}</span>
+                {:else}
+                  <span class="text-muted">Nessun mezzo assegnato</span>
+                {/if}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Metodo Tariffazione / Valutazione</span>
+              <span class="info-value font-mono">
+                {team.evaluationType ? team.evaluationType.toUpperCase() : 'METRI CUBI (MC)'}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Data Registrazione</span>
+              <span class="info-value">{team.createdAt ? new Date(team.createdAt).toLocaleDateString('it-IT') : '-'}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card class="detail-card">
+          <h2 class="card-title">Riepilogo Rapido</h2>
+          <div class="stat-summary-boxes">
+            <div class="stat-box">
+              <div class="stat-num">{team.members ? team.members.length : 0}</div>
+              <div class="stat-lbl">Operatori Assegnati</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num">{teamActivities.length}</div>
+              <div class="stat-lbl">Attività Collegate</div>
+            </div>
+          </div>
+
+          <div class="notes-section">
+            <h3 class="notes-title">Note & Specializzazioni</h3>
+            <p class="notes-content">{team.notes || 'Nessuna nota aggiuntiva presente per questa squadra.'}</p>
+          </div>
+        </Card>
+      </div>
+
+    {:else if activeTab === 'members'}
       <Card class="detail-card">
-        <h2 class="card-title">Componenti Squadra ({team.members ? team.members.length : 0})</h2>
+        <div class="card-header-row">
+          <h2 class="card-title">Componenti della Squadra ({team.members ? team.members.length : 0})</h2>
+          <a href={`/dashboard/teams/${team.id}/edit`} class="btn-edit-members">
+            <Edit3 size={14} />
+            <span>Gestisci Membri</span>
+          </a>
+        </div>
+
         {#if !team.members || team.members.length === 0}
-          <p class="text-muted">Nessun membro inserito in questa squadra.</p>
+          <div class="empty-substate">
+            <Users size={32} color="var(--color-neutral-400)" />
+            <p>Nessun operatore attualmente inserito in questa squadra.</p>
+          </div>
         {:else}
-          <div class="members-list">
-            {#each team.members as member}
-              <div class="member-card" class:is-leader={member.isLeader}>
-                <div class="member-avatar">
-                  <UserCheck size={18} color="var(--color-primary-600)" />
-                </div>
-                <div class="member-info">
-                  <div class="name-row">
-                    <span class="member-name">{member.userName}</span>
-                    {#if member.isLeader}
-                      <span class="leader-pill">CAPOSQUADRA</span>
-                    {/if}
+          <div class="members-grid">
+            {#each team.members as member (member.userId)}
+              <div class="member-card-full" class:is-leader={member.isLeader}>
+                <div class="member-top-row">
+                  <div class="member-avatar-lg">
+                    <UserCheck size={20} color={member.isLeader ? "var(--color-primary-600)" : "var(--color-neutral-600)"} />
                   </div>
-                  <span class="member-role">{member.roleInTeam || 'Operatore'}</span>
+                  <div>
+                    <div class="member-name-lg">{member.userName}</div>
+                    <div class="member-role-lbl">{member.roleInTeam || 'Operatore'}</div>
+                  </div>
+                  {#if member.isLeader}
+                    <span class="leader-pill-lg">
+                      <Crown size={12} />
+                      CAPOSQUADRA
+                    </span>
+                  {/if}
+                </div>
+
+                <div class="member-bottom-meta">
+                  <span class="meta-tag">
+                    Tariffa: <strong>{member.evaluationType || 'giornata'}</strong>
+                  </span>
+                  {#if member.hourlyRate}
+                    <span class="meta-tag">€{member.hourlyRate}/h</span>
+                  {/if}
                 </div>
               </div>
             {/each}
           </div>
         {/if}
       </Card>
-    </div>
 
-    <Card class="detail-card">
-      <h2 class="card-title">Note & Specializzazioni</h2>
-      <p class="notes-content">{team.notes || 'Nessuna nota aggiuntiva presente.'}</p>
-    </Card>
+    {:else if activeTab === 'activities'}
+      <Card class="detail-card">
+        <h2 class="card-title">Attività Assegnate alla Squadra ({teamActivities.length})</h2>
+        <p class="section-desc">Elenco delle attività operative pianificate o eseguite da questa squadra.</p>
+
+        {#if loadingActivities}
+          <div class="loading-state">Caricamento attività...</div>
+        {:else if teamActivities.length === 0}
+          <div class="empty-substate">
+            <ClipboardList size={32} color="var(--color-neutral-400)" />
+            <p>Nessuna attività operativa attualmente assegnata a questa squadra.</p>
+          </div>
+        {:else}
+          <div class="activities-table-wrap">
+            <table class="activities-table">
+              <thead>
+                <tr>
+                  <th>Codice</th>
+                  <th>Titolo Attività</th>
+                  <th>Data Esecuzione</th>
+                  <th>Stato</th>
+                  <th class="text-right">Azione</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each teamActivities as act (act.id)}
+                  <tr>
+                    <td class="font-mono">{act.code || act.id.slice(0, 8)}</td>
+                    <td class="font-semibold">{act.title}</td>
+                    <td>{act.executionDate || act.dueDate || '-'}</td>
+                    <td><StatusBadge status={act.status} /></td>
+                    <td class="text-right">
+                      <a href={`/dashboard/activities/${act.id}`} class="btn-link-act">
+                        <span>Dettaglio</span>
+                        <ExternalLink size={13} />
+                      </a>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </Card>
+    {/if}
   {/if}
 </div>
 
@@ -198,17 +370,22 @@
     gap: 20px;
     width: 100%;
   }
+
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
   }
+
   .header-title-box {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  .btn-back {
+
+  .btn-module-list {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,7 +395,12 @@
     background: var(--color-neutral-100);
     color: var(--color-neutral-700);
     text-decoration: none;
+    transition: background 0.15s;
   }
+  .btn-module-list:hover {
+    background: var(--color-neutral-200);
+  }
+
   .header-icon {
     width: 44px;
     height: 44px;
@@ -228,22 +410,27 @@
     align-items: center;
     justify-content: center;
   }
+
   .code-badge {
     font-size: 12px;
     font-weight: 700;
     font-family: monospace;
     color: var(--color-primary-600);
   }
+
   .page-main-title {
     font-size: 20px;
     font-weight: 700;
     margin: 0;
+    color: var(--color-neutral-900);
   }
+
   .header-actions {
     display: flex;
     align-items: center;
     gap: 10px;
   }
+
   .btn-edit {
     display: inline-flex;
     align-items: center;
@@ -256,21 +443,63 @@
     border-radius: var(--radius-md);
     text-decoration: none;
   }
+
+  .tabs-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--color-neutral-200);
+    padding-bottom: 8px;
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--color-neutral-600);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover {
+    background: var(--color-neutral-100);
+  }
+
+  .tab-btn.active {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+  }
+
   .detail-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
+
+  @media (max-width: 900px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .card-title {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0 0 16px 0;
+    color: var(--color-neutral-800);
   }
+
   .info-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
+
   .info-item {
     display: flex;
     justify-content: space-between;
@@ -278,89 +507,248 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--color-neutral-100);
   }
+
   .info-label {
     font-size: 13px;
     color: var(--color-neutral-500);
   }
+
   .info-value {
     font-size: 14px;
     font-weight: 600;
+    color: var(--color-neutral-800);
   }
+
   .leader-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     color: var(--color-primary-700);
+    background: var(--color-primary-50);
+    padding: 2px 8px;
+    border-radius: 6px;
   }
+
   .vehicle-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     color: var(--color-neutral-800);
   }
-  .members-list {
+
+  .stat-summary-boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: center;
+    border: 1px solid var(--color-neutral-100);
+  }
+
+  .stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-primary-600);
+  }
+
+  .stat-lbl {
+    font-size: 12px;
+    color: var(--color-neutral-500);
+    margin-top: 2px;
+  }
+
+  .notes-section {
+    border-top: 1px solid var(--color-neutral-100);
+    padding-top: 14px;
+  }
+
+  .notes-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-600);
+    margin: 0 0 6px 0;
+  }
+
+  .notes-content {
+    font-size: 13px;
+    color: var(--color-neutral-700);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .btn-edit-members {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary-600);
+    text-decoration: none;
+  }
+
+  .members-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .member-card-full {
+    background: var(--color-neutral-50);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-md);
+    padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
-  .member-card {
+
+  .member-card-full.is-leader {
+    background: var(--color-primary-50, #F5F3FF);
+    border-color: var(--color-primary-200);
+  }
+
+  .member-top-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 12px;
-    background: var(--color-neutral-50);
-    border-radius: var(--radius-md);
   }
-  .member-card.is-leader {
-    background: var(--color-primary-50);
-    border: 1px solid var(--color-primary-100);
-  }
-  .member-avatar {
-    width: 32px;
-    height: 32px;
+
+  .member-avatar-lg {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: white;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid var(--color-neutral-200);
   }
-  .member-info {
-    display: flex;
-    flex-direction: column;
-  }
-  .name-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .member-name {
+
+  .member-name-lg {
     font-size: 14px;
-    font-weight: 600;
-  }
-  .leader-pill {
-    font-size: 9px;
     font-weight: 700;
-    background: var(--color-primary-600);
-    color: white;
-    padding: 1px 5px;
-    border-radius: 4px;
+    color: var(--color-neutral-900);
   }
-  .member-role {
+
+  .member-role-lbl {
     font-size: 12px;
     color: var(--color-neutral-500);
   }
-  .notes-content {
-    font-size: 14px;
-    color: var(--color-neutral-700);
-    line-height: 1.5;
+
+  .leader-pill-lg {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    background: var(--color-primary-600);
+    color: white;
+    padding: 3px 7px;
+    border-radius: 12px;
   }
+
+  .member-bottom-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--color-neutral-600);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding-top: 8px;
+  }
+
+  .meta-tag {
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--color-neutral-200);
+  }
+
+  .empty-substate {
+    padding: 36px;
+    text-align: center;
+    color: var(--color-neutral-400);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .activities-table-wrap {
+    overflow-x: auto;
+  }
+
+  .activities-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .activities-table th, .activities-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-neutral-100);
+  }
+
+  .activities-table th {
+    font-size: 12px;
+    color: var(--color-neutral-500);
+    background: var(--color-neutral-50);
+  }
+
+  .btn-link-act {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary-600);
+    text-decoration: none;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--color-neutral-500);
+    margin: -10px 0 16px 0;
+  }
+
+  .font-mono { font-family: monospace; font-size: 12px; }
+  .font-semibold { font-weight: 600; }
+  .text-right { text-align: right; }
+  .text-muted { color: var(--color-neutral-400); }
+
   .loading-state {
-    padding: 40px;
+    padding: 60px;
     text-align: center;
+    color: var(--color-neutral-500);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
-  .empty-card {
-    padding: 40px;
-    text-align: center;
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-neutral-200);
+    border-top-color: var(--color-primary-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
-  .text-muted { color: var(--color-neutral-400); font-weight: normal; }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>

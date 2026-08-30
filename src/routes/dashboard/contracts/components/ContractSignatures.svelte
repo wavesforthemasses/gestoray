@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, Button } from '$lib';
-  import { Award, CheckCircle } from 'lucide-svelte';
+  import { Award, CheckCircle } from '@lucide/svelte';
 
   interface Props {
     contract: any;

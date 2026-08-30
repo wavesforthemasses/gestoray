@@ -27,8 +27,9 @@ export class PresenceFirestoreRepository {
     todayDateStr: string
   ): Promise<any[]> {
     const allFilterKeys = [
+      `user:${userId}`,
       `u:${userId}`,
-      ...userTeamIds.map(tId => `t:${tId}`)
+      ...userTeamIds.flatMap(tId => [`team:${tId}`, `t:${tId}`])
     ];
 
     const CHUNK_SIZE = 30;
@@ -61,6 +62,48 @@ export class PresenceFirestoreRepository {
     }
 
     return Array.from(activityMap.values());
+  }
+
+  /**
+   * Recupera luoghi per ID con chunking protetto (max 30 per query).
+   */
+  async fetchPlacesByIds(placeIds: string[]): Promise<any[]> {
+    if (!placeIds || placeIds.length === 0) return [];
+    const uniqueIds = Array.from(new Set(placeIds));
+    const CHUNK_SIZE = 30;
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+      chunks.push(uniqueIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    const placesCol = collection(this.db, 'places');
+    const promises = chunks.map(chunk => {
+      const q = query(placesCol, where('__name__', 'in', chunk));
+      return getDocs(q);
+    });
+
+    const snapshots = await Promise.all(promises);
+    const results: any[] = [];
+    for (const snap of snapshots) {
+      for (const d of snap.docs) {
+        results.push({ id: d.id, ...d.data() });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Recupera i luoghi attivi con geofence per il radar di prossimità globale.
+   */
+  async fetchActiveGeofencedPlaces(orgId: string = 'default', maxLimit: number = 50): Promise<any[]> {
+    const placesCol = collection(this.db, 'places');
+    const q = query(
+      placesCol,
+      where('status', 'in', ['active', 'attivo']),
+      limit(maxLimit)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
   /**

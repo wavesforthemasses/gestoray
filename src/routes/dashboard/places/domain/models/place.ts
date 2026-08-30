@@ -29,12 +29,21 @@ export interface PlaceAddress {
   country: string;               // ISO 3166-1 alpha-2 (default: "IT")
   formattedAddress: string;     // Stringa leggibile completa
   normalizedKey: string;         // es. "it|20121|milano|via roma|12"
+  coordinates?: { lat: number; lng: number };
+  lat?: number;
+  lng?: number;
 }
 
 export interface PlaceGeo {
   location: GeoPoint;            // GeoPoint nativo per spatial indexing
   geohash: string;               // Geohash precision 7-9 per bounding box queries
   radiusMeters: number;          // Default: 100 per geofencing e check-in
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    lat?: number;
+    lng?: number;
+  };
 }
 
 export interface PlaceContact {
@@ -100,6 +109,14 @@ export interface PlaceDocument {
   syncStatus?: 'synced' | 'local_mutation';
 
   original?: Record<string, any>;
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  lng?: number;
+  geofenceRadiusMeters?: number;
+  radiusMeters?: number;
+  activityId?: string;
+  activityName?: string;
   derived?: {
     textSearch?: string[];
     cacheChunkId?: string;

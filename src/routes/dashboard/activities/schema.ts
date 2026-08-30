@@ -2,7 +2,7 @@ import type { AssignedEntityRef } from '$lib/types/assignments';
 
 export type { AssignedEntityRef };
 export type ActivityPriority = 'bassa' | 'media' | 'alta' | 'urgente';
-export type ActivityStatus = 'da_fare' | 'in_corso' | 'completata' | 'completato' | 'annullato';
+export type ActivityStatus = 'da_fare' | 'in_corso' | 'completata' | 'completato' | 'annullato' | 'annullata';
 export type ActivityCategory = 'crm' | 'operational' | 'internal' | 'maintenance' | 'event' | 'task';
 
 export type ActivityTargetType = 
@@ -51,6 +51,10 @@ export interface ActivityItem {
   // Legacy fallback fields for backward compatibility
   assignedUid?: string;
   assignedName?: string;
+  teamId?: string;
+  teamName?: string;
+  vehicleId?: string;
+  vehicleName?: string;
 
   executionDate?: string;
   dueDate?: string;

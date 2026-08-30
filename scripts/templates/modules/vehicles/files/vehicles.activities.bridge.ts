@@ -8,7 +8,7 @@ export const VehiclesActivitiesBridge: ModuleActivitiesBridgeSpec<VehicleItem> =
   targetLabel: 'Mezzo Aziendale',
   targetIcon: 'Truck',
 
-  async searchTargets(searchVal: string, tenantId?: string): Promise<TargetSearchResult<VehicleItem>[]> {
+  async searchTargets(searchVal: string, _tenantId?: string): Promise<TargetSearchResult<VehicleItem>[]> {
     try {
       const vehicles = await VehiclesService.getVehicles();
       let filtered = vehicles;
@@ -17,15 +17,15 @@ export const VehiclesActivitiesBridge: ModuleActivitiesBridgeSpec<VehicleItem> =
         filtered = vehicles.filter(v => {
           const name = (v.name || '').toLowerCase();
           const plate = (v.licensePlate || '').toLowerCase();
-          const model = (v.model || '').toLowerCase();
-          return name.includes(queryTerm) || plate.includes(queryTerm) || model.includes(queryTerm);
+          const code = (v.code || '').toLowerCase();
+          return name.includes(queryTerm) || plate.includes(queryTerm) || code.includes(queryTerm);
         });
       }
       return filtered.slice(0, 30).map(v => {
-        const subtext = [v.model, v.brand].filter(Boolean).join(' • ');
+        const subtext = [v.type, v.code].filter(Boolean).join(' • ');
         return {
           id: v.id,
-          label: `${v.name} (${v.licensePlate})`,
+          label: `${v.name}${v.licensePlate ? ` (${v.licensePlate})` : ''}`,
           subtext,
           badge: v.status,
           raw: v
@@ -37,18 +37,18 @@ export const VehiclesActivitiesBridge: ModuleActivitiesBridgeSpec<VehicleItem> =
     }
   },
 
-  async getTargetSummary(id: string, tenantId?: string): Promise<TargetSummary | null> {
+  async getTargetSummary(id: string, _tenantId?: string): Promise<TargetSummary | null> {
     try {
       const vehicle = await VehiclesService.getVehicleById(id);
       if (!vehicle) return null;
       return {
         id: vehicle.id,
-        name: `${vehicle.name} (${vehicle.licensePlate})`,
+        name: `${vehicle.name}${vehicle.licensePlate ? ` (${vehicle.licensePlate})` : ''}`,
         targetType: 'vehicle',
         meta: {
-          licensePlate: vehicle.licensePlate,
-          brand: vehicle.brand,
-          model: vehicle.model,
+          licensePlate: vehicle.licensePlate || '',
+          code: vehicle.code || '',
+          type: vehicle.type,
           status: vehicle.status
         }
       };

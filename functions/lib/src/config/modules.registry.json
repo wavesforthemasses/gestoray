@@ -1,131 +1,6 @@
 {
     "modules": [
         {
-            "id": "chart",
-            "name": "Analytics & Grafici BI",
-            "version": "1.0.0",
-            "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
-            "category": "analytics",
-            "icon": "TrendingUp",
-            "menuItem": null,
-            "settingsCard": {
-                "path": "/dashboard/settings/chart",
-                "title": "Configurazione Analytics & Grafici",
-                "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
-                "icon": "TrendingUp"
-            }
-        },
-        {
-            "id": "places",
-            "label": "Luoghi",
-            "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative e destinazioni degli interventi.",
-            "icon": "MapPin",
-            "requirements": [],
-            "path": "/dashboard/places",
-            "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
-            "clientTabs": [
-                {
-                    "id": "places",
-                    "component": "ClientPlacesTab.svelte",
-                    "label": "Luoghi"
-                }
-            ],
-            "settingsCard": {
-                "title": "Configurazione Luoghi",
-                "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
-                "icon": "MapPin",
-                "path": "/dashboard/settings/places"
-            },
-            "rolesView": [
-                "superadmin",
-                "direzione",
-                "amministrazione",
-                "commerciale",
-                "tecnico"
-            ],
-            "enabled": true,
-            "kpiTiles": [
-                {
-                    "id": "active_places",
-                    "title": "Cantieri Attivi",
-                    "subtitle": "Destinazioni operative attive",
-                    "icon": "CheckCircle2",
-                    "valueKey": "active_places",
-                    "aggregation": {
-                        "collection": "places",
-                        "type": "count",
-                        "dateFields": [
-                            "createdAt",
-                            "edits.createdAt",
-                            "original.createdAt"
-                        ]
-                    }
-                },
-                {
-                    "id": "new_places",
-                    "title": "Nuove Aperture",
-                    "subtitle": "Nuovi cantieri e luoghi aperti",
-                    "icon": "CalendarPlus",
-                    "valueKey": "new_places",
-                    "aggregation": {
-                        "collection": "places",
-                        "type": "count",
-                        "dateFields": [
-                            "createdAt",
-                            "edits.createdAt",
-                            "original.createdAt"
-                        ]
-                    }
-                }
-            ],
-            "anonymization": {
-                "collectionName": "places",
-                "linkFieldPath": "clientId",
-                "redactFields": [
-                    {
-                        "fieldPath": "notes",
-                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-                    }
-                ]
-            },
-            "schema": {
-                "fields": {
-                    "code": {
-                        "type": "string",
-                        "description": "Codice identificativo del luogo (es. LUG-2026-001)",
-                        "tags": [
-                            "search",
-                            "sort"
-                        ]
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Nome o denominazione del luogo/cantiere",
-                        "tags": [
-                            "search",
-                            "display"
-                        ]
-                    },
-                    "clientId": {
-                        "type": "string",
-                        "description": "ID del cliente proprietario/titolare del luogo",
-                        "tags": [
-                            "filter:client",
-                            "relation:clients"
-                        ]
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "Stato del luogo (attivo, inattivo)",
-                        "tags": [
-                            "filter:status",
-                            "kpi:places_attivi"
-                        ]
-                    }
-                }
-            }
-        },
-        {
             "id": "tickets",
             "label": "Ticket",
             "description": "Gestione ticket e richieste clienti",
@@ -141,6 +16,40 @@
                 "tecnico"
             ],
             "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "ticket_aperti",
+                    "title": "Ticket Aperti",
+                    "subtitle": "Ticket aperti o in lavorazione",
+                    "icon": "Ticket",
+                    "valueKey": "ticket_aperti",
+                    "aggregation": {
+                        "collection": "tickets",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                },
+                {
+                    "id": "tmr",
+                    "title": "Tempo Medio Risoluzione",
+                    "subtitle": "Ore medie per risoluzione ticket",
+                    "icon": "Clock",
+                    "valueKey": "tmr",
+                    "aggregation": {
+                        "collection": "tickets",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
             "anonymization": {
                 "collectionName": "tickets",
                 "linkFieldPath": "clientId",
@@ -230,6 +139,24 @@
                 "tecnico"
             ],
             "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "total_products",
+                    "title": "Articoli a Catalogo",
+                    "subtitle": "Prodotti e servizi a catalogo",
+                    "icon": "Package",
+                    "valueKey": "total_products",
+                    "aggregation": {
+                        "collection": "products",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
             "anonymization": {
                 "collectionName": "products",
                 "linkFieldPath": "id",
@@ -278,6 +205,21 @@
                         ]
                     }
                 }
+            }
+        },
+        {
+            "id": "chart",
+            "name": "Analytics & Grafici BI",
+            "version": "1.0.0",
+            "description": "Modulo opzionale per la visualizzazione dinamica dei grafici e trend analitici trasversali",
+            "category": "analytics",
+            "icon": "TrendingUp",
+            "menuItem": null,
+            "settingsCard": {
+                "path": "/dashboard/settings/chart",
+                "title": "Configurazione Analytics & Grafici",
+                "description": "Personalizza la posizione delle card KPI, la granularità ed il comportamento dei vari bridge modulari per i grafici.",
+                "icon": "TrendingUp"
             }
         },
         {
@@ -440,6 +382,346 @@
                         "tags": [
                             "filter:date",
                             "sort:default"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "activities",
+            "label": "Attività",
+            "description": "Tracciamento attività commerciali e operative",
+            "icon": "ClipboardList",
+            "requirements": [],
+            "path": "/dashboard/activities",
+            "kpiBridgePath": "/dashboard/activities/activities.kpi.bridge.ts",
+            "settingsCard": {
+                "title": "Configurazione Attività & Task",
+                "description": "Configura tipologie attività (chiamate, email, visite, ferie, corsi sicurezza, ecc.), priorità e regole riassegnazione.",
+                "icon": "ClipboardList",
+                "path": "/dashboard/settings/activities"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "commerciale",
+                "amministrazione",
+                "tecnico"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "activities",
+                    "title": "Attività",
+                    "subtitle": "Attività Svolte",
+                    "icon": "ClipboardList",
+                    "aggregation": {
+                        "collection": "activities",
+                        "type": "count",
+                        "dateFields": [
+                            "edits.createdAt",
+                            "createdAt",
+                            "original.createdAt"
+                        ],
+                        "typeFilterField": "activityTypeId",
+                        "loggedByFilterField": "assignedUid"
+                    }
+                }
+            ],
+            "anonymization": {
+                "collectionName": "activities",
+                "linkFieldPath": "targetId",
+                "redactFields": [
+                    {
+                        "fieldPath": "description",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "targetName",
+                        "replacement": "ANONIMIZZATO"
+                    },
+                    {
+                        "fieldPath": "targetSubtext",
+                        "replacement": ""
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "activityNumber": {
+                        "type": "string",
+                        "description": "Codice progressivo univoco dell'attività",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Oggetto dell'attività",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "targetType": {
+                        "type": "string",
+                        "description": "Tipologia dell'entità bersaglio (contact, client, user, place, vehicle, contract, ticket)",
+                        "tags": [
+                            "filter:targetType"
+                        ]
+                    },
+                    "targetId": {
+                        "type": "string",
+                        "description": "ID dell'entità bersaglio correlata",
+                        "tags": [
+                            "filter:targetId",
+                            "relation:dynamic"
+                        ]
+                    },
+                    "assignedUid": {
+                        "type": "string",
+                        "description": "UID dell'operatore responsabile",
+                        "tags": [
+                            "filter:user",
+                            "kpi:user_activities"
+                        ]
+                    },
+                    "executionDate": {
+                        "type": "date",
+                        "description": "Data di svolgimento dell'attività",
+                        "tags": [
+                            "filter:date"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato lavorazione attività (da_fare, in_corso, completata, annullata)",
+                        "tags": [
+                            "filter:status"
+                        ]
+                    },
+                    "priority": {
+                        "type": "string",
+                        "description": "Priorità attività (bassa, media, alta, urgente)",
+                        "tags": [
+                            "filter:priority"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "teams",
+            "label": "Squadre & Risorse",
+            "description": "Gestione squadre di lavoro, operatori di campo, caposquadra e composizione team.",
+            "icon": "Users",
+            "requirements": [],
+            "path": "/dashboard/teams",
+            "clientTabs": [],
+            "settingsCard": {
+                "title": "Configurazione Squadre & Risorse",
+                "description": "Denominazione agnostica (Squadra/Team/Gruppo/Risorsa), prefissi numerazione, stati predefiniti.",
+                "icon": "Users",
+                "path": "/dashboard/settings/teams"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "teams_attivi",
+                    "title": "Squadre Attive",
+                    "subtitle": "Team di lavoro operativi sul campo",
+                    "icon": "Users",
+                    "valueKey": "activeTeamsCount",
+                    "aggregation": {
+                        "collection": "teams",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
+            "schema": {
+                "fields": {
+                    "code": {
+                        "type": "string",
+                        "description": "Codice identificativo della squadra (es. SQD-2026-001)",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Nome della squadra o identificativo del team",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "leaderId": {
+                        "type": "string",
+                        "description": "UID dell'operatore caposquadra / responsabile",
+                        "tags": [
+                            "filter:leader"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato operativo (attiva, inattiva, in_servizio)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:teams_attivi"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": "places",
+            "label": "Luoghi",
+            "description": "Anagrafica dei luoghi fisici, cantieri, sedi operative, magazzini e geofencing radar.",
+            "icon": "MapPin",
+            "requirements": [],
+            "path": "/dashboard/places",
+            "kpiBridgePath": "/dashboard/places/places.kpi.bridge.ts",
+            "clientTabs": [
+                {
+                    "id": "places",
+                    "component": "ClientPlacesTab.svelte",
+                    "label": "Luoghi"
+                }
+            ],
+            "settingsCard": {
+                "title": "Configurazione Luoghi",
+                "description": "Denominazione agnostica (Luogo/Cantiere/Sede Operativa/Destinazione), prefissi numerazione, stati predefiniti.",
+                "icon": "MapPin",
+                "path": "/dashboard/settings/places"
+            },
+            "rolesView": [
+                "superadmin",
+                "direzione",
+                "amministrazione",
+                "commerciale",
+                "tecnico"
+            ],
+            "enabled": true,
+            "kpiTiles": [
+                {
+                    "id": "active_places",
+                    "title": "Cantieri Attivi",
+                    "subtitle": "Destinazioni operative attive",
+                    "icon": "CheckCircle2",
+                    "valueKey": "active_places",
+                    "aggregation": {
+                        "collection": "places",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                },
+                {
+                    "id": "new_places",
+                    "title": "Nuove Aperture",
+                    "subtitle": "Nuovi cantieri e luoghi aperti",
+                    "icon": "CalendarPlus",
+                    "valueKey": "new_places",
+                    "aggregation": {
+                        "collection": "places",
+                        "type": "count",
+                        "dateFields": [
+                            "createdAt",
+                            "edits.createdAt",
+                            "original.createdAt"
+                        ]
+                    }
+                }
+            ],
+            "anonymization": {
+                "collectionName": "places",
+                "linkFieldPath": "clientId",
+                "redactFields": [
+                    {
+                        "fieldPath": "notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    },
+                    {
+                        "fieldPath": "accessInfo.notes",
+                        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+                    }
+                ]
+            },
+            "schema": {
+                "fields": {
+                    "code": {
+                        "type": "string",
+                        "description": "Codice identificativo del luogo (es. LUG-2026-001)",
+                        "tags": [
+                            "search",
+                            "sort"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Nome o denominazione del luogo/cantiere",
+                        "tags": [
+                            "search",
+                            "display"
+                        ]
+                    },
+                    "types": {
+                        "type": "array",
+                        "description": "Ruoli e tipologie assegnate (site, warehouse, headquarters, branch, store, etc.)",
+                        "tags": [
+                            "filter:type"
+                        ]
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "ID del cliente proprietario/titolare del luogo",
+                        "tags": [
+                            "filter:client",
+                            "relation:clients"
+                        ]
+                    },
+                    "parentId": {
+                        "type": "string",
+                        "description": "ID del luogo genitore nella gerarchia ad albero",
+                        "tags": [
+                            "filter:parent",
+                            "relation:places"
+                        ]
+                    },
+                    "depth": {
+                        "type": "number",
+                        "description": "Profondità nell'albero (0 = radice, 1 = sotto-area)",
+                        "tags": [
+                            "filter:depth"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Stato del luogo (active, temporary, completed, archived)",
+                        "tags": [
+                            "filter:status",
+                            "kpi:places_attivi"
                         ]
                     }
                 }

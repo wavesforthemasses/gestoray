@@ -43,6 +43,23 @@
     initTicketsBadgeListener(uid, isExecutive);
   });
 
+  let SentinelComponent = $state<any>(null);
+
+  $effect(() => {
+    const isPlacesActive = $menuConfigStore.some(m => m.id === 'places');
+    if (isPlacesActive && authState.user) {
+      import('./places/ui/components/GlobalPresenceSentinel.svelte')
+        .then(mod => {
+          SentinelComponent = mod.default;
+        })
+        .catch(() => {
+          SentinelComponent = null;
+        });
+    } else {
+      SentinelComponent = null;
+    }
+  });
+
   onMount(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar_collapsed');
@@ -180,6 +197,12 @@
       {/if}
       {@render children()}
     </main>
+
+    <!-- Global Proactive Presence Sentinel (Mounted conditionally if places module is active) -->
+    {#if SentinelComponent && authState.user}
+      {@const Sentinel = SentinelComponent}
+      <Sentinel currentUser={authState.user} />
+    {/if}
 
     <!-- Global Core Back Floating Button -->
     <button 

@@ -43,8 +43,9 @@ service cloud.firestore {
     function notWritingDerived() {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
-             (resource == null && request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])) ||
-             (resource != null && (
+             ((resource == null || !('derived' in resource.data)) && 
+                request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])) ||
+             (resource != null && ('derived' in resource.data) && (
                 request.resource.data.derived == resource.data.derived ||
                 request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])
              ));
@@ -135,9 +136,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // SYSTEM CACHE
+    // SYSTEM CACHE (Principio 8 - Zero Cache Poisoning)
     match /system_cache/{cacheId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
     }
 
     // CUSTOM FIELDS
@@ -276,6 +278,16 @@ match /activity_types/{docId} {
 }
     // --- MODULE: activities END ---
 
+    // --- MODULE: teams BEGIN ---
+    // TEAMS
+match /teams/{teamId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione();
+}
+    // --- MODULE: teams END ---
+
     // --- MODULE: places BEGIN ---
     // PLACES
 match /places/{placeId} {
@@ -284,31 +296,18 @@ match /places/{placeId} {
   allow update: if isAuth() && notWritingDerived();
   allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
 }
+match /place_presences/{logId} {
+  allow read: if isAuth();
+  allow create, update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+match /user_active_presences/{userId} {
+  allow read, write: if isAuth();
+}
 match /unique_keys/{keyId} {
   allow read: if isAuth();
   allow create, delete: if isAuth();
   allow update: if false;
-}
-
-match /user_active_presences/{userId} {
-  allow read: if isAuth();
-  allow write: if isAuth();
-}
-
-match /place_presences/{logId} {
-  allow read: if isAuth();
-  allow create: if isAuth()
-    && request.resource.data.clientEnteredAt is string
-    && request.resource.data.status == 'active';
-
-  allow update: if isAuth()
-    && request.resource.data.userId == resource.data.userId
-    && request.resource.data.placeId == resource.data.placeId
-    && request.resource.data.clientEnteredAt == resource.data.clientEnteredAt
-    && request.resource.data.verifiedBy == resource.data.verifiedBy
-    && request.resource.data.verifiedByUserId == resource.data.verifiedByUserId;
-
-  allow delete: if hasRole('superadmin') || isAdmin();
 }
     // --- MODULE: places END ---
   }

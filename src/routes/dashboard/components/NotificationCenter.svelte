@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Bell, Check } from 'lucide-svelte';
+  import { Bell, Check } from '@lucide/svelte';
   import { NotificationsService, type AppNotification } from '$lib/services/notificationsService';
   import { authState } from '$lib/auth.svelte';
 

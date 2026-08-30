@@ -28,7 +28,9 @@
     Compass,
     ChevronDown,
     ChevronUp,
-    AlertTriangle
+    AlertTriangle,
+    Star,
+    Folder
   } from '@lucide/svelte';
 
   interface Props {
@@ -387,9 +389,9 @@
             <span class="spec-label">Stato Coordinate Genitore</span>
             <span class="spec-val {parentLocation ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}">
               {#if parentLocation}
-                ✓ GPS Attivo ({parentLocation.lat.toFixed(4)}, {parentLocation.lng.toFixed(4)})
+                <span class="inline-flex items-center gap-1"><Check size={14} /> GPS Attivo ({parentLocation.lat.toFixed(4)}, {parentLocation.lng.toFixed(4)})</span>
               {:else}
-                ⚠️ Nessuna coordinata nel genitore
+                <span class="inline-flex items-center gap-1"><AlertTriangle size={14} /> Nessuna coordinata nel genitore</span>
               {/if}
             </span>
           </div>
@@ -451,7 +453,7 @@
       <div class="form-group">
         <label for="placeParent" class="form-label">Luogo Genitore (Sotto-area / Lotto di)</label>
         <select id="placeParent" value={parentId || ''} onchange={handleParentChange} class="form-select">
-          <option value="">📁 Nessun Genitore (Luogo Principale Livello 0)</option>
+          <option value="">Nessun Genitore (Luogo Principale Livello 0)</option>
           {#each allPlaces as p}
             {#if !initialData.id || (p.id !== initialData.id && !p.ancestors?.includes(initialData.id))}
               <option value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>
@@ -693,7 +695,11 @@
                 class="btn-primary-tag {contact.isPrimary ? 'active' : ''}" 
                 onclick={() => setPrimaryContact(contact.id)}
               >
-                {contact.isPrimary ? '★ Principale' : 'Imposta Principale'}
+                {#if contact.isPrimary}
+                  <Star size={13} class="fill-current inline mr-1" /> Principale
+                {:else}
+                  Imposta Principale
+                {/if}
               </button>
               {#if contacts.length > 1}
                 <button type="button" class="btn-del-contact" onclick={() => removeContact(contact.id)}>

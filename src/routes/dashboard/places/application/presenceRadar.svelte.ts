@@ -1,4 +1,5 @@
 import { haversineDistanceMeters } from '../domain/services/placeUtils';
+import { isOutsidePlaceWithHysteresis } from '../domain/services/presenceUtils';
 
 export interface TargetPlaceItem {
   id: string;
@@ -6,6 +7,13 @@ export interface TargetPlaceItem {
   lat: number;
   lng: number;
   radiusMeters: number;
+  code?: string;
+  address?: string;
+  activityId?: string;
+  activityName?: string;
+  scheduledTime?: string;
+  scheduledStartTime?: string;
+  scheduledEndTime?: string;
 }
 
 export class PresenceRadarState {
@@ -14,7 +22,10 @@ export class PresenceRadarState {
   activeRelevantPlaces = $state<TargetPlaceItem[]>([]);
   isWatching = $state<boolean>(false);
   isLocating = $state<boolean>(false);
-  
+
+  // Debouncing a campioni consecutivi (previene sfarfallio e falsi allarmi)
+  private insideCount = $state<number>(0);
+  private outsideCount = $state<number>(0);
   private intervalTimer: any = null;
 
   nearestPlace = $derived.by(() => {
@@ -30,6 +41,19 @@ export class PresenceRadarState {
     return closest;
   });
 
+  // Lista di tutti i luoghi vicini ordinati per distanza (per widget dock laterale e selezione multi-cantiere)
+  nearbyPlaces = $derived.by(() => {
+    if (!this.currentCoords || this.activeRelevantPlaces.length === 0) return [];
+    return this.activeRelevantPlaces
+      .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
+      .map(p => {
+        const distance = Math.round(haversineDistanceMeters(this.currentCoords!.lat, this.currentCoords!.lng, p.lat, p.lng));
+        const isInside = distance <= (p.radiusMeters + 25);
+        return { place: p, distance, isInside };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  });
+
   // Polling dinamico a 3 velocità per massimizzare la durata della batteria
   pollingIntervalMs = $derived.by(() => {
     if (!this.nearestPlace) return 300000; // 5 min (nessun luogo vicino)
@@ -38,6 +62,7 @@ export class PresenceRadarState {
     return 15000; // 15 sec (< 500 m, vicinanza imminente)
   });
 
+  // Rilevamento ingresso con tolleranza GPS
   isInsideNearest = $derived.by(() => {
     if (!this.nearestPlace) return false;
     const tolerance = 25; // tolleranza GPS in metri
@@ -45,20 +70,57 @@ export class PresenceRadarState {
   });
 
   /**
-   * Avvia il radar con aggancio automatico a document.visibilityState
+   * Aggiorna le coordinate con soglia di stabilizzazione (deadband) anti-flicker
    */
-  startRadar(places: TargetPlaceItem[]) {
+  updateCoords(newLat: number, newLng: number, newAcc: number) {
+    if (this.currentCoords) {
+      const dist = haversineDistanceMeters(this.currentCoords.lat, this.currentCoords.lng, newLat, newLng);
+      // Se lo spostamento è inferiore a 0.5 metri e l'accuratezza è simile, evita ri-render
+      if (dist < 0.5 && Math.abs((this.currentCoords.accuracy || 0) - newAcc) < 2) {
+        return;
+      }
+    }
+    this.currentCoords = { lat: newLat, lng: newLng, accuracy: newAcc };
+  }
+
+  /**
+   * Verifica se l'utente è uscito dal perimetro di un luogo specifico con ISTERESI (+35m)
+   */
+  isOutsidePlaceWithHysteresis(targetLat: number, targetLng: number, radiusMeters: number): boolean {
+    if (!this.currentCoords) return false;
+    const dist = haversineDistanceMeters(this.currentCoords.lat, this.currentCoords.lng, targetLat, targetLng);
+    const exitThreshold = radiusMeters + 35; // Isteresi di uscita per evitare rimbalzi
+    return dist > exitThreshold;
+  }
+
+  /**
+   * Avvia il radar con controllo preliminare dei permessi
+   */
+  async startRadar(places: TargetPlaceItem[]) {
     this.activeRelevantPlaces = places;
     if (typeof window === 'undefined' || !navigator.geolocation) return;
 
-    this.checkPermissions();
-    this.resumePolling();
+    await this.checkPermissions();
 
-    // Sospendi quando l'app va in background o schermo spento
+    // Se i permessi non sono negati dall'utente, avvia il polling
+    if (this.permissionStatus !== 'denied') {
+      this.resumePolling();
+    }
+
+    // Sospendi quando l'app va in background o lo schermo è spento
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.handleVisibilityChange);
       document.addEventListener('visibilitychange', this.handleVisibilityChange);
     }
+  }
+
+  /**
+   * Avvio forzato/esplicito del radar (ad es. su interazione utente)
+   */
+  async activateExplicitly(places?: TargetPlaceItem[]) {
+    if (places) this.activeRelevantPlaces = places;
+    await this.requestImmediatePosition();
+    this.resumePolling();
   }
 
   stopRadar() {
@@ -73,7 +135,7 @@ export class PresenceRadarState {
   }
 
   /**
-   * Richiede una lettura istantanea della posizione (ad es. al clic del bottone)
+   * Richiede una lettura istantanea della posizione
    */
   async requestImmediatePosition(): Promise<{ lat: number; lng: number; accuracy: number } | null> {
     return new Promise((resolve) => {
@@ -91,7 +153,9 @@ export class PresenceRadarState {
 
   private handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      this.resumePolling();
+      if (this.permissionStatus === 'granted') {
+        this.resumePolling();
+      }
     } else {
       this.pausePolling();
     }
@@ -130,34 +194,27 @@ export class PresenceRadarState {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        this.currentCoords = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        };
+        this.updateCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
         this.permissionStatus = 'granted';
         if (callback) callback(this.currentCoords);
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           this.permissionStatus = 'denied';
+          this.pausePolling();
           if (callback) callback(null);
         } else if (err.code === err.TIMEOUT && retryWithLowAccuracy) {
-          // Fallback a bassa precisione (antenne / Wi-Fi) se il GPS satellitare va in timeout
+          // Fallback a bassa precisione se il GPS satellitare va in timeout
           navigator.geolocation.getCurrentPosition(
             (fallbackPos) => {
-              this.currentCoords = {
-                lat: fallbackPos.coords.latitude,
-                lng: fallbackPos.coords.longitude,
-                accuracy: fallbackPos.coords.accuracy
-              };
+              this.updateCoords(fallbackPos.coords.latitude, fallbackPos.coords.longitude, fallbackPos.coords.accuracy);
               this.permissionStatus = 'granted';
               if (callback) callback(this.currentCoords);
             },
             () => {
               if (callback) callback(null);
             },
-            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
           );
         } else {
           if (callback) callback(null);
@@ -166,22 +223,32 @@ export class PresenceRadarState {
       {
         enableHighAccuracy: useHighAccuracy,
         timeout: 8000,
-        maximumAge: 30000
+        maximumAge: 0
       }
     );
   }
 
-  private async checkPermissions() {
+  async checkPermissions(): Promise<'prompt' | 'granted' | 'denied'> {
     if (typeof navigator !== 'undefined' && (navigator as any).permissions?.query) {
       try {
         const status = await (navigator as any).permissions.query({ name: 'geolocation' });
         this.permissionStatus = status.state;
         status.onchange = () => {
           this.permissionStatus = status.state;
+          if (status.state === 'granted') {
+            this.resumePolling();
+          } else if (status.state === 'denied') {
+            this.pausePolling();
+          }
         };
+        return status.state;
       } catch (_) {}
     }
+    return this.permissionStatus;
   }
 }
 
 export const presenceRadar = new PresenceRadarState();
+if (typeof window !== 'undefined') {
+  (window as any).__presenceRadar = presenceRadar;
+}

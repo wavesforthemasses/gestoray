@@ -196,6 +196,10 @@ export class CacheLookupService {
     await this.updateEntityCache(type, id, undefined, true, existingChunkId);
   }
 
+  static async deleteEntityFromCache(type: string, id: string, existingChunkId?: string): Promise<void> {
+    return this.removeEntityFromCache(type, id, existingChunkId);
+  }
+
   /**
    * Backward-compatible update helper for clients.
    */

@@ -5,6 +5,7 @@
     ActivityTypesService, 
     type ActivityType, 
     type ActivityTargetType,
+    type ActivityStatus,
     DEFAULT_ACTIVITY_TYPES 
   } from '$lib/services/activityTypesService';
   import { BridgesSettingsService, bridgesConfigStore, ALL_BRIDGES_SPECS } from '$lib/services/bridgesSettingsService';
@@ -57,7 +58,7 @@
   let formIcon = $state('Phone');
   let formIsSchedulable = $state(true);
   let formDefaultPriority = $state<'bassa' | 'media' | 'alta' | 'urgente'>('media');
-  let formDefaultStatus = $state<'da_fare' | 'in_corso' | 'completata'>('completata');
+  let formDefaultStatus = $state<ActivityStatus>('completata');
   let formAllowedTargets = $state<ActivityTargetType[]>(['contact', 'client', 'user', 'place', 'vehicle', 'contract', 'ticket']);
   let formRolesInsert = $state<string[]>(['superadmin', 'amministrazione', 'commerciale', 'tecnico']);
   let formCanAssignToOthers = $state<string[]>(['superadmin', 'amministrazione']);

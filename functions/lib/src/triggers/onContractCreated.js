@@ -151,6 +151,10 @@ exports.onContractCreated = (0, firestore_1.onDocumentWritten)({ region: REGION,
     const afterDoc = event.data?.after;
     const beforeData = beforeDoc?.data();
     const afterData = afterDoc?.data();
+    // Guard: ignora mutazioni che riguardano esclusivamente campi calcolati derived.* (Principio 10 Anti-Loop)
+    if (beforeData && afterData && (0, utils_1.isDerivedOnlyChange)(beforeData, afterData)) {
+        return;
+    }
     // Collect all vendor UIDs and clientIds affected by this change (both old and new values)
     const clientIds = new Set();
     const vendorUids = new Set();

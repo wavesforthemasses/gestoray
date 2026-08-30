@@ -84,27 +84,27 @@ describe('NavigationService', () => {
       
       // Initial page
       recordNavigation({
-        to: { url: new URL('http://localhost:5173/dashboard') } as any,
+        to: { url: new URL('http://localhost:5173/dashboard') },
         from: null,
         type: 'goto',
         willUnload: false
-      });
+      } as any);
 
       // Navigate to places
       recordNavigation({
-        to: { url: new URL('http://localhost:5173/dashboard/places') } as any,
+        to: { url: new URL('http://localhost:5173/dashboard/places') },
         from: null,
         type: 'link',
         willUnload: false
-      });
+      } as any);
 
       // Navigate to place detail
       recordNavigation({
-        to: { url: new URL('http://localhost:5173/dashboard/places/P123') } as any,
+        to: { url: new URL('http://localhost:5173/dashboard/places/P123') },
         from: null,
         type: 'link',
         willUnload: false
-      });
+      } as any);
 
       let stack: string[] = [];
       navigationStackStore.subscribe(s => stack = s)();

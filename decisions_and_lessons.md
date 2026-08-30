@@ -186,3 +186,18 @@
 - **Regola**:
   1. **Navigazione Storica di Competenza Esclusiva del Core**: La funzione di andare indietro nella cronologia (`NavigationService.goBack()`, `navigationHistory.ts`) appartiene unicamente alla Shell Core (`+layout.svelte`). È presente come pulsante globale persistente (sidebar desktop, header flottante desktop e mobile) e viene disabilitato dinamicamente alla radice (`/dashboard`) o quando non esiste cronologia.
   2. **Disaccoppiamento Azione Modulo ("Vai alla Lista")**: I moduli non implementano pulsanti di cronologia storica. I link di ritorno al catalogo o elenco del modulo utilizzano la classe `.btn-module-list`, l'icona vettoriale `<List size={16} />` (oppure `<Settings size={14} />` nelle configurazioni) ed etichette esplicite (es. *"Elenco Luoghi"*, *"Elenco Clienti"*, *"Catalogo Prodotti"*).
+
+---
+
+### 24. Multi-Actor Task Assignment & Zero Static Expansion (Dynamic Query-Time Resolution)
+- **Lezione**: L'auto-espansione statica dei membri di una squadra all'interno delle chiavi di filtro di un task NoSQL (`assigneeFilterKeys: ['user:usr_mario', 'user:usr_luigi']` quando l'attività è assegnata a `team:SQD_ALFA`) introduce gravi problemi architetturali:
+  1. *Write Amplification & Rischio Disallineamento*: Qualsiasi variazione nell'organico della squadra (aggiunta, rimozione o trasferimento di un operatore) costringerebbe a eseguire costose scritture NoSQL a cascata su decine o centinaia di task passati e futuri.
+  2. *Incoerenza Storica*: Un operatore che cambia squadra vedrebbe retroattivamente le attività della nuova squadra e perderebbe quelle su cui ha lavorato in precedenza.
+- **Regola (Zero Static Expansion & Dynamic Resolution)**:
+  1. **Zero Static Expansion nei Documenti Task**: Quando un'attività o commessa viene assegnata a una squadra (`team`), a un veicolo (`vehicle`) o a un operatore singolo (`user`), il documento memorizza esclusivamente il riferimento atomico dell'entità assegnata:
+     - `assignedEntities`: `[{ entityType: 'team', entityId: 'sqd_alfa', entityName: 'Squadra Alfa' }]`
+     - `assigneeFilterKeys`: `['team:sqd_alfa']`
+  2. **Dynamic Query-Time Resolution**: È il client (l'operatore loggato o il supervisore) che, a tempo di query, costruisce dinamicamente i target di filtro combinando il proprio `userId` e gli identificativi delle squadre attive di cui fa parte (`buildUserFilterTargets(currentUser.uid, userTeamIds)` -> `['user:mario', 'team:sqd_alfa', 'team:sqd_beta']`).
+  3. **Firestore Array-Contains-Any & Chunking a 30 Elementi**: Le query NoSQL per l'operatore utilizzano `where('assigneeFilterKeys', 'array-contains-any', filterTargets)`. Per superare in totale sicurezza il limite nativo di 30 elementi di Firestore per le query `array-contains-any`, `chunkArray(targets, 30)` suddivide i target ed esegue le query in parallelo deduplicando i risultati in memoria.
+  4. **Sincronizzazione Deterministica Monodirezionale (`syncActivityAssignees`)**: I campi scalari legacy (`assignedUid`, `teamId`, `vehicleId`) e le chiavi indicizzate (`assigneeFilterKeys`) sono sempre derivati deterministicamente dalla matrice `assignedEntities`.
+  5. **Plugin Decoupling via Dynamic Conditional Imports**: Moduli opzionali come `teams` e `vehicles` non sono mai importati staticamente dal Core. La comunicazione avviene tramite dynamic import protetto (`isModuleActive('teams')`), garantendo che il sistema funzioni al 100% anche se i moduli opzionali vengono disinstallati.

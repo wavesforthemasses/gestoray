@@ -25,12 +25,14 @@
   let loading = $state(true);
   let saving = $state(false);
 
+  let labels = $derived(TeamSettingsService.getLabels(settings));
+
   onMount(async () => {
     try {
       settings = await TeamSettingsService.getSettings();
     } catch (e) {
       console.error('Errore caricamento impostazioni squadre:', e);
-      toast.error('Errore caricamento impostazioni');
+      toast.error('Impossibile caricare le impostazioni');
     } finally {
       loading = false;
     }
@@ -42,7 +44,7 @@
       await TeamSettingsService.saveSettings(settings);
       toast.success('Impostazioni salvate con successo');
     } catch (e) {
-      console.error('Errore salvataggio impostazioni:', e);
+      console.error('Errore salvataggio impostazioni squadre:', e);
       toast.error('Errore durante il salvataggio');
     } finally {
       saving = false;

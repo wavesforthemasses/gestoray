@@ -7,6 +7,8 @@
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { CacheLookupService } from '$lib/services/cacheLookupService';
   import { PageHeader } from '$lib';
+  import SearchToolbar from '$lib/components/SearchToolbar.svelte';
+  import FilterSelect from '$lib/components/FilterSelect.svelte';
   import ActivitiesCalendar from './components/ActivitiesCalendar.svelte';
   import { 
     ClipboardList, 
@@ -219,87 +221,81 @@
     </div>
   </div>
 
-  <!-- FILTERS & SEARCH -->
-  <div class="filter-card">
-    <div class="filter-row-top">
-      <div class="status-tabs">
-        <button 
-          type="button" 
-          class="tab-btn {activeStatusTab === 'tutti' ? 'active' : ''}" 
-          onclick={() => handleStatusChange('tutti')}
-        >
-          Tutte ({activities.length})
-        </button>
-        <button 
-          type="button" 
-          class="tab-btn {activeStatusTab === 'in_corso' ? 'active' : ''}" 
-          onclick={() => handleStatusChange('in_corso')}
-        >
-          <RefreshCw size={14} /> In Corso ({inProgressCount})
-        </button>
-        <button 
-          type="button" 
-          class="tab-btn {activeStatusTab === 'da_fare' ? 'active' : ''}" 
-          onclick={() => handleStatusChange('da_fare')}
-        >
-          <Pin size={14} /> Da Fare ({todoCount})
-        </button>
-        <button 
-          type="button" 
-          class="tab-btn {activeStatusTab === 'completata' ? 'active' : ''}" 
-          onclick={() => handleStatusChange('completata')}
-        >
-          <CheckCircle2 size={14} /> Completate
-        </button>
-      </div>
-
-      <div class="backend-select-filters">
-        <div class="select-wrapper">
-          <Target size={14} class="select-icon" />
-          <select value={selectedTargetType} onchange={handleTargetTypeFilterChange} class="filter-select">
-            <option value="tutti">Tutti i Bersagli</option>
-            <option value="contact">Contatti</option>
-            <option value="client">Clienti</option>
-            <option value="user">Utenti / Personale</option>
-            <option value="place">Luoghi / Impianti</option>
-            <option value="vehicle">Mezzi</option>
-            <option value="contract">Contratti</option>
-          </select>
-        </div>
-
-        <div class="select-wrapper">
-          <User size={14} class="select-icon" />
-          <select value={selectedAssignedUid} onchange={handleAssignedChange} class="filter-select">
-            <option value="tutti">Tutti gli Utenti</option>
-            {#each usersList as u}
-              <option value={u.id}>{u.name}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="select-wrapper">
-          <SlidersHorizontal size={14} class="select-icon" />
-          <select value={selectedPriority} onchange={handlePriorityChange} class="filter-select">
-            <option value="tutti">Tutte le Priorità</option>
-            <option value="urgente">Urgente</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="bassa">Bassa</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="search-box">
-      <Search size={16} class="search-icon" />
-      <input 
-        type="text" 
-        placeholder="Cerca attività per titolo, numero, bersaglio o utente..." 
-        bind:value={searchQuery} 
-        class="search-input"
-      />
-    </div>
+  <!-- STATUS TABS -->
+  <div class="status-tabs-container">
+    <button 
+      type="button" 
+      class="tab-btn {activeStatusTab === 'tutti' ? 'active' : ''}" 
+      onclick={() => handleStatusChange('tutti')}
+    >
+      Tutte ({activities.length})
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn {activeStatusTab === 'in_corso' ? 'active' : ''}" 
+      onclick={() => handleStatusChange('in_corso')}
+    >
+      <RefreshCw size={14} /> In Corso ({inProgressCount})
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn {activeStatusTab === 'da_fare' ? 'active' : ''}" 
+      onclick={() => handleStatusChange('da_fare')}
+    >
+      <Pin size={14} /> Da Fare ({todoCount})
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn {activeStatusTab === 'completata' ? 'active' : ''}" 
+      onclick={() => handleStatusChange('completata')}
+    >
+      <CheckCircle2 size={14} /> Completate
+    </button>
   </div>
+
+  <!-- SEARCH & FILTER TOOLBAR (Principio 12) -->
+  <SearchToolbar
+    bind:searchQuery
+    placeholder="Cerca attività per titolo, numero, bersaglio o utente..."
+  >
+    {#snippet filtersSnippet()}
+      <FilterSelect
+        value={selectedTargetType}
+        onchange={(val) => { selectedTargetType = val; handleTargetTypeFilterChange({ target: { value: val } } as any); }}
+        icon={Target}
+        options={[
+          { value: 'tutti', label: 'Tutti i Bersagli' },
+          { value: 'contact', label: 'Contatti' },
+          { value: 'client', label: 'Clienti' },
+          { value: 'user', label: 'Utenti / Personale' },
+          { value: 'place', label: 'Luoghi / Impianti' },
+          { value: 'vehicle', label: 'Mezzi' },
+          { value: 'contract', label: 'Contratti' }
+        ]}
+      />
+      <FilterSelect
+        value={selectedAssignedUid}
+        onchange={(val) => { selectedAssignedUid = val; handleAssignedChange({ target: { value: val } } as any); }}
+        icon={User}
+        options={[
+          { value: 'tutti', label: 'Tutti gli Utenti' },
+          ...usersList.map(u => ({ value: u.id, label: u.name }))
+        ]}
+      />
+      <FilterSelect
+        value={selectedPriority}
+        onchange={(val) => { selectedPriority = val; handlePriorityChange({ target: { value: val } } as any); }}
+        icon={SlidersHorizontal}
+        options={[
+          { value: 'tutti', label: 'Tutte le Priorità' },
+          { value: 'urgente', label: 'Urgente' },
+          { value: 'alta', label: 'Alta' },
+          { value: 'media', label: 'Media' },
+          { value: 'bassa', label: 'Bassa' }
+        ]}
+      />
+    {/snippet}
+  </SearchToolbar>
 
   <!-- TABLE -->
   {#if loading}
@@ -400,7 +396,7 @@
 </div>
 
 <style>
-  .activities-page { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
+  .activities-page { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; width: 100%; box-sizing: border-box; }
   .page-header { display: flex; justify-content: space-between; align-items: center; }
   .page-title { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 10px; }
   :global(.title-icon) { color: var(--color-primary-500); }
@@ -417,21 +413,9 @@
   .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--color-neutral-900); }
   .kpi-label { font-size: 0.8rem; color: var(--color-neutral-500); font-weight: 600; }
 
-  .filter-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
-  .filter-row-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .status-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .status-tabs-container { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .tab-btn { padding: 0.4rem 0.8rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 600; border: 1px solid var(--color-neutral-300); background: var(--color-neutral-50); color: var(--color-neutral-700); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   .tab-btn.active { background: var(--color-primary-600); color: white; border-color: var(--color-primary-600); }
-
-  .backend-select-filters { display: flex; gap: 8px; flex-wrap: wrap; }
-  .select-wrapper { position: relative; display: flex; align-items: center; }
-  :global(.select-icon) { position: absolute; left: 10px; color: var(--color-neutral-500); pointer-events: none; }
-  .filter-select { padding: 0.4rem 0.8rem 0.4rem 2rem; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-300); background: var(--color-neutral-50); font-size: 0.85rem; font-weight: 600; color: var(--color-neutral-800); outline: none; cursor: pointer; }
-  .filter-select:focus { border-color: var(--color-primary-500); background: white; }
-
-  .search-box { position: relative; width: 100%; display: flex; align-items: center; }
-  :global(.search-icon) { position: absolute; left: 12px; color: var(--color-neutral-400); top: 50%; transform: translateY(-50%); }
-  .search-input { width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.4rem; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); font-size: 0.9rem; outline: none; box-sizing: border-box; }
 
   .table-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
   .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }

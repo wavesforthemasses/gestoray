@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, Button, FormField, StatusBadge } from '$lib';
   import { confirmStore } from '$lib/stores/confirm.svelte';
-  import { DollarSign, CheckCircle } from 'lucide-svelte';
+  import { DollarSign, CheckCircle } from '@lucide/svelte';
 
   interface Props {
     installmentsList: any[];

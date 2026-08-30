@@ -2,7 +2,7 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 import { calculateCommission } from '../business-logic';
-import { logSyncError } from '../utils';
+import { isDerivedOnlyChange, logSyncError } from '../utils';
 
 const REGION = 'europe-west3';
 
@@ -140,6 +140,11 @@ export const onContractCreated = onDocumentWritten(
 
     const beforeData = beforeDoc?.data();
     const afterData = afterDoc?.data();
+
+    // Guard: ignora mutazioni che riguardano esclusivamente campi calcolati derived.* (Principio 10 Anti-Loop)
+    if (beforeData && afterData && isDerivedOnlyChange(beforeData, afterData)) {
+      return;
+    }
 
     // Collect all vendor UIDs and clientIds affected by this change (both old and new values)
     const clientIds = new Set<string>();

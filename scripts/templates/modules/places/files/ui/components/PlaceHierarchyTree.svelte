@@ -262,7 +262,7 @@
             class="form-select"
             disabled={isReparenting}
           >
-            <option value="root">📁 Nodo Principale (Nessun genitore / Livello 0)</option>
+            <option value="root">Nodo Principale (Nessun genitore / Livello 0)</option>
             <optgroup label="Luoghi / Cantieri Disponibili">
               {#each allPlaces as p}
                 {#if p.id !== reparentTarget.id && !p.ancestors.includes(reparentTarget.id)}

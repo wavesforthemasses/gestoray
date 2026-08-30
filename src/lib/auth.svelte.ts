@@ -4,6 +4,8 @@ export interface UserProfile {
   roles: string[];
   nome?: string;
   cognome?: string;
+  displayName?: string;
+  teamIds?: string[];
   qualification?: string;
   supervisorUid?: string;
 }

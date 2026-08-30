@@ -181,80 +181,108 @@
         <p class="card-desc">Definisci la modalità operativa per la registrazione delle presenze operaie sui cantieri (Manuale, Assistita da Geofence o Disabilitata).</p>
 
         {#if settings.presence}
-          <div class="form-group">
-            <label for="presenceMode">Modalità Operativa Presenze</label>
-            <select id="presenceMode" bind:value={settings.presence.mode} class="form-select font-semibold">
-              <option value="hybrid_assisted">Ibrido Assistito (Consigliato: Check-in con controllo Geofence e Tolleranza)</option>
-              <option value="manual_only">Manuale Semplice (Tasto Check-in libero senza vincoli di posizione)</option>
-              <option value="geofence_auto">Radar Automatico (Rilevamento proattivo all'ingresso nel raggio del cantiere)</option>
-              <option value="disabled">Disabilitato (Nessuna rilevazione presenze sui luoghi)</option>
-            </select>
-          </div>
-
-          {#if settings.presence.mode !== 'disabled'}
-            <div class="form-row-2">
-              <div class="form-group">
-                <label for="defRadius">Raggio Geofence Predefinito (metri)</label>
-                <input 
-                  id="defRadius" 
-                  type="number" 
-                  min="1" 
-                  max="5000" 
-                  bind:value={settings.presence.defaultGeofenceRadiusMeters} 
-                  class="form-input" 
-                />
-                <span class="field-hint">Raggio cerchio di prossimità applicato di default ai nuovi cantieri (es. 100m).</span>
-              </div>
-
-              <div class="form-group">
-                <label for="defTolerance">Tolleranza GPS di Bordo (metri)</label>
-                <input 
-                  id="defTolerance" 
-                  type="number" 
-                  min="0" 
-                  max="200" 
-                  bind:value={settings.presence.geofenceToleranceMeters} 
-                  class="form-input" 
-                />
-                <span class="field-hint">Margine di incertezza consentito per dispositivi GPS a bassa precisione (es. 25m).</span>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div class="form-group">
-                <label for="maxShiftHours">Durata Massima Turno Previsto (ore)</label>
-                <input 
-                  id="maxShiftHours" 
-                  type="number" 
-                  min="1" 
-                  max="24" 
-                  bind:value={settings.presence.maxShiftHours} 
-                  class="form-input" 
-                />
-                <span class="field-hint">Soglia oltre la quale il sistema esegue l'auto-chiusura predittiva virtuale (es. 8h).</span>
-              </div>
-
-              <div class="form-group">
-                <label for="autoCloseGrace">Tolleranza Auto-Chiusura (minuti)</label>
-                <input 
-                  id="autoCloseGrace" 
-                  type="number" 
-                  min="0" 
-                  max="360" 
-                  bind:value={settings.presence.autoCloseGraceMinutes} 
-                  class="form-input" 
-                />
-                <span class="field-hint">Minuti di attesa oltre le ore massime prima di marcare il turno come concluso (es. 60m).</span>
-              </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="checkInPromptMode">Comportamento Rilevamento Ingresso Cantiere</label>
+              <select id="checkInPromptMode" bind:value={settings.presence.checkInPromptMode} class="form-select font-semibold">
+                <option value="prompt">Semi-automatico (Consigliato: Notifica toast "Arrivo Rilevato" con 1-click)</option>
+                <option value="auto">100% Automatico (Check-in silenzioso immediato appena si entra nel raggio)</option>
+                <option value="dock_only">Silenzioso / Dock Laterale (Nessun popup, dock discreto sempre disponibile)</option>
+                <option value="manual">Manuale Puro (Nessun popup, timbratura manuale da scheda)</option>
+              </select>
+              <span class="field-hint">Scegli come deve reagire il sistema quando l'operatore entra nel perimetro del cantiere.</span>
             </div>
 
             <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" bind:checked={settings.presence.allowForemanManualCheckIn} />
-                <span class="font-medium text-slate-800">Consenti timbratura e registrazione manuale operai da parte del Caposquadra</span>
-              </label>
+              <label for="checkoutCooldown">Cooldown Post Check-out (minuti)</label>
+              <input 
+                id="checkoutCooldown" 
+                type="number" 
+                min="1" 
+                max="120" 
+                bind:value={settings.presence.checkoutCooldownMinutes} 
+                class="form-input" 
+              />
+              <span class="field-hint">Minuti di silenzio dopo aver chiuso un turno prima di riproporre il check-in sullo stesso cantiere (previene falsi allarmi mentre ci si allontana).</span>
             </div>
-          {/if}
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="defRadius">Raggio Geofence Predefinito (metri)</label>
+              <input 
+                id="defRadius" 
+                type="number" 
+                min="1" 
+                max="5000" 
+                bind:value={settings.presence.gpsToleranceMeters} 
+                class="form-input" 
+              />
+              <span class="field-hint">Raggio cerchio di prossimità applicato di default ai nuovi cantieri (es. 100m).</span>
+            </div>
+
+            <div class="form-group">
+              <label for="defTolerance">Tolleranza GPS di Bordo (metri)</label>
+              <input 
+                id="defTolerance" 
+                type="number" 
+                min="0" 
+                max="200" 
+                bind:value={settings.presence.gpsToleranceMeters} 
+                class="form-input" 
+              />
+              <span class="field-hint">Margine di incertezza consentito per dispositivi GPS a bassa precisione (es. 25m).</span>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="maxShiftHours">Durata Massima Turno Previsto (ore)</label>
+              <input 
+                id="maxShiftHours" 
+                type="number" 
+                min="1" 
+                max="24" 
+                bind:value={settings.presence.defaultMaxShiftHours} 
+                class="form-input" 
+              />
+              <span class="field-hint">Soglia oltre la quale il sistema esegue l'auto-chiusura predittiva virtuale (es. 10h).</span>
+            </div>
+
+            <div class="form-group">
+              <label for="autoCloseGrace">Tolleranza Auto-Chiusura (minuti)</label>
+              <input 
+                id="autoCloseGrace" 
+                type="number" 
+                min="0" 
+                max="360" 
+                bind:value={settings.presence.autoCloseGraceMinutes} 
+                class="form-input" 
+              />
+              <span class="field-hint">Minuti di attesa oltre le ore massime prima di marcare il turno come concluso (es. 60m).</span>
+            </div>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" bind:checked={settings.presence.autoCheckoutOnExit} />
+              <span class="font-medium text-slate-800">Esegui Check-out automatico quando l'operatore esce dal perimetro del cantiere</span>
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" bind:checked={settings.presence.allowManualCheckIn} />
+              <span class="font-medium text-slate-800">Consenti sempre il fallback su timbratura manuale anche in assenza di segnale GPS</span>
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" bind:checked={settings.presence.allowTeamLeaderCheckin} />
+              <span class="font-medium text-slate-800">Consenti timbratura e registrazione presenze per i membri del team da parte del Caposquadra</span>
+            </label>
+          </div>
         {/if}
       </div>
     </div>

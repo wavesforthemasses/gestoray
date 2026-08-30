@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, Button, FormField } from '$lib';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
-  import { FileText, Trash2, ShieldAlert } from 'lucide-svelte';
+  import { FileText, Trash2, ShieldAlert } from '@lucide/svelte';
 
   interface Props {
     contract: any;

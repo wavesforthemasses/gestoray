@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onInstallmentWrite = exports.onContractCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
+exports.onActivityCreated = exports.onInstallmentWrite = exports.onContractCreated = exports.onClientUpdated = exports.onClientCreated = exports.getChartAggregations = exports.sendSystemEmail = exports.updateProfileEmail = exports.updateProfile = exports.updateUser = exports.initSuperAdmin = exports.verifyLoginPin = exports.sendLoginPin = void 0;
 const admin = __importStar(require("firebase-admin"));
 const v2_1 = require("firebase-functions/v2");
 (0, v2_1.setGlobalOptions)({ region: 'europe-west3' });
@@ -62,4 +62,8 @@ Object.defineProperty(exports, "onContractCreated", { enumerable: true, get: fun
 var onInstallmentWrite_1 = require("./src/triggers/onInstallmentWrite");
 Object.defineProperty(exports, "onInstallmentWrite", { enumerable: true, get: function () { return onInstallmentWrite_1.onInstallmentWrite; } });
 // --- MODULE FUNCTIONS: contracts END ---
+// --- MODULE FUNCTIONS: activities BEGIN ---
+var onActivityCreated_1 = require("./src/triggers/onActivityCreated");
+Object.defineProperty(exports, "onActivityCreated", { enumerable: true, get: function () { return onActivityCreated_1.onActivityCreated; } });
+// --- MODULE FUNCTIONS: activities END ---
 //# sourceMappingURL=index.js.map

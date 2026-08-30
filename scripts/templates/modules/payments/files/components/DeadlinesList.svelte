@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, Button } from '$lib';
-  import { AlertTriangle } from 'lucide-svelte';
+  import { AlertTriangle } from '@lucide/svelte';
   
   interface Installment {
     clientName: string;

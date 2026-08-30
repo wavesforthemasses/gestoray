@@ -294,8 +294,8 @@
 <style>
   .custom-fields-container {
     padding: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
   .page-header {
     display: flex;

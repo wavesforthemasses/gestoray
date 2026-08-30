@@ -25,6 +25,8 @@
     Layers 
   } from '@lucide/svelte';
   import { UniversalAnalyticsChart, ChartSettingsService } from '$lib';
+  import SearchToolbar from '$lib/components/SearchToolbar.svelte';
+  import FilterSelect from '$lib/components/FilterSelect.svelte';
   import { DashboardService } from '../dashboard.service';
   import { activeRoleState, authState } from '$lib/auth.svelte';
 
@@ -237,51 +239,24 @@
     />
   {/if}
 
-  <!-- CONTROLS & FILTER BAR -->
-  <div class="controls-card">
-    <!-- TYPE FILTER TABS -->
-    <div class="type-filter-tabs">
-      <button 
-        type="button" 
-        class="filter-tab {selectedTypeFilter === 'all' ? 'active' : ''}"
-        onclick={() => selectedTypeFilter = 'all'}
-      >
-        <Layers size={14} /> Tutti ({totalProducts})
-      </button>
-      <button 
-        type="button" 
-        class="filter-tab {selectedTypeFilter === 'product' ? 'active' : ''}"
-        onclick={() => selectedTypeFilter = 'product'}
-      >
-        <Package size={14} /> Prodotti ({physicalProductsCount})
-      </button>
-      <button 
-        type="button" 
-        class="filter-tab {selectedTypeFilter === 'service' ? 'active' : ''}"
-        onclick={() => selectedTypeFilter = 'service'}
-      >
-        <Briefcase size={14} /> Servizi
-      </button>
-      <button 
-        type="button" 
-        class="filter-tab {selectedTypeFilter === 'digital' ? 'active' : ''}"
-        onclick={() => selectedTypeFilter = 'digital'}
-      >
-        <Zap size={14} /> Digitali
-      </button>
-    </div>
-
-    <!-- SEARCH BOX -->
-    <div class="search-box">
-      <Search size={16} class="search-icon" />
-      <input 
-        type="text" 
-        placeholder="Cerca per codice SKU, denominazione articolo o categoria..." 
-        bind:value={searchQuery} 
-        class="search-input"
+  <!-- SEARCH & FILTER TOOLBAR (Principio 12) -->
+  <SearchToolbar
+    bind:searchQuery
+    placeholder="Cerca per codice SKU, denominazione articolo o categoria..."
+  >
+    {#snippet filtersSnippet()}
+      <FilterSelect
+        bind:value={selectedTypeFilter}
+        icon={Layers}
+        options={[
+          { value: 'all', label: `Tutti i tipi (${totalProducts})` },
+          { value: 'product', label: `Prodotti fisici (${physicalProductsCount})` },
+          { value: 'service', label: 'Prestazioni di Servizio' },
+          { value: 'digital', label: 'Licenze / Digitali' }
+        ]}
       />
-    </div>
-  </div>
+    {/snippet}
+  </SearchToolbar>
 
   <!-- TABLE -->
   {#if loading}

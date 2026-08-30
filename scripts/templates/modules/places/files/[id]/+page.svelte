@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authState } from '$lib/auth.svelte';
@@ -13,6 +13,7 @@
   import PlaceCommercialInsights from '../components/PlaceCommercialInsights.svelte';
   import PlaceTeamsInsights from '../components/PlaceTeamsInsights.svelte';
   import PresenceCheckInButton from '../ui/components/PresenceCheckInButton.svelte';
+  import { presenceRadar } from '../application/presenceRadar.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
   import { 
@@ -104,6 +105,17 @@
         } else {
           parentPlace = null;
         }
+
+        // Avvia il radar di prossimità per il luogo visualizzato
+        if (item.geo?.coordinates?.latitude && item.geo?.coordinates?.longitude) {
+          presenceRadar.startRadar([{
+            id: item.id,
+            name: item.name,
+            lat: item.geo.coordinates.latitude,
+            lng: item.geo.coordinates.longitude,
+            radiusMeters: item.geo.radiusMeters || 50
+          }]);
+        }
       } else {
         childrenPlaces = [];
         parentPlace = null;
@@ -120,6 +132,10 @@
     if (id) {
       loadPlaceData(id);
     }
+  });
+
+  onDestroy(() => {
+    presenceRadar.stopRadar();
   });
 
   async function handleDelete() {

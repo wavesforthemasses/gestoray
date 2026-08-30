@@ -326,8 +326,8 @@
       };
 
       for (const d of dates) {
-        const relationalClientId = selectedTargetType === 'client' ? selectedTargetId : (selectedTargetSummary?.meta?.clientId || undefined);
-        const relationalClientName = selectedTargetType === 'client' ? (selectedTargetSummary?.name || '') : (selectedTargetSummary?.meta?.clientName || undefined);
+        const relationalClientId = selectedTargetType === 'client' ? selectedTargetId : (selectedTargetSummary?.meta?.clientId ? String(selectedTargetSummary.meta.clientId) : undefined);
+        const relationalClientName = selectedTargetType === 'client' ? (selectedTargetSummary?.name || '') : (selectedTargetSummary?.meta?.clientName ? String(selectedTargetSummary.meta.clientName) : undefined);
         const relationalPlaceId = selectedTargetType === 'place' ? selectedTargetId : undefined;
         const relationalPlaceName = selectedTargetType === 'place' ? (selectedTargetSummary?.name || '') : undefined;
         const relationalContactId = selectedTargetType === 'contact' ? selectedTargetId : undefined;

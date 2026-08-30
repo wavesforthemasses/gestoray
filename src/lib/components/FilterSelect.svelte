@@ -11,6 +11,7 @@
     options: OptionItem[];
     icon?: Component<any>;
     onChange?: (val: string) => void;
+    onchange?: (val: string) => void;
     ariaLabel?: string;
   }
 
@@ -19,6 +20,7 @@
     options,
     icon: IconComponent,
     onChange,
+    onchange,
     ariaLabel = 'Filtra'
   }: Props = $props();
 
@@ -26,6 +28,7 @@
     const newVal = (e.target as HTMLSelectElement).value;
     value = newVal;
     onChange?.(newVal);
+    onchange?.(newVal);
   }
 </script>
 

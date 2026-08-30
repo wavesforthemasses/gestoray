@@ -3,6 +3,7 @@ import { db, doc, getDoc, setDoc } from '$lib/firebase';
 export interface TicketCategoryConfig {
   id: string;
   label: string;
+  enabled?: boolean;
   defaultAssigneeUid?: string;
 }
 

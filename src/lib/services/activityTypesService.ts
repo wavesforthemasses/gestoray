@@ -1,7 +1,7 @@
 import { db, doc, getDoc, setDoc } from '$lib/firebase';
-import type { ActivityType, ActivityTargetType } from '../files/schema';
+import type { ActivityType, ActivityTargetType, ActivityStatus } from '../../routes/dashboard/activities/schema';
 
-export type { ActivityType, ActivityTargetType };
+export type { ActivityType, ActivityTargetType, ActivityStatus };
 
 export const DEFAULT_ACTIVITY_TYPES: ActivityType[] = [
   {

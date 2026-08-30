@@ -1,7 +1,7 @@
 <script lang="ts">
   import { functions, httpsCallable } from "$lib/firebase";
   import { projectStore } from '$lib/stores/project';
-  import { ShieldCheck, Loader2, XCircle } from "lucide-svelte";
+  import { ShieldCheck, Loader2, XCircle } from '@lucide/svelte';
 
   let status = $state<"idle" | "loading" | "success" | "error">("idle");
   let message = $state("");

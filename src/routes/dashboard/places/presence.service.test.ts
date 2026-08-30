@@ -3,7 +3,8 @@ import {
   checkGeofenceProximity, 
   resolveVirtualPresenceLog, 
   deriveAssigneeFilterKeys,
-  formatMinutesDuration 
+  formatMinutesDuration,
+  isOutsidePlaceWithHysteresis
 } from './domain/services/presenceUtils';
 import { PresenceFirestoreRepository } from './infrastructure/firestore/PresenceFirestoreRepository';
 import type { PlacePresenceLog } from './domain/models/presence';
@@ -175,5 +176,37 @@ describe('PresenceFirestoreRepository Transaction & Query Logic', () => {
       expect(results.length).toBe(2);
       expect(results[0].title).toBe('Task Cantiere 1');
     });
+  });
+});
+
+describe('PresenceRadarState Exit Hysteresis & Sentinel Sync', () => {
+  it('should detect exit only when beyond radius + hysteresis tolerance', () => {
+    // Luogo con raggio 50m a (45.4642, 9.1900)
+    const targetLat = 45.4642;
+    const targetLng = 9.1900;
+    const radiusMeters = 50;
+
+    // Posizione 1: dentro il raggio (a ~20m)
+    expect(isOutsidePlaceWithHysteresis(targetLat, targetLng, radiusMeters, 45.4643, 9.1901, 35)).toBe(false);
+
+    // Posizione 2: al bordo (a ~60m, dentro la soglia di tolleranza di 50+35=85m)
+    expect(isOutsidePlaceWithHysteresis(targetLat, targetLng, radiusMeters, 45.4647, 9.1901, 35)).toBe(false);
+
+    // Posizione 3: chiaramente fuori (a ~200m)
+    expect(isOutsidePlaceWithHysteresis(targetLat, targetLng, radiusMeters, 45.4660, 9.1910, 35)).toBe(true);
+  });
+
+  it('should instantiate PresenceSyncChannel and handle events safely in browser-like environment', async () => {
+    const { PresenceSyncChannel } = await import('./application/presenceSyncChannel');
+    const handler = vi.fn();
+    const sync = new PresenceSyncChannel(handler);
+    expect(sync).toBeDefined();
+
+    // Notifiche non devono lanciare eccezioni
+    expect(() => sync.notifyCheckIn('pl_1', 'log_1', 'Cantiere A')).not.toThrow();
+    expect(() => sync.notifyCheckOut('log_1')).not.toThrow();
+    expect(() => sync.notifyDismiss('pl_1')).not.toThrow();
+    expect(() => sync.notifyPause('pl_1', 'log_1')).not.toThrow();
+    sync.close();
   });
 });

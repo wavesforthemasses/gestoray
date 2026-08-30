@@ -21,10 +21,10 @@ export const ContractsActivitiesBridge: ModuleActivitiesBridgeSpec<ContractItem>
           return title.includes(queryTerm) || num.includes(queryTerm) || client.includes(queryTerm);
         });
       }
-      return filtered.slice(0, 30).map(c => {
+      return filtered.filter(c => !!c.id).slice(0, 30).map(c => {
         const subtext = [c.clientName, c.status].filter(Boolean).join(' • ');
         return {
-          id: c.id,
+          id: c.id!,
           label: `${c.contractNumber ? `[${c.contractNumber}] ` : ''}${c.title || 'Contratto'}`,
           subtext,
           badge: c.status,
@@ -40,7 +40,7 @@ export const ContractsActivitiesBridge: ModuleActivitiesBridgeSpec<ContractItem>
   async getTargetSummary(id: string, tenantId?: string): Promise<TargetSummary | null> {
     try {
       const contract = await ContractsService.getContractById(id);
-      if (!contract) return null;
+      if (!contract || !contract.id) return null;
       return {
         id: contract.id,
         name: `${contract.contractNumber ? `[${contract.contractNumber}] ` : ''}${contract.title || 'Contratto'}`,

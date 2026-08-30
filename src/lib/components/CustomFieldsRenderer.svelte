@@ -3,15 +3,18 @@
   import { Check, X } from '@lucide/svelte';
 
   interface Props {
-    fields: CustomFieldDefinition[];
-    values: CustomFieldValues;
+    fields?: CustomFieldDefinition[];
+    definitions?: CustomFieldDefinition[];
+    values?: CustomFieldValues;
     readonly?: boolean;
   }
 
-  let { fields = [], values = $bindable({}), readonly = false }: Props = $props();
+  let { fields = [], definitions, values = $bindable({}), readonly = false }: Props = $props();
+
+  let effectiveFields = $derived(fields.length > 0 ? fields : (definitions || []));
 
   let activeFields = $derived(
-    fields.filter(f => f.active).sort((a, b) => (a.order || 0) - (b.order || 0))
+    effectiveFields.filter(f => f.active).sort((a, b) => (a.order || 0) - (b.order || 0))
   );
 </script>
 

@@ -82,10 +82,19 @@ export interface UserActivePresenceSlot {
   updatedAt: string;
 }
 
+export type CheckInPromptMode = 
+  | 'prompt'    // Semi-automatico (Default): toast/notifica "Arrivo rilevato: Inizia Turno"
+  | 'auto'      // 100% Automatico: check-in silenzioso con notifica di conferma
+  | 'dock_only' // Minimale/Dock laterale: nessun popup invasivo in sovrimpressione
+  | 'manual';   // Solo manuale esplicito
+
 export interface PresenceSettings {
   presenceTrackingEnabled: boolean;  // Master switch aziendale
   defaultMode: PresenceVerificationMode;
-  allowManualCheckIn: boolean;       // Consente fallback manuale senza GPS
+  checkInPromptMode: CheckInPromptMode;      // 'prompt' | 'auto' | 'dock_only' | 'manual'
+  autoCheckoutOnExit: boolean;              // Se true, esegue checkout automatico all'uscita dal perimetro
+  checkoutCooldownMinutes: number;          // Minuti di silenzio dopo il checkout prima di riproporre il check-in (default: 15 min)
+  allowManualCheckIn: boolean;              // Consente fallback manuale senza GPS
   requireGpsValidation: boolean;     // Se true, blocca timbratura fuori raggio
   gpsToleranceMeters: number;        // Tolleranza errore GPS (default: 25m)
   allowTeamLeaderCheckin: boolean;   // Consente a foreman/leader di timbrare per il team

@@ -30,6 +30,22 @@ export function checkGeofenceProximity(
 }
 
 /**
+ * Calcola l'uscita da un luogo applicando una soglia di isteresi (default +35 metri).
+ * Previene il flapping ai bordi del geofence.
+ */
+export function isOutsidePlaceWithHysteresis(
+  targetLat: number,
+  targetLng: number,
+  radiusMeters: number,
+  currentLat: number,
+  currentLng: number,
+  hysteresisMeters: number = 35
+): boolean {
+  const dist = haversineDistanceMeters(targetLat, targetLng, currentLat, currentLng);
+  return dist > (radiusMeters + hysteresisMeters);
+}
+
+/**
  * Calcola virtualmente lo stato del log durante la lettura / visualizzazione UI.
  * Se il turno è 'active' ma sono passati più di 60 min dalla fine prevista,
  * restituisce un oggetto arricchito con status 'auto_closed' e durata calcolata (Zero-Cost Cloud Functions).

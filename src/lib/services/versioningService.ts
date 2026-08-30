@@ -45,6 +45,7 @@ export type LedgerEventType =
   | 'ANONYMIZATION';   // Bonifica GDPR dati personali
 
 export type FieldSemanticsType = 'ADDITIVE' | 'ABSOLUTE' | 'DESCRIPTIVE';
+export type LedgerFieldSemantics = FieldSemanticsType;
 export type ActorType = 'USER' | 'SYSTEM' | 'SERVICE';
 export type ReversalMode = 'SAFE_COMPENSATING' | 'FORCED_COMPENSATING';
 

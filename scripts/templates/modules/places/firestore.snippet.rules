@@ -5,6 +5,14 @@ match /places/{placeId} {
   allow update: if isAuth() && notWritingDerived();
   allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
 }
+match /place_presences/{logId} {
+  allow read: if isAuth();
+  allow create, update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+match /user_active_presences/{userId} {
+  allow read, write: if isAuth();
+}
 match /unique_keys/{keyId} {
   allow read: if isAuth();
   allow create, delete: if isAuth();

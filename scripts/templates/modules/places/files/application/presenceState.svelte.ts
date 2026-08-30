@@ -36,17 +36,79 @@ export class PresenceStateManager {
 
       // 3. Estrazione luoghi con coordinate
       const placesMap = new Map<string, TargetPlaceItem>();
+      const missingPlaceIds: string[] = [];
+
       for (const act of activities) {
-        if (act.placeId && act.placeSummary?.coordinates) {
-          placesMap.set(act.placeId, {
-            id: act.placeId,
-            name: act.placeName || act.placeSummary.name || 'Luogo',
-            lat: act.placeSummary.coordinates.lat,
-            lng: act.placeSummary.coordinates.lng,
-            radiusMeters: act.placeSummary.radiusMeters || 50
-          });
+        if (act.placeId) {
+          const lat = act.placeSummary?.coordinates?.lat ?? act.placeSummary?.lat ?? act.latitude;
+          const lng = act.placeSummary?.coordinates?.lng ?? act.placeSummary?.lng ?? act.longitude;
+          const radius = act.placeSummary?.radiusMeters ?? act.radiusMeters ?? 50;
+          const name = act.placeName || act.placeSummary?.name || act.placeSummary?.label || 'Luogo';
+
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            placesMap.set(act.placeId, {
+              id: act.placeId,
+              name,
+              code: act.placeSummary?.code,
+              lat,
+              lng,
+              radiusMeters: radius,
+              activityId: act.id,
+              activityName: act.title || act.name,
+              scheduledStartTime: act.scheduledStartTime,
+              scheduledEndTime: act.scheduledEndTime
+            });
+          } else {
+            missingPlaceIds.push(act.placeId);
+          }
         }
       }
+
+      // Se ci sono ID di luoghi privi di coordinate nelle attività, li recupera da Firestore
+      if (missingPlaceIds.length > 0) {
+        const fetchedPlaces = await this.repo.fetchPlacesByIds(missingPlaceIds);
+        for (const p of fetchedPlaces) {
+          const lat = p.address?.coordinates?.lat ?? p.geo?.location?.latitude ?? p.geo?.coordinates?.lat ?? p.latitude ?? p.lat;
+          const lng = p.address?.coordinates?.lng ?? p.geo?.location?.longitude ?? p.geo?.coordinates?.lng ?? p.longitude ?? p.lng;
+          const radius = p.geo?.radiusMeters ?? p.geofenceRadiusMeters ?? p.radiusMeters ?? 100;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            const act = activities.find(a => a.placeId === p.id);
+            placesMap.set(p.id, {
+              id: p.id,
+              name: p.name || 'Luogo',
+              code: p.code,
+              lat,
+              lng,
+              radiusMeters: radius,
+              activityId: act?.id,
+              activityName: act?.title || act?.name,
+              scheduledStartTime: act?.scheduledStartTime,
+              scheduledEndTime: act?.scheduledEndTime
+            });
+          }
+        }
+      }
+
+      // Se l'utente non ha attività programmate con luogo oggi, recupera i luoghi attivi generici
+      if (placesMap.size === 0) {
+        const activePlaces = await this.repo.fetchActiveGeofencedPlaces(orgId);
+        for (const p of activePlaces) {
+          const lat = p.address?.coordinates?.lat ?? p.geo?.location?.latitude ?? p.geo?.coordinates?.lat ?? p.latitude ?? p.lat;
+          const lng = p.address?.coordinates?.lng ?? p.geo?.location?.longitude ?? p.geo?.coordinates?.lng ?? p.longitude ?? p.lng;
+          const radius = p.geo?.radiusMeters ?? p.geofenceRadiusMeters ?? p.radiusMeters ?? 100;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            placesMap.set(p.id, {
+              id: p.id,
+              name: p.name || 'Luogo',
+              code: p.code,
+              lat,
+              lng,
+              radiusMeters: radius
+            });
+          }
+        }
+      }
+
       this.relevantPlaces = Array.from(placesMap.values());
 
       // 4. Avvio del Radar di prossimità Foreground
@@ -82,6 +144,7 @@ export class PresenceStateManager {
       userName: string;
       userEmail?: string;
       verifiedBy?: PresenceVerificationMode;
+      mode?: PresenceVerificationMode;
       verifiedByUserId?: string;
       verifiedByUserName?: string;
       notes?: string;
@@ -93,7 +156,7 @@ export class PresenceStateManager {
 
     try {
       const orgId = params.orgId || 'default';
-      const mode = params.verifiedBy || (params.targetLat && params.targetLng ? 'self_gps' : 'self_manual');
+      const mode = params.mode || params.verifiedBy || (params.targetLat && params.targetLng ? 'self_gps' : 'self_manual');
       let geoVerification: any = undefined;
 
       // Se richiesto GPS, cattura coordinate istantanee
