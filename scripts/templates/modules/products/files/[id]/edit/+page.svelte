@@ -5,7 +5,7 @@
   import { page } from '$app/stores';
   import { authState } from '$lib/auth.svelte';
   import { ProductsService } from '../../products.service';
-  import type { ProductItem, ProductType, BillingType, RecurrenceInterval } from '../../schema';
+  import type { ProductItem, ProductType, ProductUsageType, BillingType, RecurrenceInterval } from '../../schema';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import { UnitsOfMeasureService, type UnitOfMeasure } from '$lib/services/unitsOfMeasureService';
   import { ProductSettingsService, type ProductFieldsSettings, DEFAULT_PRODUCT_FIELDS_SETTINGS } from '$lib/services/productSettingsService';
@@ -24,7 +24,10 @@
     AlertCircle, 
     Boxes, 
     CreditCard, 
-    CheckCircle2 
+    CheckCircle2,
+    ArrowLeftRight,
+    ArrowUpRight,
+    ArrowDownLeft
   } from '@lucide/svelte';
 
   let productId = $derived($page.params.id);
@@ -41,10 +44,12 @@
 
   // Form State - Identity & Type
   let productType = $state<ProductType>('product');
+  let usageType = $state<ProductUsageType>('both');
   let sku = $state('');
   let name = $state('');
   let category = $state('Ricambi');
   let price = $state<number>(0);
+  let purchasePrice = $state<number>(0);
   let unit = $state('pz');
   let description = $state('');
 
@@ -93,10 +98,12 @@
         product = await ProductsService.getProductById(productId);
         if (product) {
           productType = product.type || 'product';
+          usageType = product.usageType || 'both';
           sku = product.sku || '';
           name = product.name || '';
           category = product.category || 'Ricambi';
           price = product.price || 0;
+          purchasePrice = product.purchasePrice || 0;
           unit = product.unit || 'pz';
           
           trackStock = product.trackStock !== undefined ? product.trackStock : (productType === 'product');
@@ -149,8 +156,12 @@
         sku: sku.trim(),
         name: name.trim(),
         type: productType,
+        usageType,
+        canBeSold: usageType !== 'purchase',
+        canBePurchased: usageType !== 'sale',
         category: fieldSettings.category.visible ? category.trim() : '',
         price: Number(price) || 0,
+        purchasePrice: Number(purchasePrice) || 0,
         unit,
         trackStock,
         stockQty: trackStock ? (Number(stockQty) || 0) : (product?.stockQty ?? 0),
@@ -169,16 +180,14 @@
       }, {
         uid: authState.user?.uid || 'system',
         userEmail: authState.user?.email || undefined,
-        tenantId,
-        expectedBaseVersion: (product as any)?.edits?.aggregateVersion ?? 0,
-        reason: 'Modifica scheda articolo catalogo'
+        tenantId
       });
 
       toast.success('Articolo aggiornato con successo!');
       goto(`/dashboard/products/${productId}`);
     } catch (err: any) {
-      console.error('Errore salvataggio articolo:', err);
-      errorMsg = err.message || 'Errore durante il salvataggio delle modifiche.';
+      console.error('Errore aggiornamento articolo:', err);
+      errorMsg = err.message || 'Errore durante l\'aggiornamento dell\'articolo.';
     } finally {
       saving = false;
     }
@@ -186,12 +195,12 @@
 </script>
 
 <svelte:head>
-  <title>Modifica Articolo | {$projectStore?.projectName || 'ERP'}</title>
+  <title>Modifica {product ? product.name : 'Articolo'} | {$projectStore?.projectName || 'ERP'}</title>
 </svelte:head>
 
-<div class="add-product-page animate-fade-in">
+<div class="edit-product-page animate-fade-in">
   <div class="page-top">
-    <a href="/dashboard/products" class="btn-module-list" title="Vai al catalogo prodotti" aria-label="Vai al catalogo prodotti">
+    <a href="/dashboard/products/{productId}" class="btn-module-list" title="Annulla e torna al dettaglio" aria-label="Annulla e torna al dettaglio">
       <List size={20} />
     </a>
     <h2>
@@ -202,7 +211,11 @@
   {#if loading}
     <div class="loader-box">
       <span class="spinner"></span>
-      Caricamento in corso...
+      Caricamento articolo...
+    </div>
+  {:else if !product}
+    <div class="alert error-box">
+      <AlertCircle size={16} /> Articolo non trovato o eliminato.
     </div>
   {:else}
     {#if errorMsg}
@@ -212,13 +225,13 @@
     {/if}
 
     <form onsubmit={handleSubmit} class="product-form">
-      <!-- 1. TIPO ARTICOLO (SELECTOR CARDS) -->
+      <!-- 1. TIPO ARTICOLO -->
       <div class="card form-card">
         <div class="card-header">
           <h3 class="card-title">
-            <Boxes size={18} /> Tipologia Articolo
+            <Boxes size={18} /> 1. Tipologia Articolo
           </h3>
-          <p class="card-subtitle">Natura dell'articolo nel catalogo aziendale.</p>
+          <p class="card-subtitle">Cambia la classificazione se necessario.</p>
         </div>
 
         <div class="type-cards-grid">
@@ -232,7 +245,7 @@
             </div>
             <div class="type-card-content">
               <div class="type-card-title">Prodotto Fisico / Ricambio</div>
-              <div class="type-card-desc">Beni materiali con tracciamento di giacenza a magazzino, sottoscorta e unità fisica.</div>
+              <div class="type-card-desc">Beni materiali con tracciamento scorte a magazzino.</div>
             </div>
             {#if productType === 'product'}
               <CheckCircle2 size={18} class="check-badge" />
@@ -249,7 +262,7 @@
             </div>
             <div class="type-card-content">
               <div class="type-card-title">Prestazione di Servizio</div>
-              <div class="type-card-desc">Attività professionali, manodopera o consulenze senza giacenza fisica (a ore o a corpo).</div>
+              <div class="type-card-desc">Attività professionali o manodopera (a ore o a corpo).</div>
             </div>
             {#if productType === 'service'}
               <CheckCircle2 size={18} class="check-badge" />
@@ -266,7 +279,7 @@
             </div>
             <div class="type-card-content">
               <div class="type-card-title">Bene Digitale / Licenza</div>
-              <div class="type-card-desc">Software, abbonamenti o beni immateriali con erogazione digitale immediata.</div>
+              <div class="type-card-desc">Software o licenze digitali.</div>
             </div>
             {#if productType === 'digital'}
               <CheckCircle2 size={18} class="check-badge" />
@@ -275,13 +288,76 @@
         </div>
       </div>
 
-      <!-- 2. ANAGRAFICA ARTICOLO -->
+      <!-- 2. DESTINAZIONE D'USO (VENDITA / ACQUISTO / ENTRAMBI) -->
       <div class="card form-card">
         <div class="card-header">
           <h3 class="card-title">
-            <Info size={18} /> Dettagli Anagrafici
+            <ArrowLeftRight size={18} /> 2. Destinazione d'Uso Commerciale
           </h3>
-          <p class="card-subtitle">Denominazione, codice univoco e classificazione.</p>
+          <p class="card-subtitle">Specifica la disponibilità dell'articolo tra Preventivi/Contratti clienti e Ordini Fornitore.</p>
+        </div>
+
+        <div class="usage-cards-grid">
+          <button 
+            type="button" 
+            class="usage-card {usageType === 'both' ? 'active' : ''}" 
+            onclick={() => usageType = 'both'}
+          >
+            <div class="usage-icon both-color">
+              <ArrowLeftRight size={20} />
+            </div>
+            <div class="usage-content">
+              <div class="usage-title">Vendita & Acquisto (Entrambi)</div>
+              <div class="usage-desc">Comprato da fornitori e venduto ai clienti.</div>
+            </div>
+            {#if usageType === 'both'}
+              <CheckCircle2 size={16} class="check-badge" />
+            {/if}
+          </button>
+
+          <button 
+            type="button" 
+            class="usage-card {usageType === 'sale' ? 'active' : ''}" 
+            onclick={() => usageType = 'sale'}
+          >
+            <div class="usage-icon sale-color">
+              <ArrowUpRight size={20} />
+            </div>
+            <div class="usage-content">
+              <div class="usage-title">Solo Vendita (Clienti)</div>
+              <div class="usage-desc">Offerto solo nei preventivi/contratti (non in PO fornitore).</div>
+            </div>
+            {#if usageType === 'sale'}
+              <CheckCircle2 size={16} class="check-badge" />
+            {/if}
+          </button>
+
+          <button 
+            type="button" 
+            class="usage-card {usageType === 'purchase' ? 'active' : ''}" 
+            onclick={() => usageType = 'purchase'}
+          >
+            <div class="usage-icon purchase-color">
+              <ArrowDownLeft size={20} />
+            </div>
+            <div class="usage-content">
+              <div class="usage-title">Solo Acquisto (Fornitori)</div>
+              <div class="usage-desc">Materie prime/consumabili (non a listino vendita clienti).</div>
+            </div>
+            {#if usageType === 'purchase'}
+              <CheckCircle2 size={16} class="check-badge" />
+            {/if}
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. ANAGRAFICA ARTICOLO -->
+      <div class="card form-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <Info size={18} /> 3. Dettagli Anagrafici & Prezzi
+          </h3>
+          <p class="card-subtitle">Codice, denominazione e valori economici.</p>
         </div>
 
         <div class="grid-2 mb-16">
@@ -309,7 +385,7 @@
                 type="text" 
                 bind:value={category} 
                 class="form-control" 
-                placeholder="es. Ricambi, Consulenza, Impianti..." 
+                placeholder="es. Ricambi, Consulenza..." 
                 list="category-suggestions"
               />
               <datalist id="category-suggestions">
@@ -327,20 +403,18 @@
 
         <div class="form-group mb-16">
           <label for="prod-name">Nome / Denominazione Articolo *</label>
-          <input 
-            id="prod-name" 
-            type="text" 
-            bind:value={name} 
-            placeholder={productType === 'service' ? 'es. Manutenzione Impianto Oraria' : 'es. Alleggerito Gmix 43 EVO'} 
-            required 
-            class="form-control" 
-          />
+          <input id="prod-name" type="text" bind:value={name} required class="form-control" />
         </div>
 
-        <div class="grid-2 mb-16">
+        <div class="grid-3 mb-16">
           <div class="form-group">
-            <label for="prod-price">Prezzo Listino / Base (€) *</label>
+            <label for="prod-price">Prezzo di Vendita Listino (€) *</label>
             <input id="prod-price" type="number" step="0.01" bind:value={price} required class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label for="prod-purchase-price">Costo Indicativo d'Acquisto (€)</label>
+            <input id="prod-purchase-price" type="number" step="0.01" bind:value={purchasePrice} class="form-control" placeholder="Costo fornitore" />
           </div>
 
           <div class="form-group">
@@ -355,19 +429,19 @@
 
         {#if fieldSettings.description.visible}
           <div class="form-group">
-            <label for="prod-desc">Descrizione & Specifiche Tecniche</label>
-            <textarea id="prod-desc" bind:value={description} rows="3" placeholder="Specifiche, dimensioni, termini di servizio o note tecniche..." class="form-control"></textarea>
+            <label for="prod-desc">Descrizione & Specifiche</label>
+            <textarea id="prod-desc" bind:value={description} rows="3" class="form-control"></textarea>
           </div>
         {/if}
       </div>
 
-      <!-- 3. MODELLO DI TARIFFAZIONE -->
+      <!-- 4. MODELLO DI TARIFFAZIONE -->
       <div class="card form-card">
         <div class="card-header">
           <h3 class="card-title">
-            <CreditCard size={18} /> Modello di Tariffazione
+            <CreditCard size={18} /> 4. Modello di Tariffazione
           </h3>
-          <p class="card-subtitle">Specifica come viene calcolato e fatturato il corrispettivo.</p>
+          <p class="card-subtitle">Frequenza e modalità di fatturazione.</p>
         </div>
 
         <div class="grid-2 mb-16">
@@ -394,15 +468,15 @@
         </div>
       </div>
 
-      <!-- 4. GESTIONE SCORTE & MAGAZZINO (DECOUPLED) -->
+      <!-- 5. GESTIONE SCORTE & MAGAZZINO -->
       <div class="card form-card">
         <div class="card-header flex-between">
           <div>
             <h3 class="card-title">
-              <Boxes size={18} /> Gestione Scorte & Magazzino
+              <Boxes size={18} /> 5. Gestione Scorte & Magazzino
             </h3>
             <p class="card-subtitle">
-              {trackStock ? 'Monitoraggio attivo delle quantità fisiche e soglie sottoscorta.' : 'Nessun monitoraggio di giacenza per questo articolo.'}
+              {trackStock ? 'Monitoraggio attivo delle quantità fisiche.' : 'Nessun monitoraggio per questo articolo.'}
             </p>
           </div>
           <label class="toggle-switch" title="Abilita Monitoraggio Giacenza">
@@ -414,7 +488,7 @@
         {#if trackStock}
           <div class="grid-3 mb-16 animate-fade-in">
             <div class="form-group">
-              <label for="prod-stock">Giacenza Attuale</label>
+              <label for="prod-stock">Giacenza a Magazzino</label>
               <div class="input-with-addon">
                 <input id="prod-stock" type="number" step={UnitsOfMeasureService.getStepForUnit(unit)} bind:value={stockQty} class="form-control" />
                 <span class="addon">{unit}</span>
@@ -422,84 +496,27 @@
             </div>
 
             <div class="form-group">
-              <label for="prod-min-stock">Soglia Scorta Minima (Alert)</label>
+              <label for="prod-threshold">Soglia Scorta Minima</label>
               <div class="input-with-addon">
-                <input id="prod-min-stock" type="number" step={UnitsOfMeasureService.getStepForUnit(unit)} bind:value={minStockThreshold} class="form-control" />
+                <input id="prod-threshold" type="number" step={UnitsOfMeasureService.getStepForUnit(unit)} bind:value={minStockThreshold} class="form-control" />
                 <span class="addon">{unit}</span>
               </div>
             </div>
 
-            <div class="form-group checkbox-group-container">
-              <label class="checkbox-label" for="allow-backorder">
-                <input id="allow-backorder" type="checkbox" bind:checked={allowOutOfStockSale} />
-                <span>Consenti vendita sottoscorta / preordine (Backorder)</span>
+            <div class="form-group flex-center-y">
+              <label class="checkbox-label">
+                <input type="checkbox" bind:checked={allowOutOfStockSale} />
+                <span>Consenti vendita in sottoscorta (Backorder)</span>
               </label>
             </div>
-          </div>
-        {:else}
-          <div class="untracked-banner">
-            <Info size={16} /> 
-            <span><strong>Giacenza non gestita</strong>: L'articolo è sempre disponibile alla vendita o erogazione senza restrizioni quantitative di magazzino.</span>
           </div>
         {/if}
       </div>
 
-      <!-- 5. MINIMO FATTURABILE -->
-      {#if fieldSettings.minimoFatturabile.visible}
-        <div class="card form-card">
-          <div class="card-header flex-between">
-            <div>
-              <h3 class="card-title">
-                <Zap size={18} class="icon-amber" /> Minimo Fatturabile
-              </h3>
-              <p class="card-subtitle">Condizione matematica e tariffa fissa applicata sotto la quantità minima.</p>
-            </div>
-            <label class="toggle-switch" title="Abilita Minimo Fatturabile">
-              <input type="checkbox" bind:checked={minimoEnabled} />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          {#if minimoEnabled}
-            <div class="grid-3 mb-16 animate-fade-in">
-              <div class="form-group">
-                <label for="min-qty">Quantità Soglia (Sotto i...)</label>
-                <div class="input-with-addon">
-                  <input id="min-qty" type="number" step="0.01" bind:value={minQuantity} placeholder="es. 20" class="form-control" />
-                  <span class="addon">{unit}</span>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="min-price">Prezzo Minimo Fisso (€)</label>
-                <input id="min-price" type="number" step="0.01" bind:value={flatPrice} placeholder="es. 7000" class="form-control" />
-              </div>
-
-              <div class="form-group">
-                <label for="min-display">Descrizione / Note Fatturazione</label>
-                <input id="min-display" type="text" bind:value={displayText} placeholder="es. Sotto i 20 mc 7000€" class="form-control" />
-              </div>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- 6. CAMPI PERSONALIZZATI -->
-      {#if customFieldsList.length > 0}
-        <div class="card form-card">
-          <div class="card-header">
-            <h3 class="card-title">
-              <SlidersHorizontal size={18} /> Campi Personalizzati
-            </h3>
-          </div>
-          <CustomFieldsRenderer fields={customFieldsList} bind:values={customFieldsValues} />
-        </div>
-      {/if}
-
-      <!-- FORM ACTIONS -->
-      <div class="form-actions-bar">
-        <a href="/dashboard/products/{productId}" class="btn-cancel">Annulla</a>
-        <button type="submit" class="btn-submit" disabled={saving}>
+      <!-- BOTTONI AZIONE -->
+      <div class="form-actions">
+        <a href="/dashboard/products/{productId}" class="btn btn-secondary">Annulla</a>
+        <button type="submit" class="btn btn-primary" disabled={saving}>
           <Save size={16} /> {saving ? 'Salvataggio...' : 'Salva Modifiche'}
         </button>
       </div>
@@ -508,97 +525,312 @@
 </div>
 
 <style>
-  .add-product-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
-  .page-top { display: flex; flex-direction: column; gap: 0.4rem; }
-  .back-link { color: var(--color-neutral-500); font-size: 0.85rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-  .back-link:hover { color: var(--color-primary-600); }
-  h2 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 8px; }
-  :global(.header-icon) { color: var(--color-primary-500); }
-  :global(.icon-amber) { color: #d97706; }
-
-  .product-form { display: flex; flex-direction: column; gap: 1.5rem; }
-  .card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); }
-  .card-header { margin-bottom: 1.2rem; border-bottom: 1px solid var(--color-neutral-100); padding-bottom: 0.8rem; }
-  .flex-between { display: flex; justify-content: space-between; align-items: center; }
-  .card-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 8px; }
-  .card-subtitle { font-size: 0.82rem; color: var(--color-neutral-500); margin: 0.2rem 0 0 0; }
-
-  /* TYPE CARDS GRID */
-  .type-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
-  .type-card {
-    background: var(--color-neutral-50);
-    border: 2px solid var(--color-neutral-200);
-    border-radius: var(--radius-lg);
-    padding: 1.2rem;
+  .edit-product-page {
     display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-  .type-card:hover { border-color: var(--color-primary-300); background: white; }
-  .type-card.active {
-    border-color: var(--color-primary-600);
-    background: var(--color-primary-50);
-    box-shadow: 0 0 0 1px var(--color-primary-600);
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
   }
 
-  .type-card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+  .page-top {
     display: flex;
     align-items: center;
+    gap: 12px;
+  }
+
+  .btn-module-list {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md, 8px);
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    color: var(--color-neutral-600, #475569);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .btn-module-list:hover {
+    background: var(--color-neutral-50, #f8fafc);
+    color: var(--color-neutral-900, #0f172a);
+  }
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-neutral-900, #0f172a);
+  }
+
+  .header-icon {
+    color: var(--color-primary-600, #2563eb);
+  }
+
+  .product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-card {
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .card-header {
+    border-bottom: 1px solid var(--color-neutral-100, #f1f5f9);
+    padding-bottom: 12px;
+  }
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-neutral-800, #1e293b);
+    margin: 0;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--color-neutral-500, #64748b);
+    margin: 4px 0 0 0;
+  }
+
+  .type-cards-grid, .usage-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .type-card, .usage-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1.5px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    background: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+
+  .type-card:hover, .usage-card:hover {
+    border-color: var(--color-neutral-300, #cbd5e1);
+    background-color: var(--color-neutral-50, #f8fafc);
+  }
+
+  .type-card.active, .usage-card.active {
+    border-color: var(--color-primary-600, #2563eb);
+    background-color: var(--color-primary-50, #eff6ff);
+  }
+
+  .type-card-icon, .usage-icon {
+    padding: 8px;
+    border-radius: 8px;
     flex-shrink: 0;
   }
-  .product-color { background: #e0e7ff; color: #4338ca; }
-  .service-color { background: #dbeafe; color: #1d4ed8; }
-  .digital-color { background: #fef3c7; color: #b45309; }
 
-  .type-card-content { flex: 1; }
-  .type-card-title { font-size: 0.95rem; font-weight: 700; color: var(--color-neutral-900); margin-bottom: 0.2rem; }
-  .type-card-desc { font-size: 0.8rem; color: var(--color-neutral-600); line-height: 1.35; }
-  :global(.check-badge) { color: var(--color-primary-600); position: absolute; top: 12px; right: 12px; }
+  .product-color { background-color: #e0e7ff; color: #4338ca; }
+  .service-color { background-color: #fef3c7; color: #b45309; }
+  .digital-color { background-color: #ede9fe; color: #6d28d9; }
 
-  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
-  .form-group label { font-size: 0.82rem; font-weight: 700; color: var(--color-neutral-700); }
-  .form-control { padding: 0.65rem 0.9rem; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); font-size: 0.9rem; outline: none; box-sizing: border-box; width: 100%; }
-  .form-control:focus { border-color: var(--color-primary-600); box-shadow: 0 0 0 3px var(--color-primary-100); }
+  .both-color { background-color: #d1fae5; color: #047857; }
+  .sale-color { background-color: #dbeafe; color: #1d4ed8; }
+  .purchase-color { background-color: #ffedd5; color: #c2410c; }
 
-  .input-with-addon { display: flex; align-items: center; position: relative; }
-  .input-with-addon input { padding-right: 3.5rem; }
-  .addon { position: absolute; right: 0.8rem; font-size: 0.82rem; font-weight: 700; color: var(--color-neutral-500); background: var(--color-neutral-100); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); pointer-events: none; }
+  .type-card-title, .usage-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-neutral-900, #0f172a);
+  }
 
-  .checkbox-group-container { justify-content: center; }
-  .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--color-neutral-800); cursor: pointer; margin-top: 1.2rem; }
-  .checkbox-label input { width: 16px; height: 16px; accent-color: var(--color-primary-600); cursor: pointer; }
+  .type-card-desc, .usage-desc {
+    font-size: 12px;
+    color: var(--color-neutral-500, #64748b);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
 
-  .untracked-banner { background: var(--color-neutral-50); border: 1px dashed var(--color-neutral-300); border-radius: var(--radius-md); padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 10px; font-size: 0.88rem; color: var(--color-neutral-700); }
+  :global(.check-badge) {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: var(--color-primary-600, #2563eb);
+  }
 
-  /* TOGGLE SWITCH */
-  .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-700, #334155);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-neutral-300, #cbd5e1);
+    border-radius: var(--radius-md, 8px);
+    font-size: 14px;
+    color: var(--color-neutral-900, #0f172a);
+    background: #ffffff;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .mb-16 { margin-bottom: 16px; }
+  .font-mono { font-family: monospace; }
+
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .flex-center-y { display: flex; align-items: center; height: 100%; }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-neutral-700, #334155);
+    cursor: pointer;
+    margin-top: 20px;
+  }
+
+  .input-with-addon {
+    display: flex;
+    align-items: center;
+  }
+
+  .input-with-addon input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .input-with-addon .addon {
+    padding: 8px 12px;
+    background: var(--color-neutral-100, #f1f5f9);
+    border: 1px solid var(--color-neutral-300, #cbd5e1);
+    border-left: none;
+    border-top-right-radius: var(--radius-md, 8px);
+    border-bottom-right-radius: var(--radius-md, 8px);
+    font-size: 13px;
+    color: var(--color-neutral-600, #475569);
+  }
+
+  /* Toggle switch */
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+
   .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--color-neutral-300); transition: .3s; border-radius: 24px; }
-  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-  input:checked + .slider { background-color: var(--color-primary-600); }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--color-neutral-300, #cbd5e1);
+    transition: 0.2s;
+    border-radius: 24px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.2s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider { background-color: var(--color-primary-600, #2563eb); }
   input:checked + .slider:before { transform: translateX(20px); }
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-  @media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+  }
 
-  .mb-16 { margin-bottom: 1rem; }
-  .font-mono { font-family: monospace; font-weight: 600; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
 
-  .form-actions-bar { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; padding-top: 1rem; }
-  .btn-cancel { color: var(--color-neutral-600); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
-  .btn-submit { background: var(--color-primary-600); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: var(--radius-md); font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-primary {
+    background-color: var(--color-primary-600, #2563eb);
+    color: #ffffff;
+  }
 
-  .alert { padding: 0.8rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .error-box { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .loader-box { text-align: center; padding: 3rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--color-neutral-200); }
+  .btn-secondary {
+    background-color: #ffffff;
+    border: 1px solid var(--color-neutral-300, #cbd5e1);
+    color: var(--color-neutral-700, #334155);
+  }
+
+  .error-box {
+    padding: 12px 16px;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--radius-md, 8px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .loader-box {
+    padding: 40px;
+    text-align: center;
+    color: var(--color-neutral-500, #64748b);
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-neutral-200, #e2e8f0);
+    border-top-color: var(--color-primary-600, #2563eb);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>

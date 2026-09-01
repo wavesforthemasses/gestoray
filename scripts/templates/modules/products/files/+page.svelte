@@ -2,7 +2,7 @@
   import { projectStore } from '$lib/stores/project';
   import { onMount } from 'svelte';
   import { ProductsService } from './products.service';
-  import type { ProductItem, ProductType } from './schema';
+  import type { ProductItem, ProductType, ProductUsageType } from './schema';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { ProductSettingsService, type ProductFieldsSettings, DEFAULT_PRODUCT_FIELDS_SETTINGS } from '$lib/services/productSettingsService';
   import { toast } from '$lib/stores/toast.svelte';
@@ -22,7 +22,10 @@
     CheckCircle2, 
     AlertTriangle, 
     AlertCircle, 
-    Layers 
+    Layers,
+    ArrowDownLeft,
+    ArrowUpRight,
+    ArrowLeftRight
   } from '@lucide/svelte';
   import { UniversalAnalyticsChart, ChartSettingsService } from '$lib';
   import SearchToolbar from '$lib/components/SearchToolbar.svelte';
@@ -34,6 +37,7 @@
   let loading = $state(true);
   let searchQuery = $state('');
   let selectedTypeFilter = $state<ProductType | 'all'>('all');
+  let selectedUsageFilter = $state<ProductUsageType | 'all'>('all');
   let fieldSettings = $state<ProductFieldsSettings>({ ...DEFAULT_PRODUCT_FIELDS_SETTINGS });
 
   $effect(() => {
@@ -62,6 +66,11 @@
     products.filter(p => {
       const pType = p.type || 'product';
       if (selectedTypeFilter !== 'all' && pType !== selectedTypeFilter) {
+        return false;
+      }
+
+      const pUsage = p.usageType || 'both';
+      if (selectedUsageFilter !== 'all' && pUsage !== selectedUsageFilter) {
         return false;
       }
 
@@ -161,6 +170,18 @@
       loadChartData();
     }
   });
+
+  function getUsageBadge(usage?: ProductUsageType) {
+    switch (usage) {
+      case 'sale':
+        return { label: 'Solo Vendita', class: 'usage-sale', icon: ArrowUpRight };
+      case 'purchase':
+        return { label: 'Solo Acquisto', class: 'usage-purchase', icon: ArrowDownLeft };
+      case 'both':
+      default:
+        return { label: 'Vendita & Acquisto', class: 'usage-both', icon: ArrowLeftRight };
+    }
+  }
 </script>
 
 <svelte:head>
@@ -205,32 +226,31 @@
     </div>
 
     <div class="kpi-card">
-      <div class="kpi-icon-wrapper blue-bg">
+      <div class="kpi-icon-wrapper amber-bg">
         <Briefcase size={22} />
       </div>
       <div>
         <div class="kpi-value">{servicesAndDigitalCount}</div>
-        <div class="kpi-label">Servizi & Digitali</div>
+        <div class="kpi-label">Servizi & Licenze</div>
       </div>
     </div>
 
-    {#if fieldSettings.stockQty.visible}
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper success-bg">
-          <Euro size={22} />
-        </div>
-        <div>
-          <div class="kpi-value">€ {totalStockValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
-          <div class="kpi-label">Valore Scorte a Magazzino</div>
-        </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper emerald-bg">
+        <Euro size={22} />
       </div>
-    {/if}
+      <div>
+        <div class="kpi-value">€ {totalStockValue.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div class="kpi-label">Valore Giacenze</div>
+      </div>
+    </div>
   </div>
 
+  <!-- CHART ANALYTICS INTERATTIVO -->
   {#if activeEntityConfig?.enabled && availableChartMetrics.length > 0}
-    <UniversalAnalyticsChart 
-      title="Andamento Catalogo & Scorte"
-      description="Visualizza il trend del catalogo articoli e della valorizzazione nel tempo."
+    <UniversalAnalyticsChart
+      title="Andamento Catalogo & Valorizzazione Merci"
+      description="Analisi temporale del listino prezzi, giacenze a magazzino e composizione dell'offerta commerciale."
       metrics={availableChartMetrics}
       bind:activeMetric={activeChartTab}
       bind:granularity
@@ -251,16 +271,29 @@
     placeholder="Cerca per codice SKU, denominazione articolo o categoria..."
   >
     {#snippet filtersSnippet()}
-      <FilterSelect
-        bind:value={selectedTypeFilter}
-        icon={Layers}
-        options={[
-          { value: 'all', label: `Tutti i tipi (${totalProducts})` },
-          { value: 'product', label: `Prodotti fisici (${physicalProductsCount})` },
-          { value: 'service', label: 'Prestazioni di Servizio' },
-          { value: 'digital', label: 'Licenze / Digitali' }
-        ]}
-      />
+      <div class="filters-row">
+        <FilterSelect
+          bind:value={selectedTypeFilter}
+          icon={Layers}
+          options={[
+            { value: 'all', label: `Tutti i tipi (${totalProducts})` },
+            { value: 'product', label: `Prodotti fisici (${physicalProductsCount})` },
+            { value: 'service', label: 'Prestazioni di Servizio' },
+            { value: 'digital', label: 'Licenze / Digitali' }
+          ]}
+        />
+
+        <FilterSelect
+          bind:value={selectedUsageFilter}
+          icon={ArrowLeftRight}
+          options={[
+            { value: 'all', label: 'Tutte le Destinazioni' },
+            { value: 'both', label: 'Vendita & Acquisto' },
+            { value: 'sale', label: 'Solo Vendita (Clienti)' },
+            { value: 'purchase', label: 'Solo Acquisto (Fornitori)' }
+          ]}
+        />
+      </div>
     {/snippet}
   </SearchToolbar>
 
@@ -277,7 +310,7 @@
       </div>
       <h3>Nessun articolo trovato</h3>
       <p>
-        {#if searchQuery || selectedTypeFilter !== 'all'}
+        {#if searchQuery || selectedTypeFilter !== 'all' || selectedUsageFilter !== 'all'}
           Nessun articolo corrisponde ai filtri impostati. Prova a modificare la ricerca.
         {:else}
           Aggiungi il tuo primo articolo al catalogo per gestire prezzi, servizi e scorte.
@@ -296,23 +329,22 @@
               <th>SKU</th>
             {/if}
             <th>Tipo</th>
+            <th>Destinazione</th>
             <th>Nome Articolo</th>
             {#if fieldSettings.category.visible}
               <th>Categoria</th>
             {/if}
-            <th>Tariffazione</th>
-            <th>Prezzo Base</th>
-            {#if fieldSettings.minimoFatturabile.visible}
-              <th>Minimo Fatturabile</th>
-            {/if}
+            <th>Prezzo Vendita</th>
+            <th>Costo Acquisto</th>
             {#if fieldSettings.stockQty.visible}
-              <th>Giacenza / Magazzino</th>
+              <th>Giacenza</th>
             {/if}
             <th class="text-right">Azioni</th>
           </tr>
         </thead>
         <tbody>
           {#each filteredProducts as p (p.id)}
+            {@const usageBadge = getUsageBadge(p.usageType)}
             <tr>
               {#if fieldSettings.sku.visible}
                 <td class="font-mono">{p.sku || '-'}</td>
@@ -328,68 +360,65 @@
                     <Briefcase size={12} /> Servizio
                   </span>
                 {:else if p.type === 'digital'}
-                  <span class="type-badge digital-badge" title="Bene Digitale">
+                  <span class="type-badge digital-badge" title="Licenza o Bene Digitale">
                     <Zap size={12} /> Digitale
                   </span>
                 {/if}
               </td>
 
-              <td><strong class="text-neutral-800">{p.name}</strong></td>
-
-              {#if fieldSettings.category.visible}
-                <td><span class="category-pill">{p.category || 'Generale'}</span></td>
-              {/if}
-
               <td>
-                <span class="billing-pill">
-                  {#if p.billingType === 'hourly'}
-                    A Ore
-                  {:else if p.billingType === 'recurring'}
-                    Ricorrente ({p.recurrenceInterval === 'weekly' ? 'Sett.' : p.recurrenceInterval === 'quarterly' ? 'Trim.' : p.recurrenceInterval === 'yearly' ? 'Ann.' : 'Mens.'})
-                  {:else}
-                    A Corpo
-                  {/if}
+                <span class="usage-badge {usageBadge.class}">
+                  <usageBadge.icon size={11} />
+                  <span>{usageBadge.label}</span>
                 </span>
               </td>
 
-              <td class="font-bold text-primary">
-                € {(p.price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })} / <span class="uppercase">{p.unit}</span>
+              <td>
+                <a href="/dashboard/products/{p.id}" class="item-link">
+                  <strong>{p.name}</strong>
+                </a>
               </td>
 
-              {#if fieldSettings.minimoFatturabile.visible}
+              {#if fieldSettings.category.visible}
                 <td>
-                  {#if p.minimoFatturabile && (p.minimoFatturabile.enabled || p.minimoFatturabile.displayText)}
-                    <span class="minimo-pill" title={p.minimoFatturabile.displayText || `Sotto i ${p.minimoFatturabile.minQuantity} ${p.unit}`}>
-                      <Zap size={12} class="icon-amber" />
-                      {#if p.minimoFatturabile.displayText}
-                        {p.minimoFatturabile.displayText}
-                      {:else if p.minimoFatturabile.minQuantity && p.minimoFatturabile.flatPrice}
-                        &lt; {p.minimoFatturabile.minQuantity} {p.unit} ({p.minimoFatturabile.flatPrice}€)
-                      {/if}
-                    </span>
-                  {:else}
-                    <span class="text-muted">-</span>
-                  {/if}
+                  <span class="category-tag">{p.category || 'Generale'}</span>
                 </td>
               {/if}
 
+              <td class="font-semibold text-slate-900">
+                € {(p.price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span class="unit-label">/ {p.unit || 'pz'}</span>
+              </td>
+
+              <td class="text-slate-600">
+                {#if p.purchasePrice !== undefined && p.purchasePrice > 0}
+                  € {p.purchasePrice.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {:else}
+                  <span class="text-slate-400 text-xs">-</span>
+                {/if}
+              </td>
+
               {#if fieldSettings.stockQty.visible}
                 <td>
-                  {#if p.trackStock === false}
-                    <span class="untracked-pill" title="Nessun monitoraggio giacenza">
-                      <Minus size={12} /> Non gestita
-                    </span>
-                  {:else if (p.stockQty ?? 0) > (p.minStockThreshold || 0)}
-                    <span class="stock-badge stock-ok" title="Disponibile a magazzino">
-                      <CheckCircle2 size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit}
-                    </span>
-                  {:else if (p.stockQty ?? 0) > 0}
-                    <span class="stock-badge stock-warning" title="Sottoscorta / Scorta bassa">
-                      <AlertTriangle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit}
-                    </span>
+                  {#if p.trackStock !== false}
+                    <div class="stock-cell">
+                      {#if (p.stockQty || 0) <= 0}
+                        <span class="stock-badge out-of-stock" title="Esaurito a magazzino">
+                          <AlertCircle size={12} /> {p.stockQty || 0} {p.unit}
+                        </span>
+                      {:else if (p.stockQty || 0) <= (p.minStockThreshold || 2)}
+                        <span class="stock-badge low-stock" title="Sottoscorta">
+                          <AlertTriangle size={12} /> {p.stockQty} {p.unit}
+                        </span>
+                      {:else}
+                        <span class="stock-badge in-stock" title="Disponibilità regolare">
+                          <CheckCircle2 size={12} /> {p.stockQty} {p.unit}
+                        </span>
+                      {/if}
+                    </div>
                   {:else}
-                    <span class="stock-badge stock-danger" title={p.allowOutOfStockSale !== false ? 'Esaurito - Backorder abilitato' : 'Esaurito'}>
-                      <AlertCircle size={12} /> {UnitsOfMeasureService.formatQuantity(p.stockQty ?? 0, p.unit)} {p.unit} ({p.allowOutOfStockSale !== false ? 'Backorder' : 'Esaurito'})
+                    <span class="no-stock-badge" title="Giacenza non gestita per servizi o beni immateriali">
+                      <Minus size={12} /> Illimitato
                     </span>
                   {/if}
                 </td>
@@ -397,14 +426,17 @@
 
               <td class="text-right">
                 <div class="action-buttons">
-                  <a href="/dashboard/products/{p.id}" class="btn-icon" title="Dettaglio Articolo">
-                    <Eye size={16} />
+                  <a href="/dashboard/products/{p.id}" class="action-btn" title="Visualizza / Modifica" aria-label="Visualizza / Modifica">
+                    <Pencil size={15} />
                   </a>
-                  <a href="/dashboard/products/{p.id}/edit" class="btn-icon" title="Modifica Articolo">
-                    <Pencil size={16} />
-                  </a>
-                  <button type="button" class="btn-icon-danger" onclick={() => handleDelete(p.id)} title="Elimina Articolo">
-                    <Trash2 size={16} />
+                  <button 
+                    type="button" 
+                    class="action-btn text-danger" 
+                    title="Elimina Articolo"
+                    aria-label="Elimina Articolo"
+                    onclick={() => handleDelete(p.id)}
+                  >
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </td>
@@ -417,90 +449,293 @@
 </div>
 
 <style>
-  .products-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
-  .page-header { display: flex; justify-content: space-between; align-items: center; }
-  .page-title { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 10px; }
-  :global(.title-icon) { color: var(--color-primary-500); }
-  :global(.icon-amber) { color: #d97706; }
-  .page-subtitle { color: var(--color-neutral-500); font-size: 0.9rem; margin: 0.2rem 0 0 0; }
+  .products-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+  }
 
-  .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
 
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-  .kpi-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1rem 1.2rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-sm); }
-  
-  .kpi-icon-wrapper { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-  .primary-bg { background: var(--color-primary-100); color: var(--color-primary-600); }
-  .indigo-bg { background: #e0e7ff; color: #4338ca; }
-  .blue-bg { background: #dbeafe; color: #1d4ed8; }
-  .success-bg { background: #dcfce7; color: #15803d; }
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-neutral-900, #0f172a);
+    margin: 0;
+  }
 
-  .kpi-value { font-size: 1.35rem; font-weight: 800; color: var(--color-neutral-900); }
-  .kpi-label { font-size: 0.78rem; color: var(--color-neutral-500); font-weight: 600; }
+  :global(.title-icon) {
+    color: var(--color-primary-600, #2563eb);
+  }
 
-  .controls-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; box-shadow: var(--shadow-sm); }
-  
-  .type-filter-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .filter-tab {
-    background: var(--color-neutral-100);
-    border: 1px solid var(--color-neutral-200);
-    padding: 0.45rem 0.9rem;
-    border-radius: var(--radius-md);
-    font-size: 0.82rem;
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--color-neutral-500, #64748b);
+    margin: 4px 0 0 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: var(--radius-md, 8px);
+    font-size: 14px;
     font-weight: 600;
-    color: var(--color-neutral-700);
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s, transform 0.1s;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary-600, #2563eb);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-700, #1d4ed8);
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .kpi-card {
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .kpi-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .primary-bg { background-color: var(--color-primary-50, #eff6ff); color: var(--color-primary-600, #2563eb); }
+  .indigo-bg { background-color: #e0e7ff; color: #4338ca; }
+  .amber-bg { background-color: #fef3c7; color: #b45309; }
+  .emerald-bg { background-color: #d1fae5; color: #047857; }
+
+  .kpi-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-neutral-900, #0f172a);
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-500, #64748b);
+  }
+
+  .filters-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .table-card {
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .data-table th {
+    background-color: var(--color-neutral-50, #f8fafc);
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--color-neutral-600, #475569);
+    border-bottom: 1px solid var(--color-neutral-200, #e2e8f0);
+    white-space: nowrap;
+  }
+
+  .data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-neutral-100, #f1f5f9);
+    color: var(--color-neutral-700, #334155);
+    vertical-align: middle;
+  }
+
+  .item-link {
+    color: var(--color-neutral-900, #0f172a);
+    text-decoration: none;
+  }
+
+  .item-link:hover {
+    color: var(--color-primary-600, #2563eb);
+    text-decoration: underline;
+  }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .product-badge { background-color: #e0e7ff; color: #3730a3; }
+  .service-badge { background-color: #fef3c7; color: #92400e; }
+  .digital-badge { background-color: #ede9fe; color: #5b21b6; }
+
+  .usage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .usage-both { background-color: #ecfdf5; color: #047857; }
+  .usage-sale { background-color: #eff6ff; color: #1d4ed8; }
+  .usage-purchase { background-color: #fff7ed; color: #c2410c; }
+
+  .category-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: var(--color-neutral-100, #f1f5f9);
+    font-size: 12px;
+    color: var(--color-neutral-600, #475569);
+  }
+
+  .unit-label {
+    font-size: 12px;
+    color: var(--color-neutral-400, #94a3b8);
+    font-weight: normal;
+  }
+
+  .stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .in-stock { background-color: #d1fae5; color: #065f46; }
+  .low-stock { background-color: #fef3c7; color: #92400e; }
+  .out-of-stock { background-color: #fee2e2; color: #991b1b; }
+  .no-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-neutral-400, #94a3b8);
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 6px;
+    border-radius: 6px;
+    color: var(--color-neutral-500, #64748b);
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    background: #ffffff;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-  }
-  .filter-tab:hover { background: var(--color-neutral-200); color: var(--color-neutral-900); }
-  .filter-tab.active {
-    background: var(--color-primary-600);
-    border-color: var(--color-primary-600);
-    color: white;
+    justify-content: center;
+    text-decoration: none;
   }
 
-  .search-box { position: relative; width: 100%; display: flex; align-items: center; }
-  :global(.search-icon) { position: absolute; left: 12px; color: var(--color-neutral-400); top: 50%; transform: translateY(-50%); }
-  .search-input { width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.4rem; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); font-size: 0.9rem; outline: none; box-sizing: border-box; }
+  .action-btn:hover {
+    background-color: var(--color-neutral-50, #f8fafc);
+    color: var(--color-neutral-800, #1e293b);
+  }
 
-  .table-card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-  .data-table th, .data-table td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--color-neutral-200); }
-  .data-table th { background: var(--color-neutral-50); font-weight: 700; color: var(--color-neutral-700); font-size: 0.78rem; text-transform: uppercase; }
+  .text-danger:hover {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+  }
 
-  .type-badge { font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; }
-  .product-badge { background: #e0e7ff; color: #4338ca; }
-  .service-badge { background: #dbeafe; color: #1d4ed8; }
-  .digital-badge { background: #fef3c7; color: #b45309; }
-
-  .category-pill { font-size: 0.78rem; background: var(--color-neutral-100); padding: 0.2rem 0.5rem; border-radius: 6px; color: var(--color-neutral-700); }
-  .billing-pill { font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; }
-  .minimo-pill { font-size: 0.78rem; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
-  
-  .stock-badge { font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; }
-  .stock-ok { background: #dcfce7; color: #15803d; }
-  .stock-warning { background: #fef3c7; color: #b45309; }
-  .stock-danger { background: #fee2e2; color: #b91c1c; }
-  .untracked-pill { font-size: 0.78rem; font-weight: 600; background: var(--color-neutral-100); color: var(--color-neutral-600); padding: 0.25rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; }
-  .text-muted { color: var(--color-neutral-400); }
-
-  .action-buttons { display: flex; gap: 0.4rem; justify-content: flex-end; }
-  .btn { padding: 0.6rem 1.2rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; border: none; text-decoration: none; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--color-primary-600); color: white; }
-  .btn-secondary { background: var(--color-neutral-100); color: var(--color-neutral-800); border: 1px solid var(--color-neutral-300); }
-  .btn-secondary:hover { background: var(--color-neutral-200); }
-  .btn-icon, .btn-icon-danger { background: none; border: none; cursor: pointer; color: var(--color-neutral-600); text-decoration: none; padding: 4px; border-radius: 4px; display: inline-flex; align-items: center; }
-  .btn-icon:hover { color: var(--color-primary-600); background: var(--color-neutral-100); }
-  .btn-icon-danger:hover { color: #dc2626; background: #fee2e2; }
-
-  .loading-state, .empty-state { text-align: center; padding: 3rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--color-neutral-200); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem; }
-  .empty-icon-wrapper { width: 64px; height: 64px; border-radius: 16px; background: var(--color-primary-50); color: var(--color-primary-600); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
-  .font-mono { font-family: monospace; font-weight: 600; }
-  .font-bold { font-weight: 700; }
   .text-right { text-align: right; }
-  .uppercase { text-transform: uppercase; }
-  .text-primary { color: var(--color-primary-600); }
+  .font-mono { font-family: monospace; }
+
+  .loading-state, .empty-state {
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: 48px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-neutral-500, #64748b);
+  }
+
+  .empty-icon-wrapper {
+    color: var(--color-neutral-300, #cbd5e1);
+  }
+
+  .empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-neutral-800, #1e293b);
+    margin: 0;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+    max-width: 420px;
+    margin: 0 0 8px 0;
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--color-neutral-200, #e2e8f0);
+    border-top-color: var(--color-primary-600, #2563eb);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>

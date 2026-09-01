@@ -51,13 +51,37 @@ export class PaymentsKPIBridge {
     };
   }
 
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  private static cache: { data: any[]; timestamp: number } | null = null;
+  private static readonly TTL_MS = 30000;
+
+  static async fetchRawData(): Promise<any[]> {
+    const now = Date.now();
+    if (this.cache && (now - this.cache.timestamp) < this.TTL_MS) {
+      return this.cache.data;
+    }
     try {
       const snap = await getDocs(collection(db, 'payments'));
       const list: any[] = [];
       snap.forEach((d: any) => {
-        list.push({ id: d.id, ...d.data() });
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        list.push({ id: d.id, ...data });
       });
+      this.cache = { data: list, timestamp: now };
+      return list;
+    } catch (e) {
+      console.error('Error fetching payments in bridge:', e);
+      return this.cache ? this.cache.data : [];
+    }
+  }
+
+  static invalidateCache() {
+    this.cache = null;
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const list = await this.fetchRawData();
       return this.calculateKPIs(list);
     } catch (e) {
       console.error('Error fetching payments KPIs in bridge:', e);
@@ -68,12 +92,7 @@ export class PaymentsKPIBridge {
   static async fetchChartAggregations({ periods, role, uid, tab }: any) {
     let allPayments: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'payments'));
-      snap.forEach(d => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
-        allPayments.push({ id: d.id, ...data });
-      });
+      allPayments = await this.fetchRawData();
     } catch (e) {
       console.error('Error fetching payments for chart aggregations:', e);
       return periods.map(() => 0);
@@ -124,11 +143,8 @@ export class PaymentsKPIBridge {
   static async fetchDrillDownItems({ period, tab, role, uid }: DrillDownFetchParams) {
     let items: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'payments'));
-      snap.forEach((d: any) => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
-
+      const allPayments = await this.fetchRawData();
+      allPayments.forEach((data: any) => {
         const status = data.status || data.original?.status || 'registrato';
         if (status === 'annullato' || status === 'stornato') return;
 
@@ -147,7 +163,7 @@ export class PaymentsKPIBridge {
           }
         }
         if (ms > 0 && ms >= period.start.getTime() && ms <= period.end.getTime()) {
-          items.push({ id: d.id, ...data });
+          items.push(data);
         }
       });
     } catch (e) {

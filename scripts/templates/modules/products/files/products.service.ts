@@ -8,17 +8,40 @@ import {
   query, 
   orderBy 
 } from '$lib/firebase';
-import type { ProductItem, MinimoFatturabileConfig } from './schema';
+import type { ProductItem, ProductUsageType, MinimoFatturabileConfig } from './schema';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { generateSearchTerms } from '$lib/search-utils';
 import { VersioningService, computeDiff } from '$lib/services/versioningService';
 import { ProductsVersioningBridge } from './products.versioning.bridge';
 import { generateId, cleanUndefined } from '$lib/utils/helpers';
+import { roundCurrency } from '$lib/utils/math';
 
 export class ProductsService {
   private static COLLECTION_NAME = 'products';
 
-  static async getProducts(): Promise<ProductItem[]> {
+  /**
+   * Helper per determinare se un prodotto è abilitato alla vendita (clienti / preventivi / contratti)
+   */
+  static isSaleable(item: ProductItem): boolean {
+    if (item.canBeSold !== undefined) return Boolean(item.canBeSold);
+    if (item.usageType === 'purchase') return false;
+    return true; // default: saleable
+  }
+
+  /**
+   * Helper per determinare se un prodotto è abilitato all'acquisto (fornitori / ordini PO)
+   */
+  static isPurchasable(item: ProductItem): boolean {
+    if (item.canBePurchased !== undefined) return Boolean(item.canBePurchased);
+    if (item.usageType === 'sale') return false;
+    return true; // default: purchasable
+  }
+
+  static async getProducts(filter?: {
+    canBeSold?: boolean;
+    canBePurchased?: boolean;
+    usageType?: ProductUsageType;
+  }): Promise<ProductItem[]> {
     let snap;
     try {
       const q = query(
@@ -32,15 +55,42 @@ export class ProductsService {
     if (snap.empty) {
       snap = await getDocs(collection(db, this.COLLECTION_NAME));
     }
-    const list = snap.docs
+    let list = snap.docs
       .map(d => ({ id: d.id, ...d.data() } as ProductItem))
       .filter(p => !(p as any).derived?.deleted);
+
+    if (filter) {
+      if (filter.usageType) {
+        list = list.filter(p => (p.usageType || 'both') === filter.usageType);
+      }
+      if (filter.canBeSold !== undefined) {
+        list = list.filter(p => this.isSaleable(p) === filter.canBeSold);
+      }
+      if (filter.canBePurchased !== undefined) {
+        list = list.filter(p => this.isPurchasable(p) === filter.canBePurchased);
+      }
+    }
+
     list.sort((a, b) => {
       const dA = a.createdAt || (a as any).edits?.createdAt || '';
       const dB = b.createdAt || (b as any).edits?.createdAt || '';
       return dB.localeCompare(dA);
     });
     return list;
+  }
+
+  /**
+   * Restituisce esclusivamente gli articoli vendibili a clienti (utilizzato da Contratti/Preventivi)
+   */
+  static async getSaleableProducts(): Promise<ProductItem[]> {
+    return this.getProducts({ canBeSold: true });
+  }
+
+  /**
+   * Restituisce esclusivamente gli articoli acquistabili da fornitori (utilizzato da Ordini PO Magazzino)
+   */
+  static async getPurchasableProducts(): Promise<ProductItem[]> {
+    return this.getProducts({ canBePurchased: true });
   }
 
   static async getProductById(id: string): Promise<ProductItem | null> {
@@ -88,13 +138,19 @@ export class ProductsService {
     options?: { uid?: string; userEmail?: string; tenantId?: string }
   ): Promise<string> {
     const productType = data.type || 'product';
+    const usageType = data.usageType || 'both';
+    const canBeSold = data.canBeSold !== undefined ? data.canBeSold : (usageType !== 'purchase');
+    const canBePurchased = data.canBePurchased !== undefined ? data.canBePurchased : (usageType !== 'sale');
+    const price = roundCurrency(data.price ?? 0);
+    const purchasePrice = data.purchasePrice !== undefined ? roundCurrency(data.purchasePrice) : price;
+
     const trackStock = data.trackStock !== undefined 
       ? data.trackStock 
       : (productType === 'service' || productType === 'digital' ? false : true);
     const allowOutOfStockSale = data.allowOutOfStockSale !== undefined ? data.allowOutOfStockSale : true;
     const stockQty = data.stockQty !== undefined ? data.stockQty : 0;
 
-    const textSearch = generateSearchTerms(`${data.sku} ${data.name} ${data.category} ${productType}`);
+    const textSearch = generateSearchTerms(`${data.sku} ${data.name} ${data.category} ${productType} ${usageType}`);
     const productId = generateId('prod');
     const productRef = doc(db, this.COLLECTION_NAME, productId);
     
@@ -102,6 +158,11 @@ export class ProductsService {
       ...data,
       id: productId,
       type: productType,
+      usageType,
+      canBeSold,
+      canBePurchased,
+      price,
+      purchasePrice,
       trackStock,
       stockQty,
       allowOutOfStockSale,
@@ -172,16 +233,30 @@ export class ProductsService {
     const name = data.name !== undefined ? data.name : (existing?.name || '');
     const cat = data.category !== undefined ? data.category : (existing?.category || '');
     const type = data.type !== undefined ? data.type : (existing?.type || 'product');
+    const usageType = data.usageType !== undefined ? data.usageType : (existing?.usageType || 'both');
+    const canBeSold = data.canBeSold !== undefined ? data.canBeSold : (usageType !== 'purchase');
+    const canBePurchased = data.canBePurchased !== undefined ? data.canBePurchased : (usageType !== 'sale');
 
     const nextEntityData: Record<string, any> = {
       ...(existing || {}),
       ...sanitizedRaw,
+      type,
+      usageType,
+      canBeSold,
+      canBePurchased,
       updatedAt: new Date().toISOString(),
       derived: {
         ...(existing?.derived || {}),
-        textSearch: generateSearchTerms(`${sku} ${name} ${cat} ${type}`)
+        textSearch: generateSearchTerms(`${sku} ${name} ${cat} ${type} ${usageType}`)
       }
     };
+
+    if (data.price !== undefined) {
+      nextEntityData.price = roundCurrency(data.price);
+    }
+    if (data.purchasePrice !== undefined) {
+      nextEntityData.purchasePrice = roundCurrency(data.purchasePrice);
+    }
 
     const payload = cleanUndefined(nextEntityData);
     const entityLabel = ProductsVersioningBridge.getEntityLabel(payload);

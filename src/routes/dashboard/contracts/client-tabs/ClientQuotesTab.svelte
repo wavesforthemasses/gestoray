@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { formatDate, formatDateTime } from '$lib/utils/formatters';
-  import { Card, FormField, Button } from '$lib';
+  import { Card, FormField, Button, Autocomplete, type AutocompleteOption } from '$lib';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
   import { authState, activeRoleState } from '$lib/auth.svelte';
@@ -39,12 +39,33 @@
     quoteItems.reduce((sum, item) => sum + item.priceSold * item.quantity, 0)
   );
 
+  let productOptions = $derived<AutocompleteOption[]>(
+    productsList.map(p => ({
+      id: p.id,
+      label: p.name,
+      sublabel: `Listino: €${(Number(p.listPrice) || 0).toFixed(2)}${p.sku ? ' • ' + p.sku : ''}`
+    }))
+  );
+
+  let vendorOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: 'Nessuno (100% provvigione a te)' },
+    ...usersList
+      .filter(u => u.uid !== authState.user?.uid)
+      .map(u => ({
+        id: u.uid,
+        label: `${u.nome || ''} ${u.cognome || ''}`.trim() || u.email,
+        sublabel: u.email
+      }))
+  ]);
+
   async function loadTabData() {
     try {
       try {
         const mod = await import('../../products/products.service');
         if (mod?.ProductsService) {
-          const pList = await mod.ProductsService.getProducts();
+          const pList = mod.ProductsService.getSaleableProducts 
+            ? await mod.ProductsService.getSaleableProducts() 
+            : (await mod.ProductsService.getProducts()).filter((p: any) => p.canBeSold !== false && p.usageType !== 'purchase');
           productsList = pList.map((p: any) => ({
             id: p.id,
             name: p.name,
@@ -222,12 +243,12 @@
           <div class="builder-inputs">
             <div class="form-grid-columns">
               <FormField id="q-product" label="SELEZIONA PRODOTTO">
-                <select id="q-product" bind:value={selectedProductId} onchange={(e) => onProductSelectChange(e.currentTarget.value)}>
-                  <option value="">-- Seleziona Prodotto dal Catalogo --</option>
-                  {#each productsList as p}
-                    <option value={p.id}>{p.name} (Listino: €{(Number(p.listPrice) || 0).toFixed(2)})</option>
-                  {/each}
-                </select>
+                <Autocomplete 
+                  options={productOptions} 
+                  bind:value={selectedProductId} 
+                  onchange={(id) => onProductSelectChange(id)} 
+                  placeholder="Cerca prodotto a catalogo..." 
+                />
               </FormField>
             </div>
 
@@ -329,12 +350,11 @@
                 <p class="co-selling-desc">Se questa vendita è stata conclusa in collaborazione con un altro commerciale, selezionalo qui sotto per ripartire le provvigioni.</p>
                 <div class="form-grid-columns">
                   <FormField id="q-second-vendor" label="Secondo Consulente">
-                    <select id="q-second-vendor" bind:value={secondVendorUid}>
-                      <option value="">Nessuno (100% provvigione a te)</option>
-                      {#each usersList.filter(u => u.uid !== authState.user?.uid) as u}
-                        <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
-                      {/each}
-                    </select>
+                    <Autocomplete 
+                      options={vendorOptions} 
+                      bind:value={secondVendorUid} 
+                      placeholder="Seleziona secondo consulente..." 
+                    />
                   </FormField>
                   {#if secondVendorUid}
                     <FormField id="q-second-share" label="Quota Provvigionale Co-Seller (%)" helpText="Il resto della provvigione andrà al principale.">

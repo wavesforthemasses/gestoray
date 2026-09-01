@@ -16,6 +16,11 @@ import type { PaymentItem, PaymentSettings } from './schema';
 import { PaymentSettingsService } from './paymentSettingsService';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
 import { generateSearchTerms } from '$lib/search-utils';
+import { generateId } from '$lib/utils/helpers';
+import { VersioningService, computeDiff } from '$lib/services/versioningService';
+import { PaymentsVersioningBridge } from './payments.versioning.bridge';
+import { calculateVatBreakdown as calcVatHelper } from '$lib/utils/math';
+
 
 function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
   const result: Record<string, any> = {};
@@ -43,12 +48,7 @@ export class PaymentsService {
    * Calcola lo scorporo IVA restituendo Imponibile Netto e Quota IVA
    */
   static calculateVatBreakdown(grossAmount: number, vatRate: number = 22): { netAmount: number; vatAmount: number } {
-    if (grossAmount <= 0) return { netAmount: 0, vatAmount: 0 };
-    if (vatRate <= 0) return { netAmount: grossAmount, vatAmount: 0 };
-
-    const net = parseFloat(((Number(grossAmount) || 0) / (1 + (Number(vatRate) || 0) / 100)).toFixed(2));
-    const vat = parseFloat(((Number(grossAmount) || 0) - net).toFixed(2));
-    return { netAmount: net, vatAmount: vat };
+    return calcVatHelper(grossAmount, vatRate);
   }
 
   /**
@@ -205,7 +205,11 @@ export class PaymentsService {
     return formattedNumber;
   }
 
-  static async createPayment(data: Partial<PaymentItem>, authUser?: { uid: string; email: string }): Promise<string> {
+  static async createPayment(
+    data: Partial<PaymentItem>, 
+    authUser?: { uid: string; email: string },
+    options?: { tenantId?: string }
+  ): Promise<string> {
     let paymentNumber = data.paymentNumber?.trim();
     if (!paymentNumber) {
       paymentNumber = await this.generateNextPaymentNumber();
@@ -218,8 +222,12 @@ export class PaymentsService {
     const now = new Date().toISOString();
     const textSearch = generateSearchTerms(`${paymentNumber} ${data.clientName || ''} ${data.transactionReference || ''}`);
 
+    const paymentId = data.id || generateId();
+    const paymentRef = doc(db, this.COLLECTION_NAME, paymentId);
+
     const payload = sanitizeFirestoreData({
       ...data,
+      id: paymentId,
       paymentNumber,
       grossAmount,
       vatRate,
@@ -254,22 +262,52 @@ export class PaymentsService {
       updatedAt: now
     });
 
-    const docRef = await addDoc(collection(db, this.COLLECTION_NAME), payload);
+    const diff = computeDiff(null, payload, {
+      semanticsMap: PaymentsVersioningBridge.getSemanticsMap()
+    });
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      paymentRef,
+      payload,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'payments',
+        entityType: 'payment',
+        entityId: paymentId,
+        entityLabel: PaymentsVersioningBridge.getEntityLabel(payload),
+        eventType: 'FIELD_MUTATION',
+        keysChanged: diff.keysChanged,
+        mutations: diff.mutations,
+        performedBy: authUser?.uid || 'system',
+        performedByName: authUser?.email,
+        actorType: 'USER',
+        reason: 'Registrazione incasso / movimento cassa'
+      },
+      0
+    );
 
     try {
-      const chunkId = await CacheLookupService.updateEntityCache('payments', docRef.id, `${paymentNumber} - ${data.clientName || ''}`);
+      const chunkId = await CacheLookupService.updateEntityCache('payments', paymentId, `${paymentNumber} - ${data.clientName || ''}`);
       if (chunkId) {
-        await updateDoc(docRef, { 'derived.cacheChunkId': chunkId });
+        await updateDoc(paymentRef, { 'derived.cacheChunkId': chunkId });
       }
     } catch (e) {
       console.warn('Errore aggiornamento cache payments:', e);
     }
 
-    return docRef.id;
+    return paymentId;
   }
 
-  static async updatePayment(id: string, data: Partial<PaymentItem>, uid?: string): Promise<void> {
-    const existing = await this.getPaymentById(id);
+  static async updatePayment(
+    id: string, 
+    data: Partial<PaymentItem>, 
+    uid?: string,
+    options?: { userEmail?: string; tenantId?: string; expectedBaseVersion?: number; reason?: string }
+  ): Promise<void> {
+    const paymentRef = doc(db, this.COLLECTION_NAME, id);
+    const existingSnap = await getDoc(paymentRef);
+    const existing = existingSnap.exists() ? (existingSnap.data() as PaymentItem) : null;
     const now = new Date().toISOString();
     const sanitized: Record<string, any> = {};
 
@@ -279,44 +317,135 @@ export class PaymentsService {
       }
     });
 
-    if (data.grossAmount !== undefined) {
-      const vatRate = data.vatRate ?? existing?.vatRate ?? 22;
-      const { netAmount, vatAmount } = this.calculateVatBreakdown(data.grossAmount, vatRate);
-      sanitized.grossAmount = data.grossAmount;
-      sanitized.netAmount = data.netAmount ?? netAmount;
-      sanitized.vatAmount = data.vatAmount ?? vatAmount;
-      sanitized.amount = data.grossAmount;
-      sanitized['original.amount'] = data.grossAmount;
-      sanitized['original.netAmount'] = data.netAmount ?? netAmount;
-      sanitized['original.vatAmount'] = data.vatAmount ?? vatAmount;
+    let grossAmount = data.grossAmount !== undefined ? data.grossAmount : (existing?.grossAmount ?? existing?.amount);
+    let vatRate = data.vatRate !== undefined ? data.vatRate : (existing?.vatRate ?? 22);
+    let netAmount = data.netAmount;
+    let vatAmount = data.vatAmount;
+
+    if (grossAmount !== undefined) {
+      const calc = this.calculateVatBreakdown(Number(grossAmount), Number(vatRate));
+      netAmount = netAmount ?? calc.netAmount;
+      vatAmount = vatAmount ?? calc.vatAmount;
+    }
+
+    const num = data.paymentNumber || existing?.paymentNumber || '';
+    const client = data.clientName || existing?.clientName || '';
+    const textSearch = generateSearchTerms(`${num} ${client}`);
+
+    const nextEntityData: Record<string, any> = {
+      ...(existing || {}),
+      ...sanitized,
+      grossAmount,
+      vatRate,
+      vatAmount,
+      netAmount,
+      updatedAt: now,
+      derived: {
+        ...(existing?.derived || {}),
+        textSearch
+      },
+      original: {
+        ...(existing?.original || {}),
+        ...(sanitized['original'] || {}),
+        amount: grossAmount,
+        netAmount,
+        vatRate,
+        vatAmount,
+        status: data.status || existing?.status || existing?.original?.status || 'registrato'
+      }
+    };
+
+    const payload = sanitizeFirestoreData(nextEntityData);
+    const diff = computeDiff(existing, payload, {
+      semanticsMap: PaymentsVersioningBridge.getSemanticsMap()
+    });
+
+    if (diff.keysChanged.length > 0) {
+      await VersioningService.executeDualWriteTransaction(
+        db,
+        paymentRef,
+        payload,
+        {
+          tenantId: options?.tenantId || 'default',
+          module: 'payments',
+          entityType: 'payment',
+          entityId: id,
+          entityLabel: PaymentsVersioningBridge.getEntityLabel(payload),
+          eventType: 'FIELD_MUTATION',
+          keysChanged: diff.keysChanged,
+          mutations: diff.mutations,
+          performedBy: uid || 'system',
+          performedByName: options?.userEmail,
+          actorType: 'USER',
+          reason: options?.reason || 'Modifica dati incasso'
+        },
+        options?.expectedBaseVersion !== undefined ? options.expectedBaseVersion : ((existing as any)?.edits?.aggregateVersion ?? 0)
+      );
+    } else {
+      await updateDoc(paymentRef, { updatedAt: now });
     }
 
     if (data.paymentNumber || data.clientName) {
-      const num = data.paymentNumber || existing?.paymentNumber || '';
-      const client = data.clientName || existing?.clientName || '';
-      sanitized['derived.textSearch'] = generateSearchTerms(`${num} ${client}`);
-      
       try {
         await CacheLookupService.updateEntityCache('payments', id, `${num} - ${client}`);
       } catch (e) {
         console.warn('Errore aggiornamento cache payments:', e);
       }
     }
-
-    sanitized.updatedAt = now;
-    sanitized['edits.modifiedAt'] = now;
-    if (uid) sanitized['edits.modifiedBy'] = uid;
-
-    const finalSanitized = sanitizeFirestoreData(sanitized);
-    await updateDoc(doc(db, this.COLLECTION_NAME, id), finalSanitized);
   }
 
-  static async deletePayment(id: string, uid?: string): Promise<void> {
-    await updateDoc(doc(db, this.COLLECTION_NAME, id), {
-      'derived.deleted': true,
-      'edits.deletedAt': new Date().toISOString(),
-      'edits.deletedBy': uid || 'system'
-    });
+  static async deletePayment(
+    id: string, 
+    uid?: string,
+    options?: { userEmail?: string; tenantId?: string }
+  ): Promise<void> {
+    const paymentRef = doc(db, this.COLLECTION_NAME, id);
+    const existingSnap = await getDoc(paymentRef);
+    const existing = existingSnap.exists() ? (existingSnap.data() as PaymentItem) : null;
+    const now = new Date().toISOString();
+
+    const nextEntityData: Record<string, any> = {
+      ...(existing || {}),
+      derived: {
+        ...(existing?.derived || {}),
+        deleted: true
+      },
+      edits: {
+        ...(existing as any)?.edits,
+        deletedAt: now,
+        deletedBy: uid || 'system'
+      }
+    };
+
+    const payload = sanitizeFirestoreData(nextEntityData);
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      paymentRef,
+      payload,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'payments',
+        entityType: 'payment',
+        entityId: id,
+        entityLabel: PaymentsVersioningBridge.getEntityLabel(existing),
+        eventType: 'STATUS_CHANGE',
+        keysChanged: ['derived.deleted'],
+        mutations: {
+          'derived.deleted': {
+            old: false,
+            new: true,
+            semantics: 'DESCRIPTIVE'
+          }
+        },
+        performedBy: uid || 'system',
+        performedByName: options?.userEmail,
+        actorType: 'USER',
+        reason: 'Cancellazione logica incasso'
+      },
+      (existing as any)?.edits?.aggregateVersion ?? 0
+    );
+
     try {
       await CacheLookupService.removeEntityFromCache('payments', id);
     } catch (e) {

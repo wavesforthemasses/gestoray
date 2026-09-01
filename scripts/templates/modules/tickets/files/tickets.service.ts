@@ -1,7 +1,10 @@
 import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot } from '$lib/firebase';
 import type { TicketItem, TicketMessage, TicketKPIs } from './schema';
 import { TicketSettingsService } from '$lib/services/ticketSettings';
-import { cleanUndefined } from '$lib/utils/helpers';
+import { cleanUndefined, generateId } from '$lib/utils/helpers';
+import { VersioningService, computeDiff } from '$lib/services/versioningService';
+import { TicketsVersioningBridge } from './tickets.versioning.bridge';
+
 
 const COLLECTION_NAME = 'tickets';
 
@@ -95,7 +98,10 @@ export const TicketsService = {
     }
   },
 
-  async createTicket(data: Partial<TicketItem>): Promise<string> {
+  async createTicket(
+    data: Partial<TicketItem>, 
+    options?: { uid?: string; userEmail?: string; tenantId?: string }
+  ): Promise<string> {
     const now = new Date().toISOString();
     const settings = await TicketSettingsService.getSettings();
 
@@ -117,8 +123,12 @@ export const TicketsService = {
     const hours = (settings.slaHours && settings.slaHours[priority]) || 24;
     const slaDueDate = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 
+    const ticketId = data.id || generateId();
+    const ticketRef = doc(db, COLLECTION_NAME, ticketId);
+
     const docData = cleanUndefined({
       ...data,
+      id: ticketId,
       status: data.status || 'aperto',
       priority,
       category,
@@ -126,18 +136,52 @@ export const TicketsService = {
       assignedToName,
       slaDueDate: data.slaDueDate || slaDueDate,
       messages: data.messages || [],
+      edits: {
+        createdAt: now,
+        createdBy: options?.uid || 'system'
+      },
       createdAt: now,
       updatedAt: now
     });
-    const ref = await addDoc(collection(db, COLLECTION_NAME), docData);
-    return ref.id;
+
+    const diff = computeDiff(null, docData, {
+      semanticsMap: TicketsVersioningBridge.getSemanticsMap()
+    });
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      ticketRef,
+      docData,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'tickets',
+        entityType: 'ticket',
+        entityId: ticketId,
+        entityLabel: TicketsVersioningBridge.getEntityLabel(docData),
+        eventType: 'FIELD_MUTATION',
+        keysChanged: diff.keysChanged,
+        mutations: diff.mutations,
+        performedBy: options?.uid || 'system',
+        performedByName: options?.userEmail,
+        actorType: 'USER',
+        reason: 'Creazione ticket di assistenza'
+      },
+      0
+    );
+
+    return ticketId;
   },
 
-  async updateTicket(id: string, data: Partial<TicketItem>): Promise<void> {
+  async updateTicket(
+    id: string, 
+    data: Partial<TicketItem>, 
+    options?: { uid?: string; userEmail?: string; tenantId?: string; expectedBaseVersion?: number; reason?: string }
+  ): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
     const current = await this.getTicket(id);
     const now = new Date().toISOString();
     const updatePayload: any = {
+      ...(current || {}),
       ...data,
       updatedAt: now
     };
@@ -170,7 +214,35 @@ export const TicketsService = {
       updatePayload.resolutionTimeHours = 0;
     }
 
-    await updateDoc(docRef, cleanUndefined(updatePayload));
+    const payload = cleanUndefined(updatePayload);
+    const diff = computeDiff(current, payload, {
+      semanticsMap: TicketsVersioningBridge.getSemanticsMap()
+    });
+
+    if (diff.keysChanged.length > 0) {
+      await VersioningService.executeDualWriteTransaction(
+        db,
+        docRef,
+        payload,
+        {
+          tenantId: options?.tenantId || 'default',
+          module: 'tickets',
+          entityType: 'ticket',
+          entityId: id,
+          entityLabel: TicketsVersioningBridge.getEntityLabel(payload),
+          eventType: data.status && data.status !== current?.status ? 'STATUS_CHANGE' : 'FIELD_MUTATION',
+          keysChanged: diff.keysChanged,
+          mutations: diff.mutations,
+          performedBy: options?.uid || 'system',
+          performedByName: options?.userEmail,
+          actorType: 'USER',
+          reason: options?.reason || (data.status && data.status !== current?.status ? `Cambio stato ticket a ${data.status}` : 'Aggiornamento ticket')
+        },
+        options?.expectedBaseVersion !== undefined ? options.expectedBaseVersion : ((current as any)?.edits?.aggregateVersion ?? 0)
+      );
+    } else {
+      await updateDoc(docRef, { updatedAt: now });
+    }
   },
 
   async addMessageToTicket(id: string, message: TicketMessage): Promise<void> {
@@ -214,13 +286,54 @@ export const TicketsService = {
     }
   },
 
-  async deleteTicket(id: string, uid?: string): Promise<void> {
+  async deleteTicket(
+    id: string, 
+    uid?: string,
+    options?: { userEmail?: string; tenantId?: string }
+  ): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, {
-      'derived.deleted': true,
-      'edits.deletedAt': new Date().toISOString(),
-      'edits.deletedBy': uid || 'system'
+    const current = await this.getTicket(id);
+    const now = new Date().toISOString();
+
+    const nextEntityData = cleanUndefined({
+      ...(current || {}),
+      derived: {
+        ...((current as any)?.derived || {}),
+        deleted: true
+      },
+      edits: {
+        ...(current as any)?.edits,
+        deletedAt: now,
+        deletedBy: uid || 'system'
+      }
     });
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      docRef,
+      nextEntityData,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'tickets',
+        entityType: 'ticket',
+        entityId: id,
+        entityLabel: TicketsVersioningBridge.getEntityLabel(current),
+        eventType: 'STATUS_CHANGE',
+        keysChanged: ['derived.deleted'],
+        mutations: {
+          'derived.deleted': {
+            old: false,
+            new: true,
+            semantics: 'DESCRIPTIVE'
+          }
+        },
+        performedBy: uid || 'system',
+        performedByName: options?.userEmail,
+        actorType: 'USER',
+        reason: 'Cancellazione logica ticket'
+      },
+      (current as any)?.edits?.aggregateVersion ?? 0
+    );
   },
 
   computeKPIs(tickets: TicketItem[]): TicketKPIs {

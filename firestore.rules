@@ -59,12 +59,6 @@ service cloud.firestore {
       allow delete: if hasRole('superadmin');
     }
 
-    // TEAMS
-    match /teams/{teamId} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAuth() && (isAdmin() || isDirezione());
-    }
-
     // VEHICLES
     match /vehicles/{vehicleId} {
       allow read: if isAuth();
@@ -331,13 +325,62 @@ match /unique_keys/{keyId} {
     }
     // --- MODULE: payments END ---
 
-    // --- MODULE: interventions BEGIN ---
-    // INTERVENTIONS (Scheduling & Field Operations)
-    match /interventions/{docId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth() && notWritingDerived();
-      allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
-    }
-    // --- MODULE: interventions END ---
+    // --- MODULE: warehouse BEGIN ---
+    // WAREHOUSE & INVENTORY
+match /suppliers/{supplierId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+
+match /purchase_orders/{poId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+
+match /warehouse_inventory/{invId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
+
+match /stock_movements/{movId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if false; // Immutable ledger movement
+  allow delete: if hasRole('superadmin');
+}
+    // --- MODULE: warehouse END ---
+
+    // --- MODULE: targets BEGIN ---
+    // TARGETS & BUDGETING
+match /targets_plans/{planId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (isAdmin() || isDirezione());
+}
+
+match /targets_records/{recordId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && (
+    isAdmin() || isDirezione() ||
+    (request.resource.data.subjectType == 'user' && request.resource.data.subjectId == request.auth.uid)
+  );
+  allow update: if isAuth() && (
+    isAdmin() || isDirezione() ||
+    (resource.data.subjectType == 'user' && resource.data.subjectId == request.auth.uid)
+  );
+  allow delete: if isAuth() && (isAdmin() || isDirezione());
+}
+
+match /settings/targets {
+  allow read: if isAuth();
+  allow write: if isAuth() && (isAdmin() || isDirezione());
+}
+    // --- MODULE: targets END ---
   }
 }
+

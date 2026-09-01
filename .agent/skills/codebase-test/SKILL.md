@@ -17,13 +17,13 @@ Ogni audit deve essere una **perizia tecnica e filosofica forense da tabula rasa
 
 ---
 
-## 2. I 7 PILASTRI DELL'AUDIT ARCHITETTURALE
+## 2. GLI 8 PILASTRI DELL'AUDIT ARCHITETTURALE
 
-Ogni modulo, vista o servizio del sistema viene sottoposto a scrutinio secondo 7 dimensioni fondamentali:
+Ogni modulo, vista o servizio del sistema viene sottoposto a scrutinio secondo 8 dimensioni fondamentali:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                   I 7 PILASTRI DELL'AUDIT ARCHITETTURALE GESTORAY                │
+│                   GLI 8 PILASTRI DELL'AUDIT ARCHITETTURALE GESTORAY              │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │ 1. AGNOSTICISMO & ZERO-HARDCODING (Labels, prefissi e termini personalizzabili)  │
 │ 2. MODULARITÀ PURA & ZERO-COUPLING (Nessun import statico di moduli in Core)    │
@@ -32,6 +32,7 @@ Ogni modulo, vista o servizio del sistema viene sottoposto a scrutinio secondo 7
 │ 5. DUAL-SCHEMA RESILIENCE & SAFE NUMERICS (Protezione crash toFixed/null/NaN)   │
 │ 6. SECURITY RULES & RBAC (Regole Firestore per ogni collezione + GDPR 1-click)   │
 │ 7. UI/UX VECTOR STANDARDS (100% Lucide Icons, zero emoji raw, Runes Svelte 5)    │
+│ 8. DYNAMIC AUTOCOMPLETE VS STATIC SELECT (Ricerca predittiva per entità aperte)  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,20 +87,42 @@ L'agente procede poi all'ispezione critica leggendo i file chiave dei 5 sottosis
 
 ---
 
-## 4. VALIDAZIONE MATRICE MULTI-SETTORIALE PER PMI
+## 4. MATRICE COMPLETA CAPABILITY & REQUISITI DI BUSINESS (SEZIONI A-G & ROADMAP)
 
-L'audit deve certificare l'idoneità della piattaforma su **5 archetipi reali di PMI**:
-1. 🏗️ **Edilizia & Impianti**: Cantieri multilivello, tariffe operatore multiple, parco mezzi, SAL contrattuali e ritenute.
-2. 📐 **Studi Professionali & Architettura**: Lettere d'incarico, log ore consulenza, notule con cassa previdenza e ritenuta, zero cantieri.
-3. 🍨 **Food, Gelaterie & Retail**: Unità di misura libere (kg, lt, pz), chiusure cassa giornaliere contanti/POS, assenza forzata di contratti.
-4. 🛠️ **Manutenzioni & Riparazioni**: Tracciamento guasti, calcolo TMR in ore, associazione impianti e contratti manutenzione.
-5. 📦 **Commercio B2B & Distribuzione**: Listini con soglia minima di vendita, acconti e riconciliazione su scadenze multiple.
+L'audit verifica la conformità della piattaforma rispetto a tutte le macro-aree funzionali:
+
+| Sezione | Ambito Funzionale | Feature Chiave | Stato Attuale | Test Agnostico Dedicato |
+|---|---|---|---|---|
+| **A** | **CRM & Anagrafica** | Anti-duplicati (CF/P.IVA), required fields, diario multi-azione (chiamate, email, incontri, note), promozione prospect->cliente | ✅ Attivo & Collaudato | `clients.service.test.ts`, `activities.service.test.ts` |
+| **B** | **Preventivi & Contratti** | Creazione preventivo, listini, alert prezzo minimo (`minPrice`), salvataggio bozza, co-venditore con ripartizione %, approvazione workflow | ✅ Attivo & Collaudato | `contracts.service.test.ts`, `multiSectorAgnostic.test.ts` |
+| **C** | **Scadenziari & Rate** | Rateizzazione flessibile, solleciti visivi scaduti, posticipo date, inserimento rate intermedie | ✅ Attivo & Collaudato | `contracts.service.test.ts`, `deadlines.service.test.ts` |
+| **D** | **Incassi, IVA & Provvigioni** | Allocazione incasso singolo a multi-contratti, scorporo IVA (4%, 10%, 22%), provvigioni su incassato reale (`Realized Payments`) | ✅ Attivo & Collaudato | `payments.service.test.ts`, `multiSectorAgnostic.test.ts` |
+| **E** | **Target Commerciali** | Impostazione target mensili per venditore a inizio mese, monitoraggio avanzamento KPI real-time | ⏳ **Pianificato in Roadmap** | *Da implementare con modulo targets* |
+| **F** | **Collaboratori & Ruoli** | Matrice RBAC (superadmin, amministrazione, direzione, commerciale), provvigioni per qualifica (Junior, Senior, DV) | ✅ Attivo & Collaudato | `authCheck.test.ts`, `business-logic.test.ts` |
+| **G** | **Business Intelligence** | Grafico interattivo dinamico (`UniversalAnalyticsChart`), filtri al click, export CSV/XLS, print layout | ✅ Attivo & Collaudato | `dashboard.service.test.ts`, `multiSectorAgnostic.test.ts` |
+| **OPS** | **Field Operations** | Cantieri gerarchici georeferenziati (`places`), Squadre & Risorse (`teams`), Parco Mezzi (`vehicles`), Pianificazione a calendario (`scheduling`) | ✅ Attivo & Collaudato | `places.*.test.ts`, `teams.*.test.ts`, `vehicles.*.test.ts` |
+| **OPS** | **Assistenza & Ticket** | Gestione ticket/reclami, assegnazione tecnici, calcolo TMR in ore, monitoraggio SLA | ✅ Attivo & Collaudato | `tickets.service.test.ts`, `multiSectorAgnostic.test.ts` |
+| **FASE 1** | **Magazzino & Acquisti** | Fornitori, ordini d'acquisto, lotti/ricezione e scarico FIFO | ⏳ **Pianificato in Roadmap (Fase 1 fine sett)** | *Da implementare* |
+| **FASE 2** | **Fatture in Cloud SDI** | Integrazione API v2 Fatture in Cloud, emissione fatture acconto/saldo, sync SDI, riconciliazione fatture ricevute | ⏳ **Pianificato in Roadmap (Fase 2 ott-nov)** | *Da implementare* |
+| **FASE 2** | **Job Costing Cantiere** | Imputazione costi cantiere (ore bolle + ammortamento mezzi + materiali FIFO) | ⏳ **Pianificato in Roadmap (Fase 2 nov)** | *Da implementare* |
 
 ---
 
-## 5. EMISSIONE DEL REPORT FINALE
+## 5. VALIDAZIONE MATRICE MULTI-SETTORIALE PER PMI (`multiSectorAgnostic.test.ts`)
 
-Al termine dell'ispezione, l'agente emette la **Relazione di Perizia Forense** con:
-* Punteggio ponderato per ogni sottosistema.
-* Lista esatta di ogni anomalia o debito tecnico con percorso file e riga di codice.
-* Piano di bonifica prioritarizzato per portare la codebase al 100% oggettivo.
+L'audit certifica l'idoneità della piattaforma su **5 archetipi reali di PMI** sia tramite stress simulation nello script di audit sia tramite la suite ufficiale Vitest `src/lib/services/multiSectorAgnostic.test.ts`:
+1. 🏗️ **Edilizia & Impianti**: Calcolo multi-tariffa manodopera (giornata, oraria, mc, mq), SAL contrattuali progressivi con IVA agevolata 10% e ritenute di garanzia, cantieri gerarchici con geofencing.
+2. 📐 **Studi Professionali & Consulenza**: Tariffazione oraria, calcolo notula con cassa previdenza 4%, IVA 22% e ritenuta d'acconto 20%, disaccoppiamento totale da cantieri e mezzi fisici.
+3. 🍨 **Food, Gelaterie & Retail**: Unità di misura libere (kg, lt, pz), scontrini/chiusure cassa giornaliere contanti/POS/Satispay con scorporo IVA multi-aliquota (4%, 10%, 22%), assenza forzata di contratti.
+4. 🛠️ **Manutenzioni & Riparazioni**: Tracciamento ticket guasti, calcolo Tempo Medio di Risoluzione (TMR) in ore, monitoraggio violazioni SLA (urgente/alta/media).
+5. 📦 **Commercio B2B & Distribuzione**: Cataloghi con prezzo minimo e soglia alert per agenti, ripartizione provvigionale co-venditore (es. 70/30), acconti con riconciliazione automatica su rate multiple e provvigioni liquidate solo su incassato reale.
+
+---
+
+## 6. EMISSIONE DEL REPORT FINALE
+
+Al termine dell'ispezione, l'agente emette la **Relazione di Perizia Forense da Principal Architect & CTO** con:
+* Tabella dello stato di avanzamento per ciascun punto del preventivo/specifica (Gestito vs Non Gestito vs In Roadmap).
+* Dettaglio dell'esistenza e robustezza dei test agnostici per ciascun settore PMI.
+* Punteggio di salute complessivo calcolato in modo deterministico.
+* Roadmap esecutiva chiara e azionabile per i rilasci successivi.

@@ -16,7 +16,7 @@
   import type { CustomFieldDefinition, CustomFieldValues } from '$lib/types/customFields';
   import CustomFieldsRenderer from '$lib/components/CustomFieldsRenderer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { FormField } from '$lib';
+  import { FormField, Autocomplete, type AutocompleteOption } from '$lib';
   import { 
     List, 
     Pencil, 
@@ -45,6 +45,20 @@
   let users = $state<CacheLookupItem[]>([]);
   let teams = $state<CacheLookupItem[]>([]);
   let vehicles = $state<CacheLookupItem[]>([]);
+
+  let userOptions = $derived<AutocompleteOption[]>(
+    users.map(u => ({ id: u.id, label: u.name }))
+  );
+
+  let teamOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: 'Nessuna squadra' },
+    ...teams.map(tm => ({ id: tm.id, label: tm.name }))
+  ]);
+
+  let vehicleOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: 'Nessun mezzo assegnato' },
+    ...vehicles.map(vh => ({ id: vh.id, label: vh.name }))
+  ]);
 
   let allActivityTypes = $state<ActivityType[]>([]);
   let customFieldsList = $state<CustomFieldDefinition[]>([]);
@@ -496,38 +510,31 @@
 
         <div class="form-grid-3 mt-16">
           <FormField id="assignedUid" label="Operatore Responsabile *" required>
-            <select 
-              id="assignedUid"
-              class="form-control"
-              bind:value={assignedUid}
-              disabled={!canReassign}
-              required
-            >
-              {#each users as u}
-                <option value={u.id}>{u.name}</option>
-              {/each}
-            </select>
+            <Autocomplete 
+              options={userOptions} 
+              bind:value={assignedUid} 
+              disabled={!canReassign} 
+              placeholder="Seleziona operatore..." 
+            />
           </FormField>
 
           {#if teams.length > 0}
             <FormField id="selectedTeamId" label="Squadra Operativa (Opzionale)">
-              <select id="selectedTeamId" class="form-control" bind:value={selectedTeamId}>
-                <option value="">Nessuna squadra</option>
-                {#each teams as tm}
-                  <option value={tm.id}>{tm.name}</option>
-                {/each}
-              </select>
+              <Autocomplete 
+                options={teamOptions} 
+                bind:value={selectedTeamId} 
+                placeholder="Seleziona squadra..." 
+              />
             </FormField>
           {/if}
 
           {#if vehicles.length > 0}
             <FormField id="selectedVehicleId" label="Mezzo Aziendale (Opzionale)">
-              <select id="selectedVehicleId" class="form-control" bind:value={selectedVehicleId}>
-                <option value="">Nessun mezzo assegnato</option>
-                {#each vehicles as vh}
-                  <option value={vh.id}>{vh.name}</option>
-                {/each}
-              </select>
+              <Autocomplete 
+                options={vehicleOptions} 
+                bind:value={selectedVehicleId} 
+                placeholder="Seleziona mezzo..." 
+              />
             </FormField>
           {/if}
         </div>

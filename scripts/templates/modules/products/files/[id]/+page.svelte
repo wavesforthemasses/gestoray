@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { ProductsService } from '../products.service';
-  import type { ProductItem } from '../schema';
+  import type { ProductItem, ProductUsageType } from '../schema';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { CustomFieldsService } from '$lib/services/customFieldsService';
   import { ProductSettingsService, type ProductFieldsSettings, DEFAULT_PRODUCT_FIELDS_SETTINGS } from '$lib/services/productSettingsService';
@@ -28,7 +28,10 @@
     CreditCard, 
     Minus,
     AlertTriangle,
-    CheckCircle2
+    CheckCircle2,
+    ArrowLeftRight,
+    ArrowUpRight,
+    ArrowDownLeft
   } from '@lucide/svelte';
 
   const productId = $page.params.id as string;
@@ -64,6 +67,18 @@
   function printDetails() {
     if (typeof window !== 'undefined') window.print();
   }
+
+  function getUsageBadge(usage?: ProductUsageType) {
+    switch (usage) {
+      case 'sale':
+        return { label: 'Solo Vendita (Clienti)', class: 'usage-sale', icon: ArrowUpRight };
+      case 'purchase':
+        return { label: 'Solo Acquisto (Fornitori)', class: 'usage-purchase', icon: ArrowDownLeft };
+      case 'both':
+      default:
+        return { label: 'Vendita & Acquisto (Entrambi)', class: 'usage-both', icon: ArrowLeftRight };
+    }
+  }
 </script>
 
 <svelte:head>
@@ -85,6 +100,7 @@
       <AlertCircle size={16} /> Articolo non trovato o eliminato.
     </div>
   {:else}
+    {@const usageBadge = getUsageBadge(product.usageType)}
     <!-- HEADER -->
     <header class="detail-header card">
       <div class="header-left">
@@ -102,6 +118,10 @@
               <Zap size={14} /> Bene Digitale
             </span>
           {/if}
+
+          <span class="usage-badge {usageBadge.class}">
+            <usageBadge.icon size={13} /> {usageBadge.label}
+          </span>
 
           {#if fieldSettings.sku.visible && product.sku}
             <span class="sku-tag">SKU: {product.sku}</span>
@@ -131,8 +151,26 @@
       </h3>
       
       <div class="info-row">
-        <span class="info-label">Prezzo Base / Listino</span>
+        <span class="info-label">Prezzo di Vendita Listino</span>
         <span class="info-val font-bold text-primary">€ {(product.price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })} / {product.unit}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Costo Indicativo d'Acquisto</span>
+        <span class="info-val font-semibold text-slate-700">
+          {#if product.purchasePrice !== undefined && product.purchasePrice > 0}
+            € {product.purchasePrice.toLocaleString('it-IT', { minimumFractionDigits: 2 })} / {product.unit}
+          {:else}
+            Non specificato (Usa prezzo base)
+          {/if}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Destinazione d'Uso</span>
+        <span class="info-val font-medium">
+          {product.usageType === 'sale' ? 'Solo Vendita a Clienti' : product.usageType === 'purchase' ? 'Solo Acquisto da Fornitori' : 'Vendita a Clienti & Acquisto Fornitori (Entrambi)'}
+        </span>
       </div>
 
       <div class="info-row">
@@ -202,56 +240,31 @@
           </div>
         </div>
 
-        {#if product.minStockThreshold !== undefined && product.minStockThreshold > 0}
-          <div class="info-row">
-            <span class="info-label">Soglia Scorta Minima</span>
-            <span class="info-val">{UnitsOfMeasureService.formatQuantity(product.minStockThreshold, product.unit)} {product.unit}</span>
-          </div>
-        {/if}
+        <div class="info-row">
+          <span class="info-label">Soglia Minima Alert</span>
+          <span class="info-val font-semibold">{product.minStockThreshold || 0} {product.unit}</span>
+        </div>
 
         <div class="info-row">
-          <span class="info-label">Vendita in Sottoscorta</span>
-          <span class="info-val font-semibold {product.allowOutOfStockSale !== false ? 'text-green' : 'text-red'}">
-            {product.allowOutOfStockSale !== false ? 'Consentita (Preordine / Backorder)' : 'Bloccata se esaurito'}
+          <span class="info-label">Politica Esaurito</span>
+          <span class="info-val">
+            {product.allowOutOfStockSale !== false ? 'Vendita consentita anche se <= 0 (Backorder abilitato)' : 'Vendita bloccata a disponibilità zero'}
           </span>
-        </div>
-      {/if}
-
-      {#if fieldSettings.description.visible && product.description}
-        <div class="notes-box">
-          <strong>Descrizione & Specifiche Tecniche:</strong>
-          <p>{product.description}</p>
         </div>
       {/if}
     </div>
 
-    <!-- CUSTOM FIELDS -->
-    {#if customFieldsList.length > 0 && product.customFields}
-      <div class="card form-card">
-        <h3 class="card-title">
-          <SlidersHorizontal size={18} /> Campi Personalizzati
-        </h3>
-        <CustomFieldsRenderer fields={customFieldsList} values={product.customFields} readonly={true} />
-      </div>
-    {/if}
-
-    <!-- SYSTEM LEDGER AUDIT TIMELINE -->
-    <div class="card timeline-section">
-      <div class="timeline-header">
-        <h3 class="card-title">
-          <History size={18} class="text-primary" /> Cronologia Modifiche & Audit Trail
-        </h3>
-        <p class="card-subtitle">Tracciamento immutabile a doppia scrittura nel Ledger di Sistema.</p>
-      </div>
-
+    <!-- AUDIT TRAIL / TIMELINE (Principio 22) -->
+    <div class="card info-card">
+      <h3 class="card-title">
+        <History size={18} /> Cronologia Modifiche & Audit Trail (Ledger)
+      </h3>
       <VersionTimeline 
-        timelineList={timelineList} 
-        entityId={productId}
-        entityCollection="products"
-        entityLabel={product.name}
-        activeRole={activeRoleState.role || ''}
-        currentUid={authState.user?.uid || ''}
-        fieldLabelMap={PRODUCT_FIELD_LABELS}
+        {timelineList} 
+        entityId={productId} 
+        entityCollection="products" 
+        entityLabel={product.name} 
+        fieldLabelMap={PRODUCT_FIELD_LABELS} 
         onreverted={loadData}
       />
     </div>
@@ -259,65 +272,217 @@
 </div>
 
 <style>
-  .product-detail-page { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.5rem; }
-  .back-link { color: var(--color-neutral-500); font-size: 0.85rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-  .back-link:hover { color: var(--color-primary-600); }
+  .product-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+  }
 
-  .card { background: white; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); }
-  .card-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 0.8rem 0; color: var(--color-neutral-900); display: flex; align-items: center; gap: 8px; }
-  .card-subtitle { font-size: 0.82rem; color: var(--color-neutral-500); margin: 0.2rem 0 1rem 0; }
+  .btn-module-list {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md, 8px);
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    color: var(--color-neutral-600, #475569);
+    cursor: pointer;
+    text-decoration: none;
+  }
 
-  .detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; }
-  .header-left { display: flex; flex-direction: column; gap: 0.4rem; }
-  .header-badges { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-  
-  .type-badge { font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; }
-  .product-badge { background: #e0e7ff; color: #4338ca; }
-  .service-badge { background: #dbeafe; color: #1d4ed8; }
-  .digital-badge { background: #fef3c7; color: #b45309; }
+  .btn-module-list:hover {
+    background: var(--color-neutral-50, #f8fafc);
+    color: var(--color-neutral-900, #0f172a);
+  }
 
-  .sku-tag { font-family: monospace; font-size: 0.8rem; font-weight: 700; color: var(--color-neutral-600); background: var(--color-neutral-100); padding: 0.25rem 0.5rem; border-radius: 4px; }
-  .page-title { font-size: 1.6rem; font-weight: 800; margin: 0.2rem 0 0 0; color: var(--color-neutral-900); }
-  .page-subtitle { color: var(--color-neutral-500); font-size: 0.9rem; margin: 0; }
+  .card {
+    background: #ffffff;
+    border: 1px solid var(--color-neutral-200, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
 
-  .header-actions { display: flex; gap: 0.8rem; align-items: center; }
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
 
-  .info-card { display: flex; flex-direction: column; gap: 0.8rem; }
-  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--color-neutral-100); }
-  .info-row:last-child { border-bottom: none; }
-  .info-label { font-size: 0.88rem; color: var(--color-neutral-500); font-weight: 600; }
-  .info-val { font-size: 0.95rem; color: var(--color-neutral-800); }
-  
-  .highlight-minimo { background: #fffbeb; padding: 0.8rem 1rem; border-radius: var(--radius-md); border: 1px solid #fde68a; }
+  .header-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .product-badge { background-color: #e0e7ff; color: #4338ca; }
+  .service-badge { background-color: #fef3c7; color: #b45309; }
+  .digital-badge { background-color: #ede9fe; color: #6d28d9; }
+
+  .usage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .usage-both { background-color: #d1fae5; color: #047857; }
+  .usage-sale { background-color: #dbeafe; color: #1d4ed8; }
+  .usage-purchase { background-color: #ffedd5; color: #c2410c; }
+
+  .sku-tag {
+    font-family: monospace;
+    font-size: 12px;
+    background-color: var(--color-neutral-100, #f1f5f9);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--color-neutral-600, #475569);
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-neutral-900, #0f172a);
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--color-neutral-500, #64748b);
+    margin: 4px 0 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--radius-md, 8px);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+  }
+
+  .btn-primary { background-color: var(--color-primary-600, #2563eb); color: #ffffff; }
+  .btn-secondary { background-color: #ffffff; border: 1px solid var(--color-neutral-300, #cbd5e1); color: var(--color-neutral-700, #334155); }
+
+  .info-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-neutral-800, #1e293b);
+    margin: 0 0 4px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-neutral-100, #f1f5f9);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+
+  .info-label {
+    color: var(--color-neutral-500, #64748b);
+  }
+
+  .info-val {
+    color: var(--color-neutral-900, #0f172a);
+  }
+
+  .text-primary { color: var(--color-primary-600, #2563eb); }
+  .font-bold { font-weight: 700; }
+  .font-semibold { font-weight: 600; }
+  .font-medium { font-weight: 500; }
+  .uppercase { text-transform: uppercase; }
+
+  .stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .stock-ok { background-color: #d1fae5; color: #065f46; }
+  .stock-warning { background-color: #fef3c7; color: #92400e; }
+  .stock-danger { background-color: #fee2e2; color: #991b1b; }
+
+  .untracked-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--color-neutral-400, #94a3b8);
+  }
+
+  .highlight-minimo {
+    background-color: #fffbeb;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
+  }
+
+  .icon-amber { color: #f59e0b; }
   .text-amber { color: #b45309; }
   .flex-align-gap { display: flex; align-items: center; gap: 6px; }
 
-  .stock-badge { font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; }
-  .stock-ok { background: #dcfce7; color: #15803d; }
-  .stock-warning { background: #fef3c7; color: #b45309; }
-  .stock-danger { background: #fee2e2; color: #b91c1c; }
-  .untracked-pill { font-size: 0.82rem; font-weight: 600; background: var(--color-neutral-100); color: var(--color-neutral-600); padding: 0.3rem 0.65rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; }
+  .loader-box {
+    padding: 40px;
+    text-align: center;
+    color: var(--color-neutral-500, #64748b);
+  }
 
-  .notes-box { margin-top: 0.5rem; padding: 1rem; background: var(--color-neutral-50); border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200); }
-  .notes-box strong { display: block; font-size: 0.85rem; color: var(--color-neutral-700); margin-bottom: 0.4rem; }
-  .notes-box p { margin: 0; font-size: 0.88rem; color: var(--color-neutral-600); white-space: pre-wrap; }
+  .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-neutral-200, #e2e8f0);
+    border-top-color: var(--color-primary-600, #2563eb);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
 
-  .timeline-section { border-top: 2px solid var(--color-primary-500); }
-
-  .btn { padding: 0.6rem 1.2rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--color-primary-600); color: white; border: none; }
-  .btn-primary:hover { background: var(--color-primary-700); }
-  .btn-secondary { background: var(--color-neutral-100); color: var(--color-neutral-800); border: 1px solid var(--color-neutral-300); }
-  .btn-secondary:hover { background: var(--color-neutral-200); }
-
-  .alert { padding: 0.8rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .error-box { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .loader-box { text-align: center; padding: 3rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--color-neutral-200); }
-  .font-mono { font-family: monospace; font-weight: 600; }
-  .font-bold { font-weight: 700; }
-  .font-semibold { font-weight: 600; }
-  .uppercase { text-transform: uppercase; }
-  .text-primary { color: var(--color-primary-600); }
-  .text-green { color: #15803d; }
-  .text-red { color: #b91c1c; }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>

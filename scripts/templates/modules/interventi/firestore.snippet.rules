@@ -3,14 +3,6 @@ match /interventions/{interventionId} {
   allow create, update: if isAuth();
   allow delete: if hasRole('superadmin') || isDirezione();
 }
-match /teams/{teamId} {
-  allow read: if isAuth();
-  allow create, update, delete: if isAdmin() || isDirezione();
-}
-match /vehicles/{vehicleId} {
-  allow read: if isAuth();
-  allow create, update, delete: if isAdmin() || isDirezione();
-}
 match /settings/interventi {
   allow read: if isAuth();
   allow write: if hasRole('superadmin') || isDirezione() || isAdmin();

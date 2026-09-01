@@ -234,7 +234,9 @@
           // @ts-ignore
           const mod = await import(/* @vite-ignore */ servicePath);
           if (mod?.ProductsService) {
-            productsCatalog = await mod.ProductsService.getProducts();
+            productsCatalog = mod.ProductsService.getSaleableProducts 
+              ? await mod.ProductsService.getSaleableProducts() 
+              : (await mod.ProductsService.getProducts()).filter((p: any) => p.canBeSold !== false && p.usageType !== 'purchase');
           } else {
             productsCatalog = await CacheLookupService.getLookup('products');
           }

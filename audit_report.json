@@ -1,12 +1,13 @@
 {
   "summary": {
-    "totalChecks": 62,
+    "totalChecks": 52,
     "passedChecks": 52,
     "failedChecks": 0,
-    "warnings": 10
+    "warnings": 0
   },
   "modules": {
     "activities": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -15,6 +16,7 @@
       "hasBridge": true
     },
     "chart": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": false,
@@ -23,6 +25,7 @@
       "hasBridge": false
     },
     "clients": {
+      "isCore": true,
       "registered": false,
       "hasTemplate": false,
       "hasService": true,
@@ -31,14 +34,16 @@
       "hasBridge": false
     },
     "contacts": {
+      "isCore": true,
       "registered": false,
       "hasTemplate": false,
-      "hasService": false,
+      "hasService": true,
       "hasSchema": false,
       "hasTests": false,
       "hasBridge": false
     },
     "contracts": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -47,6 +52,7 @@
       "hasBridge": true
     },
     "deadlines": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -55,6 +61,7 @@
       "hasBridge": true
     },
     "payments": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -63,6 +70,7 @@
       "hasBridge": true
     },
     "places": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -71,6 +79,7 @@
       "hasBridge": true
     },
     "products": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -79,6 +88,7 @@
       "hasBridge": true
     },
     "profile": {
+      "isCore": true,
       "registered": false,
       "hasTemplate": false,
       "hasService": true,
@@ -87,14 +97,16 @@
       "hasBridge": false
     },
     "qualifications": {
+      "isCore": true,
       "registered": false,
       "hasTemplate": false,
-      "hasService": false,
+      "hasService": true,
       "hasSchema": false,
       "hasTests": false,
       "hasBridge": false
     },
     "scheduling": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -102,7 +114,17 @@
       "hasTests": true,
       "hasBridge": true
     },
+    "settings": {
+      "isCore": true,
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": false,
+      "hasSchema": false,
+      "hasTests": true,
+      "hasBridge": false
+    },
     "teams": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -111,6 +133,7 @@
       "hasBridge": true
     },
     "tickets": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -119,6 +142,16 @@
       "hasBridge": true
     },
     "todo": {
+      "isCore": true,
+      "registered": false,
+      "hasTemplate": false,
+      "hasService": true,
+      "hasSchema": false,
+      "hasTests": false,
+      "hasBridge": false
+    },
+    "users": {
+      "isCore": true,
       "registered": false,
       "hasTemplate": false,
       "hasService": true,
@@ -127,6 +160,7 @@
       "hasBridge": false
     },
     "vehicles": {
+      "isCore": false,
       "registered": true,
       "hasTemplate": true,
       "hasService": true,
@@ -228,16 +262,6 @@
       "missingFiles": [],
       "divergedFiles": []
     },
-    "clients": {
-      "status": "NO_TEMPLATE_FILES_DIR",
-      "missingFiles": [],
-      "divergedFiles": []
-    },
-    "contacts": {
-      "status": "NO_TEMPLATE_FILES_DIR",
-      "missingFiles": [],
-      "divergedFiles": []
-    },
     "contracts": {
       "status": "PERFECT_SYNC",
       "missingFiles": [],
@@ -263,16 +287,6 @@
       "missingFiles": [],
       "divergedFiles": []
     },
-    "profile": {
-      "status": "NO_TEMPLATE_FILES_DIR",
-      "missingFiles": [],
-      "divergedFiles": []
-    },
-    "qualifications": {
-      "status": "NO_TEMPLATE_FILES_DIR",
-      "missingFiles": [],
-      "divergedFiles": []
-    },
     "scheduling": {
       "status": "PERFECT_SYNC",
       "missingFiles": [],
@@ -288,11 +302,6 @@
       "missingFiles": [],
       "divergedFiles": []
     },
-    "todo": {
-      "status": "NO_TEMPLATE_FILES_DIR",
-      "missingFiles": [],
-      "divergedFiles": []
-    },
     "vehicles": {
       "status": "PERFECT_SYNC",
       "missingFiles": [],
@@ -304,7 +313,7 @@
     "missingRules": []
   },
   "numericsSafety": {
-    "filesScanned": 351,
+    "filesScanned": 359,
     "unsafeToFixed": []
   },
   "uiEmojis": {

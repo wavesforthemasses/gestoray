@@ -1,6 +1,7 @@
 export type ProductType = 'product' | 'service' | 'digital';
 export type BillingType = 'one_off' | 'hourly' | 'recurring';
 export type RecurrenceInterval = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type ProductUsageType = 'both' | 'sale' | 'purchase';
 
 export interface MinimoFatturabileConfig {
   enabled: boolean;
@@ -15,9 +16,15 @@ export interface ProductItem {
   name: string;
   category: string;
   type?: ProductType; // 'product' (default) | 'service' | 'digital'
-  price: number;
-  unit: string; // 'pz', 'kg', 'm', 'l', 'ora', 'mc', 'mq', 'giorno', 'mese', 'forfait', etc.
+  price: number;      // Prezzo di vendita di listino al cliente
+  purchasePrice?: number; // Prezzo/costo indicativo di acquisto da fornitore
+  unit: string;       // 'pz', 'kg', 'm', 'l', 'ora', 'mc', 'mq', 'giorno', 'mese', 'forfait', etc.
   
+  // Destinazione d'Uso & Disponibilità nei Moduli (Vendita / Acquisto / Entrambi)
+  usageType?: ProductUsageType; // 'both' (default) | 'sale' | 'purchase'
+  canBeSold?: boolean;          // true se disponibile per preventivi/contratti clienti (default true)
+  canBePurchased?: boolean;     // true se disponibile per ordini fornitore PO (default true)
+
   // Gestione Giacenza & Scorte (Disaccoppiata)
   trackStock?: boolean;             // Se false, nessun monitoraggio di giacenza (default true per product, false per service/digital)
   stockQty?: number;                // Giacenza numerica (può essere <= 0 con backorder, default 0)

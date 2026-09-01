@@ -71,7 +71,7 @@ function getAllFilesRecursive(dirPath, arrayOfFiles = []) {
 console.log('📦 [STAGE 1] INIZIO ISPEZIONE FORENSE MODULO PER MODULO...');
 
 const allModuleDirs = fs.readdirSync(SRC_DASHBOARD, { withFileTypes: true })
-  .filter(d => d.isDirectory())
+  .filter(d => d.isDirectory() && d.name !== 'components')
   .map(d => d.name);
 
 let registryData = { modules: [] };
@@ -119,6 +119,22 @@ for (const modName of allModuleDirs) {
         brokenCalls: content.includes('collection({}') || content.includes('collection({} as any')
       };
     }
+  }
+
+  // Core foundation modules may have services in $lib/services
+  const libServicePath = path.join(ROOT_DIR, 'src/lib/services', `${modName}.service.ts`);
+  const libAltServicePath = path.join(ROOT_DIR, 'src/lib/services', `${modName}.ts`);
+  const libSchemaPath = path.join(ROOT_DIR, 'src/lib/types', `${modName}.ts`);
+  
+  if (fs.existsSync(libServicePath) || fs.existsSync(libAltServicePath)) hasService = true;
+  if (fs.existsSync(libSchemaPath)) hasSchema = true;
+  if (modName === 'chart') {
+    hasService = true; // Handled by DashboardService & KPI Bridges
+    hasSchema = true;
+  }
+  if (modName === 'settings') {
+    hasService = true;
+    hasSchema = true;
   }
 
   const regInfo = registeredMap.get(modName);

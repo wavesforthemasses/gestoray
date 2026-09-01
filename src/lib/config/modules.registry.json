@@ -917,17 +917,27 @@
           "plate": {
             "type": "string",
             "description": "Targa del veicolo",
-            "tags": ["search", "display", "sort"]
+            "tags": [
+              "search",
+              "display",
+              "sort"
+            ]
           },
           "model": {
             "type": "string",
             "description": "Modello e marca del mezzo",
-            "tags": ["search", "display"]
+            "tags": [
+              "search",
+              "display"
+            ]
           },
           "status": {
             "type": "string",
             "description": "Stato del mezzo (disponibile, in_uso, in_manutenzione)",
-            "tags": ["filter:status", "kpi:available_vehicles"]
+            "tags": [
+              "filter:status",
+              "kpi:available_vehicles"
+            ]
           }
         }
       }
@@ -968,17 +978,25 @@
           "title": {
             "type": "string",
             "description": "Oggetto della scadenza",
-            "tags": ["search", "display"]
+            "tags": [
+              "search",
+              "display"
+            ]
           },
           "expiryDate": {
             "type": "date",
             "description": "Data di scadenza",
-            "tags": ["filter:date", "sort:default"]
+            "tags": [
+              "filter:date",
+              "sort:default"
+            ]
           },
           "status": {
             "type": "string",
             "description": "Stato scadenza (attiva, completata, archiviata)",
-            "tags": ["filter:status"]
+            "tags": [
+              "filter:status"
+            ]
           }
         }
       }
@@ -1019,12 +1037,283 @@
           "title": {
             "type": "string",
             "description": "Titolo intervento o attività pianificata",
-            "tags": ["search", "display"]
+            "tags": [
+              "search",
+              "display"
+            ]
           },
           "scheduledDate": {
             "type": "date",
             "description": "Data pianificata",
-            "tags": ["filter:date", "sort:default"]
+            "tags": [
+              "filter:date",
+              "sort:default"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "warehouse",
+      "label": "Magazzino",
+      "description": "Gestione magazzino, giacenze, fornitori, ordini di acquisto e movimentazioni",
+      "icon": "Warehouse",
+      "requirements": [
+        "products"
+      ],
+      "path": "/dashboard/warehouse",
+      "kpiBridgePath": "/dashboard/warehouse/warehouse.kpi.bridge.ts",
+      "settingsCard": {
+        "title": "Configurazione Magazzino & Acquisti",
+        "description": "Prefissi numerazione ordini e movimenti, gestione alert sottoscorta e metodo di valorizzazione giacenze.",
+        "icon": "Warehouse",
+        "path": "/dashboard/settings/warehouse"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "total_stock_value",
+          "title": "Valore Magazzino",
+          "subtitle": "Valorizzazione totale merci a magazzino",
+          "icon": "Warehouse",
+          "format": "currency",
+          "isCurrency": true,
+          "valueKey": "totalStockValue",
+          "aggregation": {
+            "collection": "warehouse_inventory",
+            "type": "sum",
+            "sumFields": [
+              "totalValuation"
+            ],
+            "dateFields": [
+              "updatedAt",
+              "edits.updatedAt"
+            ]
+          }
+        },
+        {
+          "id": "low_stock_items",
+          "title": "Articoli Sottoscorta",
+          "subtitle": "Articoli con giacenza sotto la soglia minima",
+          "icon": "AlertTriangle",
+          "valueKey": "lowStockCount",
+          "aggregation": {
+            "collection": "warehouse_inventory",
+            "type": "count",
+            "dateFields": [
+              "updatedAt"
+            ]
+          }
+        },
+        {
+          "id": "pending_purchase_orders",
+          "title": "Ordini Fornitore Aperti",
+          "subtitle": "Ordini di acquisto in attesa di ricezione",
+          "icon": "Truck",
+          "valueKey": "pendingOrdersCount",
+          "aggregation": {
+            "collection": "purchase_orders",
+            "type": "count",
+            "dateFields": [
+              "orderDate",
+              "createdAt"
+            ]
+          }
+        }
+      ],
+      "anonymization": {
+        "collectionName": "suppliers",
+        "linkFieldPath": "id",
+        "redactFields": [
+          {
+            "fieldPath": "contactPerson",
+            "replacement": "ANONIMIZZATO"
+          },
+          {
+            "fieldPath": "email",
+            "replacement": ""
+          },
+          {
+            "fieldPath": "phone",
+            "replacement": ""
+          },
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          }
+        ]
+      },
+      "schema": {
+        "fields": {
+          "productName": {
+            "type": "string",
+            "description": "Nome del prodotto a magazzino",
+            "tags": [
+              "search",
+              "display",
+              "sort"
+            ]
+          },
+          "sku": {
+            "type": "string",
+            "description": "Codice SKU articolo",
+            "tags": [
+              "search",
+              "filter:sku"
+            ]
+          },
+          "stockQty": {
+            "type": "number",
+            "description": "Quantità fisica presente a magazzino",
+            "tags": [
+              "kpi:stock",
+              "sort"
+            ]
+          },
+          "availableQty": {
+            "type": "number",
+            "description": "Quantità disponibile non allocata",
+            "tags": [
+              "kpi:available_stock"
+            ]
+          },
+          "avgUnitCost": {
+            "type": "currency",
+            "description": "Costo Medio Ponderato (CMP) d'acquisto",
+            "tags": [
+              "kpi:cost"
+            ]
+          },
+          "totalValuation": {
+            "type": "currency",
+            "description": "Valore economico totale della giacenza",
+            "tags": [
+              "kpi:total_stock_value",
+              "chart:aggregate"
+            ]
+          },
+          "isLowStock": {
+            "type": "boolean",
+            "description": "Flag indicatore articolo sotto scorta minima",
+            "tags": [
+              "filter:low_stock"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "targets",
+      "label": "Target & Budget",
+      "description": "Configurazione e monitoraggio dei target di performance temporali e avanzamento KPI",
+      "icon": "Target",
+      "requirements": [
+        "chart"
+      ],
+      "path": "/dashboard/targets",
+      "kpiBridgePath": "/dashboard/targets/targets.kpi.bridge.ts",
+      "settingsCard": {
+        "title": "Configurazione Target & Budget",
+        "description": "Piani di target (settimanali, mensili, annuali), metriche KPI assegnate, finestre di compilazione e ruoli coinvolti.",
+        "icon": "Target",
+        "path": "/dashboard/settings/targets"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "targets_achievement_rate",
+          "title": "Completamento Target",
+          "subtitle": "Media avanzamento obiettivi periodo attivo",
+          "icon": "Target",
+          "format": "percent",
+          "valueKey": "targets_achievement_rate",
+          "aggregation": {
+            "collection": "targets_records",
+            "type": "count",
+            "dateFields": [
+              "startDate",
+              "edits.createdAt",
+              "edits.updatedAt"
+            ]
+          }
+        },
+        {
+          "id": "targets_total_budget",
+          "title": "Budget Totale Obiettivo",
+          "subtitle": "Totale budget economico fissato nel periodo",
+          "icon": "TrendingUp",
+          "format": "currency",
+          "isCurrency": true,
+          "valueKey": "targets_total_budget",
+          "aggregation": {
+            "collection": "targets_records",
+            "type": "sum",
+            "sumFields": [
+              "targetValues.vss",
+              "targetValues.total_incassato"
+            ],
+            "dateFields": [
+              "startDate",
+              "edits.createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "planName": {
+            "type": "string",
+            "description": "Nome del piano target assegnato",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "periodKey": {
+            "type": "string",
+            "description": "Identificativo temporale (es. 2026-09 o 2026-W36)",
+            "tags": [
+              "search",
+              "filter:period",
+              "sort"
+            ]
+          },
+          "subjectName": {
+            "type": "string",
+            "description": "Nome del soggetto assegnatario (utente, squadra o azienda)",
+            "tags": [
+              "search",
+              "display",
+              "sort"
+            ]
+          },
+          "granularity": {
+            "type": "string",
+            "description": "Granularità temporale del piano (settimanale, mensile, annuale)",
+            "tags": [
+              "filter:granularity"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato di compilazione del target (draft, submitted, approved, locked)",
+            "tags": [
+              "filter:status"
+            ]
           }
         }
       }

@@ -9,7 +9,7 @@
   import { TeamSettingsService } from '../../teamSettingsService';
   import type { TeamSettings, TeamStatus, TeamMember } from '../../schema';
   import { pageTitle } from '$lib/stores/page';
-  import { Card, Button } from '$lib';
+  import { Card, Button, Autocomplete, type AutocompleteOption } from '$lib';
   import { toast } from '$lib/stores/toast.svelte';
   import { Users, List, Save, Plus, Trash2, UserCheck, Shield, Truck } from '@lucide/svelte';
 
@@ -55,6 +55,16 @@
   let memberRoleInTeam = $state('Operatore');
 
   let labels = $derived(TeamSettingsService.getLabels(settings));
+
+  let vehicleOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Nessun Mezzo Assegnato --' },
+    ...availableVehicles.map(v => ({ id: v.id, label: v.name }))
+  ]);
+
+  let userOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Seleziona Operatore --' },
+    ...availableUsers.map(u => ({ id: u.id, label: u.name, sublabel: u.email }))
+  ]);
 
   onMount(async () => {
     try {
@@ -238,12 +248,16 @@
             {#if hasVehiclesModule}
               <div class="form-group">
                 <label for="vehicle">Mezzo / Furgone Assegnato</label>
-                <select id="vehicle" value={vehicleId} onchange={handleVehicleChange} class="form-control">
-                  <option value="">-- Nessun Mezzo Assegnato --</option>
-                  {#each availableVehicles as vehicle}
-                    <option value={vehicle.id}>{vehicle.name}</option>
-                  {/each}
-                </select>
+                <Autocomplete 
+                  options={vehicleOptions} 
+                  value={vehicleId} 
+                  onchange={(selectedId) => {
+                    vehicleId = selectedId;
+                    const v = availableVehicles.find(x => x.id === selectedId);
+                    vehicleName = v ? v.name : '';
+                  }} 
+                  placeholder="Seleziona mezzo..." 
+                />
               </div>
             {/if}
 
@@ -275,12 +289,11 @@
           <div class="add-member-box">
             <div class="form-group flex-2">
               <label for="selectUser">Seleziona Operatore</label>
-              <select id="selectUser" bind:value={selectedUserId} class="form-control">
-                <option value="">-- Seleziona Operatore --</option>
-                {#each availableUsers as user}
-                  <option value={user.id}>{user.name}</option>
-                {/each}
-              </select>
+              <Autocomplete 
+                options={userOptions} 
+                bind:value={selectedUserId} 
+                placeholder="Seleziona operatore..." 
+              />
             </div>
 
             <div class="form-group flex-1">

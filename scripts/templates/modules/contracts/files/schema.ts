@@ -1,5 +1,5 @@
 export type ContractType = 'Ricorrente' | 'Non Ricorrente';
-export type ContractStatus = 'bozza' | 'inviato' | 'in_approvazione' | 'approvato' | 'attivo' | 'accettato' | 'in_scadenza' | 'scaduto' | 'rifiutato' | 'sospeso' | 'draft' | 'pending' | 'approved';
+export type ContractStatus = 'bozza' | 'inviato' | 'in_approvazione' | 'approvato' | 'attivo' | 'accettato' | 'in_scadenza' | 'scaduto' | 'rifiutato' | 'annullato' | 'sospeso' | 'draft' | 'pending' | 'approved';
 export type RecurringFrequency = 'mensile' | 'bimestrale' | 'trimestrale' | 'semestrale' | 'annuale' | 'una_usa';
 export type NonRecurringEndDateMode = 'hidden' | 'optional' | 'required';
 
@@ -112,5 +112,7 @@ export interface ContractItem {
     commissionTotal?: number;
     commissionPrimary?: number;
     commissionSecondary?: number;
+    stockStatus?: 'pending' | 'depleted' | 'restocked' | 'exempt';
+    stockMovementIds?: string[];
   };
 }

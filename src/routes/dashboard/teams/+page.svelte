@@ -405,6 +405,7 @@
                       <div 
                         class="member-row" 
                         class:is-leader-row={member.isLeader}
+                        role="listitem"
                         draggable="true"
                         ondragstart={(e) => handleDragStart(e, member.userId, member.userName, team.id)}
                       >
@@ -479,6 +480,7 @@
             {#each unassignedWorkers as worker (worker.uid)}
               <div 
                 class="unassigned-card"
+                role="listitem"
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, worker.uid, `${worker.nome || ''} ${worker.cognome || ''}`.trim() || worker.email || worker.uid)}
               >

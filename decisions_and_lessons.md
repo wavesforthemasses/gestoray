@@ -201,3 +201,12 @@
   3. **Firestore Array-Contains-Any & Chunking a 30 Elementi**: Le query NoSQL per l'operatore utilizzano `where('assigneeFilterKeys', 'array-contains-any', filterTargets)`. Per superare in totale sicurezza il limite nativo di 30 elementi di Firestore per le query `array-contains-any`, `chunkArray(targets, 30)` suddivide i target ed esegue le query in parallelo deduplicando i risultati in memoria.
   4. **Sincronizzazione Deterministica Monodirezionale (`syncActivityAssignees`)**: I campi scalari legacy (`assignedUid`, `teamId`, `vehicleId`) e le chiavi indicizzate (`assigneeFilterKeys`) sono sempre derivati deterministicamente dalla matrice `assignedEntities`.
   5. **Plugin Decoupling via Dynamic Conditional Imports**: Moduli opzionali come `teams` e `vehicles` non sono mai importati staticamente dal Core. La comunicazione avviene tramite dynamic import protetto (`isModuleActive('teams')`), garantendo che il sistema funzioni al 100% anche se i moduli opzionali vengono disinstallati.
+
+---
+
+### 25. Heuristic Anti-Select Statico per Entità Dinamiche & Autocomplete Obbligatorio
+- **Lezione**: L'utilizzo di tag `<select>` HTML nativi per la selezione di entità a crescita dinamica o collezioni NoSQL non vincolate (es. Fornitori, Prodotti a catalogo, Clienti, Luoghi/Cantieri, Collaboratori/Utenti, Mezzi) degrada rapidamente l'esperienza utente su mobile e desktop quando l'archivio supera poche decine di elementi, rendendo impossibile la ricerca testuale e appesantendo il DOM.
+- **Regola**:
+  1. **Tag `<select>` Esclusivo per Enumerazioni Chiuse**: L'uso di `<select>` nativo è consentito unicamente per enumerazioni statiche finite e determinate a compile-time (es. Stati documento come `'bozza' | 'approvato'`, priorità, frequenza di fatturazione, filtri temporali a 3 opzioni).
+  2. **Autocomplete Ricercabile Obbligatorio per Entità Dinamiche**: Ogni campo di selezione che referenzia collezioni dinamiche (`products`, `suppliers`, `clients`, `places`, `users`, `vehicles`, `teams`) DEVE utilizzare il componente unificato `<Autocomplete>` con ricerca predittiva, debounce e indicazione secondaria (`sublabel`).
+  3. **Protezione Firestore `cleanUndefined`**: Qualsiasi operazione di scrittura o aggiornamento (`setDoc`, `updateDoc`, `transaction.set`) che coinvolge campi opzionali o stringhe vuote convertite deve sempre passare attraverso `cleanUndefined()` per evitare crash irreversibili generati da valori `undefined` non supportati dal driver NoSQL di Firestore.

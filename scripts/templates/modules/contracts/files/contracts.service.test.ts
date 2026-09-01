@@ -33,6 +33,7 @@ vi.mock('$lib/services/cacheLookupService', () => ({
 describe('ContractsService Unit Tests', () => {
   it('creates contract and updates cache', async () => {
     const id = await ContractsService.createContract({
+      id: 'contract_123',
       contractNumber: 'CTR-2026-001',
       title: 'Contratto Manutenzione Sede',
       clientId: 'client_1',

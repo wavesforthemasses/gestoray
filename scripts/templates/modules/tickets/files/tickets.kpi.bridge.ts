@@ -40,13 +40,37 @@ export class TicketsKPIBridge {
     };
   }
 
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  private static cache: { data: any[]; timestamp: number } | null = null;
+  private static readonly TTL_MS = 30000;
+
+  static async fetchRawData(): Promise<any[]> {
+    const now = Date.now();
+    if (this.cache && (now - this.cache.timestamp) < this.TTL_MS) {
+      return this.cache.data;
+    }
     try {
       const snap = await getDocs(collection(db, 'tickets'));
       const list: any[] = [];
       snap.forEach((d: any) => {
-        list.push({ id: d.id, ...d.data() });
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        list.push({ id: d.id, ...data });
       });
+      this.cache = { data: list, timestamp: now };
+      return list;
+    } catch (e) {
+      console.error('Error fetching tickets in bridge:', e);
+      return this.cache ? this.cache.data : [];
+    }
+  }
+
+  static invalidateCache() {
+    this.cache = null;
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const list = await this.fetchRawData();
       return this.calculateKPIs(list);
     } catch (e) {
       console.error('Error fetching tickets KPIs in bridge:', e);
@@ -59,10 +83,8 @@ export class TicketsKPIBridge {
 
     let items: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'tickets'));
-      snap.forEach((d: any) => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
+      const allTickets = await this.fetchRawData();
+      allTickets.forEach((data: any) => {
         const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
         let ms = 0;
         if (dt) {
@@ -72,7 +94,7 @@ export class TicketsKPIBridge {
           else if (dt instanceof Date) ms = dt.getTime();
         }
         if (ms > 0 && ms >= period.start.getTime() && ms <= period.end.getTime()) {
-          items.push({ id: d.id, ...data });
+          items.push(data);
         }
       });
     } catch (e) {
@@ -99,12 +121,7 @@ export class TicketsKPIBridge {
     
     let allTickets: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'tickets'));
-      snap.forEach(d => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
-        allTickets.push({ id: d.id, ...data });
-      });
+      allTickets = await this.fetchRawData();
     } catch (e) {
       console.error('Error fetching tickets for chart aggregations:', e);
       return periods.map(() => 0);

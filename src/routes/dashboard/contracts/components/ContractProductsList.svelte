@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Button, FormField } from '$lib';
+  import { Card, Button, FormField, Autocomplete, type AutocompleteOption } from '$lib';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
   import { FileText, Trash2, ShieldAlert } from '@lucide/svelte';
 
@@ -44,6 +44,25 @@
     cancelEditingProducts,
     saveEditedProducts
   }: Props = $props();
+
+  let productOptions = $derived<AutocompleteOption[]>(
+    productsList.map(p => ({
+      id: p.id,
+      label: p.name,
+      sublabel: `Listino: €${(Number(p.listPrice) || 0).toFixed(2)}${p.sku ? ' • ' + p.sku : ''}`
+    }))
+  );
+
+  let vendorOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: 'Nessuno (100% provvigione)' },
+    ...usersList
+      .filter(u => u.uid !== contract.original?.vendorUid)
+      .map(u => ({
+        id: u.uid,
+        label: `${u.nome || ''} ${u.cognome || ''}`.trim() || u.email,
+        sublabel: u.email
+      }))
+  ]);
 </script>
 
 <Card title="Articoli e Servizi Inclusi" description="Dettaglio analitico delle licenze e dei prodotti inseriti in sede di quotazione.">
@@ -64,12 +83,12 @@
     <div class="inline-editor-pane editor-pane-styled">
       <div class="form-grid-columns grid-two-cols">
         <FormField id="e-product" label="SELEZIONA PRODOTTO">
-          <select id="e-product" bind:value={editSelectedProductId} onchange={(e) => handleEditProductSelectChange(e.currentTarget.value)}>
-            <option value="">-- Seleziona Prodotto --</option>
-            {#each productsList as p}
-              <option value={p.id}>{p.name} (Listino: €{(Number(p.listPrice) || 0).toFixed(2)})</option>
-            {/each}
-          </select>
+          <Autocomplete 
+            options={productOptions} 
+            bind:value={editSelectedProductId} 
+            onchange={(id) => handleEditProductSelectChange(id)} 
+            placeholder="Cerca prodotto a catalogo..." 
+          />
         </FormField>
 
         <div class="flex-gap-12">
@@ -144,12 +163,11 @@
           <p class="co-selling-desc">Se questa vendita è stata conclusa in collaborazione con un altro commerciale, selezionalo qui sotto per ripartire le provvigioni.</p>
           <div class="form-grid-columns">
             <FormField id="e-second-vendor" label="Secondo Commerciale">
-              <select id="e-second-vendor" bind:value={editSecondVendorUid}>
-                <option value="">Nessuno (100% provvigione)</option>
-                {#each usersList.filter(u => u.uid !== contract.original?.vendorUid) as u}
-                  <option value={u.uid}>{u.nome || ''} {u.cognome || ''} ({u.email})</option>
-                {/each}
-              </select>
+              <Autocomplete 
+                options={vendorOptions} 
+                bind:value={editSecondVendorUid} 
+                placeholder="Seleziona secondo commerciale..." 
+              />
             </FormField>
             {#if editSecondVendorUid}
               <FormField id="e-second-share" label="Quota Co-Seller (%)">

@@ -8,6 +8,7 @@
   import { PlaceSettingsService } from '../../placeSettingsService';
   import PlaceMapViewer from '../components/PlaceMapViewer.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import { Autocomplete, type AutocompleteOption } from '$lib';
   import { 
     MapPin, 
     Building2, 
@@ -106,6 +107,22 @@
 
   // Derived Parent Place & Location for Map Zoom
   let selectedParent = $derived(allPlaces.find(p => p.id === parentId));
+  let clientOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Nessun Cliente Collegato --' },
+    ...clients.map(c => ({ id: c.id, label: c.name }))
+  ]);
+
+  let parentPlaceOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: 'Nessun Genitore (Luogo Principale Livello 0)' },
+    ...allPlaces
+      .filter(p => !initialData.id || (p.id !== initialData.id && !p.ancestors?.includes(initialData.id)))
+      .map(p => ({
+        id: p.id,
+        label: p.name,
+        sublabel: p.code ? `Cod: ${p.code}` : undefined
+      }))
+  ]);
+
   let parentLocation = $derived.by(() => {
     if (!selectedParent || !selectedParent.geo?.location) return null;
     const pLat = (selectedParent.geo.location as any).latitude ?? (selectedParent.geo.location as any).lat;
@@ -158,9 +175,8 @@
     }
   });
 
-  function handleParentChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    const newParentId = target.value ? target.value : null;
+  function handleParentChange(val: string | Event) {
+    const newParentId = typeof val === 'string' ? (val || null) : ((val.target as HTMLSelectElement).value || null);
     parentId = newParentId;
 
     if (newParentId) {
@@ -441,25 +457,22 @@
       <!-- Cliente Titolare -->
       <div class="form-group">
         <label for="placeClient" class="form-label">Cliente Titolare (Opzionale)</label>
-        <select id="placeClient" bind:value={clientId} class="form-select">
-          <option value="">-- Nessun Cliente Collegato --</option>
-          {#each clients as c}
-            <option value={c.id}>{c.name}</option>
-          {/each}
-        </select>
+        <Autocomplete 
+          options={clientOptions} 
+          bind:value={clientId} 
+          placeholder="Cerca cliente intestatario..." 
+        />
       </div>
 
       <!-- Luogo Genitore (Gerarchia ad Albero) -->
       <div class="form-group">
         <label for="placeParent" class="form-label">Luogo Genitore (Sotto-area / Lotto di)</label>
-        <select id="placeParent" value={parentId || ''} onchange={handleParentChange} class="form-select">
-          <option value="">Nessun Genitore (Luogo Principale Livello 0)</option>
-          {#each allPlaces as p}
-            {#if !initialData.id || (p.id !== initialData.id && !p.ancestors?.includes(initialData.id))}
-              <option value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>
-            {/if}
-          {/each}
-        </select>
+        <Autocomplete 
+          options={parentPlaceOptions} 
+          value={parentId || ''} 
+          onchange={handleParentChange} 
+          placeholder="Seleziona luogo genitore..." 
+        />
       </div>
     </div>
 

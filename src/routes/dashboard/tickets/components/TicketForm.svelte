@@ -2,6 +2,7 @@
   import type { TicketSchema } from '../schema';
   import { authState } from '$lib/auth.svelte';
   import { User } from '@lucide/svelte';
+  import { Autocomplete, type AutocompleteOption } from '$lib';
 
   let {
     formData = $bindable(),
@@ -15,9 +16,18 @@
     categories?: { id: string; label: string }[];
   } = $props();
 
-  function handleClientChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    const selected = clients.find(c => c.id === target.value);
+  let clientOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Nessun Cliente (Generico) --' },
+    ...clients.map(c => ({ id: c.id, label: c.name }))
+  ]);
+
+  let userOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Auto-Routing / Non Assegnato --' },
+    ...users.map(u => ({ id: u.id, label: u.name, sublabel: u.role || 'Utente' }))
+  ]);
+
+  function handleClientSelect(selectedId: string) {
+    const selected = clients.find(c => c.id === selectedId);
     if (selected) {
       formData.clientId = selected.id;
       formData.clientName = selected.name;
@@ -92,22 +102,22 @@
 
   <div class="field-group">
     <label for="clientId" class="form-label">Cliente Associato</label>
-    <select id="clientId" class="form-select" value={formData.clientId} onchange={handleClientChange}>
-      <option value="">-- Nessun Cliente (Generico) --</option>
-      {#each clients as client}
-        <option value={client.id}>{client.name}</option>
-      {/each}
-    </select>
+    <Autocomplete 
+      options={clientOptions} 
+      value={formData.clientId || ''} 
+      onchange={handleClientSelect} 
+      placeholder="Seleziona cliente..." 
+    />
   </div>
 
   <div class="field-group">
     <label for="assignedTo" class="form-label">Assegna a Operatore</label>
-    <select id="assignedTo" class="form-select" bind:value={formData.assignedTo}>
-      <option value="">-- Auto-Routing / Non Assegnato --</option>
-      {#each users as u}
-        <option value={u.id}>{u.name} ({u.role || 'Utente'})</option>
-      {/each}
-    </select>
+    <Autocomplete 
+      options={userOptions} 
+      value={formData.assignedTo || ''} 
+      onchange={(id) => formData.assignedTo = id} 
+      placeholder="Assegna a operatore..." 
+    />
   </div>
 
   <div class="field-group">

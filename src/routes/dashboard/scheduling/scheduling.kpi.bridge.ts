@@ -46,8 +46,9 @@ export class SchedulingKPIBridge {
       const activitiesList: any[] = [];
 
       try {
+        const interventionsColName = 'interventions';
         const constraints = context?.tenantId ? [where('tenantId', '==', context.tenantId)] : [];
-        const q = constraints.length > 0 ? query(collection(db, 'interventions'), ...constraints) : collection(db, 'interventions');
+        const q = constraints.length > 0 ? query(collection(db, interventionsColName), ...constraints) : collection(db, interventionsColName);
         const snapInterventions = await getDocs(q);
         snapInterventions.forEach(d => interventionsList.push({ id: d.id, ...d.data() }));
       } catch (e) {

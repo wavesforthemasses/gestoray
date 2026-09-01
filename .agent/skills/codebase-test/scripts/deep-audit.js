@@ -57,20 +57,25 @@ try {
 }
 
 const registeredIds = new Set(registry.modules.map(m => m.id));
+const CORE_MODULES = new Set(['clients', 'users', 'contacts', 'profile', 'qualifications', 'settings', 'todo']);
 const dashboardDirs = fs.readdirSync(SRC_DASHBOARD, { withFileTypes: true })
-  .filter(d => d.isDirectory() && !['components', 'settings', 'users'].includes(d.name))
+  .filter(d => d.isDirectory() && !['components'].includes(d.name))
   .map(d => d.name);
 
 for (const mod of dashboardDirs) {
+  const isCore = CORE_MODULES.has(mod);
   results.modules[mod] = {
+    isCore,
     registered: registeredIds.has(mod),
     hasTemplate: fs.existsSync(path.join(TEMPLATES_DIR, mod)),
-    hasService: fs.existsSync(path.join(SRC_DASHBOARD, mod, `${mod}.service.ts`)) || fs.existsSync(path.join(SRC_DASHBOARD, mod, 'services')),
-    hasSchema: fs.existsSync(path.join(SRC_DASHBOARD, mod, 'schema.ts')) || fs.existsSync(path.join(SRC_DASHBOARD, mod, 'types')),
+    hasService: fs.existsSync(path.join(SRC_DASHBOARD, mod, `${mod}.service.ts`)) || fs.existsSync(path.join(ROOT_DIR, 'src/lib/services', `${mod}.service.ts`)) || fs.existsSync(path.join(ROOT_DIR, 'src/lib/services', `${mod}.ts`)),
+    hasSchema: fs.existsSync(path.join(SRC_DASHBOARD, mod, 'schema.ts')) || fs.existsSync(path.join(ROOT_DIR, 'src/lib/types', `${mod}.ts`)),
     hasTests: fs.existsSync(path.join(SRC_DASHBOARD, mod, `${mod}.service.test.ts`)) || fs.existsSync(path.join(SRC_DASHBOARD, mod, `${mod}.test.ts`)),
     hasBridge: fs.existsSync(path.join(SRC_DASHBOARD, mod, `${mod}.kpi.bridge.ts`))
   };
-  recordCheck(results.modules[mod].hasTemplate, 'templates', `Template exists for ${mod}`, true);
+  if (!isCore) {
+    recordCheck(results.modules[mod].hasTemplate, 'templates', `Template exists for optional module ${mod}`, true);
+  }
 }
 
 // 2. TEMPLATE-SOURCE DIVERGENCE CHECK
@@ -90,6 +95,7 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 }
 
 for (const mod of dashboardDirs) {
+  if (CORE_MODULES.has(mod)) continue; // Core modules are not template plugins
   const activeModDir = path.join(SRC_DASHBOARD, mod);
   const templateModFilesDir = path.join(TEMPLATES_DIR, mod, 'files');
 

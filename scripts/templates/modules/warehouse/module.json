@@ -1,0 +1,156 @@
+{
+  "id": "warehouse",
+  "label": "Magazzino",
+  "description": "Gestione magazzino, giacenze, fornitori, ordini di acquisto e movimentazioni",
+  "icon": "Warehouse",
+  "requirements": [
+    "products"
+  ],
+  "path": "/dashboard/warehouse",
+  "kpiBridgePath": "/dashboard/warehouse/warehouse.kpi.bridge.ts",
+  "settingsCard": {
+    "title": "Configurazione Magazzino & Acquisti",
+    "description": "Prefissi numerazione ordini e movimenti, gestione alert sottoscorta e metodo di valorizzazione giacenze.",
+    "icon": "Warehouse",
+    "path": "/dashboard/settings/warehouse"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione",
+    "commerciale",
+    "tecnico"
+  ],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "total_stock_value",
+      "title": "Valore Magazzino",
+      "subtitle": "Valorizzazione totale merci a magazzino",
+      "icon": "Warehouse",
+      "format": "currency",
+      "isCurrency": true,
+      "valueKey": "totalStockValue",
+      "aggregation": {
+        "collection": "warehouse_inventory",
+        "type": "sum",
+        "sumFields": [
+          "totalValuation"
+        ],
+        "dateFields": [
+          "updatedAt",
+          "edits.updatedAt"
+        ]
+      }
+    },
+    {
+      "id": "low_stock_items",
+      "title": "Articoli Sottoscorta",
+      "subtitle": "Articoli con giacenza sotto la soglia minima",
+      "icon": "AlertTriangle",
+      "valueKey": "lowStockCount",
+      "aggregation": {
+        "collection": "warehouse_inventory",
+        "type": "count",
+        "dateFields": [
+          "updatedAt"
+        ]
+      }
+    },
+    {
+      "id": "pending_purchase_orders",
+      "title": "Ordini Fornitore Aperti",
+      "subtitle": "Ordini di acquisto in attesa di ricezione",
+      "icon": "Truck",
+      "valueKey": "pendingOrdersCount",
+      "aggregation": {
+        "collection": "purchase_orders",
+        "type": "count",
+        "dateFields": [
+          "orderDate",
+          "createdAt"
+        ]
+      }
+    }
+  ],
+  "anonymization": {
+    "collectionName": "suppliers",
+    "linkFieldPath": "id",
+    "redactFields": [
+      {
+        "fieldPath": "contactPerson",
+        "replacement": "ANONIMIZZATO"
+      },
+      {
+        "fieldPath": "email",
+        "replacement": ""
+      },
+      {
+        "fieldPath": "phone",
+        "replacement": ""
+      },
+      {
+        "fieldPath": "notes",
+        "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+      }
+    ]
+  },
+  "schema": {
+    "fields": {
+      "productName": {
+        "type": "string",
+        "description": "Nome del prodotto a magazzino",
+        "tags": [
+          "search",
+          "display",
+          "sort"
+        ]
+      },
+      "sku": {
+        "type": "string",
+        "description": "Codice SKU articolo",
+        "tags": [
+          "search",
+          "filter:sku"
+        ]
+      },
+      "stockQty": {
+        "type": "number",
+        "description": "Quantità fisica presente a magazzino",
+        "tags": [
+          "kpi:stock",
+          "sort"
+        ]
+      },
+      "availableQty": {
+        "type": "number",
+        "description": "Quantità disponibile non allocata",
+        "tags": [
+          "kpi:available_stock"
+        ]
+      },
+      "avgUnitCost": {
+        "type": "currency",
+        "description": "Costo Medio Ponderato (CMP) d'acquisto",
+        "tags": [
+          "kpi:cost"
+        ]
+      },
+      "totalValuation": {
+        "type": "currency",
+        "description": "Valore economico totale della giacenza",
+        "tags": [
+          "kpi:total_stock_value",
+          "chart:aggregate"
+        ]
+      },
+      "isLowStock": {
+        "type": "boolean",
+        "description": "Flag indicatore articolo sotto scorta minima",
+        "tags": [
+          "filter:low_stock"
+        ]
+      }
+    }
+  }
+}

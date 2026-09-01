@@ -1,0 +1,109 @@
+{
+  "id": "targets",
+  "label": "Target & Budget",
+  "description": "Configurazione e monitoraggio dei target di performance temporali e avanzamento KPI",
+  "icon": "Target",
+  "requirements": [
+    "chart"
+  ],
+  "path": "/dashboard/targets",
+  "kpiBridgePath": "/dashboard/targets/targets.kpi.bridge.ts",
+  "settingsCard": {
+    "title": "Configurazione Target & Budget",
+    "description": "Piani di target (settimanali, mensili, annuali), metriche KPI assegnate, finestre di compilazione e ruoli coinvolti.",
+    "icon": "Target",
+    "path": "/dashboard/settings/targets"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione",
+    "commerciale",
+    "tecnico"
+  ],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "targets_achievement_rate",
+      "title": "Completamento Target",
+      "subtitle": "Media avanzamento obiettivi periodo attivo",
+      "icon": "Target",
+      "format": "percent",
+      "valueKey": "targets_achievement_rate",
+      "aggregation": {
+        "collection": "targets_records",
+        "type": "count",
+        "dateFields": [
+          "startDate",
+          "edits.createdAt",
+          "edits.updatedAt"
+        ]
+      }
+    },
+    {
+      "id": "targets_total_budget",
+      "title": "Budget Totale Obiettivo",
+      "subtitle": "Totale budget economico fissato nel periodo",
+      "icon": "TrendingUp",
+      "format": "currency",
+      "isCurrency": true,
+      "valueKey": "targets_total_budget",
+      "aggregation": {
+        "collection": "targets_records",
+        "type": "sum",
+        "sumFields": [
+          "targetValues.vss",
+          "targetValues.total_incassato"
+        ],
+        "dateFields": [
+          "startDate",
+          "edits.createdAt"
+        ]
+      }
+    }
+  ],
+  "schema": {
+    "fields": {
+      "planName": {
+        "type": "string",
+        "description": "Nome del piano target assegnato",
+        "tags": [
+          "search",
+          "display"
+        ]
+      },
+      "periodKey": {
+        "type": "string",
+        "description": "Identificativo temporale (es. 2026-09 o 2026-W36)",
+        "tags": [
+          "search",
+          "filter:period",
+          "sort"
+        ]
+      },
+      "subjectName": {
+        "type": "string",
+        "description": "Nome del soggetto assegnatario (utente, squadra o azienda)",
+        "tags": [
+          "search",
+          "display",
+          "sort"
+        ]
+      },
+      "granularity": {
+        "type": "string",
+        "description": "Granularità temporale del piano (settimanale, mensile, annuale)",
+        "tags": [
+          "filter:granularity"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato di compilazione del target (draft, submitted, approved, locked)",
+        "tags": [
+          "filter:status"
+        ]
+      }
+    }
+  }
+}

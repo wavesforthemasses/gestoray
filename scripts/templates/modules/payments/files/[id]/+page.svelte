@@ -268,9 +268,7 @@
 
 <style>
   .payment-detail-page { display: flex; flex-direction: column; gap: 20px; width: 100%; box-sizing: border-box; }
-  .page-top-nav { display: flex; align-items: center; }
-  .btn-back { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: white; border: 1px solid var(--color-neutral-300); border-radius: 8px; color: var(--color-neutral-700); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
-  .btn-back:hover { background: var(--color-neutral-100); }
+
 
   .detail-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: white; border: 1px solid var(--color-neutral-200); border-radius: 12px; padding: 24px; }
   .header-tag { font-size: 12px; font-weight: 700; color: var(--color-neutral-500); text-transform: uppercase; letter-spacing: 0.5px; }

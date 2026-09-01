@@ -45,6 +45,8 @@ export {
   PageHeader
 };
 
+export type { AutocompleteOption } from './components/Autocomplete.svelte';
+
 export { generateSearchTerms } from './search-utils';
 export * from './types/moduleAnalyticsSettings';
 export { ChartSettingsService } from './services/chartSettingsService';

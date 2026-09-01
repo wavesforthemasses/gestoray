@@ -21,7 +21,10 @@ import {
 } from '../../domain/services/placeUtils';
 import { generateSearchTerms } from '$lib/search-utils';
 import { CacheLookupService } from '$lib/services/cacheLookupService';
-import { cleanUndefined } from '$lib/utils/helpers';
+import { cleanUndefined, generateId } from '$lib/utils/helpers';
+import { computeDiff } from '$lib/services/versioningService';
+import { PlacesVersioningBridge } from '../../places.versioning.bridge';
+
 
 export interface PlaceQueryFilters {
   status?: string;
@@ -178,12 +181,28 @@ export class PlaceFirestoreRepository {
       );
 
       const now = new Date().toISOString();
+      const existingPlaceSnap = existingPlaceId ? await tx.get(placeRef) : null;
+      const currentVersion = (existingPlaceSnap?.data()?.edits?.aggregateVersion as number) ?? 0;
+      const nextVersion = currentVersion + 1;
+      const ledgerId = generateId('ledger');
+      const ledgerRef = doc(this.db, 'system_ledger', ledgerId);
+
+      const entityEdits = {
+        ...(placeData.edits || {}),
+        ...(existingPlaceSnap?.data()?.edits || {}),
+        createdAt: existingPlaceSnap?.data()?.edits?.createdAt || placeData.edits?.createdAt || now,
+        createdBy: existingPlaceSnap?.data()?.edits?.createdBy || placeData.edits?.createdBy || 'system',
+        modifiedAt: now,
+        aggregateVersion: nextVersion,
+        lastLedgerId: ledgerId
+      };
 
       const payload = cleanUndefined({
         ...placeData,
         id: placeId,
         orgId: placeData.orgId || orgId,
         updatedAt: now,
+        edits: entityEdits,
         derived: {
           ...(placeData.derived || {}),
           textSearch: searchTerms,
@@ -199,6 +218,27 @@ export class PlaceFirestoreRepository {
           createdAt: placeData.createdAt || now
         });
       }
+
+      const diff = computeDiff(existingPlaceSnap && existingPlaceSnap.exists() ? existingPlaceSnap.data() : null, payload, {
+        semanticsMap: PlacesVersioningBridge.getSemanticsMap()
+      });
+
+      tx.set(ledgerRef, {
+        id: ledgerId,
+        tenantId: orgId || 'default',
+        module: 'places',
+        entityType: 'place',
+        entityId: placeId,
+        entityLabel: PlacesVersioningBridge.getEntityLabel(payload),
+        aggregateVersion: nextVersion,
+        eventType: 'FIELD_MUTATION',
+        keysChanged: diff.keysChanged,
+        mutations: diff.mutations,
+        performedBy: 'system',
+        actorType: 'USER',
+        timestamp: new Date(),
+        reason: existingPlaceId ? 'Aggiornamento scheda luogo' : 'Creazione scheda luogo'
+      });
 
       return placeId;
     });
@@ -231,11 +271,41 @@ export class PlaceFirestoreRepository {
       }
 
       if (softDelete) {
+        const currentVersion = (placeSnap.data()?.edits?.aggregateVersion as number) ?? 0;
+        const nextVersion = currentVersion + 1;
+        const ledgerId = generateId('ledger');
+        const ledgerRef = doc(this.db, 'system_ledger', ledgerId);
+
         tx.update(placeRef, {
           'derived.deleted': true,
           'edits.deletedAt': new Date().toISOString(),
           'edits.deletedBy': deletedByUid || 'system',
+          'edits.aggregateVersion': nextVersion,
+          'edits.lastLedgerId': ledgerId,
           updatedAt: new Date().toISOString()
+        });
+
+        tx.set(ledgerRef, {
+          id: ledgerId,
+          tenantId: orgId || 'default',
+          module: 'places',
+          entityType: 'place',
+          entityId: placeId,
+          entityLabel: PlacesVersioningBridge.getEntityLabel(placeData),
+          aggregateVersion: nextVersion,
+          eventType: 'STATUS_CHANGE',
+          keysChanged: ['derived.deleted'],
+          mutations: {
+            'derived.deleted': {
+              old: false,
+              new: true,
+              semantics: 'DESCRIPTIVE'
+            }
+          },
+          performedBy: deletedByUid || 'system',
+          actorType: 'USER',
+          timestamp: new Date(),
+          reason: 'Cancellazione logica luogo'
         });
       } else {
         tx.delete(placeRef);

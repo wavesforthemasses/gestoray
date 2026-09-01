@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PlaceDocument, PlaceHierarchyNode } from '../../domain/models/place';
+  import { Autocomplete, type AutocompleteOption } from '$lib';
   import { 
     ChevronRight, 
     ChevronDown, 
@@ -37,6 +38,17 @@
   let selectedNewParentId = $state<string | 'root'>('root');
   let isReparenting = $state(false);
   let reparentError = $state<string | null>(null);
+
+  let reparentOptions = $derived<AutocompleteOption[]>([
+    { id: 'root', label: 'Nodo Principale (Nessun genitore / Livello 0)' },
+    ...(reparentTarget ? allPlaces
+      .filter(p => p.id !== reparentTarget!.id && !p.ancestors?.includes(reparentTarget!.id))
+      .map(p => ({
+        id: p.id,
+        label: p.name,
+        sublabel: `${p.code ? p.code + ' • ' : ''}${p.depth > 0 ? 'Livello ' + p.depth : 'Radice'}`
+      })) : [])
+  ]);
 
   // Auto-espandi le radici
   $effect(() => {
@@ -256,23 +268,12 @@
 
         <div class="form-group">
           <label for="newParentSelect" class="form-label">Posizione di Destinazione</label>
-          <select 
-            id="newParentSelect" 
+          <Autocomplete 
+            options={reparentOptions} 
             bind:value={selectedNewParentId} 
-            class="form-select"
-            disabled={isReparenting}
-          >
-            <option value="root">Nodo Principale (Nessun genitore / Livello 0)</option>
-            <optgroup label="Luoghi / Cantieri Disponibili">
-              {#each allPlaces as p}
-                {#if p.id !== reparentTarget.id && !p.ancestors.includes(reparentTarget.id)}
-                  <option value={p.id}>
-                    {p.name} ({p.code || 'Senza codice'}) {p.depth > 0 ? `[Livello ${p.depth}]` : ''}
-                  </option>
-                {/if}
-              {/each}
-            </optgroup>
-          </select>
+            disabled={isReparenting} 
+            placeholder="Cerca posizione di destinazione..." 
+          />
         </div>
       </div>
 

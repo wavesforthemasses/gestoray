@@ -24,13 +24,37 @@ export class ProductsKPIBridge {
     };
   }
 
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  private static cache: { data: any[]; timestamp: number } | null = null;
+  private static readonly TTL_MS = 30000;
+
+  static async fetchRawData(): Promise<any[]> {
+    const now = Date.now();
+    if (this.cache && (now - this.cache.timestamp) < this.TTL_MS) {
+      return this.cache.data;
+    }
     try {
       const snap = await getDocs(collection(db, 'products'));
       const list: any[] = [];
       snap.forEach((d: any) => {
-        list.push({ id: d.id, ...d.data() });
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        list.push({ id: d.id, ...data });
       });
+      this.cache = { data: list, timestamp: now };
+      return list;
+    } catch (e) {
+      console.error('Error fetching products in bridge:', e);
+      return this.cache ? this.cache.data : [];
+    }
+  }
+
+  static invalidateCache() {
+    this.cache = null;
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const list = await this.fetchRawData();
       return this.calculateKPIs(list);
     } catch (e) {
       console.error('Error fetching products KPIs in bridge:', e);
@@ -41,12 +65,7 @@ export class ProductsKPIBridge {
   static async fetchChartAggregations({ periods, role, uid, tab }: any) {
     let allProducts: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'products'));
-      snap.forEach(d => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
-        allProducts.push({ id: d.id, ...data });
-      });
+      allProducts = await this.fetchRawData();
     } catch (e) {
       console.error('Error fetching products for chart aggregations:', e);
       return periods.map(() => 0);

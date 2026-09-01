@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-30T21:22:08.683Z",
+  "timestamp": "2026-09-01T08:16:22.723Z",
   "environment": {
     "nodeVersion": "v22.23.1",
     "rootDir": "/home/vincenzo/Code/gestoray"
@@ -60,8 +60,8 @@
         },
         "settings": {
           "exists": true,
-          "filesCount": 28,
-          "linesOfCode": 9826,
+          "filesCount": 30,
+          "linesOfCode": 11505,
           "hasService": false,
           "hasBridge": false,
           "bridgeHealth": "N/A",
@@ -75,8 +75,8 @@
       "modules": {
         "contracts": {
           "exists": true,
-          "filesCount": 30,
-          "linesOfCode": 8952,
+          "filesCount": 31,
+          "linesOfCode": 9333,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -85,8 +85,8 @@
         },
         "payments": {
           "exists": true,
-          "filesCount": 10,
-          "linesOfCode": 2934,
+          "filesCount": 11,
+          "linesOfCode": 3132,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -110,8 +110,8 @@
       "modules": {
         "places": {
           "exists": true,
-          "filesCount": 42,
-          "linesOfCode": 13270,
+          "filesCount": 43,
+          "linesOfCode": 13416,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -121,7 +121,7 @@
         "teams": {
           "exists": true,
           "filesCount": 9,
-          "linesOfCode": 3332,
+          "linesOfCode": 3384,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -131,7 +131,7 @@
         "vehicles": {
           "exists": true,
           "filesCount": 10,
-          "linesOfCode": 1565,
+          "linesOfCode": 1589,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -141,7 +141,7 @@
         "scheduling": {
           "exists": true,
           "filesCount": 9,
-          "linesOfCode": 1800,
+          "linesOfCode": 1801,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -166,7 +166,7 @@
         "products": {
           "exists": true,
           "filesCount": 10,
-          "linesOfCode": 2661,
+          "linesOfCode": 3649,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -175,8 +175,8 @@
         },
         "tickets": {
           "exists": true,
-          "filesCount": 9,
-          "linesOfCode": 2410,
+          "filesCount": 10,
+          "linesOfCode": 2605,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -186,7 +186,7 @@
         "activities": {
           "exists": true,
           "filesCount": 16,
-          "linesOfCode": 5786,
+          "linesOfCode": 5800,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -196,7 +196,7 @@
         "deadlines": {
           "exists": true,
           "filesCount": 9,
-          "linesOfCode": 1851,
+          "linesOfCode": 1875,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -233,17 +233,33 @@
   },
   "summary": {
     "totalModulesScanned": 20,
-    "totalFilesScanned": 223,
-    "totalLinesOfCode": 64639,
-    "healthScore": 100,
-    "totalChecks": 180,
-    "passedChecks": 180,
-    "warnings": 0,
+    "totalFilesScanned": 229,
+    "totalLinesOfCode": 68341,
+    "healthScore": 97,
+    "totalChecks": 228,
+    "passedChecks": 222,
+    "warnings": 6,
     "failedChecks": 0
   },
   "securityAlerts": [],
   "templateDriftAlerts": [],
-  "numericSafetyAlerts": [],
+  "numericSafetyAlerts": [
+    {
+      "file": "src/routes/dashboard/targets/+page.svelte",
+      "line": 449,
+      "code": "<span>Completamento Totale: <strong>{companyTotals.overallRate.toFixed(1)}%</strong></span>"
+    },
+    {
+      "file": "src/routes/dashboard/targets/components/TargetProgressBar.svelte",
+      "line": 33,
+      "code": "{rate.toFixed(1)}%"
+    },
+    {
+      "file": "src/routes/dashboard/targets/components/TargetSubjectCard.svelte",
+      "line": 66,
+      "code": "<span>{tierBadge.label} ({targetRecord.overallRate.toFixed(1)}%)</span>"
+    }
+  ],
   "smeSimulations": {
     "1_Edilizia_Cantieri_SAL": {
       "totalLabor": 6300,
@@ -276,65 +292,142 @@
     }
   },
   "uiEmojiAlerts": [],
+  "dynamicSelectAlerts": [],
   "capabilityMatrix": [
     {
       "id": "CRM_DUPLICATE_PREVENTION",
+      "section": "A",
       "name": "Impedire anagrafiche duplicate & dati mancanti",
       "covered": true
     },
     {
       "id": "CRM_DIARY_ACTIVITIES",
+      "section": "A",
       "name": "Diario contatti multi-tipo (telefonate, appuntamenti, incontri, email)",
       "covered": true
     },
     {
+      "id": "CRM_PROSPECT_PROMOTION",
+      "section": "A",
+      "name": "Promozione Prospect a Cliente & storico contatti",
+      "covered": true
+    },
+    {
+      "id": "QUOTES_CREATION_DRAFT",
+      "section": "B",
+      "name": "Preventivatore rapido, listini e salvataggio in bozza",
+      "covered": true
+    },
+    {
       "id": "QUOTES_PRICE_ALERT",
+      "section": "B",
       "name": "Preventivatore con alert soglia minima prezzo di listino",
       "covered": true
     },
     {
       "id": "CO_SELLER_COMMISSIONS",
+      "section": "B",
       "name": "Supporto Co-venditore con ripartizione % provvigionale",
       "covered": true
     },
     {
-      "id": "INSTALLMENTS_RECONCILIATION",
+      "id": "CONTRACT_UPGRADE_WORKFLOW",
+      "section": "B",
+      "name": "Upgrade preventivo a contratto e approvazione amministrazione",
+      "covered": true
+    },
+    {
+      "id": "INSTALLMENTS_PLANNING",
+      "section": "C",
       "name": "Pianificazione rate flessibile e solleciti scadenza",
       "covered": true
     },
     {
+      "id": "INSTALLMENTS_POSTPONE_RESCHEDULE",
+      "section": "C",
+      "name": "Gestione posticipo scadenze rate e inserimento rate intermedie",
+      "covered": true
+    },
+    {
       "id": "PAYMENT_MULTI_CONTRACT_ALLOCATION",
+      "section": "D",
       "name": "Allocazione singolo incasso a contratti/rate multiple",
       "covered": true
     },
     {
       "id": "VAT_UNBUNDLING_REALIZED_COMMISSIONS",
-      "name": "Scorporo IVA e maturazione provvigioni su incassato reale",
+      "section": "D",
+      "name": "Scorporo IVA multi-aliquota e maturazione provvigioni su incassato reale",
       "covered": true
     },
     {
+      "id": "COMMERCIAL_MONTHLY_TARGETS",
+      "section": "E",
+      "name": "Inserimento target mensili commerciali e monitoraggio avanzamento KPI",
+      "covered": true,
+      "roadmapPlanned": true
+    },
+    {
       "id": "RBAC_MULTI_ROLES_QUALIFICATIONS",
+      "section": "F",
       "name": "RBAC multi-ruolo e provvigioni per qualifica (Junior/Senior/DV)",
       "covered": true
     },
     {
       "id": "GDPR_ONE_CLICK_CASCADE",
+      "section": "F",
       "name": "Anonimizzazione GDPR Diritto all Oblio 1-click in cascata",
       "covered": true
     },
     {
       "id": "BI_DYNAMIC_CHART_EXPORTS",
-      "name": "Universal Analytics Chart interattivo con export CSV/XLS/PDF",
+      "section": "G",
+      "name": "Universal Analytics Chart interattivo con filtri click ed export CSV/XLS",
       "covered": true
     },
     {
       "id": "HIERARCHICAL_PLACES_GEOFENCING",
+      "section": "OPS",
       "name": "Luoghi e Cantieri multilivello con presenza e coordinate",
       "covered": true
     },
     {
       "id": "TEAMS_AND_RESOURCE_SCHEDULING",
-      "name": "Pianificazione Squadre/Mezzi e tariffe operatore",
+      "section": "OPS",
+      "name": "Pianificazione Squadre/Mezzi e tariffe operatore a calendario",
+      "covered": true
+    },
+    {
+      "id": "HELPDESK_TICKETS_TMR",
+      "section": "OPS",
+      "name": "Gestione reclami, ticket assistenziali e calcolo TMR in ore",
+      "covered": true
+    },
+    {
+      "id": "WAREHOUSE_SUPPLIERS_FIFO",
+      "section": "ROADMAP_FASE1",
+      "name": "Magazzino, articoli fornitori, ordini acquisto e scarico FIFO",
+      "covered": false,
+      "roadmapPlanned": true
+    },
+    {
+      "id": "FATTURE_IN_CLOUD_SDI_SYNC",
+      "section": "ROADMAP_FASE2",
+      "name": "Integrazione Fatture in Cloud API v2 SDI e fatture da bolla/preventivo",
+      "covered": false,
+      "roadmapPlanned": true
+    },
+    {
+      "id": "JOB_COSTING_IMPUTATION",
+      "section": "ROADMAP_FASE2",
+      "name": "Imputazione costi per cantiere (ore bolle + mezzi + materiali FIFO)",
+      "covered": false,
+      "roadmapPlanned": true
+    },
+    {
+      "id": "MULTI_SECTOR_UNIT_TEST_SUITE",
+      "section": "TESTS",
+      "name": "Suite di test unitari agnostici per i 5 settori PMI (multiSectorAgnostic.test.ts)",
       "covered": true
     }
   ]

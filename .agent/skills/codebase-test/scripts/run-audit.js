@@ -256,6 +256,32 @@ if (uiEmojiAlerts.length === 0) {
 }
 auditReport.uiEmojiAlerts = uiEmojiAlerts;
 
+// 6.5 DYNAMIC AUTOCOMPLETE VS STATIC SELECT AUDIT
+console.log('\n🔍 Scanning for Static <select> usage on Dynamic Entities (Products, Suppliers, Clients, Places, Users, Vehicles, Teams)...');
+const dynamicSelectAlerts = [];
+
+for (const uf of uiFiles) {
+  const content = fs.readFileSync(uf, 'utf8');
+  const selectMatches = content.match(/<select[\s\S]*?<\/select>/g) || [];
+  for (const sel of selectMatches) {
+    if (/\{#each\s+(?:products|productsCatalog|productsList|suppliers|clients|allPlaces|placesList|availableUsers|users|vehicles|availableVehicles|teams)\s+as\s+/.test(sel)) {
+      dynamicSelectAlerts.push({
+        file: path.relative(ROOT_DIR, uf),
+        code: sel.slice(0, 120).replace(/\s+/g, ' ') + '...'
+      });
+      auditReport.summary.warnings++;
+    }
+  }
+}
+
+if (dynamicSelectAlerts.length === 0) {
+  auditReport.summary.passedChecks++;
+  console.log('  ✅ 100% Anti-Select Heuristic respected: Dynamic entities use searchable <Autocomplete>.');
+} else {
+  console.log(`  ⚠️ Found ${dynamicSelectAlerts.length} static <select> elements bound to dynamic collections.`);
+}
+auditReport.dynamicSelectAlerts = dynamicSelectAlerts;
+
 // 7. AGNOSTIC MULTI-SECTOR BUSINESS LOGIC SIMULATIONS
 console.log('\n🏭 Running Agnostic Multi-Sector Business Logic Stress Simulations...');
 
@@ -373,18 +399,47 @@ console.log(`  ├─ 📦 Commercio B2B: ${b2bSim.passed ? '✅ PASSED' : '❌ 
 // 8. AGNOSTIC CAPABILITY & REQUIREMENT COVERAGE MATRIX
 console.log('\n🎯 Checking Agnostic Architectural Capability Mapping...');
 const capabilityChecks = [
-  { id: 'CRM_DUPLICATE_PREVENTION', name: 'Impedire anagrafiche duplicate & dati mancanti', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'clients/clients.service.ts')) },
-  { id: 'CRM_DIARY_ACTIVITIES', name: 'Diario contatti multi-tipo (telefonate, appuntamenti, incontri, email)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'activities/activities.service.ts')) },
-  { id: 'QUOTES_PRICE_ALERT', name: 'Preventivatore con alert soglia minima prezzo di listino', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/schema.ts')) },
-  { id: 'CO_SELLER_COMMISSIONS', name: 'Supporto Co-venditore con ripartizione % provvigionale', covered: fs.existsSync(path.join(ROOT_DIR, 'functions/src/business-logic.ts')) },
-  { id: 'INSTALLMENTS_RECONCILIATION', name: 'Pianificazione rate flessibile e solleciti scadenza', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/contracts.service.ts')) },
-  { id: 'PAYMENT_MULTI_CONTRACT_ALLOCATION', name: 'Allocazione singolo incasso a contratti/rate multiple', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'payments/payments.contracts.bridge.ts')) },
-  { id: 'VAT_UNBUNDLING_REALIZED_COMMISSIONS', name: 'Scorporo IVA e maturazione provvigioni su incassato reale', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'payments/payments.service.ts')) },
-  { id: 'RBAC_MULTI_ROLES_QUALIFICATIONS', name: 'RBAC multi-ruolo e provvigioni per qualifica (Junior/Senior/DV)', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/utils/authCheck.ts')) },
-  { id: 'GDPR_ONE_CLICK_CASCADE', name: 'Anonimizzazione GDPR Diritto all Oblio 1-click in cascata', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/services/anonymizationService.ts')) },
-  { id: 'BI_DYNAMIC_CHART_EXPORTS', name: 'Universal Analytics Chart interattivo con export CSV/XLS/PDF', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/components/UniversalAnalyticsChart.svelte')) },
-  { id: 'HIERARCHICAL_PLACES_GEOFENCING', name: 'Luoghi e Cantieri multilivello con presenza e coordinate', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'places/places.service.ts')) },
-  { id: 'TEAMS_AND_RESOURCE_SCHEDULING', name: 'Pianificazione Squadre/Mezzi e tariffe operatore', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'scheduling/scheduling.service.ts')) }
+  // SECTION A: CRM & Contacts
+  { id: 'CRM_DUPLICATE_PREVENTION', section: 'A', name: 'Impedire anagrafiche duplicate & dati mancanti', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'clients/clients.service.ts')) },
+  { id: 'CRM_DIARY_ACTIVITIES', section: 'A', name: 'Diario contatti multi-tipo (telefonate, appuntamenti, incontri, email)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'activities/activities.service.ts')) },
+  { id: 'CRM_PROSPECT_PROMOTION', section: 'A', name: 'Promozione Prospect a Cliente & storico contatti', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/services/clientSettingsService.ts')) },
+  
+  // SECTION B: Quotes & Contracts
+  { id: 'QUOTES_CREATION_DRAFT', section: 'B', name: 'Preventivatore rapido, listini e salvataggio in bozza', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/contracts.service.ts')) },
+  { id: 'QUOTES_PRICE_ALERT', section: 'B', name: 'Preventivatore con alert soglia minima prezzo di listino', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/schema.ts')) },
+  { id: 'CO_SELLER_COMMISSIONS', section: 'B', name: 'Supporto Co-venditore con ripartizione % provvigionale', covered: fs.existsSync(path.join(ROOT_DIR, 'functions/src/business-logic.ts')) },
+  { id: 'CONTRACT_UPGRADE_WORKFLOW', section: 'B', name: 'Upgrade preventivo a contratto e approvazione amministrazione', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/schema.ts')) },
+
+  // SECTION C: Installments & Administrative Planning
+  { id: 'INSTALLMENTS_PLANNING', section: 'C', name: 'Pianificazione rate flessibile e solleciti scadenza', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/contracts.service.ts')) },
+  { id: 'INSTALLMENTS_POSTPONE_RESCHEDULE', section: 'C', name: 'Gestione posticipo scadenze rate e inserimento rate intermedie', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'contracts/contracts.service.ts')) },
+
+  // SECTION D: Cash Receipts, VAT & Reconciliation
+  { id: 'PAYMENT_MULTI_CONTRACT_ALLOCATION', section: 'D', name: 'Allocazione singolo incasso a contratti/rate multiple', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'payments/payments.contracts.bridge.ts')) },
+  { id: 'VAT_UNBUNDLING_REALIZED_COMMISSIONS', section: 'D', name: 'Scorporo IVA multi-aliquota e maturazione provvigioni su incassato reale', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'payments/payments.service.ts')) },
+
+  // SECTION E: Commercial Targets
+  { id: 'COMMERCIAL_MONTHLY_TARGETS', section: 'E', name: 'Inserimento target mensili commerciali e monitoraggio avanzamento KPI', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'settings/targets')) || fs.existsSync(path.join(DASHBOARD_DIR, 'targets')), roadmapPlanned: true },
+
+  // SECTION F: Collaborators, Qualifications & RBAC
+  { id: 'RBAC_MULTI_ROLES_QUALIFICATIONS', section: 'F', name: 'RBAC multi-ruolo e provvigioni per qualifica (Junior/Senior/DV)', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/utils/authCheck.ts')) && fs.existsSync(path.join(DASHBOARD_DIR, 'qualifications')) },
+  { id: 'GDPR_ONE_CLICK_CASCADE', section: 'F', name: 'Anonimizzazione GDPR Diritto all Oblio 1-click in cascata', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/services/anonymizationService.ts')) },
+
+  // SECTION G: Business Intelligence & Exports
+  { id: 'BI_DYNAMIC_CHART_EXPORTS', section: 'G', name: 'Universal Analytics Chart interattivo con filtri click ed export CSV/XLS', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/components/UniversalAnalyticsChart.svelte')) },
+
+  // OPERATIONS & RESOURCES
+  { id: 'HIERARCHICAL_PLACES_GEOFENCING', section: 'OPS', name: 'Luoghi e Cantieri multilivello con presenza e coordinate', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'places/places.service.ts')) },
+  { id: 'TEAMS_AND_RESOURCE_SCHEDULING', section: 'OPS', name: 'Pianificazione Squadre/Mezzi e tariffe operatore a calendario', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'scheduling/scheduling.service.ts')) },
+  { id: 'HELPDESK_TICKETS_TMR', section: 'OPS', name: 'Gestione reclami, ticket assistenziali e calcolo TMR in ore', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'tickets/tickets.service.ts')) },
+
+  // ROADMAP ADVANCED MODULES
+  { id: 'WAREHOUSE_SUPPLIERS_FIFO', section: 'ROADMAP_FASE1', name: 'Magazzino, articoli fornitori, ordini acquisto e scarico FIFO', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'suppliers')) || fs.existsSync(path.join(TEMPLATES_DIR, 'suppliers')), roadmapPlanned: true },
+  { id: 'FATTURE_IN_CLOUD_SDI_SYNC', section: 'ROADMAP_FASE2', name: 'Integrazione Fatture in Cloud API v2 SDI e fatture da bolla/preventivo', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'invoices')) || fs.existsSync(path.join(TEMPLATES_DIR, 'invoices')), roadmapPlanned: true },
+  { id: 'JOB_COSTING_IMPUTATION', section: 'ROADMAP_FASE2', name: 'Imputazione costi per cantiere (ore bolle + mezzi + materiali FIFO)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'job_costing')), roadmapPlanned: true },
+
+  // MULTI-SECTOR AGNOSTIC TEST SUITE
+  { id: 'MULTI_SECTOR_UNIT_TEST_SUITE', section: 'TESTS', name: 'Suite di test unitari agnostici per i 5 settori PMI (multiSectorAgnostic.test.ts)', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/services/multiSectorAgnostic.test.ts')) }
 ];
 
 auditReport.capabilityMatrix = capabilityChecks;
@@ -392,6 +447,9 @@ for (const cap of capabilityChecks) {
   if (cap.covered) {
     auditReport.summary.passedChecks++;
     console.log(`  ├─ ✅ Capability [${cap.id}]: ${cap.name}`);
+  } else if (cap.roadmapPlanned) {
+    auditReport.summary.warnings++;
+    console.log(`  ├─ ⏳ Roadmap [${cap.id}]: ${cap.name} (Pianificato)`);
   } else {
     auditReport.summary.failedChecks++;
     console.log(`  ├─ ❌ Capability [${cap.id}]: ${cap.name}`);

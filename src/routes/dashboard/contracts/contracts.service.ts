@@ -20,6 +20,9 @@ import { generateSearchTerms } from '$lib/search-utils';
 import { generateId } from '$lib/utils/helpers';
 import { menuConfigStore } from '$lib/stores/menu';
 import { get } from 'svelte/store';
+import { VersioningService, computeDiff } from '$lib/services/versioningService';
+import { ContractsVersioningBridge } from './contracts.versioning.bridge';
+
 
 function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
   const result: Record<string, any> = {};
@@ -234,7 +237,10 @@ export class ContractsService {
     return formattedNumber;
   }
 
-  static async createContract(data: Partial<ContractItem>): Promise<string> {
+  static async createContract(
+    data: Partial<ContractItem>,
+    options?: { uid?: string; userEmail?: string; tenantId?: string }
+  ): Promise<string> {
     const settings = await ContractSettingsService.getSettings();
     const labels = ContractSettingsService.getLabels(settings);
 
@@ -254,8 +260,12 @@ export class ContractsService {
     const totalAmount = data.totalAmount ?? items.reduce((s, i) => s + (i.subtotal || 0), 0);
     const hasPriceWarning = data.hasPriceWarning ?? items.some(i => i.priceSold < (i.minPrice || 0));
 
+    const contractId = data.id || generateId();
+    const contractRef = doc(db, this.COLLECTION_NAME, contractId);
+
     const payload = sanitizeFirestoreData({
       ...data,
+      id: contractId,
       contractNumber,
       title: effectiveTitle,
       totalAmount,
@@ -279,7 +289,7 @@ export class ContractsService {
       },
       edits: {
         createdAt: now,
-        createdBy: data.agentId || 'system'
+        createdBy: options?.uid || data.agentId || 'system'
       },
       derived: {
         textSearch
@@ -288,22 +298,54 @@ export class ContractsService {
       updatedAt: now
     });
 
-    const docRef = await addDoc(collection(db, this.COLLECTION_NAME), payload);
+    const diff = computeDiff(null, payload, {
+      semanticsMap: ContractsVersioningBridge.getSemanticsMap()
+    });
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      contractRef,
+      payload,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'contracts',
+        entityType: 'contract',
+        entityId: contractId,
+        entityLabel: ContractsVersioningBridge.getEntityLabel(payload),
+        eventType: 'FIELD_MUTATION',
+        keysChanged: diff.keysChanged,
+        mutations: diff.mutations,
+        performedBy: options?.uid || data.agentId || 'system',
+        performedByName: options?.userEmail || data.agentName,
+        actorType: 'USER',
+        reason: 'Creazione contratto / preventivo'
+      },
+      0
+    );
 
     try {
-      const chunkId = await CacheLookupService.updateEntityCache('contracts', docRef.id, effectiveTitle);
+      const chunkId = await CacheLookupService.updateEntityCache('contracts', contractId, effectiveTitle);
       if (chunkId) {
-        await updateDoc(docRef, { 'derived.cacheChunkId': chunkId });
+        await updateDoc(contractRef, { 'derived.cacheChunkId': chunkId });
       }
     } catch (e) {
       console.warn('Errore aggiornamento cache contratti:', e);
     }
 
-    return docRef.id;
+    // Sincronizzazione automatica scorte magazzino se attivo
+    await this.syncContractStockMovements(payload as any as ContractItem, undefined, options);
+
+    return contractId;
   }
 
-  static async updateContract(id: string, data: Partial<ContractItem>): Promise<void> {
-    const existing = await this.getContractById(id);
+  static async updateContract(
+    id: string, 
+    data: Partial<ContractItem>,
+    options?: { uid?: string; userEmail?: string; tenantId?: string; expectedBaseVersion?: number; reason?: string }
+  ): Promise<void> {
+    const contractRef = doc(db, this.COLLECTION_NAME, id);
+    const existingSnap = await getDoc(contractRef);
+    const existing = existingSnap.exists() ? (existingSnap.data() as ContractItem) : null;
     const now = new Date().toISOString();
     const sanitized: Record<string, any> = {};
 
@@ -313,12 +355,69 @@ export class ContractsService {
       }
     });
 
+    const title = data.title !== undefined ? data.title : (existing?.title || '');
+    const num = data.contractNumber || existing?.contractNumber || '';
+    const client = data.clientName || existing?.clientName || '';
+    const textSearch = generateSearchTerms(`${num} ${title} ${client}`);
+
+    const items = data.items !== undefined ? data.items : (existing?.items || []);
+    const totalAmount = data.totalAmount !== undefined ? data.totalAmount : (existing?.totalAmount ?? items.reduce((s, i) => s + (i.subtotal || 0), 0));
+    const hasPriceWarning = data.hasPriceWarning !== undefined ? data.hasPriceWarning : (items.some(i => i.priceSold < (i.minPrice || 0)));
+
+    const nextEntityData: Record<string, any> = {
+      ...(existing || {}),
+      ...sanitized,
+      totalAmount,
+      hasPriceWarning,
+      updatedAt: now,
+      derived: {
+        ...(existing?.derived || {}),
+        textSearch
+      },
+      original: {
+        ...(existing?.original || {}),
+        ...(sanitized['original'] || {}),
+        products: items,
+        totalPrice: totalAmount,
+        hasWarning: hasPriceWarning,
+        status: data.status || existing?.status || existing?.original?.status || 'bozza',
+        secondVendorUid: data.coSellerUid !== undefined ? data.coSellerUid : (existing?.coSellerUid || null),
+        secondVendorShare: data.coSellerShare !== undefined ? data.coSellerShare : (existing?.coSellerShare || null),
+        secondVendorEmail: data.coSellerEmail !== undefined ? data.coSellerEmail : (existing?.coSellerEmail || null)
+      }
+    };
+
+    const payload = sanitizeFirestoreData(nextEntityData);
+    const diff = computeDiff(existing, payload, {
+      semanticsMap: ContractsVersioningBridge.getSemanticsMap()
+    });
+
+    if (diff.keysChanged.length > 0) {
+      await VersioningService.executeDualWriteTransaction(
+        db,
+        contractRef,
+        payload,
+        {
+          tenantId: options?.tenantId || 'default',
+          module: 'contracts',
+          entityType: 'contract',
+          entityId: id,
+          entityLabel: ContractsVersioningBridge.getEntityLabel(payload),
+          eventType: 'FIELD_MUTATION',
+          keysChanged: diff.keysChanged,
+          mutations: diff.mutations,
+          performedBy: options?.uid || 'system',
+          performedByName: options?.userEmail,
+          actorType: 'USER',
+          reason: options?.reason || 'Aggiornamento dati contratto'
+        },
+        options?.expectedBaseVersion !== undefined ? options.expectedBaseVersion : ((existing as any)?.edits?.aggregateVersion ?? 0)
+      );
+    } else {
+      await updateDoc(contractRef, { updatedAt: now });
+    }
+
     if (data.title !== undefined || data.contractNumber || data.clientName) {
-      const title = data.title !== undefined ? data.title : (existing?.title || '');
-      const num = data.contractNumber || existing?.contractNumber || '';
-      const client = data.clientName || existing?.clientName || '';
-      sanitized['derived.textSearch'] = generateSearchTerms(`${num} ${title} ${client}`);
-      
       try {
         await CacheLookupService.updateEntityCache('contracts', id, title);
       } catch (e) {
@@ -326,29 +425,183 @@ export class ContractsService {
       }
     }
 
-    // Sync original.* mirrors if relevant fields change
-    if (data.items) {
-      sanitized['original.products'] = data.items;
-      sanitized['original.hasWarning'] = data.items.some(i => i.priceSold < (i.minPrice || 0));
-    }
-    if (data.totalAmount !== undefined) sanitized['original.totalPrice'] = data.totalAmount;
-    if (data.status) sanitized['original.status'] = data.status;
-    if (data.coSellerUid !== undefined) sanitized['original.secondVendorUid'] = data.coSellerUid;
-    if (data.coSellerShare !== undefined) sanitized['original.secondVendorShare'] = data.coSellerShare;
-    if (data.coSellerEmail !== undefined) sanitized['original.secondVendorEmail'] = data.coSellerEmail;
-
-    sanitized.updatedAt = now;
-    sanitized['edits.modifiedAt'] = now;
-    const finalSanitized = sanitizeFirestoreData(sanitized);
-    await updateDoc(doc(db, this.COLLECTION_NAME, id), finalSanitized);
+    // Sincronizzazione automatica scorte magazzino su variazione stato
+    await this.syncContractStockMovements(payload as any as ContractItem, existing?.status, options);
   }
 
-  static async deleteContract(id: string, uid?: string): Promise<void> {
-    await updateDoc(doc(db, this.COLLECTION_NAME, id), {
-      'derived.deleted': true,
-      'edits.deletedAt': new Date().toISOString(),
-      'edits.deletedBy': uid || 'system'
-    });
+  /**
+   * Sincronizzazione dinamica e simmetrica delle scorte con il modulo Warehouse.
+   * Scarica la merce fisica (OUT_SALE) all'attivazione/approvazione e reintegra (IN_RETURN) all'annullamento.
+   */
+  static async syncContractStockMovements(
+    contract: ContractItem,
+    previousStatus?: string,
+    options?: { uid?: string; userEmail?: string }
+  ): Promise<void> {
+    try {
+      const menuModules = get(menuConfigStore);
+      if (!menuModules.some(m => m.id === 'warehouse')) return;
+
+      const servicePath = '../../warehouse/warehouse.service';
+      // @ts-ignore
+      const mod: any = await import(/* @vite-ignore */ servicePath);
+      const WarehouseService = mod?.WarehouseService;
+      if (!WarehouseService) return;
+
+      const isNowActive = contract.status === 'approvato' || contract.status === 'attivo';
+      const wasActive = previousStatus === 'approvato' || previousStatus === 'attivo';
+      const isCancelled = contract.status === 'annullato' || contract.status === 'rifiutato';
+
+      const physicalItems = (contract.items || []).filter(item => Boolean(item.productId));
+      if (physicalItems.length === 0) return;
+
+      const contractRef = doc(db, this.COLLECTION_NAME, contract.id!);
+      const contractPlace = contract.placeId || 'default';
+      const contractPlaceName = contract.placeName || 'Magazzino Centrale';
+
+      if (isNowActive && contract.derived?.stockStatus !== 'depleted') {
+        const movementIds: string[] = [];
+        for (const item of physicalItems) {
+          const movId = await WarehouseService.recordManualMovement({
+            movementType: 'OUT_SALE',
+            productId: item.productId,
+            productName: item.productName || (item as any).name || 'Articolo',
+            sku: (item as any).sku || '',
+            unit: item.unit || 'pz',
+            quantity: item.quantity || 1,
+            unitCost: item.priceSold || item.listPrice || 0,
+            fromPlaceId: contractPlace,
+            fromPlaceName: contractPlaceName,
+            performedByUid: options?.uid || contract.agentId || 'system',
+            performedByName: options?.userEmail || contract.agentName || 'Sistema Contratti',
+            relatedDocType: 'contract',
+            relatedDocId: contract.id,
+            notes: `Scarico per Vendita Contratto ${contract.contractNumber || contract.id}`
+          });
+          if (movId) movementIds.push(movId);
+        }
+
+        await updateDoc(contractRef, {
+          'derived.stockStatus': 'depleted',
+          'derived.stockMovementIds': movementIds
+        });
+      } else if (wasActive && isCancelled && contract.derived?.stockStatus === 'depleted') {
+        for (const item of physicalItems) {
+          await WarehouseService.recordManualMovement({
+            movementType: 'IN_RETURN',
+            productId: item.productId,
+            productName: item.productName || (item as any).name || 'Articolo',
+            sku: (item as any).sku || '',
+            unit: item.unit || 'pz',
+            quantity: item.quantity || 1,
+            unitCost: item.priceSold || item.listPrice || 0,
+            toPlaceId: contractPlace,
+            toPlaceName: contractPlaceName,
+            performedByUid: options?.uid || contract.agentId || 'system',
+            performedByName: options?.userEmail || contract.agentName || 'Sistema Contratti',
+            relatedDocType: 'contract',
+            relatedDocId: contract.id,
+            notes: `Storno/Reintegro per Annullamento Contratto ${contract.contractNumber || contract.id}`
+          });
+        }
+
+        await updateDoc(contractRef, {
+          'derived.stockStatus': 'restocked'
+        });
+      }
+    } catch (err) {
+      console.warn('Avviso sincronizzazione scorte contratto:', err);
+    }
+  }
+
+  static async deleteContract(
+    id: string, 
+    options?: { uid?: string; userEmail?: string; tenantId?: string }
+  ): Promise<void> {
+    const contractRef = doc(db, this.COLLECTION_NAME, id);
+    const existingSnap = await getDoc(contractRef);
+    const existing = existingSnap.exists() ? (existingSnap.data() as ContractItem) : null;
+    const now = new Date().toISOString();
+
+    // Reintegro simmetrico se il contratto era stato evaso a magazzino
+    if (existing?.derived?.stockStatus === 'depleted') {
+      try {
+        const menuModules = get(menuConfigStore);
+        if (menuModules.some(m => m.id === 'warehouse')) {
+          const servicePath = '../../warehouse/warehouse.service';
+          // @ts-ignore
+          const mod: any = await import(/* @vite-ignore */ servicePath);
+          const WarehouseService = mod?.WarehouseService;
+          if (WarehouseService) {
+            const physicalItems = (existing.items || []).filter(item => Boolean(item.productId));
+            for (const item of physicalItems) {
+              await WarehouseService.recordManualMovement({
+                movementType: 'IN_RETURN',
+                productId: item.productId,
+                productName: item.productName || (item as any).name || 'Articolo',
+                sku: (item as any).sku || '',
+                unit: item.unit || 'pz',
+                quantity: item.quantity || 1,
+                unitCost: item.priceSold || item.listPrice || 0,
+                toPlaceId: existing.placeId || 'default',
+                toPlaceName: existing.placeName || 'Magazzino Centrale',
+                performedByUid: options?.uid || (typeof options === 'string' ? options : 'system'),
+                performedByName: options?.userEmail || 'Sistema Contratti',
+                relatedDocType: 'contract',
+                relatedDocId: existing.id,
+                notes: `Storno/Reintegro per Eliminazione Contratto ${existing.contractNumber || existing.id}`
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Avviso reintegro scorte su eliminazione contratto:', err);
+      }
+    }
+
+    const nextEntityData: Record<string, any> = {
+      ...(existing || {}),
+      derived: {
+        ...(existing?.derived || {}),
+        deleted: true,
+        stockStatus: 'restocked'
+      },
+      edits: {
+        ...(existing as any)?.edits,
+        deletedAt: now,
+        deletedBy: options?.uid || (typeof options === 'string' ? options : 'system')
+      }
+    };
+
+    const payload = sanitizeFirestoreData(nextEntityData);
+
+    await VersioningService.executeDualWriteTransaction(
+      db,
+      contractRef,
+      payload,
+      {
+        tenantId: options?.tenantId || 'default',
+        module: 'contracts',
+        entityType: 'contract',
+        entityId: id,
+        entityLabel: ContractsVersioningBridge.getEntityLabel(existing),
+        eventType: 'STATUS_CHANGE',
+        keysChanged: ['derived.deleted'],
+        mutations: {
+          'derived.deleted': {
+            old: false,
+            new: true,
+            semantics: 'DESCRIPTIVE'
+          }
+        },
+        performedBy: options?.uid || (typeof options === 'string' ? options : 'system'),
+        performedByName: options?.userEmail,
+        actorType: 'USER',
+        reason: 'Cancellazione logica contratto'
+      },
+      (existing as any)?.edits?.aggregateVersion ?? 0
+    );
+
     try {
       await CacheLookupService.removeEntityFromCache('contracts', id);
     } catch (e) {

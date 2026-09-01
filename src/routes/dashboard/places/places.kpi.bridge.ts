@@ -46,13 +46,37 @@ export class PlacesKPIBridge {
     };
   }
 
-  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+  private static cache: { data: any[]; timestamp: number } | null = null;
+  private static readonly TTL_MS = 30000;
+
+  static async fetchRawData(): Promise<any[]> {
+    const now = Date.now();
+    if (this.cache && (now - this.cache.timestamp) < this.TTL_MS) {
+      return this.cache.data;
+    }
     try {
       const snap = await getDocs(collection(db, 'places'));
       const list: any[] = [];
       snap.forEach((d: any) => {
-        list.push({ id: d.id, ...d.data() });
+        const data = d.data();
+        if (data?.derived?.deleted || data?.deleted) return;
+        list.push({ id: d.id, ...data });
       });
+      this.cache = { data: list, timestamp: now };
+      return list;
+    } catch (e) {
+      console.error('Error fetching places in bridge:', e);
+      return this.cache ? this.cache.data : [];
+    }
+  }
+
+  static invalidateCache() {
+    this.cache = null;
+  }
+
+  static async fetchKPIs({ role, uid }: KPIFetchParams) {
+    try {
+      const list = await this.fetchRawData();
       return this.calculateKPIs(list);
     } catch (e) {
       console.error('Error fetching places KPIs in bridge:', e);
@@ -65,9 +89,8 @@ export class PlacesKPIBridge {
 
     let items: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'places'));
-      snap.forEach((d: any) => {
-        const data = d.data();
+      const allPlaces = await this.fetchRawData();
+      allPlaces.forEach((data: any) => {
         const dt = data.createdAt || data.edits?.createdAt || data.original?.createdAt;
         let ms = 0;
         if (dt) {
@@ -77,7 +100,7 @@ export class PlacesKPIBridge {
           else if (dt instanceof Date) ms = dt.getTime();
         }
         if (ms > 0 && ms >= period.start.getTime() && ms <= period.end.getTime()) {
-          items.push({ id: d.id, ...data });
+          items.push(data);
         }
       });
     } catch (e) {
@@ -106,12 +129,7 @@ export class PlacesKPIBridge {
 
     let allPlaces: any[] = [];
     try {
-      const snap = await getDocs(collection(db, 'places'));
-      snap.forEach(d => {
-        const data = d.data();
-        if (data?.derived?.deleted || data?.deleted) return;
-        allPlaces.push({ id: d.id, ...data });
-      });
+      allPlaces = await this.fetchRawData();
     } catch (e) {
       console.error('Error fetching places for chart aggregations:', e);
       return periods.map(() => 0);

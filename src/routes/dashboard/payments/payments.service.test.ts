@@ -48,6 +48,7 @@ describe('PaymentsService Unit Tests', () => {
 
   it('creates payment and updates cache', async () => {
     const id = await PaymentsService.createPayment({
+      id: 'payment_123',
       paymentNumber: 'INC-2026-0001',
       clientId: 'client_1',
       clientName: 'Mario Rossi SRL',

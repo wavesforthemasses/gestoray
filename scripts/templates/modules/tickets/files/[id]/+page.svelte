@@ -11,6 +11,7 @@
   import { TicketSettingsService, type CannedResponseConfig } from '$lib/services/ticketSettings';
   import { UsersService } from '../../users/users.service';
   import { confirmStore } from '$lib/stores/confirm.svelte';
+  import { Autocomplete, type AutocompleteOption } from '$lib';
   import { 
     List, 
     CheckCircle2, 
@@ -33,6 +34,11 @@
   let loading = $state(true);
   let updatingStatus = $state(false);
   let updatingAssignee = $state(false);
+
+  let userOptions = $derived<AutocompleteOption[]>([
+    { id: '', label: '-- Non Assegnato --' },
+    ...users.map(u => ({ id: u.id, label: u.name, sublabel: u.role || 'Utente' }))
+  ]);
 
   // Nuovo messaggio
   let newMessageText = $state('');
@@ -302,18 +308,13 @@
         <div class="sidebar-group">
           <label for="ticket-assignee-select" class="sidebar-label">Operatore Assegnato</label>
           {#if can('tickets:update', activeRoleState.role)}
-            <select
-              id="ticket-assignee-select"
-              class="form-select assignee-select"
-              value={ticket.assignedTo || ''}
-              onchange={(e) => handleAssigneeChange((e.target as HTMLSelectElement).value)}
-              disabled={updatingAssignee}
-            >
-              <option value="">-- Non Assegnato --</option>
-              {#each users as u}
-                <option value={u.id}>{u.name} ({u.role || 'Utente'})</option>
-              {/each}
-            </select>
+            <Autocomplete 
+              options={userOptions} 
+              value={ticket.assignedTo || ''} 
+              onchange={handleAssigneeChange} 
+              disabled={updatingAssignee} 
+              placeholder="Assegna a operatore..." 
+            />
           {:else}
             <div class="sidebar-val">{ticket.assignedToName || 'Non Assegnato'}</div>
           {/if}
