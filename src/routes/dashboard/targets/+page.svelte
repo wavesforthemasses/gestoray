@@ -446,7 +446,7 @@
           <h2 class="summary-title">Avanzamento Globale Aziendale</h2>
         </div>
         <div class="summary-badge">
-          <span>Completamento Totale: <strong>{companyTotals.overallRate.toFixed(1)}%</strong></span>
+          <span>Completamento Totale: <strong>{(companyTotals.overallRate ?? 0).toFixed(1)}%</strong></span>
         </div>
       </div>
 

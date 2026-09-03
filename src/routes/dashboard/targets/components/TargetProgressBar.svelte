@@ -30,7 +30,7 @@
   </div>
   {#if showLabel}
     <span class="rate-text {resolvedTier}">
-      {rate.toFixed(1)}%
+      {(rate ?? 0).toFixed(1)}%
     </span>
   {/if}
 </div>

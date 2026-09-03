@@ -35,7 +35,8 @@
     ShieldAlert,
     Trash2,
     Calendar,
-    Users
+    Users,
+    Sparkles
   } from '@lucide/svelte';
 
   const contractId = $page.params.id || '';
@@ -327,7 +328,14 @@
     <!-- HEADER MAIN -->
     <header class="detail-header card">
       <div class="header-info-col">
-        <div class="header-tag">{labels.numberLabel}: <strong>{contract.contractNumber || 'N/D'}</strong></div>
+        <div class="header-tag">
+          {labels.numberLabel}: <strong>{contract.contractNumber || 'N/D'}</strong>
+          {#if contract.derived?.isNNCF || contract.isNNCF}
+            <span class="nncf-pill" title="New Name in Central File (1° Ordine di questo Cliente)">
+              <Sparkles size={11} /> NNCF (1° Ordine Cliente)
+            </span>
+          {/if}
+        </div>
         <h1 class="page-title">{contract.title || `${labels.singular} - ${contract.clientName}`}</h1>
         <p class="page-subtitle">
           <User size={15} /> Cliente Intestatario: <strong>{contract.clientName || 'Cliente'}</strong>
@@ -787,6 +795,24 @@
     color: var(--color-neutral-500, #64748b);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nncf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(234, 88, 12, 0.12);
+    color: #c2410c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    letter-spacing: 0.02em;
+    text-transform: none;
   }
 
   .page-title {

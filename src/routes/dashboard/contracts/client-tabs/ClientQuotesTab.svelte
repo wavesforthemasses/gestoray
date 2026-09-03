@@ -3,7 +3,7 @@
   import { formatDate, formatDateTime } from '$lib/utils/formatters';
   import { Card, FormField, Button, Autocomplete, type AutocompleteOption } from '$lib';
   import { UnitsOfMeasureService } from '$lib/services/unitsOfMeasureService';
-  import { Plus, ShieldAlert, Trash2, CheckCircle, FileText } from '@lucide/svelte';
+  import { Plus, ShieldAlert, Trash2, CheckCircle, FileText, Sparkles } from '@lucide/svelte';
   import { authState, activeRoleState } from '$lib/auth.svelte';
   import { ContractsService } from '../contracts.service';
   import { UsersService } from '../../users/users.service';
@@ -466,6 +466,11 @@
                 <tr>
                   <td>
                     <strong>{c.contractNumber || 'N/D'}</strong>
+                    {#if c.derived?.isNNCF || c.isNNCF}
+                      <span class="nncf-pill" title="New Name in Central File (1° Ordine del Cliente)">
+                        <Sparkles size={10} /> NNCF
+                      </span>
+                    {/if}
                     <div class="text-sub">{c.createdAt ? formatDate(c.createdAt) : 'N/D'}</div>
                   </td>
                   <td>{c.title}</td>
@@ -732,5 +737,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+  .nncf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(234, 88, 12, 0.12);
+    color: #c2410c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    margin-left: 6px;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
   }
 </style>

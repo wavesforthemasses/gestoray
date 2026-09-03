@@ -63,7 +63,7 @@
     <div class="header-right">
       <div class="tier-pill {tierBadge.class}">
         <svelte:component this={tierBadge.icon} size={13} />
-        <span>{tierBadge.label} ({targetRecord.overallRate.toFixed(1)}%)</span>
+        <span>{tierBadge.label} ({(targetRecord.overallRate ?? 0).toFixed(1)}%)</span>
       </div>
 
       {#if effectiveCanEdit}

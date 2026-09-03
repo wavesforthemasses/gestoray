@@ -6,6 +6,45 @@ import { isDerivedOnlyChange, logSyncError } from '../utils';
 
 const REGION = 'europe-west3';
 
+/**
+ * Helper SSOT: Estrae la data efficace del contratto per il confronto cronologico NNCF
+ */
+export function extractContractEffectiveDate(cData: any): string {
+  const orig = cData?.original || {};
+  const edits = cData?.edits || {};
+  return (
+    cData?.startDate ||
+    cData?.createdAt ||
+    edits?.createdAt ||
+    orig?.startDate ||
+    orig?.createdAt ||
+    ''
+  );
+}
+
+/**
+ * Helper SSOT: Ordina due contratti per anzianità deterministica con tie-breaker su contractNumber e ID
+ */
+export function compareContractEffectiveDates(a: any, b: any): number {
+  const dateA = extractContractEffectiveDate(a);
+  const dateB = extractContractEffectiveDate(b);
+
+  const timeA = dateA ? new Date(dateA.includes('T') ? dateA : `${dateA}T12:00:00Z`).getTime() : 0;
+  const timeB = dateB ? new Date(dateB.includes('T') ? dateB : `${dateB}T12:00:00Z`).getTime() : 0;
+
+  if (timeA !== timeB) {
+    return timeA - timeB; // Ascending: il più vecchio prima
+  }
+
+  const numA = a.contractNumber || a.original?.contractNumber || '';
+  const numB = b.contractNumber || b.original?.contractNumber || '';
+  if (numA && numB && numA !== numB) {
+    return numA.localeCompare(numB);
+  }
+
+  return (a.id || '').localeCompare(b.id || '');
+}
+
 // Recalculates client and vendor stats from scratch for a given clientId/vendorId to ensure 100% accuracy.
 // This is the ultimate "self-healing" state sync pattern.
 export async function syncClientAndVendorStats(
@@ -24,7 +63,6 @@ export async function syncClientAndVendorStats(
   snapOrig.forEach(d => contractDocsMap.set(d.id, d.data()));
 
   let contractsCount = 0;
-  let approvedContractsCount = 0;
   let totalContractValue = 0;
   let clientTotalPaid = 0;
   let clientTotalRemaining = 0;
@@ -44,39 +82,54 @@ export async function syncClientAndVendorStats(
       clientTotalRemaining += cData.derived?.totalRemaining || 0;
     }
 
-    if (status === 'approved' || status === 'approvato' || status === 'attivo') {
-      approvedContractsCount++;
+    if (['approved', 'approvato', 'attivo', 'accettato', 'firmato'].includes(status)) {
       approvedContracts.push({
         id: docId,
-        createdAt: cData.createdAt || cData.edits?.createdAt || orig.createdAt || new Date().toISOString()
+        ...cData
       });
     }
   });
 
-  // Sort approved contracts to find NNCF (New Novel Customer First) date
-  let nncfDate = null;
-  let nncfOrderId = null;
-  if (approvedContracts.length > 0) {
-    approvedContracts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    nncfDate = approvedContracts[0].createdAt;
-    nncfOrderId = approvedContracts[0].id;
-  }
+  // Sort approved contracts to find NNCF (New Name in Central File) winner
+  approvedContracts.sort(compareContractEffectiveDates);
+
+  const winner = approvedContracts.length > 0 ? approvedContracts[0] : null;
+  const nncfOrderId = winner ? winner.id : null;
+  const nncfDate = winner ? extractContractEffectiveDate(winner) : null;
+  const nncfVendorUid = winner ? (winner.agentId || winner.original?.vendorUid || null) : null;
+
+  // 1b. Batch atomico: aggiorna derived.isNNCF su tutti i contratti del cliente e sincronizza il cliente
+  const batch = db.batch();
+
+  contractDocsMap.forEach((cData, docId) => {
+    if (cData.derived?.deleted) return;
+    const shouldBeNNCF = winner !== null && docId === winner.id;
+    const currentIsNNCF = Boolean(cData.derived?.isNNCF);
+
+    if (shouldBeNNCF !== currentIsNNCF) {
+      const cRef = db.collection('contracts').doc(docId);
+      batch.update(cRef, { 'derived.isNNCF': shouldBeNNCF });
+    }
+  });
 
   // Update client
   const clientRef = db.collection('clients').doc(clientId);
   const clientSnap = await clientRef.get();
   if (clientSnap.exists) {
-    await clientRef.update({
-      'original.status': approvedContractsCount > 0 ? 'customer' : 'prospect',
+    batch.update(clientRef, {
+      'original.status': approvedContracts.length > 0 ? 'customer' : 'prospect',
       'derived.contractsCount': contractsCount,
-      'derived.approvedContractsCount': approvedContractsCount,
+      'derived.approvedContractsCount': approvedContracts.length,
       'derived.totalContractValue': totalContractValue,
       'derived.totalPaid': clientTotalPaid,
       'derived.totalRemaining': clientTotalRemaining,
       'derived.nncfDate': nncfDate,
-      'derived.nncfOrderId': nncfOrderId
+      'derived.nncfOrderId': nncfOrderId,
+      'derived.nncfVendorUid': nncfVendorUid
     });
   }
+
+  await batch.commit();
 
   // 2. Fetch and sync stats for each affected vendor
   for (const uid of vendorUids) {

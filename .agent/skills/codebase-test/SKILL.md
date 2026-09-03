@@ -102,7 +102,7 @@ L'audit verifica la conformità della piattaforma rispetto a tutte le macro-aree
 | **G** | **Business Intelligence** | Grafico interattivo dinamico (`UniversalAnalyticsChart`), filtri al click, export CSV/XLS, print layout | ✅ Attivo & Collaudato | `dashboard.service.test.ts`, `multiSectorAgnostic.test.ts` |
 | **OPS** | **Field Operations** | Cantieri gerarchici georeferenziati (`places`), Squadre & Risorse (`teams`), Parco Mezzi (`vehicles`), Pianificazione a calendario (`scheduling`) | ✅ Attivo & Collaudato | `places.*.test.ts`, `teams.*.test.ts`, `vehicles.*.test.ts` |
 | **OPS** | **Assistenza & Ticket** | Gestione ticket/reclami, assegnazione tecnici, calcolo TMR in ore, monitoraggio SLA | ✅ Attivo & Collaudato | `tickets.service.test.ts`, `multiSectorAgnostic.test.ts` |
-| **FASE 1** | **Magazzino & Acquisti** | Fornitori, ordini d'acquisto, lotti/ricezione e scarico FIFO | ⏳ **Pianificato in Roadmap (Fase 1 fine sett)** | *Da implementare* |
+| **FASE 1** | **Magazzino & Acquisti** | Fornitori, ordini d'acquisto, lotti/ricezione e scarico FIFO | ✅ Attivo & Collaudato | `warehouse.domain.test.ts`, `warehouse.service.ts` |
 | **FASE 2** | **Fatture in Cloud SDI** | Integrazione API v2 Fatture in Cloud, emissione fatture acconto/saldo, sync SDI, riconciliazione fatture ricevute | ⏳ **Pianificato in Roadmap (Fase 2 ott-nov)** | *Da implementare* |
 | **FASE 2** | **Job Costing Cantiere** | Imputazione costi cantiere (ore bolle + ammortamento mezzi + materiali FIFO) | ⏳ **Pianificato in Roadmap (Fase 2 nov)** | *Da implementare* |
 

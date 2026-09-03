@@ -44,10 +44,10 @@ service cloud.firestore {
       return (request.resource == null) ||
              !('derived' in request.resource.data) ||
              ((resource == null || !('derived' in resource.data)) && 
-                request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])) ||
+                request.resource.data.derived.keys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted', 'isNNCF', 'nncfDate', 'nncfOrderId', 'nncfVendorUid'])) ||
              (resource != null && ('derived' in resource.data) && (
                 request.resource.data.derived == resource.data.derived ||
-                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted'])
+                request.resource.data.derived.diff(resource.data.derived).affectedKeys().hasOnly(['textSearch', 'cacheChunkId', 'activitiesCount', 'placesCount', 'contractCount', 'ticketsCount', 'deleted', 'isNNCF', 'nncfDate', 'nncfOrderId', 'nncfVendorUid'])
              ));
     }
     
@@ -325,6 +325,32 @@ match /unique_keys/{keyId} {
     }
     // --- MODULE: payments END ---
 
+    // --- MODULE: targets BEGIN ---
+    // TARGETS & BUDGETING
+match /targets_plans/{planId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (isAdmin() || isDirezione());
+}
+
+match /targets_records/{recordId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && (
+    isAdmin() || isDirezione() ||
+    (request.resource.data.subjectType == 'user' && request.resource.data.subjectId == request.auth.uid)
+  );
+  allow update: if isAuth() && (
+    isAdmin() || isDirezione() ||
+    (resource.data.subjectType == 'user' && resource.data.subjectId == request.auth.uid)
+  );
+  allow delete: if isAuth() && (isAdmin() || isDirezione());
+}
+
+match /settings/targets {
+  allow read: if isAuth();
+  allow write: if isAuth() && (isAdmin() || isDirezione());
+}
+    // --- MODULE: targets END ---
+
     // --- MODULE: warehouse BEGIN ---
     // WAREHOUSE & INVENTORY
 match /suppliers/{supplierId} {
@@ -355,32 +381,6 @@ match /stock_movements/{movId} {
   allow delete: if hasRole('superadmin');
 }
     // --- MODULE: warehouse END ---
-
-    // --- MODULE: targets BEGIN ---
-    // TARGETS & BUDGETING
-match /targets_plans/{planId} {
-  allow read: if isAuth();
-  allow write: if isAuth() && (isAdmin() || isDirezione());
-}
-
-match /targets_records/{recordId} {
-  allow read: if isAuth();
-  allow create: if isAuth() && (
-    isAdmin() || isDirezione() ||
-    (request.resource.data.subjectType == 'user' && request.resource.data.subjectId == request.auth.uid)
-  );
-  allow update: if isAuth() && (
-    isAdmin() || isDirezione() ||
-    (resource.data.subjectType == 'user' && resource.data.subjectId == request.auth.uid)
-  );
-  allow delete: if isAuth() && (isAdmin() || isDirezione());
-}
-
-match /settings/targets {
-  allow read: if isAuth();
-  allow write: if isAuth() && (isAdmin() || isDirezione());
-}
-    // --- MODULE: targets END ---
   }
 }
 

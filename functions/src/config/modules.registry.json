@@ -223,171 +223,6 @@
       }
     },
     {
-      "id": "contracts",
-      "label": "Contratti",
-      "description": "Gestione contratti e ordini",
-      "icon": "FileText",
-      "requirements": [
-        "products"
-      ],
-      "path": "/dashboard/contracts",
-      "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
-      "clientTabs": [
-        {
-          "id": "quotes",
-          "component": "ClientQuotesTab.svelte",
-          "label": "Preventivi & Contratti"
-        }
-      ],
-      "settingsCard": {
-        "title": "Configurazione Contratti & Preventivi",
-        "description": "Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza.",
-        "icon": "FileText",
-        "path": "/dashboard/settings/contracts"
-      },
-      "rolesView": [
-        "superadmin",
-        "direzione",
-        "amministrazione"
-      ],
-      "enabled": true,
-      "kpiTiles": [
-        {
-          "id": "nncf",
-          "title": "NNCF",
-          "subtitle": "Conversioni",
-          "icon": "FileText",
-          "valueKey": "totalNNCF",
-          "commValueKey": "commTotalNNCF",
-          "aggregation": {
-            "collection": "clients",
-            "type": "count",
-            "dateFields": [
-              "derived.nncfDate"
-            ]
-          }
-        },
-        {
-          "id": "vss",
-          "title": "VSS",
-          "subtitle": "Venduto Netto",
-          "icon": "DollarSign",
-          "valueKey": "totalVenduto",
-          "commValueKey": "commTotalSold",
-          "format": "currency",
-          "aggregation": {
-            "collection": "contracts",
-            "type": "sum",
-            "sumFields": [
-              "totalAmount",
-              "original.totalPrice"
-            ],
-            "dateFields": [
-              "createdAt",
-              "edits.createdAt",
-              "original.createdAt"
-            ],
-            "vendorFields": [
-              "agentId",
-              "original.vendorUid",
-              "original.secondVendorUid"
-            ]
-          }
-        }
-      ],
-      "anonymization": {
-        "collectionName": "contracts",
-        "linkFieldPath": "clientId",
-        "redactFields": [
-          {
-            "fieldPath": "notes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          },
-          {
-            "fieldPath": "clientNotes",
-            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
-          }
-        ]
-      },
-      "schema": {
-        "fields": {
-          "contractNumber": {
-            "type": "string",
-            "description": "Numero sequenziale del contratto (es. CTR-2026-0001)",
-            "tags": [
-              "filter:number",
-              "search",
-              "sort"
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Oggetto o descrizione sintetica del contratto",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "clientId": {
-            "type": "string",
-            "description": "ID del cliente intestatario del contratto",
-            "tags": [
-              "filter:client",
-              "relation:clients"
-            ]
-          },
-          "clientName": {
-            "type": "string",
-            "description": "Ragione sociale / nome del cliente al momento del salvataggio",
-            "tags": [
-              "search",
-              "display"
-            ]
-          },
-          "agentId": {
-            "type": "string",
-            "description": "UID dell'agente responsabile del contratto",
-            "tags": [
-              "filter:agent",
-              "kpi:user_sales"
-            ]
-          },
-          "totalAmount": {
-            "type": "currency",
-            "description": "Valore totale del contratto al netto degli sconti",
-            "tags": [
-              "kpi:vss",
-              "filter:amount",
-              "chart:aggregate"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Stato operativo (bozza, inviato, attivo, accettato, in_scadenza, scaduto)",
-            "tags": [
-              "filter:status",
-              "kpi:pending_contracts"
-            ]
-          },
-          "type": {
-            "type": "string",
-            "description": "Tipologia contrattuale (Ricorrente, Non Ricorrente)",
-            "tags": [
-              "filter:type"
-            ]
-          },
-          "createdAt": {
-            "type": "datetime",
-            "description": "Data ISO 8601 di creazione del contratto",
-            "tags": [
-              "filter:date",
-              "sort:default"
-            ]
-          }
-        }
-      }
-    },
-    {
       "id": "activities",
       "label": "Attività",
       "description": "Tracciamento attività commerciali e operative",
@@ -1054,6 +889,115 @@
       }
     },
     {
+      "id": "targets",
+      "label": "Target & Budget",
+      "description": "Configurazione e monitoraggio dei target di performance temporali e avanzamento KPI",
+      "icon": "Target",
+      "requirements": [
+        "chart"
+      ],
+      "path": "/dashboard/targets",
+      "kpiBridgePath": "/dashboard/targets/targets.kpi.bridge.ts",
+      "settingsCard": {
+        "title": "Configurazione Target & Budget",
+        "description": "Piani di target (settimanali, mensili, annuali), metriche KPI assegnate, finestre di compilazione e ruoli coinvolti.",
+        "icon": "Target",
+        "path": "/dashboard/settings/targets"
+      },
+      "rolesView": [
+        "superadmin",
+        "direzione",
+        "amministrazione",
+        "commerciale",
+        "tecnico"
+      ],
+      "enabled": true,
+      "kpiTiles": [
+        {
+          "id": "targets_achievement_rate",
+          "title": "Completamento Target",
+          "subtitle": "Media avanzamento obiettivi periodo attivo",
+          "icon": "Target",
+          "format": "percent",
+          "valueKey": "targets_achievement_rate",
+          "aggregation": {
+            "collection": "targets_records",
+            "type": "count",
+            "dateFields": [
+              "startDate",
+              "edits.createdAt",
+              "edits.updatedAt"
+            ]
+          }
+        },
+        {
+          "id": "targets_total_budget",
+          "title": "Budget Totale Obiettivo",
+          "subtitle": "Totale budget economico fissato nel periodo",
+          "icon": "TrendingUp",
+          "format": "currency",
+          "isCurrency": true,
+          "valueKey": "targets_total_budget",
+          "aggregation": {
+            "collection": "targets_records",
+            "type": "sum",
+            "sumFields": [
+              "targetValues.vss",
+              "targetValues.total_incassato"
+            ],
+            "dateFields": [
+              "startDate",
+              "edits.createdAt"
+            ]
+          }
+        }
+      ],
+      "schema": {
+        "fields": {
+          "planName": {
+            "type": "string",
+            "description": "Nome del piano target assegnato",
+            "tags": [
+              "search",
+              "display"
+            ]
+          },
+          "periodKey": {
+            "type": "string",
+            "description": "Identificativo temporale (es. 2026-09 o 2026-W36)",
+            "tags": [
+              "search",
+              "filter:period",
+              "sort"
+            ]
+          },
+          "subjectName": {
+            "type": "string",
+            "description": "Nome del soggetto assegnatario (utente, squadra o azienda)",
+            "tags": [
+              "search",
+              "display",
+              "sort"
+            ]
+          },
+          "granularity": {
+            "type": "string",
+            "description": "Granularità temporale del piano (settimanale, mensile, annuale)",
+            "tags": [
+              "filter:granularity"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Stato di compilazione del target (draft, submitted, approved, locked)",
+            "tags": [
+              "filter:status"
+            ]
+          }
+        }
+      }
+    },
+    {
       "id": "warehouse",
       "label": "Magazzino",
       "description": "Gestione magazzino, giacenze, fornitori, ordini di acquisto e movimentazioni",
@@ -1210,109 +1154,165 @@
       }
     },
     {
-      "id": "targets",
-      "label": "Target & Budget",
-      "description": "Configurazione e monitoraggio dei target di performance temporali e avanzamento KPI",
-      "icon": "Target",
+      "id": "contracts",
+      "label": "Contratti",
+      "description": "Gestione contratti e ordini",
+      "icon": "FileText",
       "requirements": [
-        "chart"
+        "products"
       ],
-      "path": "/dashboard/targets",
-      "kpiBridgePath": "/dashboard/targets/targets.kpi.bridge.ts",
+      "path": "/dashboard/contracts",
+      "kpiBridgePath": "/dashboard/contracts/contracts.kpi.bridge.ts",
+      "clientTabs": [
+        {
+          "id": "quotes",
+          "component": "ClientQuotesTab.svelte",
+          "label": "Preventivi & Contratti"
+        }
+      ],
       "settingsCard": {
-        "title": "Configurazione Target & Budget",
-        "description": "Piani di target (settimanali, mensili, annuali), metriche KPI assegnate, finestre di compilazione e ruoli coinvolti.",
-        "icon": "Target",
-        "path": "/dashboard/settings/targets"
+        "title": "Configurazione Contratti & Preventivi",
+        "description": "Denominazione ufficiale, tipologie abilitate, numerazione automatica, stato predefinito e gestione data scadenza.",
+        "icon": "FileText",
+        "path": "/dashboard/settings/contracts"
       },
       "rolesView": [
         "superadmin",
         "direzione",
-        "amministrazione",
-        "commerciale",
-        "tecnico"
+        "amministrazione"
       ],
       "enabled": true,
       "kpiTiles": [
         {
-          "id": "targets_achievement_rate",
-          "title": "Completamento Target",
-          "subtitle": "Media avanzamento obiettivi periodo attivo",
-          "icon": "Target",
-          "format": "percent",
-          "valueKey": "targets_achievement_rate",
+          "id": "nncf",
+          "title": "NNCF",
+          "subtitle": "Conversioni",
+          "icon": "FileText",
+          "valueKey": "totalNNCF",
+          "commValueKey": "commTotalNNCF",
           "aggregation": {
-            "collection": "targets_records",
+            "collection": "clients",
             "type": "count",
             "dateFields": [
-              "startDate",
-              "edits.createdAt",
-              "edits.updatedAt"
+              "derived.nncfDate"
             ]
           }
         },
         {
-          "id": "targets_total_budget",
-          "title": "Budget Totale Obiettivo",
-          "subtitle": "Totale budget economico fissato nel periodo",
-          "icon": "TrendingUp",
+          "id": "vss",
+          "title": "VSS",
+          "subtitle": "Venduto Netto",
+          "icon": "DollarSign",
+          "valueKey": "totalVenduto",
+          "commValueKey": "commTotalSold",
           "format": "currency",
-          "isCurrency": true,
-          "valueKey": "targets_total_budget",
           "aggregation": {
-            "collection": "targets_records",
+            "collection": "contracts",
             "type": "sum",
             "sumFields": [
-              "targetValues.vss",
-              "targetValues.total_incassato"
+              "totalAmount",
+              "original.totalPrice"
             ],
             "dateFields": [
-              "startDate",
-              "edits.createdAt"
+              "createdAt",
+              "edits.createdAt",
+              "original.createdAt"
+            ],
+            "vendorFields": [
+              "agentId",
+              "original.vendorUid",
+              "original.secondVendorUid"
             ]
           }
         }
       ],
+      "anonymization": {
+        "collectionName": "contracts",
+        "linkFieldPath": "clientId",
+        "redactFields": [
+          {
+            "fieldPath": "notes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          },
+          {
+            "fieldPath": "clientNotes",
+            "replacement": "[CONTENUTO ANONIMIZZATO GDPR]"
+          }
+        ]
+      },
       "schema": {
         "fields": {
-          "planName": {
+          "contractNumber": {
             "type": "string",
-            "description": "Nome del piano target assegnato",
+            "description": "Numero sequenziale del contratto (es. CTR-2026-0001)",
+            "tags": [
+              "filter:number",
+              "search",
+              "sort"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Oggetto o descrizione sintetica del contratto",
             "tags": [
               "search",
               "display"
             ]
           },
-          "periodKey": {
+          "clientId": {
             "type": "string",
-            "description": "Identificativo temporale (es. 2026-09 o 2026-W36)",
+            "description": "ID del cliente intestatario del contratto",
             "tags": [
-              "search",
-              "filter:period",
-              "sort"
+              "filter:client",
+              "relation:clients"
             ]
           },
-          "subjectName": {
+          "clientName": {
             "type": "string",
-            "description": "Nome del soggetto assegnatario (utente, squadra o azienda)",
+            "description": "Ragione sociale / nome del cliente al momento del salvataggio",
             "tags": [
               "search",
-              "display",
-              "sort"
+              "display"
             ]
           },
-          "granularity": {
+          "agentId": {
             "type": "string",
-            "description": "Granularità temporale del piano (settimanale, mensile, annuale)",
+            "description": "UID dell'agente responsabile del contratto",
             "tags": [
-              "filter:granularity"
+              "filter:agent",
+              "kpi:user_sales"
+            ]
+          },
+          "totalAmount": {
+            "type": "currency",
+            "description": "Valore totale del contratto al netto degli sconti",
+            "tags": [
+              "kpi:vss",
+              "filter:amount",
+              "chart:aggregate"
             ]
           },
           "status": {
             "type": "string",
-            "description": "Stato di compilazione del target (draft, submitted, approved, locked)",
+            "description": "Stato operativo (bozza, inviato, attivo, accettato, in_scadenza, scaduto)",
             "tags": [
-              "filter:status"
+              "filter:status",
+              "kpi:pending_contracts"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipologia contrattuale (Ricorrente, Non Ricorrente)",
+            "tags": [
+              "filter:type"
+            ]
+          },
+          "createdAt": {
+            "type": "datetime",
+            "description": "Data ISO 8601 di creazione del contratto",
+            "tags": [
+              "filter:date",
+              "sort:default"
             ]
           }
         }

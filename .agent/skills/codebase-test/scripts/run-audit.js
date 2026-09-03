@@ -434,7 +434,7 @@ const capabilityChecks = [
   { id: 'HELPDESK_TICKETS_TMR', section: 'OPS', name: 'Gestione reclami, ticket assistenziali e calcolo TMR in ore', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'tickets/tickets.service.ts')) },
 
   // ROADMAP ADVANCED MODULES
-  { id: 'WAREHOUSE_SUPPLIERS_FIFO', section: 'ROADMAP_FASE1', name: 'Magazzino, articoli fornitori, ordini acquisto e scarico FIFO', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'suppliers')) || fs.existsSync(path.join(TEMPLATES_DIR, 'suppliers')), roadmapPlanned: true },
+  { id: 'WAREHOUSE_SUPPLIERS_FIFO', section: 'ROADMAP_FASE1', name: 'Magazzino, articoli fornitori, ordini acquisto e scarico FIFO', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'warehouse/warehouse.service.ts')) || fs.existsSync(path.join(TEMPLATES_DIR, 'warehouse/files/warehouse.service.ts')), roadmapPlanned: true },
   { id: 'FATTURE_IN_CLOUD_SDI_SYNC', section: 'ROADMAP_FASE2', name: 'Integrazione Fatture in Cloud API v2 SDI e fatture da bolla/preventivo', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'invoices')) || fs.existsSync(path.join(TEMPLATES_DIR, 'invoices')), roadmapPlanned: true },
   { id: 'JOB_COSTING_IMPUTATION', section: 'ROADMAP_FASE2', name: 'Imputazione costi per cantiere (ore bolle + mezzi + materiali FIFO)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'job_costing')), roadmapPlanned: true },
 

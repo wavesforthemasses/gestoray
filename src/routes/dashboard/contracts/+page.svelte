@@ -20,7 +20,8 @@
     Eye, 
     Edit, 
     Trash2, 
-    Filter
+    Filter,
+    Sparkles
   } from '@lucide/svelte';
 
   let settings = $state<ContractSettings>({
@@ -308,6 +309,11 @@
                   <a href="/dashboard/contracts/{c.id}" class="contract-link">
                     {c.title || `${labels.singular} - ${c.clientName}`}
                   </a>
+                  {#if c.derived?.isNNCF || c.isNNCF}
+                    <span class="nncf-pill" title="New Name in Central File (1° Ordine di questo Cliente)">
+                      <Sparkles size={10} /> NNCF
+                    </span>
+                  {/if}
                   <div class="sub-text">
                     <User size={12} /> {c.clientName}
                   </div>
@@ -500,6 +506,22 @@
     border-radius: 4px;
     background: var(--color-neutral-100, #f3f4f6);
     color: var(--color-neutral-700, #374151);
+  }
+
+  .nncf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(234, 88, 12, 0.12);
+    color: #c2410c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    margin-left: 6px;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
   }
 
   .badge {

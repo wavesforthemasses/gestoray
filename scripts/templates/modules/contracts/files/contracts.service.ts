@@ -47,12 +47,52 @@ export class ContractsService {
   private static COLLECTION_NAME = 'contracts';
 
   /**
+   * Helper SSOT: Estrae la data efficace del contratto per il confronto cronologico NNCF
+   */
+  static extractEffectiveDate(cData: any): string {
+    const orig = cData?.original || {};
+    const edits = cData?.edits || {};
+    return (
+      cData?.startDate ||
+      cData?.createdAt ||
+      edits?.createdAt ||
+      orig?.startDate ||
+      orig?.createdAt ||
+      ''
+    );
+  }
+
+  /**
+   * Helper SSOT: Ordina due contratti per anzianità deterministica con tie-breaker su contractNumber e ID
+   */
+  static compareEffectiveDates(a: any, b: any): number {
+    const dateA = ContractsService.extractEffectiveDate(a);
+    const dateB = ContractsService.extractEffectiveDate(b);
+
+    const timeA = dateA ? new Date(dateA.includes('T') ? dateA : `${dateA}T12:00:00Z`).getTime() : 0;
+    const timeB = dateB ? new Date(dateB.includes('T') ? dateB : `${dateB}T12:00:00Z`).getTime() : 0;
+
+    if (timeA !== timeB) {
+      return timeA - timeB; // Ascending: il più vecchio prima
+    }
+
+    const numA = a.contractNumber || a.original?.contractNumber || '';
+    const numB = b.contractNumber || b.original?.contractNumber || '';
+    if (numA && numB && numA !== numB) {
+      return numA.localeCompare(numB);
+    }
+
+    return (a.id || '').localeCompare(b.id || '');
+  }
+
+  /**
    * Helper di normalizzazione resiliente (Dual-Schema):
    * Mappa trasparentemente sia i documenti con chiavi root sia quelli storici annidati in original.*
    */
   static normalizeContractData(data: any, id?: string): ContractItem {
     if (!data) return {} as ContractItem;
     const orig = data.original || {};
+    const isNNCF = Boolean(data.derived?.isNNCF ?? data.isNNCF ?? orig.isNNCF);
 
     const rawItems: any[] = data.items || orig.products || [];
     const items: ContractProductItem[] = rawItems.map((p: any) => {
@@ -115,6 +155,7 @@ export class ContractsService {
       customFields: data.customFields || orig.customFields || {},
       createdAt: data.createdAt || data.edits?.createdAt || orig.createdAt || '',
       updatedAt: data.updatedAt || data.edits?.modifiedAt || orig.updatedAt || '',
+      isNNCF,
       original: orig,
       edits: data.edits || {
         createdAt: data.createdAt || orig.createdAt,
@@ -124,7 +165,10 @@ export class ContractsService {
         approvedBy: orig.approvedBy,
         approvedEmail: orig.approvedEmail
       },
-      derived: data.derived || {}
+      derived: {
+        ...(data.derived || {}),
+        isNNCF
+      }
     };
   }
 

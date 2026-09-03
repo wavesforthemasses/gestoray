@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-01T08:16:22.723Z",
+  "timestamp": "2026-09-03T07:31:20.918Z",
   "environment": {
     "nodeVersion": "v22.23.1",
     "rootDir": "/home/vincenzo/Code/gestoray"
@@ -75,8 +75,8 @@
       "modules": {
         "contracts": {
           "exists": true,
-          "filesCount": 31,
-          "linesOfCode": 9333,
+          "filesCount": 32,
+          "linesOfCode": 9729,
           "hasService": true,
           "hasBridge": true,
           "bridgeHealth": "PERFECT_SSOT",
@@ -233,33 +233,17 @@
   },
   "summary": {
     "totalModulesScanned": 20,
-    "totalFilesScanned": 229,
-    "totalLinesOfCode": 68341,
-    "healthScore": 97,
-    "totalChecks": 228,
-    "passedChecks": 222,
-    "warnings": 6,
+    "totalFilesScanned": 230,
+    "totalLinesOfCode": 68737,
+    "healthScore": 99,
+    "totalChecks": 225,
+    "passedChecks": 223,
+    "warnings": 2,
     "failedChecks": 0
   },
   "securityAlerts": [],
   "templateDriftAlerts": [],
-  "numericSafetyAlerts": [
-    {
-      "file": "src/routes/dashboard/targets/+page.svelte",
-      "line": 449,
-      "code": "<span>Completamento Totale: <strong>{companyTotals.overallRate.toFixed(1)}%</strong></span>"
-    },
-    {
-      "file": "src/routes/dashboard/targets/components/TargetProgressBar.svelte",
-      "line": 33,
-      "code": "{rate.toFixed(1)}%"
-    },
-    {
-      "file": "src/routes/dashboard/targets/components/TargetSubjectCard.svelte",
-      "line": 66,
-      "code": "<span>{tierBadge.label} ({targetRecord.overallRate.toFixed(1)}%)</span>"
-    }
-  ],
+  "numericSafetyAlerts": [],
   "smeSimulations": {
     "1_Edilizia_Cantieri_SAL": {
       "totalLabor": 6300,
@@ -407,7 +391,7 @@
       "id": "WAREHOUSE_SUPPLIERS_FIFO",
       "section": "ROADMAP_FASE1",
       "name": "Magazzino, articoli fornitori, ordini acquisto e scarico FIFO",
-      "covered": false,
+      "covered": true,
       "roadmapPlanned": true
     },
     {

@@ -114,5 +114,7 @@ export interface ContractItem {
     commissionSecondary?: number;
     stockStatus?: 'pending' | 'depleted' | 'restocked' | 'exempt';
     stockMovementIds?: string[];
+    isNNCF?: boolean;
   };
+  isNNCF?: boolean;
 }
