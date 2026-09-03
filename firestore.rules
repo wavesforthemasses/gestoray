@@ -380,7 +380,72 @@ match /stock_movements/{movId} {
   allow update: if false; // Immutable ledger movement
   allow delete: if hasRole('superadmin');
 }
+
+match /warehouse_movements/{movId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if false; // Immutable ledger movement
+  allow delete: if hasRole('superadmin');
+}
+
+match /interventions/{intId} {
+  allow read: if isAuth();
+  allow create, update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+}
     // --- MODULE: warehouse END ---
+    // --- MODULE: vat END ---
+
+    // --- MODULE: vat BEGIN ---
+    // --- MODULE: vat BEGIN ---
+    // VAT & TAX SETTINGS
+    match /settings/vat {
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
+    }
+    // --- MODULE: vat END ---
+    // --- MODULE: vat END ---
+    // --- MODULE: invoices END ---
+
+    // --- MODULE: invoices BEGIN ---
+    // --- MODULE: invoices BEGIN ---
+    // INVOICES & FISCAL DOCUMENTS
+    match /invoices/{invoiceId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived() && (
+        isAdmin() || 
+        resource.data.status == 'bozza' || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paymentStatus', 'sdiStatus', 'paidAmount', 'remainingAmount', 'sdiDetails', 'updatedAt', 'edits', 'derived'])
+      );
+      allow delete: if hasRole('superadmin') || (isAuth() && resource.data.status == 'bozza');
+    }
+
+    match /settings/invoices {
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
+    }
+    // --- MODULE: invoices END ---
+    // --- MODULE: invoices END ---
+
+    // --- MODULE: job_costing BEGIN ---
+    // JOB COSTING & CONTROL OF MANAGEMENT
+match /job_costing_projects/{projectId} {
+  allow read: if isAuth();
+  allow create, update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+
+  match /cost_items/{costId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth();
+  }
+}
+
+match /job_costing_settings/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+}
+    // --- MODULE: job_costing END ---
   }
 }
 

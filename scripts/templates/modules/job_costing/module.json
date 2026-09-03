@@ -1,0 +1,91 @@
+{
+  "id": "job_costing",
+  "label": "Controllo di Gestione",
+  "description": "Controllo di gestione cantieri, analisi marginalità, budget preventivo vs consuntivo e costi manodopera, materiali FIFO e mezzi",
+  "icon": "TrendingUp",
+  "requirements": [],
+  "path": "/dashboard/job_costing",
+  "kpiBridgePath": "/dashboard/job_costing/jobCosting.kpi.bridge.ts",
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
+  ],
+  "enabled": true,
+  "kpiTiles": [
+    {
+      "id": "total_jobs_value",
+      "title": "Valore Commesse",
+      "subtitle": "Valore totale contrattuale commesse",
+      "icon": "Briefcase",
+      "format": "currency",
+      "isCurrency": true,
+      "valueKey": "valore_totale_commesse",
+      "aggregation": {
+        "collection": "job_costing_projects",
+        "type": "sum",
+        "sumFields": ["revenues.contractValue"],
+        "dateFields": ["startDate", "createdAt"]
+      }
+    },
+    {
+      "id": "total_actual_costs",
+      "title": "Costi Consuntivati",
+      "subtitle": "Spesa totale effettiva sostenuta",
+      "icon": "Calculator",
+      "format": "currency",
+      "isCurrency": true,
+      "valueKey": "costi_totali_consuntivati",
+      "aggregation": {
+        "collection": "job_costing_projects",
+        "type": "sum",
+        "sumFields": ["actuals.total"],
+        "dateFields": ["startDate", "createdAt"]
+      }
+    },
+    {
+      "id": "avg_margin_percent",
+      "title": "Margine Medio",
+      "subtitle": "Redditività media aziendale",
+      "icon": "TrendingUp",
+      "format": "percent",
+      "isCurrency": false,
+      "valueKey": "margine_medio_percent",
+      "aggregation": {
+        "collection": "job_costing_projects",
+        "type": "avg",
+        "sumFields": ["profitability.grossMarginPercent"],
+        "dateFields": ["startDate", "createdAt"]
+      }
+    }
+  ],
+  "schema": {
+    "fields": {
+      "code": {
+        "type": "string",
+        "description": "Codice progressivo commessa",
+        "tags": ["search", "sort"]
+      },
+      "title": {
+        "type": "string",
+        "description": "Titolo o descrizione cantiere/commessa",
+        "tags": ["search"]
+      },
+      "placeId": {
+        "type": "string",
+        "description": "ID Cantiere o Luogo associato",
+        "tags": ["filter:place", "relation:places"]
+      },
+      "clientId": {
+        "type": "string",
+        "description": "ID Cliente committente",
+        "tags": ["filter:client", "relation:clients"]
+      },
+      "status": {
+        "type": "string",
+        "description": "Stato commessa (pianificata, in_corso, completata, chiusa)",
+        "tags": ["filter:status", "kpi:status"]
+      }
+    }
+  }
+}

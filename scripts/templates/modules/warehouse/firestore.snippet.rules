@@ -26,3 +26,10 @@ match /stock_movements/{movId} {
   allow update: if false; // Immutable ledger movement
   allow delete: if hasRole('superadmin');
 }
+
+match /warehouse_movements/{movId} {
+  allow read: if isAuth();
+  allow create: if isAuth() && notWritingDerived();
+  allow update: if false; // Immutable ledger movement
+  allow delete: if hasRole('superadmin');
+}

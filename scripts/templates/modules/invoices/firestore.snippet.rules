@@ -1,0 +1,18 @@
+    // --- MODULE: invoices BEGIN ---
+    // INVOICES & FISCAL DOCUMENTS
+    match /invoices/{invoiceId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && notWritingDerived();
+      allow update: if isAuth() && notWritingDerived() && (
+        isAdmin() || 
+        resource.data.status == 'bozza' || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paymentStatus', 'sdiStatus', 'paidAmount', 'remainingAmount', 'sdiDetails', 'updatedAt', 'edits', 'derived'])
+      );
+      allow delete: if hasRole('superadmin') || (isAuth() && resource.data.status == 'bozza');
+    }
+
+    match /settings/invoices {
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
+    }
+    // --- MODULE: invoices END ---

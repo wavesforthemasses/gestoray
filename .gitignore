@@ -30,3 +30,5 @@ firestore-debug.log
 
 /screenshots
 screenshots/
+.agent/skills/test-ux-ui/screenshots/
+.agent/skills/test-ux-ui/.profile/

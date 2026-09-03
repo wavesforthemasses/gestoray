@@ -42,3 +42,6 @@ export function calculateVatBreakdown(
     vatAmount: vat
   };
 }
+
+export { formatCurrency } from './formatters';
+

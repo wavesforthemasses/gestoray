@@ -1,0 +1,16 @@
+// JOB COSTING & CONTROL OF MANAGEMENT
+match /job_costing_projects/{projectId} {
+  allow read: if isAuth();
+  allow create, update: if isAuth() && notWritingDerived();
+  allow delete: if hasRole('superadmin') || isDirezione() || isAdmin();
+
+  match /cost_items/{costId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth();
+  }
+}
+
+match /job_costing_settings/{docId} {
+  allow read: if isAuth();
+  allow write: if isAuth() && (hasRole('superadmin') || isDirezione() || isAdmin());
+}

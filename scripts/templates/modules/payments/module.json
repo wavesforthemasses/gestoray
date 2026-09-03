@@ -3,7 +3,7 @@
   "label": "Incassi & Cassa",
   "description": "Registro incassi, flussi di cassa, scorporo IVA e riconciliazione",
   "icon": "CreditCard",
-  "requirements": [],
+  "requirements": ["vat"],
   "path": "/dashboard/payments",
   "kpiBridgePath": "/dashboard/payments/payments.kpi.bridge.ts",
   "settingsCard": {

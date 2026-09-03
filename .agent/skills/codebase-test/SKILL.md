@@ -97,14 +97,14 @@ L'audit verifica la conformità della piattaforma rispetto a tutte le macro-aree
 | **B** | **Preventivi & Contratti** | Creazione preventivo, listini, alert prezzo minimo (`minPrice`), salvataggio bozza, co-venditore con ripartizione %, approvazione workflow | ✅ Attivo & Collaudato | `contracts.service.test.ts`, `multiSectorAgnostic.test.ts` |
 | **C** | **Scadenziari & Rate** | Rateizzazione flessibile, solleciti visivi scaduti, posticipo date, inserimento rate intermedie | ✅ Attivo & Collaudato | `contracts.service.test.ts`, `deadlines.service.test.ts` |
 | **D** | **Incassi, IVA & Provvigioni** | Allocazione incasso singolo a multi-contratti, scorporo IVA (4%, 10%, 22%), provvigioni su incassato reale (`Realized Payments`) | ✅ Attivo & Collaudato | `payments.service.test.ts`, `multiSectorAgnostic.test.ts` |
-| **E** | **Target Commerciali** | Impostazione target mensili per venditore a inizio mese, monitoraggio avanzamento KPI real-time | ⏳ **Pianificato in Roadmap** | *Da implementare con modulo targets* |
+| **E** | **Target Commerciali** | Impostazione target mensili per venditore a inizio mese, monitoraggio avanzamento KPI real-time | ✅ Attivo & Collaudato | `targets.*.test.ts`, `multiSectorAgnostic.test.ts` |
 | **F** | **Collaboratori & Ruoli** | Matrice RBAC (superadmin, amministrazione, direzione, commerciale), provvigioni per qualifica (Junior, Senior, DV) | ✅ Attivo & Collaudato | `authCheck.test.ts`, `business-logic.test.ts` |
 | **G** | **Business Intelligence** | Grafico interattivo dinamico (`UniversalAnalyticsChart`), filtri al click, export CSV/XLS, print layout | ✅ Attivo & Collaudato | `dashboard.service.test.ts`, `multiSectorAgnostic.test.ts` |
 | **OPS** | **Field Operations** | Cantieri gerarchici georeferenziati (`places`), Squadre & Risorse (`teams`), Parco Mezzi (`vehicles`), Pianificazione a calendario (`scheduling`) | ✅ Attivo & Collaudato | `places.*.test.ts`, `teams.*.test.ts`, `vehicles.*.test.ts` |
 | **OPS** | **Assistenza & Ticket** | Gestione ticket/reclami, assegnazione tecnici, calcolo TMR in ore, monitoraggio SLA | ✅ Attivo & Collaudato | `tickets.service.test.ts`, `multiSectorAgnostic.test.ts` |
 | **FASE 1** | **Magazzino & Acquisti** | Fornitori, ordini d'acquisto, lotti/ricezione e scarico FIFO | ✅ Attivo & Collaudato | `warehouse.domain.test.ts`, `warehouse.service.ts` |
-| **FASE 2** | **Fatture in Cloud SDI** | Integrazione API v2 Fatture in Cloud, emissione fatture acconto/saldo, sync SDI, riconciliazione fatture ricevute | ⏳ **Pianificato in Roadmap (Fase 2 ott-nov)** | *Da implementare* |
-| **FASE 2** | **Job Costing Cantiere** | Imputazione costi cantiere (ore bolle + ammortamento mezzi + materiali FIFO) | ⏳ **Pianificato in Roadmap (Fase 2 nov)** | *Da implementare* |
+| **FASE 2** | **Fattura Elettronica SDI** | FatturaPA XML v1.2.2 nativa, sezionali, numerazioni, acconti/saldi, scorporo IVA e bolle TD24 | ✅ Attivo & Collaudato | `xmlFatturaPa.test.ts`, `invoices.domain.test.ts` |
+| **FASE 2** | **Job Costing Cantiere** | Imputazione costi cantiere (ore bolle + ammortamento mezzi + materiali FIFO + alert budget) | ✅ Attivo & Collaudato | `job_costing.domain.test.ts`, `multiSectorAgnostic.test.ts` |
 
 ---
 

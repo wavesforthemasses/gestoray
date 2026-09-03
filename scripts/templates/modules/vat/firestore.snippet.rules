@@ -1,0 +1,7 @@
+    // --- MODULE: vat BEGIN ---
+    // VAT & TAX SETTINGS
+    match /settings/vat {
+      allow read: if isAuth();
+      allow write: if isAuth() && (isAdmin() || isDirezione());
+    }
+    // --- MODULE: vat END ---

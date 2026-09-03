@@ -54,10 +54,19 @@ export class PaymentSettingsService {
           });
         }
 
+        let vatRates = data.vatRates && data.vatRates.length > 0 ? data.vatRates : DEFAULT_VAT_RATES;
+        try {
+          const { VatRatesService } = await import('$lib/services/vatRatesService');
+          const activeRates = await VatRatesService.getActiveVatRates();
+          if (activeRates && activeRates.length > 0) {
+            vatRates = activeRates.map(r => ({ rate: r.rate, label: r.label }));
+          }
+        } catch (e) {}
+
         return {
           ...DEFAULT_SETTINGS,
           ...data,
-          vatRates: data.vatRates && data.vatRates.length > 0 ? data.vatRates : DEFAULT_VAT_RATES,
+          vatRates,
           paymentMethods: methods
         } as PaymentSettings;
       }

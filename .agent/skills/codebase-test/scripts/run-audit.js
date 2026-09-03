@@ -53,11 +53,11 @@ const SUBSYSTEMS = {
   },
   FINANCE_COMMERCIAL: {
     title: '2. Commercial Pipelines & Financial Reconciliation',
-    modules: ['contracts', 'payments', 'commissions']
+    modules: ['contracts', 'payments', 'commissions', 'targets', 'invoices']
   },
   OPERATIONS_LOGISTICS: {
     title: '3. Field Operations, Resources & Logistics',
-    modules: ['places', 'teams', 'vehicles', 'scheduling', 'interventi']
+    modules: ['places', 'teams', 'vehicles', 'scheduling', 'interventi', 'warehouse', 'job_costing']
   },
   PRODUCTS_HELPDESK_ACTIVITY: {
     title: '4. Products Catalog, Service Desk & Tasks',
@@ -119,10 +119,12 @@ for (const [subKey, subDef] of Object.entries(SUBSYSTEMS)) {
     const schemaPath = path.join(modDir, 'schema.ts');
     const testPath = path.join(modDir, `${mod}.service.test.ts`);
 
-    const hasService = fs.existsSync(servicePath);
+    const hasService = fs.existsSync(servicePath) || fs.existsSync(path.join(modDir, `${mod}Service.ts`));
     const hasBridge = fs.existsSync(bridgePath);
     const hasSchema = fs.existsSync(schemaPath);
-    const hasTest = fs.existsSync(testPath);
+    const hasTest = fs.existsSync(testPath) || 
+      fs.existsSync(path.join(modDir, `${mod}.domain.test.ts`)) ||
+      fs.existsSync(path.join(modDir, `${mod}Service.test.ts`));
 
     let bridgeHealth = 'N/A';
     if (hasBridge) {
@@ -419,7 +421,7 @@ const capabilityChecks = [
   { id: 'VAT_UNBUNDLING_REALIZED_COMMISSIONS', section: 'D', name: 'Scorporo IVA multi-aliquota e maturazione provvigioni su incassato reale', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'payments/payments.service.ts')) },
 
   // SECTION E: Commercial Targets
-  { id: 'COMMERCIAL_MONTHLY_TARGETS', section: 'E', name: 'Inserimento target mensili commerciali e monitoraggio avanzamento KPI', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'settings/targets')) || fs.existsSync(path.join(DASHBOARD_DIR, 'targets')), roadmapPlanned: true },
+  { id: 'COMMERCIAL_MONTHLY_TARGETS', section: 'E', name: 'Inserimento target mensili commerciali e monitoraggio avanzamento KPI', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'targets/targets.service.ts')) },
 
   // SECTION F: Collaborators, Qualifications & RBAC
   { id: 'RBAC_MULTI_ROLES_QUALIFICATIONS', section: 'F', name: 'RBAC multi-ruolo e provvigioni per qualifica (Junior/Senior/DV)', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/utils/authCheck.ts')) && fs.existsSync(path.join(DASHBOARD_DIR, 'qualifications')) },
@@ -434,9 +436,9 @@ const capabilityChecks = [
   { id: 'HELPDESK_TICKETS_TMR', section: 'OPS', name: 'Gestione reclami, ticket assistenziali e calcolo TMR in ore', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'tickets/tickets.service.ts')) },
 
   // ROADMAP ADVANCED MODULES
-  { id: 'WAREHOUSE_SUPPLIERS_FIFO', section: 'ROADMAP_FASE1', name: 'Magazzino, articoli fornitori, ordini acquisto e scarico FIFO', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'warehouse/warehouse.service.ts')) || fs.existsSync(path.join(TEMPLATES_DIR, 'warehouse/files/warehouse.service.ts')), roadmapPlanned: true },
-  { id: 'FATTURE_IN_CLOUD_SDI_SYNC', section: 'ROADMAP_FASE2', name: 'Integrazione Fatture in Cloud API v2 SDI e fatture da bolla/preventivo', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'invoices')) || fs.existsSync(path.join(TEMPLATES_DIR, 'invoices')), roadmapPlanned: true },
-  { id: 'JOB_COSTING_IMPUTATION', section: 'ROADMAP_FASE2', name: 'Imputazione costi per cantiere (ore bolle + mezzi + materiali FIFO)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'job_costing')), roadmapPlanned: true },
+  { id: 'WAREHOUSE_SUPPLIERS_FIFO', section: 'ROADMAP_FASE1', name: 'Magazzino, articoli fornitori, ordini acquisto e scarico FIFO', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'warehouse/warehouse.service.ts')) },
+  { id: 'FATTURE_IN_CLOUD_SDI_SYNC', section: 'ROADMAP_FASE2', name: 'Integrazione FatturaPA XML v1.2.2 nativa, sezionali, numerazioni e bolle TD24', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'invoices/invoices.service.ts')) },
+  { id: 'JOB_COSTING_IMPUTATION', section: 'ROADMAP_FASE2', name: 'Imputazione costi per cantiere (ore bolle + mezzi + materiali FIFO)', covered: fs.existsSync(path.join(DASHBOARD_DIR, 'job_costing/jobCosting.service.ts')) },
 
   // MULTI-SECTOR AGNOSTIC TEST SUITE
   { id: 'MULTI_SECTOR_UNIT_TEST_SUITE', section: 'TESTS', name: 'Suite di test unitari agnostici per i 5 settori PMI (multiSectorAgnostic.test.ts)', covered: fs.existsSync(path.join(ROOT_DIR, 'src/lib/services/multiSectorAgnostic.test.ts')) }

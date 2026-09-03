@@ -1,0 +1,953 @@
+[
+  {
+    "id": "dashboard",
+    "name": "Dashboard Overview & Universal Chart",
+    "route": "/dashboard",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:03.221Z",
+        "numericTimestamp": 1788462663016,
+        "url": "http://localhost:5174/dashboard",
+        "targetRequested": "http://localhost:5174/dashboard",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1752,
+          "scrollHeight": 2880,
+          "bodyWidth": 1440,
+          "bodyHeight": 2880,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462663016_audit_dashboard_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:05.541Z",
+        "numericTimestamp": 1788462665358,
+        "url": "http://localhost:5174/dashboard",
+        "targetRequested": "http://localhost:5174/dashboard",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1452,
+          "scrollHeight": 4004,
+          "bodyWidth": 390,
+          "bodyHeight": 4004,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462665358_audit_dashboard_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "clients",
+    "name": "Anagrafica Clienti & Ricerca",
+    "route": "/dashboard/clients",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:07.695Z",
+        "numericTimestamp": 1788462667645,
+        "url": "http://localhost:5174/dashboard/clients",
+        "targetRequested": "http://localhost:5174/dashboard/clients",
+        "pageTitle": "Clienti | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462667645_audit_clients_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:09.855Z",
+        "numericTimestamp": 1788462669830,
+        "url": "http://localhost:5174/dashboard/clients",
+        "targetRequested": "http://localhost:5174/dashboard/clients",
+        "pageTitle": "Clienti | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 844,
+          "bodyWidth": 390,
+          "bodyHeight": 844,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462669830_audit_clients_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "contracts",
+    "name": "Preventivi & Contratti Attivi",
+    "route": "/dashboard/contracts",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:11.984Z",
+        "numericTimestamp": 1788462671928,
+        "url": "http://localhost:5174/dashboard/contracts",
+        "targetRequested": "http://localhost:5174/dashboard/contracts",
+        "pageTitle": "Gestione Contratti | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462671928_audit_contracts_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:14.145Z",
+        "numericTimestamp": 1788462674085,
+        "url": "http://localhost:5174/dashboard/contracts",
+        "targetRequested": "http://localhost:5174/dashboard/contracts",
+        "pageTitle": "Gestione Contratti | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 1206,
+          "bodyWidth": 390,
+          "bodyHeight": 1206,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462674085_audit_contracts_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "payments",
+    "name": "Incassi, Cassa & Riconciliazione",
+    "route": "/dashboard/payments",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:16.297Z",
+        "numericTimestamp": 1788462676241,
+        "url": "http://localhost:5174/dashboard/payments",
+        "targetRequested": "http://localhost:5174/dashboard/payments",
+        "pageTitle": "Incassi | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462676241_audit_payments_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:18.477Z",
+        "numericTimestamp": 1788462678420,
+        "url": "http://localhost:5174/dashboard/payments",
+        "targetRequested": "http://localhost:5174/dashboard/payments",
+        "pageTitle": "Incassi | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 1140,
+          "bodyWidth": 390,
+          "bodyHeight": 1140,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462678420_audit_payments_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "targets",
+    "name": "Target Commerciali & Monitoraggio KPI",
+    "route": "/dashboard/targets",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:20.633Z",
+        "numericTimestamp": 1788462680572,
+        "url": "http://localhost:5174/dashboard/targets",
+        "targetRequested": "http://localhost:5174/dashboard/targets",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462680572_audit_targets_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:22.803Z",
+        "numericTimestamp": 1788462682746,
+        "url": "http://localhost:5174/dashboard/targets",
+        "targetRequested": "http://localhost:5174/dashboard/targets",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 678,
+          "scrollHeight": 1468,
+          "bodyWidth": 390,
+          "bodyHeight": 1119,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462682746_audit_targets_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "invoices",
+    "name": "Fatturazione Elettronica SDI & Sezionali",
+    "route": "/dashboard/invoices",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:24.949Z",
+        "numericTimestamp": 1788462684899,
+        "url": "http://localhost:5174/dashboard/invoices",
+        "targetRequested": "http://localhost:5174/dashboard/invoices",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462684899_audit_invoices_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:27.110Z",
+        "numericTimestamp": 1788462687054,
+        "url": "http://localhost:5174/dashboard/invoices",
+        "targetRequested": "http://localhost:5174/dashboard/invoices",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 1065,
+          "bodyWidth": 390,
+          "bodyHeight": 1065,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462687054_audit_invoices_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "invoices_add",
+    "name": "Wizard Creazione Fattura / Bolla TD24",
+    "route": "/dashboard/invoices/add",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:29.322Z",
+        "numericTimestamp": 1788462689245,
+        "url": "http://localhost:5174/dashboard/invoices/add",
+        "targetRequested": "http://localhost:5174/dashboard/invoices/add",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 1054,
+          "bodyWidth": 1440,
+          "bodyHeight": 1054,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462689245_audit_invoices_add_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "places",
+    "name": "Luoghi, Cantieri & Elenco Multilivello",
+    "route": "/dashboard/places",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:31.466Z",
+        "numericTimestamp": 1788462691413,
+        "url": "http://localhost:5174/dashboard/places",
+        "targetRequested": "http://localhost:5174/dashboard/places",
+        "pageTitle": "Luoghi | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462691413_audit_places_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:33.624Z",
+        "numericTimestamp": 1788462693584,
+        "url": "http://localhost:5174/dashboard/places",
+        "targetRequested": "http://localhost:5174/dashboard/places",
+        "pageTitle": "Luoghi | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 430,
+          "scrollHeight": 931,
+          "bodyWidth": 390,
+          "bodyHeight": 844,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462693584_audit_places_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "places_add",
+    "name": "Nuovo Luogo con Mappa Leaflet & Geofencing",
+    "route": "/dashboard/places/add",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:35.854Z",
+        "numericTimestamp": 1788462695712,
+        "url": "http://localhost:5174/dashboard/places/add",
+        "targetRequested": "http://localhost:5174/dashboard/places/add",
+        "pageTitle": "Nuovo Luogo | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 1780,
+          "bodyWidth": 1440,
+          "bodyHeight": 1780,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462695712_audit_places_add_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:38.058Z",
+        "numericTimestamp": 1788462697981,
+        "url": "http://localhost:5174/dashboard/places/add",
+        "targetRequested": "http://localhost:5174/dashboard/places/add",
+        "pageTitle": "Nuovo Luogo | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 2753,
+          "bodyWidth": 390,
+          "bodyHeight": 2753,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462697981_audit_places_add_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "job_costing",
+    "name": "Controllo di Gestione & Redditività Commesse",
+    "route": "/dashboard/job_costing",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:40.217Z",
+        "numericTimestamp": 1788462700158,
+        "url": "http://localhost:5174/dashboard/job_costing",
+        "targetRequested": "http://localhost:5174/dashboard/job_costing",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462700158_audit_job_costing_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:42.377Z",
+        "numericTimestamp": 1788462702325,
+        "url": "http://localhost:5174/dashboard/job_costing",
+        "targetRequested": "http://localhost:5174/dashboard/job_costing",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 1190,
+          "bodyWidth": 390,
+          "bodyHeight": 1190,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462702325_audit_job_costing_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "job_costing_add",
+    "name": "Wizard Budget Preventivo Commessa",
+    "route": "/dashboard/job_costing/add",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:44.559Z",
+        "numericTimestamp": 1788462704477,
+        "url": "http://localhost:5174/dashboard/job_costing/add",
+        "targetRequested": "http://localhost:5174/dashboard/job_costing/add",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 1074,
+          "bodyWidth": 1440,
+          "bodyHeight": 1074,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462704477_audit_job_costing_add_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "warehouse",
+    "name": "Magazzino, Scarico FIFO & Movimenti",
+    "route": "/dashboard/warehouse",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:46.713Z",
+        "numericTimestamp": 1788462706660,
+        "url": "http://localhost:5174/dashboard/warehouse",
+        "targetRequested": "http://localhost:5174/dashboard/warehouse",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462706660_audit_warehouse_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:48.862Z",
+        "numericTimestamp": 1788462708817,
+        "url": "http://localhost:5174/dashboard/warehouse",
+        "targetRequested": "http://localhost:5174/dashboard/warehouse",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 492,
+          "scrollHeight": 1149,
+          "bodyWidth": 390,
+          "bodyHeight": 1149,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462708817_audit_warehouse_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "teams",
+    "name": "Squadre & Risorse Umane",
+    "route": "/dashboard/teams",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:51.010Z",
+        "numericTimestamp": 1788462710960,
+        "url": "http://localhost:5174/dashboard/teams",
+        "targetRequested": "http://localhost:5174/dashboard/teams",
+        "pageTitle": "Squadre | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462710960_audit_teams_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "vehicles",
+    "name": "Parco Mezzi & Scadenzario Manutenzioni",
+    "route": "/dashboard/vehicles",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:53.161Z",
+        "numericTimestamp": 1788462713115,
+        "url": "http://localhost:5174/dashboard/vehicles",
+        "targetRequested": "http://localhost:5174/dashboard/vehicles",
+        "pageTitle": "Mezzi | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462713115_audit_vehicles_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "scheduling",
+    "name": "Pianificazione Calendario Operativo",
+    "route": "/dashboard/scheduling",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:55.327Z",
+        "numericTimestamp": 1788462715279,
+        "url": "http://localhost:5174/dashboard/scheduling",
+        "targetRequested": "http://localhost:5174/dashboard/scheduling",
+        "pageTitle": "Pianificazioni & Agenda | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462715279_audit_scheduling_desktop_desktop.png",
+        "consoleAlertsCount": 1,
+        "consoleAlerts": [
+          {
+            "type": "error",
+            "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          }
+        ]
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "tickets",
+    "name": "Assistenza Tecnica & Monitoraggio TMR",
+    "route": "/dashboard/tickets",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:57.477Z",
+        "numericTimestamp": 1788462717418,
+        "url": "http://localhost:5174/dashboard/tickets",
+        "targetRequested": "http://localhost:5174/dashboard/tickets",
+        "pageTitle": "Ticket di Assistenza | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462717418_audit_tickets_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:11:59.641Z",
+        "numericTimestamp": 1788462719594,
+        "url": "http://localhost:5174/dashboard/tickets",
+        "targetRequested": "http://localhost:5174/dashboard/tickets",
+        "pageTitle": "Ticket di Assistenza | ERP Dev",
+        "preset": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 390,
+          "scrollHeight": 1108,
+          "bodyWidth": 390,
+          "bodyHeight": 1108,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462719594_audit_tickets_mobile_mobile.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    }
+  },
+  {
+    "id": "activities",
+    "name": "Diario Attività & Contatti",
+    "route": "/dashboard/activities",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:12:01.840Z",
+        "numericTimestamp": 1788462721749,
+        "url": "http://localhost:5174/dashboard/activities",
+        "targetRequested": "http://localhost:5174/dashboard/activities",
+        "pageTitle": "Attività & Task Interni | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462721749_audit_activities_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "deadlines",
+    "name": "Scadenziario Generale Aziendale",
+    "route": "/dashboard/deadlines",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:12:04.226Z",
+        "numericTimestamp": 1788462724152,
+        "url": "http://localhost:5174/dashboard/deadlines",
+        "targetRequested": "http://localhost:5174/dashboard/deadlines",
+        "pageTitle": "Scadenzario & Allarmi | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462724152_audit_deadlines_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "settings_vat",
+    "name": "Configurazione Aliquote IVA & Esenzioni",
+    "route": "/dashboard/settings/vat",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:12:06.613Z",
+        "numericTimestamp": 1788462726539,
+        "url": "http://localhost:5174/dashboard/settings/vat",
+        "targetRequested": "http://localhost:5174/dashboard/settings/vat",
+        "pageTitle": "Dashboard | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 900,
+          "bodyWidth": 1440,
+          "bodyHeight": 900,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462726539_audit_settings_vat_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  },
+  {
+    "id": "settings_modules",
+    "name": "Gestione Moduli & Micro-Frontend",
+    "route": "/dashboard/settings/modules",
+    "desktop": {
+      "success": true,
+      "meta": {
+        "timestamp": "2026-09-03T19:12:09.179Z",
+        "numericTimestamp": 1788462728918,
+        "url": "http://localhost:5174/dashboard/settings/modules",
+        "targetRequested": "http://localhost:5174/dashboard/settings/modules",
+        "pageTitle": "Gestione Moduli & Plugin Bridges | ERP Dev",
+        "preset": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "full",
+        "selector": null,
+        "metrics": {
+          "scrollWidth": 1440,
+          "scrollHeight": 2374,
+          "bodyWidth": 1440,
+          "bodyHeight": 2374,
+          "readyState": "complete"
+        },
+        "screenshotFile": "/home/vincenzo/Code/gestoray/.agent/skills/test-ux-ui/screenshots/1788462728918_audit_settings_modules_desktop_desktop.png",
+        "consoleAlertsCount": 0,
+        "consoleAlerts": []
+      }
+    },
+    "mobile": null
+  }
+]

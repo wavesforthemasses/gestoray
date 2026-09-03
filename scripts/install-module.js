@@ -65,7 +65,7 @@ function copyDirRecursive(src, dest) {
   }
 }
 
-function checkRequirements(moduleName) {
+function checkRequirements(moduleName, currentlyInstalling = new Set()) {
   const jsonPath = path.resolve(__dirname, 'templates/modules', moduleName, 'module.json');
   if (!fs.existsSync(jsonPath)) return;
 
@@ -90,26 +90,46 @@ function checkRequirements(moduleName) {
     }
   }
 
+  // Controlla anche in modules.registry.json per moduli configurati o di libreria
+  const regPath = path.resolve(__dirname, '../src/lib/config/modules.registry.json');
+  if (fs.existsSync(regPath)) {
+    try {
+      const regData = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+      if (Array.isArray(regData.modules)) {
+        regData.modules.forEach(m => {
+          if (m.id && !installedModules.includes(m.id)) {
+            installedModules.push(m.id);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
   const missingReqs = requirements.filter(req => !installedModules.includes(req));
 
   if (missingReqs.length > 0) {
-    console.error('');
-    console.error(`❌ Impossibile installare il modulo '${moduleName}':`);
-    console.error(`   Prima di installare questo modulo, installa i seguenti moduli richiesti: ${missingReqs.map(m => `'${m}'`).join(', ')}.`);
-    console.error(`   Esegui prima: npm run module:install -- --name ${missingReqs[0]}`);
-    console.error('');
-    process.exit(1);
+    console.log(`\n⚡ Risoluzione automatica dipendenze per il modulo '${moduleName}'...`);
+    for (const req of missingReqs) {
+      if (currentlyInstalling.has(req)) {
+        console.error(`❌ Errore: Rilevata dipendenza circolare su '${req}'.`);
+        process.exit(1);
+      }
+      console.log(`   📦 Auto-installazione dipendenza richiesta: '${req}'...`);
+      currentlyInstalling.add(req);
+      installModule(req, currentlyInstalling);
+      currentlyInstalling.delete(req);
+    }
   }
 }
 
-function installModule(moduleName) {
+function installModule(moduleName, currentlyInstalling = new Set()) {
   const moduleDir = path.resolve(__dirname, 'templates/modules', moduleName);
   if (!fs.existsSync(moduleDir)) {
     console.error(`❌ Errore: Modulo '${moduleName}' non trovato nel Registro Moduli.`);
     process.exit(1);
   }
 
-  checkRequirements(moduleName);
+  checkRequirements(moduleName, currentlyInstalling);
 
   console.log(`📦 Installazione Modulo Puro '${moduleName}' in corso...`);
 

@@ -1,0 +1,21 @@
+{
+  "id": "vat",
+  "name": "Aliquote & Regimi Fiscali",
+  "version": "1.0.0",
+  "description": "Gestione centralizzata e agnostica delle aliquote IVA, esenzioni e codici natura SDI",
+  "category": "finance",
+  "icon": "Percent",
+  "requirements": [],
+  "menuItem": null,
+  "settingsCard": {
+    "path": "/dashboard/settings/vat",
+    "title": "Aliquote IVA & Regimi Fiscali",
+    "description": "Configura le aliquote IVA (22%, 10%, 4%), le esenzioni e i codici natura per la fatturazione elettronica.",
+    "icon": "Percent"
+  },
+  "rolesView": [
+    "superadmin",
+    "direzione",
+    "amministrazione"
+  ]
+}
